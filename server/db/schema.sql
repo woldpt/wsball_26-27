@@ -12,6 +12,7 @@ CREATE TABLE IF NOT EXISTS teams (
   points INTEGER DEFAULT 0,
   stadium_capacity INTEGER DEFAULT 10000,
   budget INTEGER DEFAULT 15000,
+  loan_amount INTEGER DEFAULT 0,
   FOREIGN KEY(manager_id) REFERENCES managers(id)
 );
 

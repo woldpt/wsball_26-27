@@ -109,6 +109,49 @@ io.on('connection', (socket) => {
     }
   });
 
+  socket.on('buildStadium', () => {
+    const game = getGameBySocket(socket.id);
+    if (!game) return;
+    const playerState = game.players[socket.id];
+    game.db.get('SELECT budget, stadium_capacity FROM teams WHERE id = ?', [playerState.teamId], (err, team) => {
+      const cost = 250000;
+      if (team && team.budget >= cost) {
+        game.db.run('UPDATE teams SET budget = budget - ?, stadium_capacity = stadium_capacity + 2000 WHERE id = ?', [cost, playerState.teamId], () => {
+          game.db.all('SELECT * FROM teams', (err, teams) => io.to(game.roomCode).emit('teamsData', teams));
+          socket.emit('systemMessage', '+2000 Lugares Construídos!');
+        });
+      } else {
+        socket.emit('systemMessage', 'Sem dinheiro (Custo: 250.000€)!');
+      }
+    });
+  });
+
+  socket.on('takeLoan', () => {
+    const game = getGameBySocket(socket.id);
+    if (!game) return;
+    const playerState = game.players[socket.id];
+    game.db.run('UPDATE teams SET budget = budget + 500000, loan_amount = loan_amount + 500000 WHERE id = ?', [playerState.teamId], () => {
+      game.db.all('SELECT * FROM teams', (err, teams) => io.to(game.roomCode).emit('teamsData', teams));
+      socket.emit('systemMessage', 'Empréstimo de 500.000€ aprovado (Juro 5%/Semana).');
+    });
+  });
+
+  socket.on('payLoan', () => {
+    const game = getGameBySocket(socket.id);
+    if (!game) return;
+    const playerState = game.players[socket.id];
+    game.db.get('SELECT budget, loan_amount FROM teams WHERE id = ?', [playerState.teamId], (err, team) => {
+      if (team && team.loan_amount >= 500000 && team.budget >= 500000) {
+        game.db.run('UPDATE teams SET budget = budget - 500000, loan_amount = loan_amount - 500000 WHERE id = ?', [playerState.teamId], () => {
+          game.db.all('SELECT * FROM teams', (err, teams) => io.to(game.roomCode).emit('teamsData', teams));
+          socket.emit('systemMessage', 'Dívida paga (500.000€) ao Banco.');
+        });
+      } else {
+        socket.emit('systemMessage', 'Não deves esse valor, ou não tens 500k disponíveis.');
+      }
+    });
+  });
+
   socket.on('setReady', (ready) => {
     const game = getGameBySocket(socket.id);
     if (!game) return;
@@ -136,14 +179,28 @@ async function checkAllReady(game) {
   if (allReady) {
     console.log(`All players ready in room ${game.roomCode}! Simulating matchweek ${game.matchweek}...`);
     
-    // MVP limitation: Only simulating Division 4 matches (where the human players are)
-    const results = await simulateDivision(game, 4);
-    
-    io.to(game.roomCode).emit('matchResults', { matchweek: game.matchweek, results });
-    
-    playerIds.forEach(id => game.players[id].ready = false);
-    game.matchweek++;
-    io.to(game.roomCode).emit('playerListUpdate', Object.values(game.players));
+    game.db.run(`
+      UPDATE teams 
+      SET budget = budget 
+        - CAST((loan_amount * 0.05) AS INTEGER) 
+        + (stadium_capacity * 10)
+        - (SELECT COALESCE(SUM(wage), 0) FROM players WHERE players.team_id = teams.id)
+    `, async () => {
+        const results = await simulateDivision(game, 4);
+        
+        io.to(game.roomCode).emit('matchResults', { matchweek: game.matchweek, results });
+        
+        playerIds.forEach(id => game.players[id].ready = false);
+        game.matchweek++;
+        
+        // Broadcast new team financial stats
+        game.db.all('SELECT * FROM teams', (err, teams) => io.to(game.roomCode).emit('teamsData', teams));
+        io.to(game.roomCode).emit('playerListUpdate', Object.values(game.players));
+    });
+  } else {
+    // Notify users about who is ready
+    const readyCount = playerIds.filter(id => game.players[id].ready).length;
+    // Just informative
   }
 }
 

@@ -384,12 +384,33 @@ function App() {
                     <span className="font-mono text-red-400 font-bold">- {formatCurrency(mySquad.reduce((acc, p) => acc + p.wage, 0))}</span>
                   </div>
                   <div className="flex justify-between border-b border-zinc-800 pb-4">
-                    <span className="text-zinc-400 font-bold">Bilheteiras Planeadas:</span>
-                    <span className="font-mono text-emerald-400 font-bold">+ € 15,000</span>
+                    <span className="text-zinc-400 font-bold">Bilheteiras (10€ \ lugar):</span>
+                    <span className="font-mono text-emerald-400 font-bold">+ {formatCurrency((teamInfo?.stadium_capacity || 5000) * 10)}</span>
                   </div>
-                  <div className="flex justify-between">
-                    <span className="text-amber-500 font-black text-xl">Lotação do Estádio:</span>
+                  
+                  <div className="flex justify-between border-b border-zinc-800 pb-4">
+                    <span className="text-zinc-400 font-bold">Lotação do Estádio:</span>
                     <span className="font-mono text-white text-xl font-bold">{teamInfo?.stadium_capacity?.toLocaleString() || 5000} Lugares</span>
+                  </div>
+
+                  <div className="flex justify-between pb-4">
+                    <span className="text-zinc-400 font-bold">Dívida ao Banco:</span>
+                    <span className="font-mono text-red-500 text-xl font-bold">{formatCurrency(teamInfo?.loan_amount || 0)} <span className="text-sm">(5% juros/sem)</span></span>
+                  </div>
+
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mt-8 pt-4 border-t border-zinc-800">
+                    <div className="bg-zinc-950 p-4 rounded-xl border border-emerald-900 border-opacity-30">
+                      <p className="text-sm font-bold text-amber-500 mb-3 uppercase tracking-widest">+2.000 Lugares Estádio</p>
+                      <button onClick={() => socket.emit('buildStadium')} className="w-full bg-amber-600 hover:bg-amber-500 text-zinc-950 font-black py-3 rounded-lg text-sm transition-all uppercase">Expandir (250.000€)</button>
+                    </div>
+                    
+                    <div className="bg-zinc-950 p-4 rounded-xl border border-red-900 border-opacity-30">
+                      <p className="text-sm font-bold text-red-500 mb-3 uppercase tracking-widest">Apoio Bancário</p>
+                      <div className="flex gap-2">
+                        <button onClick={() => socket.emit('takeLoan')} className="flex-1 bg-red-900 hover:bg-red-800 text-white font-black py-3 rounded-lg text-xs transition-all uppercase">Pedir +500K</button>
+                        <button onClick={() => socket.emit('payLoan')} className="flex-1 bg-emerald-900 hover:bg-emerald-800 text-white font-black py-3 rounded-lg text-xs transition-all uppercase">Pagar -500K</button>
+                      </div>
+                    </div>
                   </div>
                 </div>
               </div>
@@ -402,9 +423,9 @@ function App() {
                 onClick={handleReady}
                 className={`w-full py-6 font-black rounded-2xl text-2xl transition-all uppercase tracking-widest relative overflow-hidden border-b-6 active:border-b-0 active:translate-y-[6px] ${players.find(p => p.name === me.name)?.ready ? 'bg-zinc-800 text-zinc-500 border-zinc-950' : 'bg-emerald-500 text-zinc-950 hover:bg-emerald-400 border-emerald-700'}`}
               >
-                {players.find(p => p.name === me.name)?.ready ? 'MUDAR TÁTICA' : 'JOGAR JORNADA'}
+                {players.find(p => p.name === me.name)?.ready ? 'CANCELAR PRONTO' : 'JOGAR JORNADA'}
               </button>
-              <p className="text-xs font-bold text-zinc-500 mt-4 text-center leading-relaxed">Confirma a tática para iniciar a simulação com os adversários.</p>
+              <p className="text-xs font-bold text-zinc-500 mt-4 text-center leading-relaxed">Se jogas com amigos, a jornada só avança quando TODOS clicarem.</p>
             </div>
 
             <div className="bg-zinc-900 p-6 rounded-3xl border border-zinc-800">
