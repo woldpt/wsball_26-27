@@ -2,25 +2,11 @@ version: '3.8'
 services:
   backend:
     build: ./server
-<<<<<<< HEAD
-    #    ports:
-    #      - "3000:3000"
-=======
-#    ports:
-#      - "3000:3000"
->>>>>>> 77888aa3cb28e1fb0e5d6fa46b2a97c9dc178160
     volumes:
       - ./server/db:/app/db
 
   frontend:
     build: ./client
-<<<<<<< HEAD
-    #    ports:
-    #      - "5173:80"
-=======
-#    ports:
-#      - "5173:80"
->>>>>>> 77888aa3cb28e1fb0e5d6fa46b2a97c9dc178160
     environment:
       - VITE_BACKEND_URL=http://localhost:3000
     networks:
