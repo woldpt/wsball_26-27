@@ -54,6 +54,8 @@ function App() {
   const [tactic, setTactic] = useState({ formation: '4-4-2', style: 'Balanced' });
   const [liveMinute, setLiveMinute] = useState(90);
   const [isPlayingMatch, setIsPlayingMatch] = useState(false);
+  const [subsMade, setSubsMade] = useState(0);
+  const [swapSource, setSwapSource] = useState(null);
   
   useEffect(() => {
     // Fetch saves on mount
@@ -81,6 +83,8 @@ function App() {
     socket.on('halfTimeResults', (data) => {
       setMatchResults(data);
       setLiveMinute(0);
+      setSubsMade(0);
+      setSwapSource(null);
       setIsPlayingMatch(true);
       setActiveTab('live');
       playWhistle();
@@ -128,12 +132,12 @@ function App() {
 
       if (liveMinute < 45 || (liveMinute >= 45 && liveMinute < 90 && hasSecondHalf)) {
         const timer = setTimeout(() => {
-          setLiveMinute(m => m + 5);
-        }, 500);
+          setLiveMinute(m => m + 1);
+        }, 1000);
         return () => clearTimeout(timer);
       } else if (liveMinute === 45 && !hasSecondHalf) {
         setIsPlayingMatch(false);
-      } else if (liveMinute > 90) {
+      } else if (liveMinute >= 90) {
         const timer = setTimeout(() => {
            setIsPlayingMatch(false);
            setActiveTab('standings');
@@ -167,27 +171,74 @@ function App() {
     socket.emit('setTactic', newTactic);
   };
 
+  const handleAutoPick = (formationStr = tactic.formation) => {
+      const sorted = [...mySquad].sort((a,b) => (b.skill * (b.form/100)) - (a.skill * (a.form/100)));
+      const parts = formationStr.split('-');
+      const req = { 'GK': 1, 'DEF': parseInt(parts[0]), 'MID': parseInt(parts[1]), 'ATK': parseInt(parts[2]) };
+      const filled = { 'GK': 0, 'DEF': 0, 'MID': 0, 'ATK': 0 };
+      
+      const newPos = {};
+      let bench = 5;
+
+      sorted.forEach(p => {
+         if (filled[p.position] < req[p.position]) {
+             newPos[p.id] = 'Titular';
+             filled[p.position]++;
+         } else if (bench > 0) {
+             newPos[p.id] = 'Suplente';
+             bench--;
+         } else {
+             newPos[p.id] = 'Reserva';
+         }
+      });
+      
+      const tits = Object.values(newPos).filter(v => v === 'Titular').length;
+      if (tits < 11) {
+         sorted.forEach(p => {
+            if (newPos[p.id] !== 'Titular' && Object.values(newPos).filter(v => v==='Titular').length < 11) {
+               newPos[p.id] = 'Titular';
+            }
+         });
+      }
+      updateTactic({ formation: formationStr, positions: newPos });
+  };
+
+  useEffect(() => {
+     if (mySquad.length > 0 && !tactic.positions) {
+        handleAutoPick();
+     }
+  }, [mySquad, tactic.positions]);
+
+  const handleSubSwap = (playerId) => {
+     if (!swapSource) {
+        setSwapSource(playerId);
+     } else {
+        if (swapSource === playerId) {
+           setSwapSource(null);
+        } else {
+           if (activeTab === 'live' && subsMade >= 3) {
+              alert('Já fizeste as 3 substituições permitidas!');
+              setSwapSource(null);
+              return;
+           }
+           const newPos = { ...tactic.positions };
+           const temp = newPos[swapSource];
+           newPos[swapSource] = newPos[playerId];
+           newPos[playerId] = temp;
+           
+           updateTactic({ positions: newPos });
+           if (activeTab === 'live') setSubsMade(s => s + 1);
+           setSwapSource(null);
+        }
+     }
+  };
+
   const annotatedSquad = useMemo(() => {
-    const sorted = [...mySquad].sort((a,b) => (b.skill * (b.form/100)) - (a.skill * (a.form/100)));
-    const parts = tactic.formation.split('-');
-    const req = { 'GK': 1, 'DEF': parseInt(parts[0]), 'MID': parseInt(parts[1]), 'ATK': parseInt(parts[2]) };
-    const filled = { 'GK': 0, 'DEF': 0, 'MID': 0, 'ATK': 0 };
-    
-    let bench = 5;
-    sorted.forEach(p => {
-       if (filled[p.position] < req[p.position]) {
-           p.status = 'Titular';
-           filled[p.position]++;
-       } else if (bench > 0) {
-           p.status = 'Suplente';
-           bench--;
-       } else {
-           p.status = 'Reserva';
-       }
-    });
-    
-    return mySquad.map(s => sorted.find(x => x.id === s.id));
-  }, [mySquad, tactic.formation]);
+    if (!tactic.positions) return [...mySquad].map(p => ({...p, status: 'Reserva'}));
+    const mapped = mySquad.map(p => ({ ...p, status: tactic.positions[p.id] || 'Reserva' }));
+    const s = {Titular:1, Suplente:2, Reserva:3}; 
+    return mapped.sort((a,b) => s[a.status] - s[b.status]);
+  }, [mySquad, tactic.positions]);
 
   if (!me || !me.teamId) {
     return (
@@ -306,6 +357,42 @@ function App() {
 
             {activeTab === 'live' && matchResults && (
               <div className="bg-zinc-900 min-h-[600px] text-zinc-100 font-sans p-8 rounded-3xl border border-zinc-800 shadow-sm relative overflow-hidden">
+                 {liveMinute === 45 && !isPlayingMatch && (
+                   <div className="absolute inset-0 bg-zinc-950/95 z-50 p-8 flex flex-col backdrop-blur-sm">
+                      <h2 className="text-4xl font-black text-amber-500 mb-2 tracking-widest text-center uppercase">INTERVALO</h2>
+                      <p className="text-center text-zinc-400 font-bold mb-8">Seleciona na Esquerda e na Direita para Substituir (Restam: {3 - subsMade})</p>
+                      
+                      <div className="flex-1 overflow-y-auto mb-8 grid grid-cols-2 gap-8 bg-zinc-900/50 p-6 rounded-2xl border border-zinc-800">
+                         <div>
+                           <h3 className="text-emerald-500 font-black mb-4 uppercase tracking-widest text-center">Em Campo (Titulares)</h3>
+                           <div className="space-y-2">
+                             {annotatedSquad.filter(p => p.status === 'Titular').map(p => (
+                               <div key={p.id} onClick={() => handleSubSwap(p.id)} className={`p-3 rounded-lg border cursor-pointer font-bold transition-all flex justify-between select-none ${swapSource === p.id ? 'bg-amber-500 text-zinc-950 border-amber-400 scale-[1.02]' : 'bg-zinc-950 border-zinc-800 hover:border-emerald-500 hover:bg-zinc-800'}`}>
+                                  <span>{p.name} <span className="text-[10px] opacity-70 ml-2">{p.position}</span></span>
+                                  <span className="opacity-50">{p.skill}</span>
+                               </div>
+                             ))}
+                           </div>
+                         </div>
+                         <div>
+                           <h3 className="text-zinc-500 font-black mb-4 uppercase tracking-widest text-center">Banco (Suplentes)</h3>
+                           <div className="space-y-2">
+                             {annotatedSquad.filter(p => p.status !== 'Titular').map(p => (
+                               <div key={p.id} onClick={() => handleSubSwap(p.id)} className={`p-3 rounded-lg border cursor-pointer font-bold transition-all flex justify-between select-none ${swapSource === p.id ? 'bg-amber-500 text-zinc-950 border-amber-400 scale-[1.02]' : 'bg-zinc-950 border-zinc-800 hover:border-zinc-500 hover:bg-zinc-800'}`}>
+                                  <span>{p.name} <span className="text-[10px] opacity-70 ml-2">{p.position}</span></span>
+                                  <span className={`opacity-80 ${p.status==='Suplente'?'text-emerald-400':'text-zinc-600'}`}>{p.status} {p.skill}</span>
+                               </div>
+                             ))}
+                           </div>
+                         </div>
+                      </div>
+                      
+                      <button onClick={handleReady} className={`w-full py-6 rounded-2xl text-2xl font-black uppercase tracking-widest transition-all shadow-[0_0_30px_rgba(217,119,6,0.3)] ${players.find(p => p.name === me.name)?.ready ? 'bg-zinc-800 text-zinc-500' : 'bg-amber-600 hover:bg-amber-500 text-zinc-950'}`}>
+                         {players.find(p => p.name === me.name)?.ready ? 'A AGUARDAR ADVERSÁRIOS...' : 'CONFIRMAR E IR PARA A 2ª PARTE'}
+                      </button>
+                   </div>
+                 )}
+
                  <div className="absolute top-6 right-6 flex items-center gap-3">
                     {isPlayingMatch && <div className="w-4 h-4 rounded-full bg-red-600 animate-pulse"></div>}
                     <span className="text-3xl font-mono font-black">{Math.min(liveMinute, 90)}'</span>
@@ -399,7 +486,7 @@ function App() {
               <div className="space-y-6">
                 <div className="bg-zinc-900 rounded-2xl border border-zinc-800 p-6 flex flex-col md:flex-row justify-between gap-4">
                   <div className="flex gap-4">
-                    <select className="bg-zinc-950 border border-zinc-700 rounded-lg px-4 py-3 text-base font-bold text-white focus:ring-2 focus:ring-amber-500" value={tactic.formation} onChange={(e) => updateTactic({ formation: e.target.value })}>
+                    <select className="bg-zinc-950 border border-zinc-700 rounded-lg px-4 py-3 text-base font-bold text-white focus:ring-2 focus:ring-amber-500" value={tactic.formation} onChange={(e) => handleAutoPick(e.target.value)}>
                       <option value="4-4-2">4-4-2 Clássico</option>
                       <option value="4-3-3">4-3-3 Ofensivo</option>
                       <option value="3-5-2">3-5-2 Controlo da Bola</option>
@@ -415,14 +502,14 @@ function App() {
                       <option value="Defensive">Defensivo (+20% Def)</option>
                     </select>
                   </div>
-                  <p className="text-zinc-500 text-sm font-bold">O 11 Titular e 5 suplentes são calculados automaticamente para otimizar a Forma x Qualidade.</p>
+                  <p className="text-zinc-500 text-sm font-bold max-w-sm mt-3 md:mt-0 leading-tight">Clica nos jogadores em qualquer momento para escolheres os teus Titulares manualmente (Máx 3 Substituições durante o Intervalo do jogo).</p>
                 </div>
 
                 <div className="bg-zinc-900 rounded-3xl border border-zinc-800 shadow-sm overflow-hidden">
                   <table className="w-full text-left text-base">
                     <thead>
-                      <tr className="bg-zinc-950/50 text-zinc-500 uppercase text-xs tracking-widest border-b border-zinc-800">
-                        <th className="p-5 font-black">Status</th>
+                      <tr className="bg-zinc-950/50 text-zinc-400 uppercase text-xs tracking-widest border-b border-zinc-800">
+                        <th className="p-5 font-black">Seleção Clica p/Trocar</th>
                         <th className="p-5 font-black">Pos</th>
                         <th className="p-5 font-black">Nome</th>
                         <th className="p-5 font-black text-center">Nac</th>
@@ -431,13 +518,10 @@ function App() {
                       </tr>
                     </thead>
                     <tbody className="divide-y divide-zinc-800/50 font-medium">
-                      {annotatedSquad.sort((a,b) => {
-                         const s = {Titular:1, Suplente:2, Reserva:3}; 
-                         return s[a.status] - s[b.status];
-                      }).map(player => (
-                        <tr key={player.id} className={`hover:bg-zinc-800/50 transition-colors group ${player.status==='Titular' ? 'bg-amber-500/5' : ''}`}>
+                      {annotatedSquad.map(player => (
+                        <tr key={player.id} onClick={() => handleSubSwap(player.id)} className={`cursor-pointer hover:bg-zinc-800/50 transition-colors group select-none ${player.status==='Titular' ? 'bg-amber-500/5' : ''} ${swapSource === player.id ? 'ring-2 ring-inset ring-amber-500 bg-amber-500/20' : ''}`}>
                           <td className="p-5">
-                            <span className={`text-xs px-2 py-1 rounded font-black tracking-widest uppercase ${player.status==='Titular' ? 'bg-amber-500 text-zinc-950': player.status==='Suplente' ? 'bg-zinc-700 text-white' : 'text-zinc-600'}`}>{player.status}</span>
+                            <span className={`text-xs px-2 py-1 rounded font-black tracking-widest uppercase shadow-sm ${player.status==='Titular' ? 'bg-amber-500 text-zinc-950': player.status==='Suplente' ? 'bg-zinc-700 text-white' : 'text-zinc-600 border border-zinc-800'}`}>{player.status}</span>
                           </td>
                           <td className={`p-5 font-black text-sm tracking-wider ${player.position === 'GK' ? 'text-yellow-500' : player.position === 'DEF' ? 'text-blue-500' : 'text-green-500'}`}>{player.position}</td>
                           <td className="p-5 font-bold text-white text-lg">{player.name}</td>

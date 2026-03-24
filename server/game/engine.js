@@ -1,11 +1,16 @@
-function getTeamSquad(db, teamId, formation = '4-4-2') {
+async function getTeamSquad(db, teamId, tactic) {
   return new Promise((resolve, reject) => {
     db.all('SELECT * FROM players WHERE team_id = ?', [teamId], (err, rows) => {
       if (err) return reject(err);
       
+      if (tactic && tactic.positions) {
+         const lineup = rows.filter(p => tactic.positions[p.id] === 'Titular');
+         if (lineup.length === 11) return resolve(lineup);
+      }
+      
       const sorted = rows.sort((a, b) => (b.skill * b.form) - (a.skill * a.form));
       const lineup = [];
-      const parts = formation.split('-');
+      const parts = (tactic?.formation || '4-4-2').split('-');
       const positions = { 'GK': 1, 'DEF': parseInt(parts[0]), 'MID': parseInt(parts[1]), 'ATK': parseInt(parts[2]) };
       const currentPos = { 'GK': 0, 'DEF': 0, 'MID': 0, 'ATK': 0 };
       
