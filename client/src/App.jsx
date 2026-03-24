@@ -53,10 +53,12 @@ function App() {
   
   useEffect(() => {
     socket.on('teamsData', (data) => setTeams(data));
-    socket.on('playerListUpdate', (data) => setPlayers(data));
+    socket.on('playerListUpdate', (data) => {
+      setPlayers(data);
+    });
     socket.on('mySquad', (data) => setMySquad(data));
     socket.on('marketUpdate', (data) => setMarketPairs(data));
-    socket.on('systemMessage', (msg) => alert(msg)); // Simple MVP alert
+    socket.on('systemMessage', (msg) => alert(msg));
     
     socket.on('matchResults', (data) => {
       setMatchResults(data);
@@ -78,13 +80,20 @@ function App() {
     };
   }, [me]);
 
+  // Sync me state separately
+  useEffect(() => {
+    if (me && !me.teamId && players.length > 0) {
+      const p = players.find(x => x.name === me.name);
+      if (p && p.teamId) {
+        setMe(p);
+      }
+    }
+  }, [players, me]);
+
   const handleJoin = () => {
     if (name && roomCode) {
       socket.emit('joinGame', { name, roomCode });
-      socket.on('playerListUpdate', (list) => {
-         const p = list.find(x => x.name === name);
-         if (p && !me) setMe(p);
-      });
+      setMe({ name, roomCode }); // Temporarily set to bypass login screen
     }
   };
 
