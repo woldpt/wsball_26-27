@@ -97,6 +97,16 @@ function App() {
   }, [me]);
 
   useEffect(() => {
+    const onConnect = () => {
+      if (me && me.roomCode && me.name) {
+        socket.emit('joinGame', { name: me.name, roomCode: me.roomCode });
+      }
+    };
+    socket.on('connect', onConnect);
+    return () => socket.off('connect', onConnect);
+  }, [me]);
+
+  useEffect(() => {
     if (me && !me.teamId && players.length > 0) {
       const p = players.find(x => x.name === me.name);
       if (p && p.teamId) {
