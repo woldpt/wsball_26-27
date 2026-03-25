@@ -1126,39 +1126,6 @@ function App() {
 
             {activeTab === "squad" && (
               <div className="space-y-6">
-                <div className="bg-zinc-900 rounded-2xl border border-zinc-800 p-6 flex flex-col md:flex-row justify-between gap-4">
-                  <div className="flex gap-4">
-                    <select
-                      className="bg-zinc-950 border border-zinc-700 rounded-lg px-4 py-3 text-base font-bold text-white focus:ring-2 focus:ring-amber-500"
-                      value={tactic.formation}
-                      onChange={(e) => handleAutoPick(e.target.value)}
-                    >
-                      <option value="4-4-2">4-4-2 Clássico</option>
-                      <option value="4-3-3">4-3-3 Ofensivo</option>
-                      <option value="3-5-2">3-5-2 Controlo da Bola</option>
-                      <option value="5-3-2">5-3-2 Autocarro</option>
-                      <option value="4-5-1">4-5-1 Catenaccio</option>
-                      <option value="3-4-3">3-4-3 Ataque Total</option>
-                      <option value="4-2-4">4-2-4 Avassalador</option>
-                      <option value="5-4-1">5-4-1 Ferrolho</option>
-                    </select>
-                    <select
-                      className="bg-zinc-950 border border-zinc-700 rounded-lg px-4 py-3 text-base font-bold text-emerald-400 focus:ring-2 focus:ring-amber-500"
-                      value={tactic.style}
-                      onChange={(e) => updateTactic({ style: e.target.value })}
-                    >
-                      <option value="Balanced">Equilibrado</option>
-                      <option value="Offensive">Ofensivo (+15% Atk)</option>
-                      <option value="Defensive">Defensivo (+20% Def)</option>
-                    </select>
-                  </div>
-                  <p className="text-zinc-500 text-sm font-bold max-w-sm mt-3 md:mt-0 leading-tight">
-                    Clica nos jogadores em qualquer momento para escolheres os
-                    teus Titulares manualmente (Máx 3 Substituições durante o
-                    Intervalo do jogo).
-                  </p>
-                </div>
-
                 <div className="bg-zinc-900 rounded-3xl border border-zinc-800 shadow-sm overflow-hidden">
                   <table className="w-full text-left text-sm">
                     <thead>
@@ -1417,6 +1384,38 @@ function App() {
                 <p className="text-red-400 text-xs font-bold mb-3 text-center">
                   ⚠️ Desligado — a reconectar...
                 </p>
+              )}
+              {activeTab === "squad" && (
+                <div className="w-full mb-4 p-4 rounded-2xl border border-zinc-800 bg-zinc-950/80">
+                  <p className="text-[10px] uppercase tracking-widest text-zinc-500 font-black mb-3">
+                    Tática
+                  </p>
+                  <div className="space-y-3">
+                    <select
+                      className="w-full bg-zinc-950 border border-zinc-700 rounded-lg px-3 py-3 text-sm font-bold text-white focus:ring-2 focus:ring-amber-500"
+                      value={tactic.formation}
+                      onChange={(e) => handleAutoPick(e.target.value)}
+                    >
+                      <option value="4-4-2">4-4-2 Clássico</option>
+                      <option value="4-3-3">4-3-3 Ofensivo</option>
+                      <option value="3-5-2">3-5-2 Controlo da Bola</option>
+                      <option value="5-3-2">5-3-2 Autocarro</option>
+                      <option value="4-5-1">4-5-1 Catenaccio</option>
+                      <option value="3-4-3">3-4-3 Ataque Total</option>
+                      <option value="4-2-4">4-2-4 Avassalador</option>
+                      <option value="5-4-1">5-4-1 Ferrolho</option>
+                    </select>
+                    <select
+                      className="w-full bg-zinc-950 border border-zinc-700 rounded-lg px-3 py-3 text-sm font-bold text-emerald-400 focus:ring-2 focus:ring-amber-500"
+                      value={tactic.style}
+                      onChange={(e) => updateTactic({ style: e.target.value })}
+                    >
+                      <option value="Balanced">Equilibrado</option>
+                      <option value="Offensive">Ofensivo (+15% Atk)</option>
+                      <option value="Defensive">Defensivo (+20% Def)</option>
+                    </select>
+                  </div>
+                </div>
               )}
               <button
                 onClick={
