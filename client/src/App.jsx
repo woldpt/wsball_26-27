@@ -17,6 +17,57 @@ function getPlayerStat(player, keys, fallback = 0) {
   return fallback;
 }
 
+function isPlayerAvailable(player, currentMatchweek = 1) {
+  const suspensionUntil = player?.suspension_until_matchweek || 0;
+  const injuryUntil = player?.injury_until_matchweek || 0;
+  return currentMatchweek > suspensionUntil && currentMatchweek > injuryUntil;
+}
+
+function buildAutoPositions(
+  squad = [],
+  formation = "4-4-2",
+  currentMatchweek = 1,
+) {
+  const availablePlayers = squad.filter((player) =>
+    isPlayerAvailable(player, currentMatchweek),
+  );
+  if (!availablePlayers.length) return {};
+
+  const sortedPlayers = [...availablePlayers].sort(
+    (a, b) => b.skill * b.form - a.skill * a.form,
+  );
+
+  const formationParts = String(formation || "4-4-2").split("-");
+  const requiredByPosition = {
+    GK: 1,
+    DEF: parseInt(formationParts[0], 10) || 0,
+    MID: parseInt(formationParts[1], 10) || 0,
+    ATK: parseInt(formationParts[2], 10) || 0,
+  };
+  const usedByPosition = { GK: 0, DEF: 0, MID: 0, ATK: 0 };
+  const lineup = [];
+
+  for (const player of sortedPlayers) {
+    const playerPosition = player.position;
+    if (usedByPosition[playerPosition] < requiredByPosition[playerPosition]) {
+      lineup.push(player);
+      usedByPosition[playerPosition] += 1;
+    }
+  }
+
+  if (lineup.length < 11) {
+    for (const player of sortedPlayers) {
+      if (lineup.includes(player)) continue;
+      lineup.push(player);
+      if (lineup.length === 11) break;
+    }
+  }
+
+  return Object.fromEntries(
+    lineup.slice(0, 11).map((player) => [player.id, "Titular"]),
+  );
+}
+
 function getMatchLastEventText(events = [], liveMinute = 90) {
   let latest = null;
   events.forEach((event, index) => {
@@ -108,6 +159,8 @@ function App() {
   const [activeTab, setActiveTab] = useState("dashboard");
   const [topScorers, setTopScorers] = useState([]);
   const [marketPairs, setMarketPairs] = useState([]);
+  const [marketPositionFilter, setMarketPositionFilter] = useState("all");
+  const [marketSort, setMarketSort] = useState("quality-desc");
   const [selectedAuctionPlayer, setSelectedAuctionPlayer] = useState(null);
   const [auctionBid, setAuctionBid] = useState("");
   const [selectedTeam, setSelectedTeam] = useState(null);
@@ -337,6 +390,25 @@ function App() {
     }
   }, [isPlayingMatch, liveMinute, matchResults, showHalftimePanel]);
 
+  useEffect(() => {
+    if (!mySquad.length) return;
+    if (tactic.positions && Object.keys(tactic.positions).length > 0) return;
+
+    const autoPositions = buildAutoPositions(
+      mySquad,
+      tactic.formation,
+      matchweekCount + 1,
+    );
+    if (Object.keys(autoPositions).length === 0) return;
+
+    setTactic((prev) => {
+      if (prev.positions && Object.keys(prev.positions).length > 0) return prev;
+      const next = { ...prev, positions: autoPositions };
+      socket.emit("setTactic", next);
+      return next;
+    });
+  }, [mySquad, tactic.formation, tactic.positions, matchweekCount]);
+
   const handleJoin = () => {
     if (name && password && roomCode && !joining) {
       setJoinError("");
@@ -408,14 +480,18 @@ function App() {
 
   const handleAutoPick = useCallback(
     (formation) => {
-      // Clear explicit positions so the server auto-picks for this formation
+      const autoPositions = buildAutoPositions(
+        mySquad,
+        formation,
+        matchweekCount + 1,
+      );
       setTactic((prev) => {
-        const next = { ...prev, formation, positions: {} };
+        const next = { ...prev, formation, positions: autoPositions };
         socket.emit("setTactic", next);
         return next;
       });
     },
-    [], // eslint-disable-line react-hooks/exhaustive-deps
+    [matchweekCount, mySquad], // eslint-disable-line react-hooks/exhaustive-deps
   );
 
   // ── SUBSTITUTION SWAP ─────────────────────────────────────────────────────
@@ -681,6 +757,45 @@ function App() {
       const order = { Titular: 1, Suplente: 2, Reserva: 3, Out: 4 };
       return order[a.status] - order[b.status];
     });
+
+  const filteredMarketPlayers = useMemo(() => {
+    const marketTeamId = me?.teamId;
+    const normalizedPosition = marketPositionFilter;
+
+    const getPlayerPrice = (player) => {
+      const isListed =
+        player.transfer_status && player.transfer_status !== "none";
+      return isListed
+        ? player.transfer_price || player.value * 0.75
+        : player.value * 1.2;
+    };
+
+    const comparePlayers = (a, b) => {
+      if (marketSort === "price-asc") {
+        return getPlayerPrice(a) - getPlayerPrice(b);
+      }
+      if (marketSort === "price-desc") {
+        return getPlayerPrice(b) - getPlayerPrice(a);
+      }
+      if (marketSort === "quality-asc") {
+        return (a.skill || 0) - (b.skill || 0);
+      }
+      return (b.skill || 0) - (a.skill || 0);
+    };
+
+    return marketPairs
+      .filter((player) => player.team_id !== marketTeamId)
+      .filter((player) =>
+        normalizedPosition === "all"
+          ? true
+          : player.position === normalizedPosition,
+      )
+      .map((player) => ({
+        ...player,
+        marketPrice: getPlayerPrice(player),
+      }))
+      .sort(comparePlayers);
+  }, [marketPairs, marketPositionFilter, marketSort, me?.teamId]);
 
   return (
     <div className="min-h-screen bg-zinc-950 text-zinc-100 font-sans pb-12 tracking-tight">
@@ -1191,6 +1306,9 @@ function App() {
                         <th className="px-4 py-3 font-black text-center w-12">
                           Nac
                         </th>
+                        <th className="px-4 py-3 font-black text-center w-24">
+                          Ordenado
+                        </th>
                         <th className="px-4 py-3 font-black text-center w-12">
                           Qual
                         </th>
@@ -1237,6 +1355,9 @@ function App() {
                           </td>
                           <td className="px-4 py-2.5 text-center text-zinc-400 font-bold">
                             {player.nationality}
+                          </td>
+                          <td className="px-4 py-2.5 text-center font-mono text-zinc-300 text-xs md:text-sm">
+                            {formatCurrency(player.wage || 0)}
                           </td>
                           <td className="px-4 py-2.5 text-center">
                             <span className="bg-zinc-950 text-white font-black px-2 py-1.5 rounded text-sm border border-zinc-800">
@@ -1323,87 +1444,156 @@ function App() {
 
             {activeTab === "market" && (
               <div className="bg-zinc-900 rounded-3xl border border-zinc-800 shadow-sm overflow-hidden">
-                <table className="w-full text-left text-sm">
+                <div className="border-b border-zinc-800 bg-zinc-950/40 p-4 md:p-5">
+                  <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
+                    <div>
+                      <label className="block text-[10px] uppercase tracking-widest text-zinc-500 font-black mb-2">
+                        Posição
+                      </label>
+                      <select
+                        className="w-full bg-zinc-950 border border-zinc-700 rounded-lg px-3 py-3 text-sm font-bold text-white focus:ring-2 focus:ring-amber-500"
+                        value={marketPositionFilter}
+                        onChange={(e) =>
+                          setMarketPositionFilter(e.target.value)
+                        }
+                      >
+                        <option value="all">Todas</option>
+                        <option value="GK">Guarda-Redes</option>
+                        <option value="DEF">Defesa</option>
+                        <option value="MID">Médio</option>
+                        <option value="ATK">Avançado</option>
+                      </select>
+                    </div>
+                    <div>
+                      <label className="block text-[10px] uppercase tracking-widest text-zinc-500 font-black mb-2">
+                        Ordenar por
+                      </label>
+                      <select
+                        className="w-full bg-zinc-950 border border-zinc-700 rounded-lg px-3 py-3 text-sm font-bold text-white focus:ring-2 focus:ring-amber-500"
+                        value={marketSort}
+                        onChange={(e) => setMarketSort(e.target.value)}
+                      >
+                        <option value="quality-desc">
+                          Qualidade (maior primeiro)
+                        </option>
+                        <option value="quality-asc">
+                          Qualidade (menor primeiro)
+                        </option>
+                        <option value="price-asc">Preço (mais barato)</option>
+                        <option value="price-desc">Preço (mais caro)</option>
+                      </select>
+                    </div>
+                    <div className="flex items-end text-sm font-bold text-zinc-500">
+                      {filteredMarketPlayers.length} jogadores
+                    </div>
+                  </div>
+                </div>
+                <table className="w-full text-left text-xs md:text-sm">
                   <thead>
-                    <tr className="bg-zinc-950/50 text-zinc-500 uppercase text-[11px] border-b border-zinc-800">
-                      <th className="px-4 py-3 font-black">Pos</th>
-                      <th className="px-4 py-3 font-black">Nome / Origem</th>
-                      <th className="px-4 py-3 font-black text-center">Qual</th>
-                      <th className="px-4 py-3 font-black text-right">
-                        Cláusula Rescisão
+                    <tr className="bg-zinc-950/50 text-zinc-500 uppercase text-[10px] md:text-[11px] border-b border-zinc-800">
+                      <th className="px-4 py-2.5 font-black">Pos</th>
+                      <th className="px-4 py-2.5 font-black">Nome</th>
+                      <th className="px-4 py-2.5 font-black">Clube</th>
+                      <th className="px-4 py-2.5 font-black text-right">
+                        Ordenado
                       </th>
-                      <th className="px-4 py-3"></th>
+                      <th className="px-4 py-2.5 font-black text-center">
+                        Golos
+                      </th>
+                      <th className="px-4 py-2.5 font-black text-center">
+                        Vermelhos
+                      </th>
+                      <th className="px-4 py-2.5 font-black text-center">
+                        Lesões
+                      </th>
+                      <th className="px-4 py-2.5 font-black text-center">
+                        Qual
+                      </th>
+                      <th className="px-4 py-2.5 font-black text-right">
+                        Preço
+                      </th>
+                      <th className="px-4 py-2.5"></th>
                     </tr>
                   </thead>
                   <tbody className="divide-y divide-zinc-800/50 font-medium">
-                    {marketPairs
-                      .filter((p) => p.team_id !== me.teamId)
-                      .map((player) => {
-                        const isListed =
-                          player.transfer_status &&
-                          player.transfer_status !== "none";
-                        const price = isListed
-                          ? player.transfer_price || player.value * 0.75
-                          : player.value * 1.2;
-                        const canAfford = teamInfo?.budget >= price;
-                        return (
-                          <tr
-                            key={player.id}
-                            className="hover:bg-zinc-800/50 transition-colors"
-                          >
-                            <td className="px-4 py-3 font-black text-xs">
-                              {player.position}
-                            </td>
-                            <td className="px-4 py-3">
-                              <div className="flex items-center gap-2">
-                                <p className="font-bold text-white text-sm md:text-base leading-tight">
-                                  {player.name}
-                                </p>
-                                {isListed && (
-                                  <span
-                                    className={`text-[10px] font-black uppercase px-2 py-0.5 rounded ${player.transfer_status === "auction" ? "bg-amber-500 text-zinc-950" : "bg-sky-500 text-zinc-950"}`}
-                                  >
-                                    {player.transfer_status === "auction"
-                                      ? "Leilão"
-                                      : "Lista"}
-                                  </span>
-                                )}
-                              </div>
-                              <p className="text-[10px] uppercase text-zinc-500 font-bold mt-1">
-                                {player.team_name || "Sem clube"}
+                    {filteredMarketPlayers.map((player) => {
+                      const isListed =
+                        player.transfer_status &&
+                        player.transfer_status !== "none";
+                      const price = player.marketPrice;
+                      const canAfford = teamInfo?.budget >= price;
+                      return (
+                        <tr
+                          key={player.id}
+                          className="hover:bg-zinc-800/50 transition-colors"
+                        >
+                          <td className="px-4 py-2 font-black text-[11px] md:text-xs">
+                            {player.position}
+                          </td>
+                          <td className="px-4 py-2">
+                            <div className="flex items-center gap-2">
+                              <p className="font-bold text-white text-sm leading-tight">
+                                {player.name}
                               </p>
-                            </td>
-                            <td className="px-4 py-3 text-center">
-                              <span className="bg-emerald-950 text-emerald-400 font-black px-2 py-1.5 rounded text-sm">
-                                {player.skill}
-                              </span>
-                            </td>
-                            <td className="px-4 py-3 text-right font-mono text-zinc-300 text-sm md:text-base">
-                              {isListed
-                                ? formatCurrency(price)
-                                : formatCurrency(price)}
-                            </td>
-                            <td className="px-4 py-3 text-right">
-                              {player.transfer_status === "auction" ? (
-                                <button
-                                  onClick={() => openAuctionBid(player)}
-                                  className="bg-amber-500 hover:bg-amber-400 text-zinc-950 font-black uppercase text-[11px] px-4 py-2 rounded"
+                              {isListed && (
+                                <span
+                                  className={`text-[10px] font-black uppercase px-2 py-0.5 rounded ${player.transfer_status === "auction" ? "bg-amber-500 text-zinc-950" : "bg-sky-500 text-zinc-950"}`}
                                 >
-                                  Licitar
-                                </button>
-                              ) : (
-                                <button
-                                  onClick={() => buyPlayer(player.id)}
-                                  disabled={!canAfford}
-                                  className="bg-emerald-600 hover:bg-emerald-500 disabled:opacity-30 disabled:hover:bg-emerald-600 text-white font-black uppercase text-[11px] px-4 py-2 rounded"
-                                >
-                                  {canAfford ? "Comprar" : "Sem Gito"}
-                                </button>
+                                  {player.transfer_status === "auction"
+                                    ? "Leilão"
+                                    : "Lista"}
+                                </span>
                               )}
-                            </td>
-                          </tr>
-                        );
-                      })}
+                            </div>
+                          </td>
+                          <td className="px-4 py-2 font-bold text-zinc-400">
+                            {player.team_name || "Sem clube"}
+                          </td>
+                          <td className="px-4 py-2 text-right font-mono text-zinc-300 text-xs md:text-sm">
+                            {formatCurrency(
+                              player.contract_requested_wage ||
+                                player.wage ||
+                                0,
+                            )}
+                          </td>
+                          <td className="px-4 py-2 text-center font-black text-emerald-400">
+                            {getPlayerStat(player, ["goals"])}
+                          </td>
+                          <td className="px-4 py-2 text-center font-black text-red-400">
+                            {getPlayerStat(player, ["red_cards"])}
+                          </td>
+                          <td className="px-4 py-2 text-center font-black text-orange-400">
+                            {getPlayerStat(player, ["injuries"])}
+                          </td>
+                          <td className="px-4 py-2 text-center">
+                            <span className="bg-emerald-950 text-emerald-400 font-black px-2 py-1 rounded text-sm">
+                              {player.skill}
+                            </span>
+                          </td>
+                          <td className="px-4 py-2 text-right font-mono text-zinc-300 text-sm md:text-base">
+                            {formatCurrency(price)}
+                          </td>
+                          <td className="px-4 py-2 text-right">
+                            {player.transfer_status === "auction" ? (
+                              <button
+                                onClick={() => openAuctionBid(player)}
+                                className="bg-amber-500 hover:bg-amber-400 text-zinc-950 font-black uppercase text-[10px] px-3 py-1.5 rounded"
+                              >
+                                Licitar
+                              </button>
+                            ) : (
+                              <button
+                                onClick={() => buyPlayer(player.id)}
+                                disabled={!canAfford}
+                                className="bg-emerald-600 hover:bg-emerald-500 disabled:opacity-30 disabled:hover:bg-emerald-600 text-white font-black uppercase text-[10px] px-3 py-1.5 rounded"
+                              >
+                                {canAfford ? "Comprar" : "Sem Gito"}
+                              </button>
+                            )}
+                          </td>
+                        </tr>
+                      );
+                    })}
                   </tbody>
                 </table>
               </div>
