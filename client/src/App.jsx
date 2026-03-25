@@ -1739,7 +1739,7 @@ function App() {
                           <td className="px-3 py-2.5 text-center">
                             {player.status === "Titular" ||
                             player.status === "Suplente" ? (
-                              <div className="flex flex-wrap justify-center gap-1.5">
+                              <div className="flex flex-nowrap justify-center gap-1">
                                 <button
                                   onClick={(e) => {
                                     e.stopPropagation();
@@ -1747,7 +1747,7 @@ function App() {
                                   }}
                                   title="Renovar"
                                   aria-label="Renovar"
-                                  className="px-2.5 py-1.5 rounded-lg bg-emerald-600 hover:bg-emerald-500 text-white text-[11px] font-normal uppercase"
+                                  className="px-2 py-1 rounded-lg bg-emerald-600 hover:bg-emerald-500 text-white text-[10px] font-normal uppercase leading-none"
                                 >
                                   R
                                 </button>
@@ -1758,7 +1758,7 @@ function App() {
                                   }}
                                   title="Vender em Leilão"
                                   aria-label="Vender em Leilão"
-                                  className="px-2.5 py-1.5 rounded-lg bg-amber-600 hover:bg-amber-500 text-zinc-950 text-[11px] font-normal uppercase"
+                                  className="px-2 py-1 rounded-lg bg-amber-600 hover:bg-amber-500 text-zinc-950 text-[10px] font-normal uppercase leading-none"
                                 >
                                   V
                                 </button>
@@ -1769,7 +1769,7 @@ function App() {
                                   }}
                                   title="Listar no Mercado"
                                   aria-label="Listar no Mercado"
-                                  className="px-2.5 py-1.5 rounded-lg bg-zinc-700 hover:bg-zinc-600 text-white text-[11px] font-normal uppercase"
+                                  className="px-2 py-1 rounded-lg bg-zinc-700 hover:bg-zinc-600 text-white text-[10px] font-normal uppercase leading-none"
                                 >
                                   L
                                 </button>
