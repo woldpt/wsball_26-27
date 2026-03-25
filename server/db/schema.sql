@@ -35,6 +35,12 @@ CREATE TABLE IF NOT EXISTS players (
   value INTEGER,
   wage INTEGER,
   goals INTEGER DEFAULT 0,
+  red_cards INTEGER DEFAULT 0,
+  injuries INTEGER DEFAULT 0,
+  suspension_games INTEGER DEFAULT 0,
+  injury_weeks INTEGER DEFAULT 0,
+  suspension_until_matchweek INTEGER DEFAULT 0,
+  injury_until_matchweek INTEGER DEFAULT 0,
   team_id INTEGER,
   FOREIGN KEY(team_id) REFERENCES teams(id)
 );

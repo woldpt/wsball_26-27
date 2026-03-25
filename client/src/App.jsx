@@ -30,7 +30,32 @@ function getMatchLastEventText(events = [], liveMinute = 90) {
     }
   });
 
-  return latest?.text || "";
+  if (!latest) return "";
+
+  const minuteText = latest.minute != null ? `[${latest.minute}']` : "";
+  const playerName = latest.playerName || latest.player_name;
+  const emoji = latest.emoji || "";
+
+  if (playerName) {
+    return `${minuteText} ${emoji} ${playerName}`.trim();
+  }
+
+  if (latest.type === "goal") {
+    const nameMatch = latest.text?.match(/GOLO!\s*(.*)$/i);
+    return `${minuteText} ⚽ ${nameMatch?.[1] || "Jogador"}`;
+  }
+
+  if (latest.type === "red") {
+    const nameMatch = latest.text?.match(/VERMELHO!\s*(.*)$/i);
+    return `${minuteText} 🟥 ${nameMatch?.[1] || "Jogador"}`;
+  }
+
+  if (latest.type === "yellow") {
+    const nameMatch = latest.text?.match(/Amarelo para\s*(.*)$/i);
+    return `${minuteText} 🟨 ${nameMatch?.[1] || "Jogador"}`;
+  }
+
+  return minuteText ? `${minuteText} ${latest.text || ""}` : latest.text || "";
 }
 
 const playWhistle = () => {
@@ -90,6 +115,7 @@ function App() {
   const [liveMinute, setLiveMinute] = useState(90);
   const [isPlayingMatch, setIsPlayingMatch] = useState(false);
   const [showHalftimePanel, setShowHalftimePanel] = useState(false);
+  const [matchAction, setMatchAction] = useState(null);
   const [subsMade, setSubsMade] = useState(0);
   const [swapSource, setSwapSource] = useState(null);
   const [subbedOut, setSubbedOut] = useState([]); // Track players who left the pitch
@@ -158,6 +184,17 @@ function App() {
       playWhistle();
     });
 
+    socket.on("matchActionRequired", (data) => {
+      if (!meRef.current || data.teamId === meRef.current.teamId) {
+        setMatchAction(data);
+        setActiveTab("live");
+      }
+    });
+
+    socket.on("matchActionResolved", () => {
+      setMatchAction(null);
+    });
+
     // BUG-11 FIX: matchResults clears showHalftimePanel (2nd half replay)
     socket.on("matchResults", (data) => {
       setMatchResults(data);
@@ -202,6 +239,8 @@ function App() {
       socket.off("joinError");
       socket.off("matchResults");
       socket.off("halfTimeResults");
+      socket.off("matchActionRequired");
+      socket.off("matchActionResolved");
       socket.off("gameState");
       socket.off("connect", onConnect);
       socket.off("disconnect", onDisconnect);
@@ -282,6 +321,16 @@ function App() {
   // after halftime, causing the toggle to send false instead of true.
   const handleHalftimeReady = () => {
     socket.emit("setReady", true);
+  };
+
+  const handleResolveMatchAction = (playerId) => {
+    if (!matchAction || !me?.teamId) return;
+    socket.emit("resolveMatchAction", {
+      actionId: matchAction.actionId,
+      teamId: me.teamId,
+      playerId,
+    });
+    setMatchAction(null);
   };
 
   const buyPlayer = (playerId) => {
@@ -725,8 +774,67 @@ function App() {
               </div>
             )}
 
-            {activeTab === "live" && matchResults && (
+            {activeTab === "live" && (matchResults || matchAction) && (
               <div className="bg-zinc-900 min-h-150 text-zinc-100 font-sans p-6 rounded-3xl border border-zinc-800 shadow-sm relative overflow-hidden">
+                {matchAction && (
+                  <div className="absolute inset-0 z-50 bg-zinc-950/95 backdrop-blur-sm p-6 flex flex-col">
+                    <h2 className="text-3xl font-black text-amber-500 mb-2 tracking-widest text-center uppercase">
+                      {matchAction.type === "injury" ? "LESÃO" : "PENÁLTI"}
+                    </h2>
+                    <p className="text-center text-zinc-400 font-bold mb-2 text-sm">
+                      Minuto {matchAction.minute}'{" "}
+                      {matchAction.currentScore
+                        ? `| ${matchAction.currentScore.home} - ${matchAction.currentScore.away}`
+                        : ""}
+                    </p>
+                    <p className="text-center text-zinc-300 font-black mb-5 text-sm uppercase tracking-widest">
+                      {matchAction.type === "injury"
+                        ? `Jogador lesionado: ${matchAction.injuredPlayer?.name || "?"}`
+                        : "Escolhe o jogador para marcar o penalty"}
+                    </p>
+
+                    <div className="flex-1 overflow-y-auto bg-zinc-900/60 border border-zinc-800 rounded-2xl p-4 mb-5">
+                      <div className="space-y-2">
+                        {(matchAction.type === "injury"
+                          ? matchAction.benchPlayers || []
+                          : matchAction.takerCandidates || []
+                        ).map((player) => (
+                          <button
+                            key={player.id}
+                            onClick={() => handleResolveMatchAction(player.id)}
+                            className="w-full flex items-center justify-between gap-3 px-4 py-3 rounded-xl border border-zinc-800 bg-zinc-950 hover:bg-zinc-800 transition-colors text-left"
+                          >
+                            <span className="font-bold text-white truncate">
+                              {player.name}
+                            </span>
+                            <span className="text-xs font-black uppercase tracking-widest text-zinc-400">
+                              {player.position} · {player.skill}
+                            </span>
+                          </button>
+                        ))}
+                        {((matchAction.type === "injury" &&
+                          (!matchAction.benchPlayers ||
+                            matchAction.benchPlayers.length === 0)) ||
+                          (matchAction.type === "penalty" &&
+                            (!matchAction.takerCandidates ||
+                              matchAction.takerCandidates.length === 0))) && (
+                          <p className="text-center text-zinc-500 font-bold text-sm py-8">
+                            Sem opções disponíveis. O sistema escolherá
+                            automaticamente.
+                          </p>
+                        )}
+                      </div>
+                    </div>
+
+                    <button
+                      onClick={() => handleResolveMatchAction(null)}
+                      className="w-full py-4 rounded-2xl text-lg font-black uppercase tracking-widest transition-all bg-amber-600 hover:bg-amber-500 text-zinc-950"
+                    >
+                      Escolha automática
+                    </button>
+                  </div>
+                )}
+
                 {/* BUG-11 FIX: showHalftimePanel (not liveMinute===45) controls this overlay */}
                 {showHalftimePanel && !isPlayingMatch && (
                   <div className="absolute inset-0 bg-zinc-950/95 z-50 p-6 flex flex-col backdrop-blur-sm">
@@ -889,7 +997,7 @@ function App() {
                                   {aInfo?.name}
                                 </div>
                                 <div className="ml-1 flex-1 min-w-0 px-1 py-1 text-zinc-400 truncate opacity-80">
-                                  {lastEventText ? `⚽ ${lastEventText}` : ""}
+                                  {lastEventText}
                                 </div>
                               </div>
                             );
