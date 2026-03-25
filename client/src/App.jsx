@@ -163,6 +163,9 @@ function App() {
   const [marketSort, setMarketSort] = useState("quality-desc");
   const [selectedAuctionPlayer, setSelectedAuctionPlayer] = useState(null);
   const [auctionBid, setAuctionBid] = useState("");
+  const [nextMatchSummary, setNextMatchSummary] = useState(null);
+  const [nextMatchSummaryLoading, setNextMatchSummaryLoading] = useState(false);
+  const [refereePopup, setRefereePopup] = useState(null);
   const [selectedTeam, setSelectedTeam] = useState(null);
   const [selectedTeamSquad, setSelectedTeamSquad] = useState([]);
   const [selectedTeamLoading, setSelectedTeamLoading] = useState(false);
@@ -242,6 +245,10 @@ function App() {
         setSelectedTeamSquad(squad || []);
         setSelectedTeamLoading(false);
       }
+    });
+    socket.on("nextMatchSummary", (data) => {
+      setNextMatchSummary(data);
+      setNextMatchSummaryLoading(false);
     });
     socket.on("systemMessage", (msg) => addToast(msg));
     socket.on("joinError", (msg) => {
@@ -330,6 +337,7 @@ function App() {
       socket.off("systemMessage");
       socket.off("joinError");
       socket.off("teamSquadData");
+      socket.off("nextMatchSummary");
       socket.off("matchResults");
       socket.off("halfTimeResults");
       socket.off("matchActionRequired");
@@ -352,6 +360,12 @@ function App() {
   useEffect(() => {
     marketPairsRef.current = marketPairs;
   }, [marketPairs]);
+
+  useEffect(() => {
+    if (activeTab !== "squad" || !me?.teamId) return;
+    setNextMatchSummaryLoading(true);
+    socket.emit("requestNextMatchSummary", { teamId: me.teamId });
+  }, [activeTab, me?.teamId, matchweekCount]);
 
   useEffect(() => {
     if (me && !me.teamId && players.length > 0) {
@@ -456,6 +470,8 @@ function App() {
     setSelectedTeamSquad([]);
     setSelectedTeamLoading(false);
   };
+
+  const closeRefereePopup = () => setRefereePopup(null);
 
   const handleResolveMatchAction = (playerId) => {
     if (!matchAction) return;
@@ -796,6 +812,11 @@ function App() {
       }))
       .sort(comparePlayers);
   }, [marketPairs, marketPositionFilter, marketSort, me?.teamId]);
+
+  const nextMatchOpponent = nextMatchSummary?.opponent || null;
+  const nextMatchReferee = nextMatchSummary?.referee || null;
+  const refereeBalance = nextMatchReferee?.balance ?? 50;
+  const refereePicksTeamA = refereeBalance >= 50;
 
   return (
     <div className="min-h-screen bg-zinc-950 text-zinc-100 font-sans pb-12 tracking-tight">
@@ -1702,34 +1723,114 @@ function App() {
                 </p>
               )}
               {activeTab === "squad" && (
-                <div className="w-full mb-4 p-4 rounded-2xl border border-zinc-800 bg-zinc-950/80">
-                  <p className="text-[10px] uppercase tracking-widest text-zinc-500 font-black mb-3">
-                    Tática
-                  </p>
-                  <div className="space-y-3">
-                    <select
-                      className="w-full bg-zinc-950 border border-zinc-700 rounded-lg px-3 py-3 text-sm font-bold text-white focus:ring-2 focus:ring-amber-500"
-                      value={tactic.formation}
-                      onChange={(e) => handleAutoPick(e.target.value)}
-                    >
-                      <option value="4-4-2">4-4-2 Clássico</option>
-                      <option value="4-3-3">4-3-3 Ofensivo</option>
-                      <option value="3-5-2">3-5-2 Controlo da Bola</option>
-                      <option value="5-3-2">5-3-2 Autocarro</option>
-                      <option value="4-5-1">4-5-1 Catenaccio</option>
-                      <option value="3-4-3">3-4-3 Ataque Total</option>
-                      <option value="4-2-4">4-2-4 Avassalador</option>
-                      <option value="5-4-1">5-4-1 Ferrolho</option>
-                    </select>
-                    <select
-                      className="w-full bg-zinc-950 border border-zinc-700 rounded-lg px-3 py-3 text-sm font-bold text-emerald-400 focus:ring-2 focus:ring-amber-500"
-                      value={tactic.style}
-                      onChange={(e) => updateTactic({ style: e.target.value })}
-                    >
-                      <option value="Balanced">Equilibrado</option>
-                      <option value="Offensive">Ofensivo (+15% Atk)</option>
-                      <option value="Defensive">Defensivo (+20% Def)</option>
-                    </select>
+                <div className="w-full mb-4 space-y-4">
+                  <div className="p-4 rounded-2xl border border-zinc-800 bg-zinc-950/80">
+                    <p className="text-[10px] uppercase tracking-widest text-zinc-500 font-black mb-3">
+                      Próximo Jogo
+                    </p>
+                    {nextMatchSummaryLoading && !nextMatchSummary ? (
+                      <div className="text-sm font-bold text-zinc-500 py-2">
+                        A carregar resumo...
+                      </div>
+                    ) : nextMatchOpponent ? (
+                      <div className="space-y-3 text-sm">
+                        <div className="flex items-start justify-between gap-3">
+                          <div>
+                            <p className="text-zinc-500 text-[10px] uppercase tracking-widest font-black">
+                              Adversário
+                            </p>
+                            <p className="text-white font-black text-base leading-tight">
+                              {nextMatchOpponent.name}
+                            </p>
+                          </div>
+                          <div className="text-right">
+                            <p className="text-zinc-500 text-[10px] uppercase tracking-widest font-black">
+                              Classificação
+                            </p>
+                            <p className="text-amber-400 font-black text-base">
+                              {nextMatchOpponent.position
+                                ? `${nextMatchOpponent.position}º`
+                                : "-"}
+                            </p>
+                          </div>
+                        </div>
+                        <div className="flex items-center justify-between gap-3">
+                          <p className="text-zinc-500 text-[10px] uppercase tracking-widest font-black">
+                            Últimos 5
+                          </p>
+                          <div className="flex gap-1.5 font-black tracking-[0.35em] text-xs">
+                            {(nextMatchOpponent.last5 || "-----")
+                              .split("")
+                              .slice(0, 5)
+                              .map((result, index) => (
+                                <span
+                                  key={`${result}-${index}`}
+                                  className={`w-7 h-7 rounded-full flex items-center justify-center border ${result === "V" ? "bg-emerald-500/15 text-emerald-400 border-emerald-500/30" : result === "E" ? "bg-amber-500/15 text-amber-400 border-amber-500/30" : result === "D" ? "bg-red-500/15 text-red-400 border-red-500/30" : "bg-zinc-900 text-zinc-600 border-zinc-800"}`}
+                                >
+                                  {result}
+                                </span>
+                              ))}
+                          </div>
+                        </div>
+                        <p className="text-xs text-zinc-500 font-bold">
+                          {nextMatchOpponent.last5 || "Sem histórico ainda."}
+                        </p>
+                        <div className="pt-2 border-t border-zinc-800/80">
+                          <p className="text-zinc-500 text-[10px] uppercase tracking-widest font-black mb-2">
+                            Árbitro
+                          </p>
+                          <button
+                            type="button"
+                            onClick={() => setRefereePopup(nextMatchReferee)}
+                            className="flex w-full items-center justify-between gap-3 rounded-xl border border-zinc-800 bg-zinc-950 px-3 py-2.5 text-left hover:border-amber-500/40 transition-colors"
+                          >
+                            <span className="font-black text-white text-sm">
+                              {nextMatchReferee?.name || "A definir"}
+                            </span>
+                            <span className="text-[10px] uppercase tracking-widest font-black text-amber-400">
+                              Ver balança
+                            </span>
+                          </button>
+                        </div>
+                      </div>
+                    ) : (
+                      <div className="text-sm font-bold text-zinc-500 py-2">
+                        Sem resumo disponível.
+                      </div>
+                    )}
+                  </div>
+
+                  <div className="p-4 rounded-2xl border border-zinc-800 bg-zinc-950/80">
+                    <p className="text-[10px] uppercase tracking-widest text-zinc-500 font-black mb-3">
+                      Tática
+                    </p>
+                    <div className="space-y-3">
+                      <select
+                        className="w-full bg-zinc-950 border border-zinc-700 rounded-lg px-3 py-3 text-sm font-bold text-white focus:ring-2 focus:ring-amber-500"
+                        value={tactic.formation}
+                        onChange={(e) => handleAutoPick(e.target.value)}
+                      >
+                        <option value="4-4-2">4-4-2 Clássico</option>
+                        <option value="4-3-3">4-3-3 Ofensivo</option>
+                        <option value="3-5-2">3-5-2 Controlo da Bola</option>
+                        <option value="5-3-2">5-3-2 Autocarro</option>
+                        <option value="4-5-1">4-5-1 Catenaccio</option>
+                        <option value="3-4-3">3-4-3 Ataque Total</option>
+                        <option value="4-2-4">4-2-4 Avassalador</option>
+                        <option value="5-4-1">5-4-1 Ferrolho</option>
+                      </select>
+                      <select
+                        className="w-full bg-zinc-950 border border-zinc-700 rounded-lg px-3 py-3 text-sm font-bold text-emerald-400 focus:ring-2 focus:ring-amber-500"
+                        value={tactic.style}
+                        onChange={(e) =>
+                          updateTactic({ style: e.target.value })
+                        }
+                      >
+                        <option value="Balanced">Equilibrado</option>
+                        <option value="Offensive">Ofensivo (+15% Atk)</option>
+                        <option value="Defensive">Defensivo (+20% Def)</option>
+                      </select>
+                    </div>
                   </div>
                 </div>
               )}
@@ -1991,6 +2092,65 @@ function App() {
                 O leilão termina automaticamente quando o tempo acabar. O melhor
                 lance vence.
               </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {refereePopup && (
+        <div
+          className="fixed inset-0 z-130 bg-zinc-950/80 backdrop-blur-sm flex items-center justify-center p-4"
+          onClick={closeRefereePopup}
+        >
+          <div
+            className="w-full max-w-md rounded-3xl border border-zinc-800 bg-zinc-900 shadow-2xl overflow-hidden"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <div className="p-5 border-b border-zinc-800 bg-zinc-950/50">
+              <p className="text-[10px] uppercase tracking-widest text-zinc-500 font-black mb-2">
+                Árbitro
+              </p>
+              <h3 className="text-2xl font-black text-white">
+                {refereePopup.name}
+              </h3>
+            </div>
+            <div className="p-5 space-y-4">
+              <div className="flex items-center justify-between text-xs uppercase tracking-widest font-black text-zinc-500">
+                <span>{teamInfo?.name || "Equipa A"}</span>
+                <span>{nextMatchOpponent?.name || "Equipa B"}</span>
+              </div>
+              <div className="relative h-4 rounded-full bg-zinc-950 border border-zinc-800 overflow-hidden">
+                <div
+                  className="absolute inset-y-0 left-0 bg-emerald-500/80"
+                  style={{ width: `${refereePopup.balance}%` }}
+                ></div>
+                <div className="absolute left-1/2 top-0 bottom-0 w-px bg-white/40"></div>
+                <div
+                  className="absolute -top-2 h-8 w-1 rounded-full bg-amber-400 shadow-[0_0_0_4px_rgba(251,191,36,0.18)]"
+                  style={{ left: `calc(${refereePopup.balance}% - 2px)` }}
+                ></div>
+              </div>
+              <div className="flex items-center justify-between text-sm font-black">
+                <span className="text-emerald-400">
+                  {refereePopup.balance >= 50
+                    ? `${teamInfo?.name || "Equipa A"} ganha vantagem`
+                    : `${nextMatchOpponent?.name || "Equipa B"} ganha vantagem`}
+                </span>
+                <span className="text-zinc-400">{refereePopup.balance}%</span>
+              </div>
+              <p className="text-sm text-zinc-400 leading-relaxed">
+                A balança mostra para que lado este árbitro tende a inclinar a
+                partida. Valores acima de 50 favorecem a tua equipa; abaixo de
+                50 favorecem o adversário. Isso pode mexer nos cartões e nos
+                penaltis assinalados.
+              </p>
+              <button
+                type="button"
+                onClick={closeRefereePopup}
+                className="w-full rounded-2xl bg-amber-500 px-4 py-3 font-black uppercase tracking-widest text-zinc-950"
+              >
+                Fechar
+              </button>
             </div>
           </div>
         </div>

@@ -81,6 +81,219 @@ function getSeasonEndMatchweek(matchweek) {
   return Math.ceil(Math.max(1, matchweek) / 14) * 14;
 }
 
+const refereeNames = [
+  "Afonso Pereira",
+  "Bruno Almeida",
+  "Carlos Nogueira",
+  "Diogo Valente",
+  "Eduardo Matos",
+  "Filipe Santos",
+  "Gonçalo Ribeiro",
+  "Hugo Carvalho",
+  "Inácio Moreira",
+  "João Varela",
+  "Leandro Costa",
+  "Miguel Teixeira",
+  "Nuno Figueiredo",
+  "Óscar Pires",
+  "Pedro Cunha",
+  "Rafael Martins",
+  "Sérgio Lima",
+  "Tiago Fernandes",
+  "Ulisses Rocha",
+  "Vasco Mendes",
+  "Xavier Correia",
+  "Yuri Lopes",
+  "Zé Monteiro",
+  "André Simões",
+  "Bernardo Fonseca",
+  "César Tavares",
+  "Daniel Ribeiro",
+  "Elias Pinto",
+  "Francisco Lobo",
+  "Guilherme Serra",
+  "Henrique Antunes",
+  "Isaac Barros",
+];
+
+function hashString(input = "") {
+  let hash = 0;
+  for (let index = 0; index < input.length; index += 1) {
+    hash = (hash * 31 + input.charCodeAt(index)) >>> 0;
+  }
+  return hash;
+}
+
+function runAll(db, sql, params = []) {
+  return new Promise((resolve, reject) => {
+    db.all(sql, params, (err, rows) => {
+      if (err) return reject(err);
+      resolve(rows || []);
+    });
+  });
+}
+
+function runGet(db, sql, params = []) {
+  return new Promise((resolve, reject) => {
+    db.get(sql, params, (err, row) => {
+      if (err) return reject(err);
+      resolve(row || null);
+    });
+  });
+}
+
+function getStandingsRows(teams = []) {
+  return [...teams].sort((a, b) => {
+    const aGoalDifference = (a.goals_for || 0) - (a.goals_against || 0);
+    const bGoalDifference = (b.goals_for || 0) - (b.goals_against || 0);
+    return (
+      (b.points || 0) - (a.points || 0) ||
+      bGoalDifference - aGoalDifference ||
+      (b.goals_for || 0) - (a.goals_for || 0) ||
+      String(a.name || "").localeCompare(String(b.name || ""))
+    );
+  });
+}
+
+function pickRefereeSummary(roomCode, teamId, opponentId, matchweek) {
+  const seed = hashString(`${roomCode}:${matchweek}:${teamId}:${opponentId}`);
+  const refereeName = refereeNames[seed % refereeNames.length];
+  const biasSeed = hashString(
+    `${refereeName}:${teamId}:${opponentId}:${roomCode}`,
+  );
+  const balance = 20 + (biasSeed % 61);
+  return {
+    refereeName,
+    balance,
+    favorsTeamA: balance >= 50,
+  };
+}
+
+async function getTeamRecentResults(game, teamId, limit = 5) {
+  const rows = await runAll(
+    game.db,
+    `SELECT m.matchweek, m.home_team_id, m.away_team_id, m.home_score, m.away_score,
+            h.name AS home_name, a.name AS away_name
+     FROM matches m
+     LEFT JOIN teams h ON h.id = m.home_team_id
+     LEFT JOIN teams a ON a.id = m.away_team_id
+     WHERE m.played = 1 AND (m.home_team_id = ? OR m.away_team_id = ?)
+     ORDER BY m.matchweek DESC, m.id DESC
+     LIMIT ?`,
+    [teamId, teamId, limit],
+  );
+
+  const recent = rows.map((row) => {
+    const isHome = row.home_team_id === teamId;
+    const goalsFor = isHome ? row.home_score : row.away_score;
+    const goalsAgainst = isHome ? row.away_score : row.home_score;
+    if (goalsFor > goalsAgainst) return "V";
+    if (goalsFor < goalsAgainst) return "D";
+    return "E";
+  });
+
+  return recent.join("");
+}
+
+async function buildNextMatchSummary(game, teamId) {
+  const team = await runGet(game.db, "SELECT * FROM teams WHERE id = ?", [
+    teamId,
+  ]);
+  if (!team) return null;
+
+  const standings = getStandingsRows(
+    await runAll(
+      game.db,
+      "SELECT id, name, division, points, wins, draws, losses, goals_for, goals_against FROM teams WHERE division = ?",
+      [team.division],
+    ),
+  );
+  const standingsIndex = new Map(
+    standings.map((standingTeam, index) => [standingTeam.id, index + 1]),
+  );
+
+  const fixtures = await generateFixturesForDivision(
+    game.db,
+    team.division,
+    game.matchweek,
+  );
+  const fixture = fixtures.find(
+    (entry) => entry.homeTeamId === team.id || entry.awayTeamId === team.id,
+  );
+  if (!fixture) return null;
+
+  const opponentId =
+    fixture.homeTeamId === team.id ? fixture.awayTeamId : fixture.homeTeamId;
+  const opponent = await runGet(game.db, "SELECT * FROM teams WHERE id = ?", [
+    opponentId,
+  ]);
+  if (!opponent) return null;
+
+  const referee = pickRefereeSummary(
+    game.roomCode,
+    team.id,
+    opponent.id,
+    game.matchweek,
+  );
+
+  return {
+    matchweek: game.matchweek,
+    team: {
+      id: team.id,
+      name: team.name,
+      division: team.division,
+      position: standingsIndex.get(team.id) || null,
+    },
+    opponent: {
+      id: opponent.id,
+      name: opponent.name,
+      division: opponent.division,
+      position: standingsIndex.get(opponent.id) || null,
+      points: opponent.points || 0,
+      goalsFor: opponent.goals_for || 0,
+      goalsAgainst: opponent.goals_against || 0,
+      last5: await getTeamRecentResults(game, opponent.id, 5),
+    },
+    referee,
+  };
+}
+
+function persistMatchResults(game, fixtures, matchweek, onDone) {
+  let remaining = fixtures.length;
+  if (remaining === 0) {
+    if (onDone) onDone();
+    return;
+  }
+
+  game.db.serialize(() => {
+    fixtures.forEach((match) => {
+      game.db.run(
+        "DELETE FROM matches WHERE matchweek = ? AND home_team_id = ? AND away_team_id = ? AND competition = 'League'",
+        [game.matchweek, match.homeTeamId, match.awayTeamId],
+        () => {
+          game.db.run(
+            `INSERT INTO matches (
+              matchweek, home_team_id, away_team_id, home_score, away_score, played, narrative, competition
+            ) VALUES (?, ?, ?, ?, ?, 1, ?, 'League')`,
+            [
+              game.matchweek,
+              match.homeTeamId,
+              match.awayTeamId,
+              match.finalHomeGoals,
+              match.finalAwayGoals,
+              JSON.stringify(match.events || []),
+            ],
+            () => {
+              remaining -= 1;
+              if (remaining === 0 && onDone) onDone();
+            },
+          );
+        },
+      );
+    });
+  });
+}
+
 function refreshMarket(game, emitToRoom = true) {
   game.db.all(
     `SELECT p.*, t.name as team_name, t.color_primary, t.color_secondary
@@ -521,6 +734,24 @@ io.on("connection", (socket) => {
         },
       );
     });
+  });
+
+  socket.on("requestNextMatchSummary", async ({ teamId }) => {
+    const game = getGameBySocket(socket.id);
+    if (!game) return;
+    const playerState = getPlayerBySocket(game, socket.id);
+    if (!playerState) return;
+
+    try {
+      const summary = await buildNextMatchSummary(
+        game,
+        playerState.teamId || teamId,
+      );
+      socket.emit("nextMatchSummary", summary);
+    } catch (error) {
+      console.error(`[${game.roomCode}] nextMatchSummary error:`, error);
+      socket.emit("nextMatchSummary", null);
+    }
   });
 
   // ── HELPERS ────────────────────────────────────────────────────────────────
@@ -1100,50 +1331,57 @@ async function processSegment(game, startMin, endMin, nextState) {
         // Only advance state after a successful commit so that clients always
         // receive accurate, persisted standings data.
         game.matchState = nextState;
+        const completedMatchweek = game.matchweek;
 
         io.to(game.roomCode).emit("matchResults", {
-          matchweek: game.matchweek,
+          matchweek: completedMatchweek,
           results: game.fixtures,
         });
+
         connectedPlayers.forEach((p) => {
           p.ready = false;
         });
         game.matchweek++;
         saveGameState(game);
 
-        applyPostMatchQualityEvolution(
-          game.db,
-          game.fixtures,
-          game.matchweek,
-        ).then(() => {
-          game.db.all("SELECT * FROM teams", (err2, teams) => {
-            if (!err2) io.to(game.roomCode).emit("teamsData", teams);
+        persistMatchResults(game, game.fixtures, completedMatchweek, () => {
+          applyPostMatchQualityEvolution(game.db, game.fixtures, game.matchweek)
+            .then(() => {
+              game.db.all("SELECT * FROM teams", (err2, teams) => {
+                if (!err2) io.to(game.roomCode).emit("teamsData", teams);
 
-            game.db.all(
-              "SELECT p.id, p.name, p.position, p.goals, p.team_id, t.name as team_name, t.color_primary, t.color_secondary FROM players p LEFT JOIN teams t ON p.team_id = t.id WHERE p.goals > 0 ORDER BY p.goals DESC, p.skill DESC LIMIT 20",
-              (err3, scorers) => {
-                io.to(game.roomCode).emit("topScorers", scorers || []);
+                game.db.all(
+                  "SELECT p.id, p.name, p.position, p.goals, p.team_id, t.name as team_name, t.color_primary, t.color_secondary FROM players p LEFT JOIN teams t ON p.team_id = t.id WHERE p.goals > 0 ORDER BY p.goals DESC, p.skill DESC LIMIT 20",
+                  (err3, scorers) => {
+                    io.to(game.roomCode).emit("topScorers", scorers || []);
 
-                connectedPlayers.forEach((player) => {
-                  if (!player.socketId) return;
-                  game.db.all(
-                    "SELECT * FROM players WHERE team_id = ?",
-                    [player.teamId],
-                    (err4, squad) => {
-                      if (!err4) {
-                        io.to(player.socketId).emit("mySquad", squad || []);
-                      }
-                    },
-                  );
-                });
+                    connectedPlayers.forEach((player) => {
+                      if (!player.socketId) return;
+                      game.db.all(
+                        "SELECT * FROM players WHERE team_id = ?",
+                        [player.teamId],
+                        (err4, squad) => {
+                          if (!err4) {
+                            io.to(player.socketId).emit("mySquad", squad || []);
+                          }
+                        },
+                      );
+                    });
 
-                io.to(game.roomCode).emit(
-                  "playerListUpdate",
-                  getPlayerList(game),
+                    io.to(game.roomCode).emit(
+                      "playerListUpdate",
+                      getPlayerList(game),
+                    );
+                  },
                 );
-              },
-            );
-          });
+              });
+            })
+            .catch((error) => {
+              console.error(
+                `[${game.roomCode}] Post-match evolution error:`,
+                error,
+              );
+            });
         });
       });
     });
