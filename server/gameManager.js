@@ -2,7 +2,7 @@ const sqlite3 = require('sqlite3').verbose();
 const fs = require('fs');
 const path = require('path');
 
-const activeGames = {}; // { roomCode: { db, players: {}, matchweek: 1, globalMarket: [], initialized: false } }
+const activeGames = {}; // { roomCode: { db, players: {}, matchweek, matchState, globalMarket, fixtures } }
 
 function getGame(roomCode) {
   if (activeGames[roomCode]) return activeGames[roomCode];
@@ -24,17 +24,34 @@ function getGame(roomCode) {
     db,
     players: {}, 
     matchweek: 1,
+    matchState: 'idle',
     globalMarket: [],
+    fixtures: [],
     initialized: false
   };
 
-  db.all('SELECT * FROM players ORDER BY RANDOM() LIMIT 20', (err, rows) => {
-    if (!err) game.globalMarket = rows;
+  // Load persisted state from DB
+  db.get("SELECT value FROM game_state WHERE key = 'matchweek'", (err, row) => {
+    if (row) game.matchweek = parseInt(row.value) || 1;
+  });
+  
+  db.get("SELECT value FROM game_state WHERE key = 'matchState'", (err, row) => {
+    if (row) game.matchState = row.value || 'idle';
+  });
+
+  // Load free agents for market (only unassigned players)
+  db.all('SELECT * FROM players WHERE team_id IS NULL ORDER BY RANDOM() LIMIT 20', (err, rows) => {
+    if (!err && rows) game.globalMarket = rows;
     game.initialized = true;
   });
 
   activeGames[roomCode] = game;
   return game;
+}
+
+function saveGameState(game) {
+  game.db.run("INSERT OR REPLACE INTO game_state (key, value) VALUES ('matchweek', ?)", [String(game.matchweek)]);
+  game.db.run("INSERT OR REPLACE INTO game_state (key, value) VALUES ('matchState', ?)", [game.matchState]);
 }
 
 function getGameBySocket(socketId) {
@@ -46,4 +63,4 @@ function getGameBySocket(socketId) {
   return null;
 }
 
-module.exports = { getGame, getGameBySocket, activeGames };
+module.exports = { getGame, getGameBySocket, saveGameState, activeGames };

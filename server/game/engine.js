@@ -3,14 +3,17 @@ async function getTeamSquad(db, teamId, tactic) {
     db.all('SELECT * FROM players WHERE team_id = ?', [teamId], (err, rows) => {
       if (err) return reject(err);
       
+      // If tactic has explicit position assignments, use them
       if (tactic && tactic.positions) {
          const lineup = rows.filter(p => tactic.positions[p.id] === 'Titular');
          if (lineup.length === 11) return resolve(lineup);
       }
       
+      // Auto-pick best 11 based on formation
       const sorted = rows.sort((a, b) => (b.skill * b.form) - (a.skill * a.form));
       const lineup = [];
-      const parts = (tactic?.formation || '4-4-2').split('-');
+      const formationStr = (tactic && tactic.formation) ? tactic.formation : '4-4-2';
+      const parts = formationStr.split('-');
       const positions = { 'GK': 1, 'DEF': parseInt(parts[0]), 'MID': parseInt(parts[1]), 'ATK': parseInt(parts[2]) };
       const currentPos = { 'GK': 0, 'DEF': 0, 'MID': 0, 'ATK': 0 };
       
@@ -32,29 +35,64 @@ async function getTeamSquad(db, teamId, tactic) {
   });
 }
 
-async function generateFixturesForDivision(db, division) {
+/**
+ * Generate round-robin fixtures for a division for a given matchweek.
+ * Uses the circle method: fix team[0], rotate the rest.
+ * 8 teams => 14 matchweeks (7 rounds × 2 for home/away swap).
+ */
+async function generateFixturesForDivision(db, division, matchweek) {
   return new Promise((resolve) => {
-    db.all('SELECT id FROM teams WHERE division = ?', [division], (err, teams) => {
-      const fixtures = [];
-      const used = new Set();
-      for (let i = 0; i < teams.length; i++) {
-        if (!used.has(teams[i].id)) {
-           used.add(teams[i].id);
-           let opponent = teams.find(t => !used.has(t.id) && t.id !== teams[i].id);
-           if (opponent) {
-             used.add(opponent.id);
-             fixtures.push({ homeTeamId: teams[i].id, awayTeamId: opponent.id, finalHomeGoals: 0, finalAwayGoals: 0, events: [] });
-           }
-        }
+    db.all('SELECT id FROM teams WHERE division = ? ORDER BY id', [division], (err, teams) => {
+      if (err || !teams || teams.length < 2) return resolve([]);
+      
+      const n = teams.length; // 8
+      const rounds = n - 1;   // 7 unique rounds
+      
+      // Determine which round and whether to flip home/away
+      // matchweek 1-7: first leg, matchweek 8-14: second leg (home/away swapped)
+      const isSecondLeg = matchweek > rounds;
+      const round = isSecondLeg ? (matchweek - rounds - 1) : (matchweek - 1); // 0-indexed
+      
+      // Circle method: fix teams[0], rotate teams[1..n-1]
+      const rotating = teams.slice(1);
+      
+      // Rotate the array by 'round' positions
+      const rotated = [];
+      for (let i = 0; i < rotating.length; i++) {
+        rotated.push(rotating[(i + round) % rotating.length]);
       }
+      
+      // Build pairings: teams[0] vs rotated[0], rotated[1] vs rotated[n-2], etc.
+      const allTeams = [teams[0], ...rotated];
+      const fixtures = [];
+      
+      for (let i = 0; i < n / 2; i++) {
+        let homeTeam = allTeams[i];
+        let awayTeam = allTeams[n - 1 - i];
+        
+        // Swap home/away for second leg
+        if (isSecondLeg) {
+          [homeTeam, awayTeam] = [awayTeam, homeTeam];
+        }
+        
+        fixtures.push({
+          homeTeamId: homeTeam.id,
+          awayTeamId: awayTeam.id,
+          finalHomeGoals: 0,
+          finalAwayGoals: 0,
+          events: []
+        });
+      }
+      
       resolve(fixtures);
     });
   });
 }
 
 async function simulateMatchSegment(db, fixture, homeTactic, awayTactic, startMin, endMin) {
-  const homeSquad = await getTeamSquad(db, fixture.homeTeamId, homeTactic.formation);
-  const awaySquad = await getTeamSquad(db, fixture.awayTeamId, awayTactic.formation);
+  // BUG-08 FIX: Pass full tactic objects to getTeamSquad (not .formation string)
+  const homeSquad = await getTeamSquad(db, fixture.homeTeamId, homeTactic);
+  const awaySquad = await getTeamSquad(db, fixture.awayTeamId, awayTactic);
   
   const getPower = (squad, style) => {
     let attack = 0, defense = 0, midfield = 0, gk = 0;

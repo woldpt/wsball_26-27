@@ -28,6 +28,7 @@ db.serialize(() => {
   db.run('DELETE FROM players');
   db.run('DELETE FROM teams');
   db.run('DELETE FROM managers');
+  db.run('DELETE FROM game_state');
 
   console.log('Seeding 32 fictitious teams and 512 players across 4 divisions (Base DB)...');
   
@@ -67,6 +68,25 @@ db.serialize(() => {
       managerId++;
     });
   }
+
+  // Generate 30 free agents for the transfer market
+  const freePositions = ['GK', 'DEF', 'DEF', 'MID', 'MID', 'MID', 'ATK', 'ATK'];
+  for (let i = 0; i < 30; i++) {
+    const name = getRandomName();
+    const pos = freePositions[Math.floor(Math.random() * freePositions.length)];
+    let skill = Math.floor(Math.random() * 35) + 5; // 5-39 (no top-tier free agents)
+    const age = Math.floor(Math.random() * 16) + 18;
+    const form = Math.floor(Math.random() * 20) + 80;
+    const agg = aggressivenessLevels[Math.floor(Math.random() * aggressivenessLevels.length)];
+    const nat = nationalities[Math.floor(Math.random() * nationalities.length)];
+    const value = skill * 5000;
+    const wage = skill * 50;
+    insertPlayer.run(name, pos, skill, age, form, agg, nat, value, wage, null); // team_id = null = free agent
+  }
+
+  // Initialize game state defaults
+  db.run("INSERT INTO game_state (key, value) VALUES ('matchweek', '1')");
+  db.run("INSERT INTO game_state (key, value) VALUES ('matchState', 'idle')");
 
   insertManager.finalize();
   insertTeam.finalize();

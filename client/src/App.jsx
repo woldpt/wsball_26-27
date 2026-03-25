@@ -80,6 +80,10 @@ function App() {
     socket.on('marketUpdate', (data) => setMarketPairs(data));
     socket.on('systemMessage', (msg) => alert(msg));
     
+    socket.on('gameState', (data) => {
+      if (data.matchweek) setMatchweekCount(data.matchweek - 1);
+    });
+
     socket.on('halfTimeResults', (data) => {
       setMatchResults(data);
       setLiveMinute(0);
@@ -92,7 +96,7 @@ function App() {
 
     socket.on('matchResults', (data) => {
       setMatchResults(data);
-      setMatchweekCount((prev) => prev + 1);
+      setMatchweekCount(data.matchweek); // Use server matchweek (pre-increment)
       setLiveMinute(45);
       setIsPlayingMatch(true);
       setActiveTab('live');
@@ -103,6 +107,7 @@ function App() {
       socket.off('teamsData'); socket.off('playerListUpdate');
       socket.off('mySquad'); socket.off('marketUpdate');
       socket.off('systemMessage'); socket.off('matchResults');
+      socket.off('halfTimeResults'); socket.off('gameState');
     };
   }, [me]);
 
@@ -332,7 +337,11 @@ function App() {
                   </div>
                   <div className="bg-amber-500 p-6 rounded-3xl border border-amber-400 text-zinc-950 flex flex-col justify-center items-center">
                     <p className="text-sm uppercase font-black tracking-widest opacity-80 mb-1">Classificação</p>
-                    <p className="text-6xl font-black">1º</p>
+                    <p className="text-6xl font-black">{(() => {
+                      const divTeams = teams.filter(t => t.division === teamInfo?.division).sort((a,b) => (b.points||0) - (a.points||0) || ((b.goals_for||0)-(b.goals_against||0)) - ((a.goals_for||0)-(a.goals_against||0)));
+                      const pos = divTeams.findIndex(t => t.id === me.teamId) + 1;
+                      return pos > 0 ? `${pos}º` : '-';
+                    })()}</p>
                   </div>
                 </div>
                 

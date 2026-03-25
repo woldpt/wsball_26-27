@@ -49,3 +49,8 @@ CREATE TABLE IF NOT EXISTS matches (
   FOREIGN KEY(home_team_id) REFERENCES teams(id),
   FOREIGN KEY(away_team_id) REFERENCES teams(id)
 );
+
+CREATE TABLE IF NOT EXISTS game_state (
+  key TEXT PRIMARY KEY,
+  value TEXT
+);
