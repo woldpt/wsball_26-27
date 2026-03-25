@@ -108,6 +108,8 @@ function App() {
   const [activeTab, setActiveTab] = useState("dashboard");
   const [topScorers, setTopScorers] = useState([]);
   const [marketPairs, setMarketPairs] = useState([]);
+  const [selectedAuctionPlayer, setSelectedAuctionPlayer] = useState(null);
+  const [auctionBid, setAuctionBid] = useState("");
   const [selectedTeam, setSelectedTeam] = useState(null);
   const [selectedTeamSquad, setSelectedTeamSquad] = useState([]);
   const [selectedTeamLoading, setSelectedTeamLoading] = useState(false);
@@ -124,6 +126,7 @@ function App() {
   const [subbedOut, setSubbedOut] = useState([]); // Track players who left the pitch
   const meRef = React.useRef(null);
   const selectedTeamRef = React.useRef(null);
+  const marketPairsRef = React.useRef([]);
 
   const backendUrl =
     (typeof import.meta !== "undefined" && import.meta.env?.VITE_BACKEND_URL) ||
@@ -163,6 +166,22 @@ function App() {
     });
     socket.on("mySquad", (data) => setMySquad(data));
     socket.on("marketUpdate", (data) => setMarketPairs(data));
+    socket.on("auctionUpdate", (auction) => {
+      const marketPlayer = marketPairsRef.current.find(
+        (p) => p.id === auction.playerId,
+      );
+      if (marketPlayer) {
+        setSelectedAuctionPlayer({ ...marketPlayer, ...auction });
+      } else {
+        setSelectedAuctionPlayer((prev) =>
+          prev?.id === auction.playerId ? { ...prev, ...auction } : prev,
+        );
+      }
+    });
+    socket.on("auctionClosed", ({ playerId }) => {
+      setSelectedAuctionPlayer((prev) => (prev?.id === playerId ? null : prev));
+      setAuctionBid("");
+    });
     socket.on("topScorers", (data) => setTopScorers(data));
     socket.on("teamSquadData", ({ teamId, squad }) => {
       if (selectedTeamRef.current && selectedTeamRef.current.id === teamId) {
@@ -245,6 +264,8 @@ function App() {
       socket.off("playerListUpdate");
       socket.off("mySquad");
       socket.off("marketUpdate");
+      socket.off("auctionUpdate");
+      socket.off("auctionClosed");
       socket.off("systemMessage");
       socket.off("joinError");
       socket.off("teamSquadData");
@@ -266,6 +287,10 @@ function App() {
   useEffect(() => {
     selectedTeamRef.current = selectedTeam;
   }, [selectedTeam]);
+
+  useEffect(() => {
+    marketPairsRef.current = marketPairs;
+  }, [marketPairs]);
 
   useEffect(() => {
     if (me && !me.teamId && players.length > 0) {
@@ -353,182 +378,13 @@ function App() {
   };
 
   const handleResolveMatchAction = (playerId) => {
-    if (!matchAction || !me?.teamId) return;
+    if (!matchAction) return;
     socket.emit("resolveMatchAction", {
       actionId: matchAction.actionId,
-      teamId: me.teamId,
+      teamId: matchAction.teamId,
       playerId,
     });
-    setMatchAction(null);
   };
-
-  const buyPlayer = (playerId) => {
-    if (
-      confirm(
-        "Fazer proposta de transferência por este jogador? (+20% prémio de assinatura)",
-      )
-    ) {
-      socket.emit("buyPlayer", playerId);
-    }
-  };
-
-  const renewPlayerContract = (player) => {
-    const defaultWage = Math.max(
-      Math.round((player.wage || 0) * 1.15),
-      Math.round((player.skill || 0) * 70),
-    );
-    const wage = window.prompt(
-      `Novo salário semanal para ${player.name} (€/semana)`,
-      String(defaultWage),
-    );
-    if (wage === null) return;
-    const offeredWage = Number(wage);
-    if (!Number.isFinite(offeredWage) || offeredWage <= 0) return;
-    socket.emit("renewContract", { playerId: player.id, offeredWage });
-  };
-
-  const listPlayerAuction = (player) => {
-    if (confirm(`Enviar ${player.name} para leilão imediato?`)) {
-      socket.emit("listPlayerForTransfer", {
-        playerId: player.id,
-        mode: "auction",
-      });
-    }
-  };
-
-  const listPlayerFixed = (player) => {
-    const defaultPrice = Math.round((player.value || 0) * 1.1);
-    const price = window.prompt(
-      `Preço fixo para ${player.name} (€)`,
-      String(defaultPrice),
-    );
-    if (price === null) return;
-    const fixedPrice = Number(price);
-    if (!Number.isFinite(fixedPrice) || fixedPrice <= 0) return;
-    socket.emit("listPlayerForTransfer", {
-      playerId: player.id,
-      mode: "fixed",
-      price: fixedPrice,
-    });
-  };
-
-  const updateTactic = useCallback((updates) => {
-    setTactic((prev) => {
-      const newTactic = { ...prev, ...updates };
-      socket.emit("setTactic", newTactic);
-      return newTactic;
-    });
-  }, []);
-
-  const handleAutoPick = useCallback(
-    (formationStr = tactic.formation) => {
-      const sorted = [...mySquad].sort(
-        (a, b) => b.skill * (b.form / 100) - a.skill * (a.form / 100),
-      );
-      const parts = formationStr.split("-");
-      const req = {
-        GK: 1,
-        DEF: parseInt(parts[0]),
-        MID: parseInt(parts[1]),
-        ATK: parseInt(parts[2]),
-      };
-      const filled = { GK: 0, DEF: 0, MID: 0, ATK: 0 };
-
-      const newPos = {};
-      let bench = 5;
-
-      sorted.forEach((p) => {
-        if (filled[p.position] < req[p.position]) {
-          newPos[p.id] = "Titular";
-          filled[p.position]++;
-        } else if (bench > 0) {
-          newPos[p.id] = "Suplente";
-          bench--;
-        } else {
-          newPos[p.id] = "Reserva";
-        }
-      });
-
-      const tits = Object.values(newPos).filter((v) => v === "Titular").length;
-      if (tits < 11) {
-        sorted.forEach((p) => {
-          if (
-            newPos[p.id] !== "Titular" &&
-            Object.values(newPos).filter((v) => v === "Titular").length < 11
-          ) {
-            newPos[p.id] = "Titular";
-          }
-        });
-      }
-      updateTactic({ formation: formationStr, positions: newPos });
-    },
-    [mySquad, tactic.formation, updateTactic],
-  );
-
-  useEffect(() => {
-    if (mySquad.length > 0 && !tactic.positions) {
-      handleAutoPick();
-    }
-  }, [mySquad, tactic.positions, handleAutoPick]);
-
-  const handleSubSwap = (playerId) => {
-    if (activeTab === "live" && subbedOut.includes(playerId)) {
-      return; // Cannnot select a player that already left the pitch
-    }
-
-    if (!swapSource) {
-      setSwapSource(playerId);
-    } else {
-      if (swapSource === playerId) {
-        setSwapSource(null);
-      } else {
-        if (activeTab === "live" && subsMade >= 3) {
-          addToast("Já fizeste as 3 substituições permitidas!");
-          setSwapSource(null);
-          return;
-        }
-
-        const currentSourceStatus = tactic.positions[swapSource] || "Reserva";
-        const currentTargetStatus = tactic.positions[playerId] || "Reserva";
-
-        if (activeTab === "live") {
-          const goingOutId =
-            currentSourceStatus === "Titular"
-              ? swapSource
-              : currentTargetStatus === "Titular"
-                ? playerId
-                : null;
-          if (goingOutId) {
-            setSubbedOut((prev) => [...prev, goingOutId]);
-          }
-          setSubsMade((s) => s + 1);
-        }
-
-        const newPos = { ...tactic.positions };
-        const temp = newPos[swapSource];
-        newPos[swapSource] = newPos[playerId];
-        newPos[playerId] = temp;
-
-        updateTactic({ positions: newPos });
-        setSwapSource(null);
-      }
-    }
-  };
-
-  const annotatedSquad = useMemo(() => {
-    if (!tactic.positions)
-      return [...mySquad].map((p) => ({ ...p, status: "Reserva" }));
-    const mapped = mySquad.map((p) => {
-      const isOut = activeTab === "live" && subbedOut.includes(p.id);
-      return {
-        ...p,
-        status: isOut ? "Out" : tactic.positions[p.id] || "Reserva",
-        isSubbedOut: isOut,
-      };
-    });
-    const s = { Titular: 1, Suplente: 2, Reserva: 3, Out: 4 };
-    return mapped.sort((a, b) => s[a.status] - s[b.status]);
-  }, [mySquad, tactic.positions, activeTab, subbedOut]);
 
   if (!me || !me.teamId) {
     return (
@@ -1369,13 +1225,22 @@ function App() {
                                 : formatCurrency(price)}
                             </td>
                             <td className="px-4 py-3 text-right">
-                              <button
-                                onClick={() => buyPlayer(player.id)}
-                                disabled={!canAfford}
-                                className="bg-emerald-600 hover:bg-emerald-500 disabled:opacity-30 disabled:hover:bg-emerald-600 text-white font-black uppercase text-[11px] px-4 py-2 rounded"
-                              >
-                                {canAfford ? "Comprar" : "Sem Gito"}
-                              </button>
+                              {player.transfer_status === "auction" ? (
+                                <button
+                                  onClick={() => openAuctionBid(player)}
+                                  className="bg-amber-500 hover:bg-amber-400 text-zinc-950 font-black uppercase text-[11px] px-4 py-2 rounded"
+                                >
+                                  Licitar
+                                </button>
+                              ) : (
+                                <button
+                                  onClick={() => buyPlayer(player.id)}
+                                  disabled={!canAfford}
+                                  className="bg-emerald-600 hover:bg-emerald-500 disabled:opacity-30 disabled:hover:bg-emerald-600 text-white font-black uppercase text-[11px] px-4 py-2 rounded"
+                                >
+                                  {canAfford ? "Comprar" : "Sem Gito"}
+                                </button>
+                              )}
                             </td>
                           </tr>
                         );
@@ -1693,6 +1558,90 @@ function App() {
                   </tbody>
                 </table>
               )}
+            </div>
+          </div>
+        </div>
+      )}
+
+      {selectedAuctionPlayer && (
+        <div
+          className="fixed inset-0 z-130 bg-zinc-950/90 backdrop-blur-sm p-4 md:p-8 flex items-center justify-center"
+          onClick={closeAuctionBid}
+        >
+          <div
+            className="w-full max-w-xl bg-zinc-900 border border-amber-500/30 rounded-3xl shadow-2xl overflow-hidden"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <div className="px-5 py-4 bg-linear-to-r from-amber-600 to-orange-500 text-zinc-950 flex items-start justify-between gap-4">
+              <div>
+                <p className="text-[11px] uppercase tracking-[0.3em] font-black opacity-80">
+                  Leilão em Curso
+                </p>
+                <h3 className="text-2xl font-black leading-tight">
+                  {selectedAuctionPlayer.name}
+                </h3>
+                <p className="text-sm font-bold opacity-90">
+                  {selectedAuctionPlayer.team_name || "Sem clube"} ·{" "}
+                  {selectedAuctionPlayer.position}
+                </p>
+              </div>
+              <button
+                onClick={closeAuctionBid}
+                className="shrink-0 px-4 py-2 rounded-xl bg-zinc-950/10 text-zinc-950 font-black uppercase text-sm hover:bg-zinc-950/20"
+              >
+                Fechar
+              </button>
+            </div>
+
+            <div className="p-5 space-y-4">
+              <div className="grid grid-cols-2 gap-3 text-sm font-bold">
+                <div className="bg-zinc-950 rounded-2xl border border-zinc-800 p-4">
+                  <div className="text-zinc-500 uppercase text-[11px] mb-1">
+                    Lance actual
+                  </div>
+                  <div className="text-2xl font-black text-amber-400 font-mono">
+                    {formatCurrency(
+                      selectedAuctionPlayer.auction_highest_bid ||
+                        selectedAuctionPlayer.transfer_price ||
+                        0,
+                    )}
+                  </div>
+                </div>
+                <div className="bg-zinc-950 rounded-2xl border border-zinc-800 p-4">
+                  <div className="text-zinc-500 uppercase text-[11px] mb-1">
+                    Incremento mínimo
+                  </div>
+                  <div className="text-2xl font-black text-white font-mono">
+                    {formatCurrency(
+                      selectedAuctionPlayer.auction_min_increment || 0,
+                    )}
+                  </div>
+                </div>
+              </div>
+
+              <div className="bg-zinc-950 rounded-2xl border border-zinc-800 p-4 space-y-3">
+                <label className="block text-[11px] uppercase tracking-widest text-zinc-500 font-black">
+                  Novo lance
+                </label>
+                <input
+                  type="number"
+                  min="0"
+                  value={auctionBid}
+                  onChange={(e) => setAuctionBid(e.target.value)}
+                  className="w-full bg-zinc-900 border border-zinc-700 rounded-xl px-4 py-3 text-white font-mono text-lg outline-none focus:border-amber-500"
+                />
+                <button
+                  onClick={submitAuctionBid}
+                  className="w-full bg-amber-500 hover:bg-amber-400 text-zinc-950 font-black uppercase text-sm py-3 rounded-xl"
+                >
+                  Enviar lance
+                </button>
+              </div>
+
+              <div className="text-xs text-zinc-400 font-medium leading-relaxed">
+                O leilão termina automaticamente quando o tempo acabar. O melhor
+                lance vence.
+              </div>
             </div>
           </div>
         </div>

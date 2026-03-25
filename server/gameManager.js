@@ -86,6 +86,7 @@ function getGame(roomCode, onReady) {
     matchState: "idle",
     globalMarket: [],
     fixtures: [],
+    auctions: {},
     initialized: false,
   };
 
