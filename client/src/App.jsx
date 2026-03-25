@@ -108,6 +108,9 @@ function App() {
   const [activeTab, setActiveTab] = useState("dashboard");
   const [topScorers, setTopScorers] = useState([]);
   const [marketPairs, setMarketPairs] = useState([]);
+  const [selectedTeam, setSelectedTeam] = useState(null);
+  const [selectedTeamSquad, setSelectedTeamSquad] = useState([]);
+  const [selectedTeamLoading, setSelectedTeamLoading] = useState(false);
   const [tactic, setTactic] = useState({
     formation: "4-4-2",
     style: "Balanced",
@@ -120,6 +123,7 @@ function App() {
   const [swapSource, setSwapSource] = useState(null);
   const [subbedOut, setSubbedOut] = useState([]); // Track players who left the pitch
   const meRef = React.useRef(null);
+  const selectedTeamRef = React.useRef(null);
 
   const backendUrl =
     (typeof import.meta !== "undefined" && import.meta.env?.VITE_BACKEND_URL) ||
@@ -160,6 +164,12 @@ function App() {
     socket.on("mySquad", (data) => setMySquad(data));
     socket.on("marketUpdate", (data) => setMarketPairs(data));
     socket.on("topScorers", (data) => setTopScorers(data));
+    socket.on("teamSquadData", ({ teamId, squad }) => {
+      if (selectedTeamRef.current && selectedTeamRef.current.id === teamId) {
+        setSelectedTeamSquad(squad || []);
+        setSelectedTeamLoading(false);
+      }
+    });
     socket.on("systemMessage", (msg) => addToast(msg));
     socket.on("joinError", (msg) => {
       setJoinError(msg);
@@ -237,6 +247,7 @@ function App() {
       socket.off("marketUpdate");
       socket.off("systemMessage");
       socket.off("joinError");
+      socket.off("teamSquadData");
       socket.off("matchResults");
       socket.off("halfTimeResults");
       socket.off("matchActionRequired");
@@ -251,6 +262,10 @@ function App() {
   useEffect(() => {
     meRef.current = me;
   }, [me]);
+
+  useEffect(() => {
+    selectedTeamRef.current = selectedTeam;
+  }, [selectedTeam]);
 
   useEffect(() => {
     if (me && !me.teamId && players.length > 0) {
@@ -321,6 +336,20 @@ function App() {
   // after halftime, causing the toggle to send false instead of true.
   const handleHalftimeReady = () => {
     socket.emit("setReady", true);
+  };
+
+  const handleOpenTeamSquad = (team) => {
+    if (!team) return;
+    setSelectedTeam(team);
+    setSelectedTeamSquad([]);
+    setSelectedTeamLoading(true);
+    socket.emit("requestTeamSquad", team.id);
+  };
+
+  const handleCloseTeamSquad = () => {
+    setSelectedTeam(null);
+    setSelectedTeamSquad([]);
+    setSelectedTeamLoading(false);
   };
 
   const handleResolveMatchAction = (playerId) => {
@@ -1052,12 +1081,13 @@ function App() {
                                 return (
                                   <tr
                                     key={t.id}
+                                    onClick={() => handleOpenTeamSquad(t)}
                                     style={{
                                       backgroundColor:
                                         t.color_primary || "#18181b",
                                       color: t.color_secondary || "#ffffff",
                                     }}
-                                    className={`transition-colors ${isMe ? "ring-2 ring-inset ring-amber-500" : ""}`}
+                                    className={`transition-colors cursor-pointer hover:brightness-110 ${isMe ? "ring-2 ring-inset ring-amber-500" : ""}`}
                                   >
                                     <td className="text-left uppercase py-0.75 px-2 truncate font-black w-[45%]">
                                       {idx + 1}. {t.name}
@@ -1438,6 +1468,134 @@ function App() {
           </div>
         </div>
       </div>
+
+      {selectedTeam && (
+        <div
+          className="fixed inset-0 z-120 bg-zinc-950/85 backdrop-blur-sm p-4 md:p-8 flex items-center justify-center"
+          onClick={handleCloseTeamSquad}
+        >
+          <div
+            className="w-full max-w-5xl max-h-[90vh] overflow-hidden bg-zinc-900 border border-zinc-800 rounded-3xl shadow-2xl flex flex-col"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <div
+              className="px-5 py-4 border-b border-zinc-800 flex items-start justify-between gap-4"
+              style={{
+                background: `linear-gradient(90deg, ${selectedTeam.color_primary || "#18181b"} 0%, ${selectedTeam.color_secondary || "#27272a"} 100%)`,
+              }}
+            >
+              <div>
+                <p className="text-xs uppercase tracking-widest font-black text-white/80">
+                  Plantel
+                </p>
+                <h3 className="text-2xl md:text-3xl font-black text-white">
+                  {selectedTeam.name}
+                </h3>
+                <p className="text-sm font-bold text-white/80">
+                  Divisão {selectedTeam.division}
+                </p>
+              </div>
+              <button
+                onClick={handleCloseTeamSquad}
+                className="shrink-0 px-4 py-2 rounded-xl bg-zinc-950/40 text-white font-black uppercase text-sm border border-white/10 hover:bg-zinc-950/60"
+              >
+                Fechar
+              </button>
+            </div>
+
+            <div className="overflow-auto">
+              {selectedTeamLoading ? (
+                <div className="p-8 text-center text-zinc-400 font-bold">
+                  A carregar plantel...
+                </div>
+              ) : (
+                <table className="w-full text-left text-sm border-collapse">
+                  <thead className="sticky top-0 bg-zinc-950 text-zinc-400 uppercase text-[11px] tracking-widest border-b border-zinc-800">
+                    <tr>
+                      <th className="px-4 py-3 font-black">Pos</th>
+                      <th className="px-4 py-3 font-black">Nome</th>
+                      <th className="px-4 py-3 font-black text-center">Qual</th>
+                      <th className="px-4 py-3 font-black text-center">
+                        Golos
+                      </th>
+                      <th className="px-4 py-3 font-black text-center">
+                        Vermelhos
+                      </th>
+                      <th className="px-4 py-3 font-black text-center">
+                        Lesões
+                      </th>
+                      <th className="px-4 py-3 font-black text-center">
+                        Susp.
+                      </th>
+                      <th className="px-4 py-3 font-black text-center">
+                        Forma
+                      </th>
+                    </tr>
+                  </thead>
+                  <tbody className="divide-y divide-zinc-800/60">
+                    {selectedTeamSquad.length === 0 ? (
+                      <tr>
+                        <td
+                          colSpan="8"
+                          className="px-4 py-8 text-center text-zinc-500 font-bold"
+                        >
+                          Sem jogadores encontrados.
+                        </td>
+                      </tr>
+                    ) : (
+                      selectedTeamSquad.map((player) => (
+                        <tr
+                          key={player.id}
+                          className="hover:bg-zinc-800/50 transition-colors"
+                        >
+                          <td
+                            className={`px-4 py-2.5 font-black text-sm tracking-wider ${player.position === "GK" ? "text-yellow-500" : player.position === "DEF" ? "text-blue-500" : "text-green-500"}`}
+                          >
+                            {player.position}
+                          </td>
+                          <td className="px-4 py-2.5 font-bold text-white">
+                            {player.name}
+                          </td>
+                          <td className="px-4 py-2.5 text-center">
+                            <span className="bg-zinc-950 text-white font-black px-2 py-1.5 rounded text-sm border border-zinc-800">
+                              {player.skill}
+                            </span>
+                          </td>
+                          <td className="px-4 py-2.5 text-center font-black text-emerald-400">
+                            {getPlayerStat(player, ["goals"])}
+                          </td>
+                          <td className="px-4 py-2.5 text-center font-black text-red-400">
+                            {getPlayerStat(player, ["red_cards"])}
+                          </td>
+                          <td className="px-4 py-2.5 text-center font-black text-orange-400">
+                            {getPlayerStat(player, ["injuries"])}
+                          </td>
+                          <td className="px-4 py-2.5 text-center font-black text-amber-400">
+                            {getPlayerStat(player, ["suspension_games"])}
+                          </td>
+                          <td className="px-4 py-2.5 text-center">
+                            <div className="flex items-center gap-3">
+                              <div className="flex-1 bg-zinc-950 rounded-full h-2.5 overflow-hidden">
+                                <div
+                                  className={`h-2.5 rounded-full ${player.form > 90 ? "bg-emerald-500" : player.form > 70 ? "bg-amber-500" : "bg-red-500"}`}
+                                  style={{ width: `${player.form}%` }}
+                                />
+                              </div>
+                              <span className="text-xs font-bold tracking-wider text-zinc-400 w-8">
+                                {player.form}
+                              </span>
+                            </div>
+                          </td>
+                        </tr>
+                      ))
+                    )}
+                  </tbody>
+                </table>
+              )}
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

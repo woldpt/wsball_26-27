@@ -418,6 +418,23 @@ io.on("connection", (socket) => {
     checkAllReady(game);
   });
 
+  // ── REQUEST TEAM SQUAD ───────────────────────────────────────────────────
+  socket.on("requestTeamSquad", (teamId) => {
+    const game = getGameBySocket(socket.id);
+    if (!game) return;
+
+    game.db.all(
+      "SELECT * FROM players WHERE team_id = ? ORDER BY position, skill DESC, name",
+      [teamId],
+      (err, squad) => {
+        socket.emit("teamSquadData", {
+          teamId,
+          squad: err ? [] : squad || [],
+        });
+      },
+    );
+  });
+
   // ── RESOLVE LIVE MATCH ACTION ────────────────────────────────────────────
   socket.on("resolveMatchAction", ({ actionId, teamId, playerId }) => {
     const game = getGameBySocket(socket.id);
