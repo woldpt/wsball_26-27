@@ -1693,16 +1693,23 @@ function App() {
                           <td className="px-3 py-2.5 text-white text-sm md:text-base whitespace-nowrap">
                             {player.name}
                           </td>
-                          <td className="px-3 py-2.5 text-center text-zinc-400 text-sm">
-                            {player.nationality}
-                          </td>
-                          <td className="px-3 py-2.5 text-center font-mono text-zinc-300 text-xs md:text-sm">
-                            {formatCurrency(player.wage || 0)}
-                          </td>
                           <td className="px-3 py-2.5 text-center text-zinc-100 font-normal">
                             <span className="inline-flex items-center justify-center bg-zinc-950 text-white px-2 py-1 rounded text-sm border border-zinc-800 font-normal">
                               {player.skill}
                             </span>
+                          </td>
+                          <td className="px-3 py-2.5 text-center">
+                            <div className="flex items-center gap-3">
+                              <div className="flex-1 bg-zinc-950 rounded-full h-2.5 overflow-hidden">
+                                <div
+                                  className={`h-2.5 rounded-full ${player.form > 90 ? "bg-emerald-500" : player.form > 70 ? "bg-amber-500" : "bg-red-500"}`}
+                                  style={{ width: `${player.form}%` }}
+                                ></div>
+                              </div>
+                              <span className="text-xs font-normal tracking-wider text-zinc-400 w-8">
+                                {player.form}
+                              </span>
+                            </div>
                           </td>
                           <td className="px-3 py-2.5 text-center text-emerald-400 font-normal">
                             {getPlayerStat(player, ["goals"])}
@@ -1723,18 +1730,11 @@ function App() {
                               "lesions",
                             ])}
                           </td>
-                          <td className="px-3 py-2.5">
-                            <div className="flex items-center gap-3">
-                              <div className="flex-1 bg-zinc-950 rounded-full h-2.5 overflow-hidden">
-                                <div
-                                  className={`h-2.5 rounded-full ${player.form > 90 ? "bg-emerald-500" : player.form > 70 ? "bg-amber-500" : "bg-red-500"}`}
-                                  style={{ width: `${player.form}%` }}
-                                ></div>
-                              </div>
-                              <span className="text-xs font-bold tracking-wider text-zinc-400 w-8">
-                                {player.form}
-                              </span>
-                            </div>
+                          <td className="px-3 py-2.5 text-center text-zinc-400 text-sm">
+                            {player.nationality}
+                          </td>
+                          <td className="px-3 py-2.5 text-center font-mono text-zinc-300 text-xs md:text-sm">
+                            {formatCurrency(player.wage || 0)}
                           </td>
                           <td className="px-3 py-2.5 text-center">
                             {player.status === "Titular" ||
