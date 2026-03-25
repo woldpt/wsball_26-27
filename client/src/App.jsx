@@ -116,6 +116,7 @@ function App() {
   const [tactic, setTactic] = useState({
     formation: "4-4-2",
     style: "Balanced",
+    positions: {},
   });
   const [liveMinute, setLiveMinute] = useState(90);
   const [isPlayingMatch, setIsPlayingMatch] = useState(false);
