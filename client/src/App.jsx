@@ -1,4 +1,4 @@
-import { useEffect, useState, useMemo } from 'react';
+import React, { useEffect, useState, useMemo } from 'react';
 import { socket } from './socket';
 
 function formatCurrency(value) {
@@ -46,6 +46,8 @@ function App() {
   const [roomCode, setRoomCode] = useState('');
   const [isNewRoom, setIsNewRoom] = useState(true);
   const [availableSaves, setAvailableSaves] = useState([]);
+  const [joining, setJoining] = useState(false);       // BUG-15: prevent double join
+  const [disconnected, setDisconnected] = useState(false); // BUG-15: connection error
   
   const [matchResults, setMatchResults] = useState(null);
   const [matchweekCount, setMatchweekCount] = useState(0);
@@ -54,8 +56,12 @@ function App() {
   const [tactic, setTactic] = useState({ formation: '4-4-2', style: 'Balanced' });
   const [liveMinute, setLiveMinute] = useState(90);
   const [isPlayingMatch, setIsPlayingMatch] = useState(false);
+  // BUG-11 FIX: Halftime overlay is driven by this flag, not liveMinute===45.
+  // Set only when halfTimeResults arrives; cleared when matchResults arrives.
+  const [showHalftimePanel, setShowHalftimePanel] = useState(false);
   const [subsMade, setSubsMade] = useState(0);
   const [swapSource, setSwapSource] = useState(null);
+  const meRef = React.useRef(null);
   
   useEffect(() => {
     // Fetch saves on mount
@@ -71,6 +77,8 @@ function App() {
       .catch(() => {});
   }, []);
 
+  // BUG-07 FIX: All socket listeners in a single effect with [] dep so they're
+  // registered exactly once and cleaned up correctly on unmount.
   useEffect(() => {
     socket.on('teamsData', (data) => setTeams(data));
     socket.on('playerListUpdate', (data) => {
@@ -84,48 +92,64 @@ function App() {
       if (data.matchweek) setMatchweekCount(data.matchweek - 1);
     });
 
+    // BUG-11 FIX: halfTimeResults sets showHalftimePanel=true
     socket.on('halfTimeResults', (data) => {
       setMatchResults(data);
       setLiveMinute(0);
       setSubsMade(0);
       setSwapSource(null);
+      setShowHalftimePanel(true);
       setIsPlayingMatch(true);
       setActiveTab('live');
       playWhistle();
     });
 
+    // BUG-11 FIX: matchResults clears showHalftimePanel (2nd half replay)
     socket.on('matchResults', (data) => {
       setMatchResults(data);
-      setMatchweekCount(data.matchweek); // Use server matchweek (pre-increment)
+      setMatchweekCount(data.matchweek);
+      setShowHalftimePanel(false);
       setLiveMinute(45);
       setIsPlayingMatch(true);
       setActiveTab('live');
       playWhistle();
     });
-    
+
+    // BUG-15 FIX: Track socket connection state
+    const onConnect = () => {
+      setDisconnected(false);
+      setJoining(false);
+      // Re-join on reconnect using the meRef to avoid stale closure
+      const currentMe = meRef.current;
+      if (currentMe && currentMe.roomCode && currentMe.name) {
+        socket.emit('joinGame', { name: currentMe.name, roomCode: currentMe.roomCode });
+      }
+    };
+    const onDisconnect = () => setDisconnected(true);
+
+    socket.on('connect', onConnect);
+    socket.on('disconnect', onDisconnect);
+
     return () => {
       socket.off('teamsData'); socket.off('playerListUpdate');
       socket.off('mySquad'); socket.off('marketUpdate');
       socket.off('systemMessage'); socket.off('matchResults');
       socket.off('halfTimeResults'); socket.off('gameState');
+      socket.off('connect', onConnect); socket.off('disconnect', onDisconnect);
     };
-  }, [me]);
+  }, []); // empty deps — register once only
 
+  // Keep meRef in sync so the onConnect closure above always has the latest me
   useEffect(() => {
-    const onConnect = () => {
-      if (me && me.roomCode && me.name) {
-        socket.emit('joinGame', { name: me.name, roomCode: me.roomCode });
-      }
-    };
-    socket.on('connect', onConnect);
-    return () => socket.off('connect', onConnect);
+    meRef.current = me;
   }, [me]);
 
   useEffect(() => {
     if (me && !me.teamId && players.length > 0) {
       const p = players.find(x => x.name === me.name);
       if (p && p.teamId) {
-        setMe(p);
+        setMe(prev => ({ ...prev, teamId: p.teamId }));
+        setJoining(false);
       }
     }
   }, [players, me]);
@@ -153,15 +177,24 @@ function App() {
   }, [isPlayingMatch, liveMinute, matchResults]);
 
   const handleJoin = () => {
-    if (name && roomCode) {
+    if (name && roomCode && !joining) {
+      setJoining(true); // BUG-15: prevent double-emit
       socket.emit('joinGame', { name, roomCode: roomCode.toUpperCase() });
       setMe({ name, roomCode: roomCode.toUpperCase() });
     }
   };
 
   const handleReady = () => {
+    // Normal ready toggle for idle matchState
     const isReady = players.find(p => p.name === me?.name)?.ready;
     socket.emit('setReady', !isReady);
+  };
+
+  // BUG-06 FIX: Halftime confirm always sends true.
+  // Sending !isReady (a toggle) was broken because the server resets ready=false
+  // after halftime, causing the toggle to send false instead of true.
+  const handleHalftimeReady = () => {
+    socket.emit('setReady', true);
   };
 
   const buyPlayer = (playerId) => {
@@ -290,9 +323,10 @@ function App() {
             </div>
           )}
 
-          <button onClick={handleJoin} disabled={!name || !roomCode} className="w-full bg-emerald-500 hover:bg-emerald-400 disabled:bg-zinc-800 disabled:text-zinc-600 text-zinc-950 py-5 rounded-xl font-black text-xl transition-all active:scale-95 border-b-4 border-emerald-700 active:border-b-0">
-            {me ? 'A GERAR CONTRATO...' : 'ASSINAR CONTRATO'}
+          <button onClick={handleJoin} disabled={!name || !roomCode || joining} className="w-full bg-emerald-500 hover:bg-emerald-400 disabled:bg-zinc-800 disabled:text-zinc-600 text-zinc-950 py-5 rounded-xl font-black text-xl transition-all active:scale-95 border-b-4 border-emerald-700 active:border-b-0">
+            {joining ? 'A GERAR CONTRATO...' : 'ASSINAR CONTRATO'}
           </button>
+          {disconnected && <p className="text-red-400 text-sm text-center mt-3 font-bold">⚠️ Sem ligação ao servidor. Tenta novamente.</p>}
         </div>
       </div>
     );
@@ -366,7 +400,8 @@ function App() {
 
             {activeTab === 'live' && matchResults && (
               <div className="bg-zinc-900 min-h-[600px] text-zinc-100 font-sans p-8 rounded-3xl border border-zinc-800 shadow-sm relative overflow-hidden">
-                 {liveMinute === 45 && !isPlayingMatch && (
+                 {/* BUG-11 FIX: showHalftimePanel (not liveMinute===45) controls this overlay */}
+                 {showHalftimePanel && !isPlayingMatch && (
                    <div className="absolute inset-0 bg-zinc-950/95 z-50 p-8 flex flex-col backdrop-blur-sm">
                       <h2 className="text-4xl font-black text-amber-500 mb-2 tracking-widest text-center uppercase">INTERVALO</h2>
                       <p className="text-center text-zinc-400 font-bold mb-8">Seleciona na Esquerda e na Direita para Substituir (Restam: {3 - subsMade})</p>
@@ -396,7 +431,8 @@ function App() {
                          </div>
                       </div>
                       
-                      <button onClick={handleReady} className={`w-full py-6 rounded-2xl text-2xl font-black uppercase tracking-widest transition-all shadow-[0_0_30px_rgba(217,119,6,0.3)] ${players.find(p => p.name === me.name)?.ready ? 'bg-zinc-800 text-zinc-500' : 'bg-amber-600 hover:bg-amber-500 text-zinc-950'}`}>
+                      {/* BUG-06 FIX: Use handleHalftimeReady which always sends true */}
+                      <button onClick={handleHalftimeReady} className={`w-full py-6 rounded-2xl text-2xl font-black uppercase tracking-widest transition-all shadow-[0_0_30px_rgba(217,119,6,0.3)] ${players.find(p => p.name === me.name)?.ready ? 'bg-zinc-800 text-zinc-500' : 'bg-amber-600 hover:bg-amber-500 text-zinc-950'}`}>
                          {players.find(p => p.name === me.name)?.ready ? 'A AGUARDAR ADVERSÁRIOS...' : 'CONFIRMAR E IR PARA A 2ª PARTE'}
                       </button>
                    </div>
@@ -635,13 +671,14 @@ function App() {
           
           <div className="xl:col-span-1 space-y-6">
             <div className="bg-zinc-900 p-6 rounded-3xl border border-zinc-800 flex flex-col items-center sticky top-[100px]">
+              {disconnected && <p className="text-red-400 text-xs font-bold mb-3 text-center">⚠️ Desligado — a reconectar...</p>}
               <button 
-                onClick={handleReady}
+                onClick={showHalftimePanel && !isPlayingMatch ? handleHalftimeReady : handleReady}
                 className={`w-full py-6 font-black rounded-2xl text-2xl transition-all uppercase tracking-widest relative overflow-hidden border-b-6 active:border-b-0 active:translate-y-[6px] ${players.find(p => p.name === me.name)?.ready ? 'bg-zinc-800 text-zinc-500 border-zinc-950' : 'bg-emerald-500 text-zinc-950 hover:bg-emerald-400 border-emerald-700'}`}
               >
                 {players.find(p => p.name === me.name)?.ready 
                   ? 'A AGUARDAR OUTROS' 
-                  : (liveMinute === 45 && !isPlayingMatch && matchResults) 
+                  : (showHalftimePanel && !isPlayingMatch) 
                     ? '2ª PARTE' 
                     : 'JOGAR JORNADA'}
               </button>

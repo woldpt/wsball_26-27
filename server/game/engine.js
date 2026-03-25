@@ -39,6 +39,7 @@ async function getTeamSquad(db, teamId, tactic) {
  * Generate round-robin fixtures for a division for a given matchweek.
  * Uses the circle method: fix team[0], rotate the rest.
  * 8 teams => 14 matchweeks (7 rounds × 2 for home/away swap).
+ * Matchweek is normalised modulo 14 so seasons beyond week 14 wrap correctly.
  */
 async function generateFixturesForDivision(db, division, matchweek) {
   return new Promise((resolve) => {
@@ -46,12 +47,15 @@ async function generateFixturesForDivision(db, division, matchweek) {
       if (err || !teams || teams.length < 2) return resolve([]);
       
       const n = teams.length; // 8
-      const rounds = n - 1;   // 7 unique rounds
+      const totalRounds = n - 1; // 7 unique rounds per leg
+      const totalMatchweeks = totalRounds * 2; // 14
+
+      // BUG-03 FIX: Normalise matchweek so seasons wrap correctly
+      const normMw = ((matchweek - 1) % totalMatchweeks) + 1;
       
       // Determine which round and whether to flip home/away
-      // matchweek 1-7: first leg, matchweek 8-14: second leg (home/away swapped)
-      const isSecondLeg = matchweek > rounds;
-      const round = isSecondLeg ? (matchweek - rounds - 1) : (matchweek - 1); // 0-indexed
+      const isSecondLeg = normMw > totalRounds;
+      const round = isSecondLeg ? (normMw - totalRounds - 1) : (normMw - 1); // 0-indexed
       
       // Circle method: fix teams[0], rotate teams[1..n-1]
       const rotating = teams.slice(1);
@@ -90,7 +94,6 @@ async function generateFixturesForDivision(db, division, matchweek) {
 }
 
 async function simulateMatchSegment(db, fixture, homeTactic, awayTactic, startMin, endMin) {
-  // BUG-08 FIX: Pass full tactic objects to getTeamSquad (not .formation string)
   const homeSquad = await getTeamSquad(db, fixture.homeTeamId, homeTactic);
   const awaySquad = await getTeamSquad(db, fixture.awayTeamId, awayTactic);
   
@@ -110,8 +113,8 @@ async function simulateMatchSegment(db, fixture, homeTactic, awayTactic, startMi
     return { attack, defense, midfield, gk, squad };
   };
 
-  const home = getPower(homeSquad, homeTactic.style);
-  const away = getPower(awaySquad, awayTactic.style);
+  const home = getPower(homeSquad, homeTactic ? homeTactic.style : 'Balanced');
+  const away = getPower(awaySquad, awayTactic ? awayTactic.style : 'Balanced');
 
   const homeBonus = 1.1; 
   const hStrength = ((home.attack || 10) * 1.5 + (home.midfield || 10) * 1.0 + (home.defense || 10) * 0.5) * homeBonus;
