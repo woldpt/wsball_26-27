@@ -17,6 +17,7 @@ const {
 const {
   generateFixturesForDivision,
   simulateMatchSegment,
+  applyPostMatchQualityEvolution,
 } = require("./game/engine");
 const {
   verifyOrCreateManager,
@@ -634,19 +635,39 @@ async function processSegment(game, startMin, endMin, nextState) {
         game.matchweek++;
         saveGameState(game);
 
-        game.db.all("SELECT * FROM teams", (err2, teams) => {
-          if (!err2) io.to(game.roomCode).emit("teamsData", teams);
+        applyPostMatchQualityEvolution(
+          game.db,
+          game.fixtures,
+          game.matchweek,
+        ).then(() => {
+          game.db.all("SELECT * FROM teams", (err2, teams) => {
+            if (!err2) io.to(game.roomCode).emit("teamsData", teams);
 
-          game.db.all(
-            "SELECT p.id, p.name, p.position, p.goals, p.team_id, t.name as team_name, t.color_primary, t.color_secondary FROM players p LEFT JOIN teams t ON p.team_id = t.id WHERE p.goals > 0 ORDER BY p.goals DESC, p.skill DESC LIMIT 20",
-            (err3, scorers) => {
-              io.to(game.roomCode).emit("topScorers", scorers || []);
-              io.to(game.roomCode).emit(
-                "playerListUpdate",
-                getPlayerList(game),
-              );
-            },
-          );
+            game.db.all(
+              "SELECT p.id, p.name, p.position, p.goals, p.team_id, t.name as team_name, t.color_primary, t.color_secondary FROM players p LEFT JOIN teams t ON p.team_id = t.id WHERE p.goals > 0 ORDER BY p.goals DESC, p.skill DESC LIMIT 20",
+              (err3, scorers) => {
+                io.to(game.roomCode).emit("topScorers", scorers || []);
+
+                connectedPlayers.forEach((player) => {
+                  if (!player.socketId) return;
+                  game.db.all(
+                    "SELECT * FROM players WHERE team_id = ?",
+                    [player.teamId],
+                    (err4, squad) => {
+                      if (!err4) {
+                        io.to(player.socketId).emit("mySquad", squad || []);
+                      }
+                    },
+                  );
+                });
+
+                io.to(game.roomCode).emit(
+                  "playerListUpdate",
+                  getPlayerList(game),
+                );
+              },
+            );
+          });
         });
       });
     });

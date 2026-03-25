@@ -176,6 +176,10 @@ function selectPenaltyTaker(squad = []) {
   return pickBestPlayer(squad) || null;
 }
 
+function clampSkill(value) {
+  return Math.max(0, Math.min(50, Math.round(value)));
+}
+
 async function applyInjuryEvent({
   db,
   fixture,
@@ -201,9 +205,17 @@ async function applyInjuryEvent({
   }
 
   const injuryUntil = currentMatchweek + injuryWeeks;
+  const qualityLoss =
+    injuryWeeks >= 10
+      ? 4 + Math.floor(Math.random() * 3)
+      : injuryWeeks >= 3
+        ? 1 + Math.floor(Math.random() * 2)
+        : Math.random() < 0.5
+          ? 1
+          : 0;
   db.run(
-    "UPDATE players SET injuries = injuries + 1, injury_until_matchweek = CASE WHEN injury_until_matchweek > ? THEN injury_until_matchweek ELSE ? END WHERE id = ?",
-    [injuryUntil, injuryUntil, injuredPlayer.id],
+    "UPDATE players SET injuries = injuries + 1, skill = MAX(0, skill - ?), injury_until_matchweek = CASE WHEN injury_until_matchweek > ? THEN injury_until_matchweek ELSE ? END WHERE id = ?",
+    [qualityLoss, injuryUntil, injuryUntil, injuredPlayer.id],
   );
 
   fixture.events.push({
@@ -585,9 +597,116 @@ async function simulateMatchSegment(
   delete fixture._minute;
 }
 
+async function applyPostMatchQualityEvolution(db, fixtures, currentMatchweek) {
+  return new Promise((resolve) => {
+    const teamResults = new Map();
+    for (const match of fixtures || []) {
+      const homeResult =
+        match.finalHomeGoals > match.finalAwayGoals
+          ? "W"
+          : match.finalHomeGoals < match.finalAwayGoals
+            ? "L"
+            : "D";
+      const awayResult =
+        match.finalAwayGoals > match.finalHomeGoals
+          ? "W"
+          : match.finalAwayGoals < match.finalHomeGoals
+            ? "L"
+            : "D";
+      teamResults.set(match.homeTeamId, homeResult);
+      teamResults.set(match.awayTeamId, awayResult);
+    }
+
+    db.all(
+      "SELECT id, team_id, skill, injury_until_matchweek, suspension_until_matchweek FROM players WHERE team_id IS NOT NULL ORDER BY team_id, id",
+      (err, players) => {
+        if (err || !players || players.length === 0) {
+          resolve();
+          return;
+        }
+
+        const teamGroups = new Map();
+        for (const player of players) {
+          if (!teamGroups.has(player.team_id))
+            teamGroups.set(player.team_id, []);
+          teamGroups.get(player.team_id).push(player);
+        }
+
+        const updates = [];
+        for (const player of players) {
+          if ((player.injury_until_matchweek || 0) >= currentMatchweek)
+            continue;
+          if ((player.suspension_until_matchweek || 0) >= currentMatchweek)
+            continue;
+
+          const group = teamGroups.get(player.team_id) || [];
+          const avgSkill =
+            group.reduce((sum, p) => sum + (p.skill || 0), 0) /
+            Math.max(1, group.length);
+          const diff = avgSkill - (player.skill || 0);
+          const teamResult = teamResults.get(player.team_id) || "D";
+
+          let delta = 0;
+
+          if (diff >= 5 && Math.random() < Math.min(0.18, 0.03 + diff / 120)) {
+            delta += 1;
+          }
+
+          if (
+            teamResult === "W" &&
+            diff >= 0 &&
+            Math.random() < Math.min(0.1, 0.02 + diff / 220)
+          ) {
+            delta += 1;
+          }
+
+          if (teamResult === "L") {
+            const lossPressure = Math.min(
+              0.18,
+              0.03 + Math.max(0, -diff) / 220,
+            );
+            if (Math.random() < lossPressure) delta -= 1;
+          }
+
+          if (teamResult === "D" && diff >= 10 && Math.random() < 0.04) {
+            delta += 1;
+          }
+
+          if (delta !== 0) {
+            updates.push({
+              id: player.id,
+              skill: clampSkill((player.skill || 0) + delta),
+            });
+          }
+        }
+
+        if (updates.length === 0) {
+          resolve();
+          return;
+        }
+
+        let remaining = updates.length;
+        db.serialize(() => {
+          updates.forEach((update) => {
+            db.run(
+              "UPDATE players SET skill = ? WHERE id = ?",
+              [update.skill, update.id],
+              () => {
+                remaining -= 1;
+                if (remaining === 0) resolve();
+              },
+            );
+          });
+        });
+      },
+    );
+  });
+}
+
 module.exports = {
   simulateMatchSegment,
   getTeamSquad,
   generateFixturesForDivision,
   isPlayerAvailable,
+  applyPostMatchQualityEvolution,
 };
