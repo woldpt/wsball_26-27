@@ -19,8 +19,6 @@ services:
     depends_on:
       backend:
         condition: service_healthy
-    environment:
-      - VITE_BACKEND_URL=http://localhost:3000
     networks:
       cftunnel:
         ipv4_address: 172.100.0.57

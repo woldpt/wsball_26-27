@@ -73,7 +73,7 @@ function App() {
   const [subbedOut, setSubbedOut] = useState([]); // Track players who left the pitch
   const meRef = React.useRef(null);
   
-  const backendUrl = (typeof import.meta !== 'undefined' && import.meta.env?.VITE_BACKEND_URL) || 'http://localhost:3000';
+  const backendUrl = (typeof import.meta !== 'undefined' && import.meta.env?.VITE_BACKEND_URL) || '';
 
   // Re-fetch this coach's saved rooms whenever the name changes while in "Carregar" mode.
   useEffect(() => {
