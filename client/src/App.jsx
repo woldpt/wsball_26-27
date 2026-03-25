@@ -690,6 +690,45 @@ function App() {
     });
   }, [auctionBid]); // eslint-disable-line react-hooks/exhaustive-deps
 
+  const filteredMarketPlayers = useMemo(() => {
+    const marketTeamId = me?.teamId;
+    const normalizedPosition = marketPositionFilter;
+
+    const getPlayerPrice = (player) => {
+      const isListed =
+        player.transfer_status && player.transfer_status !== "none";
+      return isListed
+        ? player.transfer_price || player.value * 0.75
+        : player.value * 1.2;
+    };
+
+    const comparePlayers = (a, b) => {
+      if (marketSort === "price-asc") {
+        return getPlayerPrice(a) - getPlayerPrice(b);
+      }
+      if (marketSort === "price-desc") {
+        return getPlayerPrice(b) - getPlayerPrice(a);
+      }
+      if (marketSort === "quality-asc") {
+        return (a.skill || 0) - (b.skill || 0);
+      }
+      return (b.skill || 0) - (a.skill || 0);
+    };
+
+    return marketPairs
+      .filter((player) => player.team_id !== marketTeamId)
+      .filter((player) =>
+        normalizedPosition === "all"
+          ? true
+          : player.position === normalizedPosition,
+      )
+      .map((player) => ({
+        ...player,
+        marketPrice: getPlayerPrice(player),
+      }))
+      .sort(comparePlayers);
+  }, [marketPairs, marketPositionFilter, marketSort, me?.teamId]);
+
   if (!me || !me.teamId) {
     return (
       <div className="min-h-screen bg-zinc-950 text-zinc-100 p-8 flex flex-col items-center justify-center font-sans">
@@ -840,45 +879,6 @@ function App() {
       const order = { Titular: 1, Suplente: 2, Reserva: 3, Out: 4 };
       return order[a.status] - order[b.status];
     });
-
-  const filteredMarketPlayers = useMemo(() => {
-    const marketTeamId = me?.teamId;
-    const normalizedPosition = marketPositionFilter;
-
-    const getPlayerPrice = (player) => {
-      const isListed =
-        player.transfer_status && player.transfer_status !== "none";
-      return isListed
-        ? player.transfer_price || player.value * 0.75
-        : player.value * 1.2;
-    };
-
-    const comparePlayers = (a, b) => {
-      if (marketSort === "price-asc") {
-        return getPlayerPrice(a) - getPlayerPrice(b);
-      }
-      if (marketSort === "price-desc") {
-        return getPlayerPrice(b) - getPlayerPrice(a);
-      }
-      if (marketSort === "quality-asc") {
-        return (a.skill || 0) - (b.skill || 0);
-      }
-      return (b.skill || 0) - (a.skill || 0);
-    };
-
-    return marketPairs
-      .filter((player) => player.team_id !== marketTeamId)
-      .filter((player) =>
-        normalizedPosition === "all"
-          ? true
-          : player.position === normalizedPosition,
-      )
-      .map((player) => ({
-        ...player,
-        marketPrice: getPlayerPrice(player),
-      }))
-      .sort(comparePlayers);
-  }, [marketPairs, marketPositionFilter, marketSort, me?.teamId]);
 
   const nextMatchOpponent = nextMatchSummary?.opponent || null;
   const nextMatchReferee = nextMatchSummary?.referee || null;
