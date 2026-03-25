@@ -200,6 +200,13 @@ function App() {
 
     socket.on("gameState", (data) => {
       if (data.matchweek) setMatchweekCount(data.matchweek - 1);
+      if (data.tactic) {
+        setTactic((prev) => ({
+          ...prev,
+          ...data.tactic,
+          positions: data.tactic.positions || prev.positions || {},
+        }));
+      }
     });
 
     socket.on("halfTimeResults", (data) => {
@@ -386,6 +393,143 @@ function App() {
       playerId,
     });
   };
+
+  // ── TACTIC ────────────────────────────────────────────────────────────────
+  const updateTactic = useCallback(
+    (patch) => {
+      setTactic((prev) => {
+        const next = { ...prev, ...patch };
+        socket.emit("setTactic", next);
+        return next;
+      });
+    },
+    [], // eslint-disable-line react-hooks/exhaustive-deps
+  );
+
+  const handleAutoPick = useCallback(
+    (formation) => {
+      // Clear explicit positions so the server auto-picks for this formation
+      setTactic((prev) => {
+        const next = { ...prev, formation, positions: {} };
+        socket.emit("setTactic", next);
+        return next;
+      });
+    },
+    [], // eslint-disable-line react-hooks/exhaustive-deps
+  );
+
+  // ── SUBSTITUTION SWAP ─────────────────────────────────────────────────────
+  const handleSubSwap = useCallback(
+    (playerId) => {
+      if (subsMade >= 3) return;
+      setSwapSource((currentSource) => {
+        if (!currentSource) {
+          // First click – select the player going out (must be Titular or Suplente)
+          return playerId;
+        }
+        if (currentSource === playerId) {
+          // Deselect
+          return null;
+        }
+        // Second click – execute swap
+        setTactic((prevTactic) => {
+          const prevPositions = prevTactic.positions || {};
+          const sourceStatus = prevPositions[currentSource] || "Reserva";
+          const targetStatus = prevPositions[playerId] || "Reserva";
+          // Only proceed if swapping Titular ↔ non-Titular
+          if (sourceStatus !== "Titular" && targetStatus !== "Titular") {
+            return prevTactic; // nothing to do
+          }
+          const newPositions = { ...prevPositions };
+          newPositions[currentSource] =
+            targetStatus === "Suplente" ? "Suplente" : "Reserva";
+          newPositions[playerId] = "Titular";
+          const outgoingId =
+            sourceStatus === "Titular" ? currentSource : playerId;
+          setSubbedOut((prev) => [...prev, outgoingId]);
+          setSubsMade((n) => n + 1);
+          const next = { ...prevTactic, positions: newPositions };
+          socket.emit("setTactic", next);
+          return next;
+        });
+        return null;
+      });
+    },
+    [subsMade], // eslint-disable-line react-hooks/exhaustive-deps
+  );
+
+  // ── MARKET ACTIONS ────────────────────────────────────────────────────────
+  const buyPlayer = useCallback((playerId) => {
+    socket.emit("buyPlayer", playerId);
+  }, []);
+
+  const renewPlayerContract = useCallback((player) => {
+    const defaultWage = Math.round(
+      Math.max(player.wage || 0, (player.skill || 0) * 70) * 1.15,
+    );
+    const wage = window.prompt(
+      `Novo salário semanal para ${player.name} (€/semana)`,
+      String(defaultWage),
+    );
+    if (wage === null) return;
+    const offeredWage = Number(wage);
+    if (!Number.isFinite(offeredWage) || offeredWage <= 0) return;
+    socket.emit("renewContract", { playerId: player.id, offeredWage });
+  }, []);
+
+  const listPlayerAuction = useCallback((player) => {
+    if (confirm(`Enviar ${player.name} para leilão imediato?`)) {
+      socket.emit("listPlayerForTransfer", {
+        playerId: player.id,
+        mode: "auction",
+      });
+    }
+  }, []);
+
+  const listPlayerFixed = useCallback((player) => {
+    const defaultPrice = Math.round((player.value || 0) * 1.1);
+    const price = window.prompt(
+      `Preço fixo para ${player.name} (€)`,
+      String(defaultPrice),
+    );
+    if (price === null) return;
+    const fixedPrice = Number(price);
+    if (!Number.isFinite(fixedPrice) || fixedPrice <= 0) return;
+    socket.emit("listPlayerForTransfer", {
+      playerId: player.id,
+      mode: "fixed",
+      price: fixedPrice,
+    });
+  }, []);
+
+  // ── AUCTION BID ───────────────────────────────────────────────────────────
+  const openAuctionBid = useCallback((player) => {
+    if (!player || player.transfer_status !== "auction") return;
+    setSelectedAuctionPlayer(player);
+    const currentBid = Number(
+      player.auction_highest_bid ||
+        player.transfer_price ||
+        player.value * 0.75,
+    );
+    setAuctionBid(
+      String(currentBid + Math.max(1000, Math.round(currentBid * 0.05))),
+    );
+  }, []);
+
+  const closeAuctionBid = useCallback(() => {
+    setSelectedAuctionPlayer(null);
+    setAuctionBid("");
+  }, []);
+
+  const submitAuctionBid = useCallback(() => {
+    setSelectedAuctionPlayer((prev) => {
+      if (!prev) return prev;
+      const amount = Number(auctionBid);
+      if (!Number.isFinite(amount) || amount <= 0) return prev;
+      socket.emit("placeAuctionBid", { playerId: prev.id, bidAmount: amount });
+      return prev;
+    });
+  }, [auctionBid]); // eslint-disable-line react-hooks/exhaustive-deps
 
   if (!me || !me.teamId) {
     return (

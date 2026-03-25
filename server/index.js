@@ -596,6 +596,7 @@ io.on("connection", (socket) => {
     socket.emit("gameState", {
       matchweek: game.matchweek,
       matchState: game.matchState,
+      tactic: game.playersByName[name]?.tactic || null,
     });
     io.to(roomCode).emit("playerListUpdate", getPlayerList(game));
 
@@ -726,10 +727,6 @@ io.on("connection", (socket) => {
     const playerState = getPlayerBySocket(game, socket.id);
     if (game && playerState) {
       playerState.tactic = tactic;
-      socket.emit(
-        "systemMessage",
-        `Tática alterada para ${tactic.formation} (${tactic.style})`,
-      );
     }
   });
 
