@@ -9,6 +9,15 @@ const DIVISION_NAMES = {
   5: "Distritais",
 };
 
+const POSITION_SHORT_LABELS = {
+  GK: "G",
+  DEF: "D",
+  MID: "M",
+  ATK: "A",
+};
+
+const MAX_MATCH_SUBS = 5;
+
 function formatCurrency(value) {
   return new Intl.NumberFormat("pt-PT", {
     style: "currency",
@@ -580,7 +589,7 @@ function App() {
   // ── SUBSTITUTION SWAP ─────────────────────────────────────────────────────
   const handleSubSwap = useCallback(
     (playerId) => {
-      if (subsMade >= 3) return;
+      if (subsMade >= MAX_MATCH_SUBS) return;
       setSwapSource((currentSource) => {
         if (!currentSource) {
           // First click – select the player going out (must be Titular or Suplente)
@@ -1134,7 +1143,7 @@ function App() {
                     </h2>
                     <p className="text-center text-zinc-400 font-bold mb-5 text-sm">
                       Seleciona na Esquerda e na Direita para Substituir
-                      (Restam: {3 - subsMade})
+                      (Restam: {MAX_MATCH_SUBS - subsMade})
                     </p>
 
                     <div className="flex-1 overflow-y-auto mb-5 grid grid-cols-2 gap-4 bg-zinc-900/50 p-4 rounded-2xl border border-zinc-800">
@@ -1534,77 +1543,84 @@ function App() {
             {activeTab === "squad" && (
               <div className="space-y-6">
                 <div className="bg-zinc-900 rounded-3xl border border-zinc-800 shadow-sm overflow-hidden">
-                  <table className="w-full text-left text-sm">
+                  <table className="w-full text-left text-sm font-normal">
                     <thead>
-                      <tr className="bg-zinc-950/50 text-zinc-400 uppercase text-[11px] tracking-widest border-b border-zinc-800">
-                        <th className="px-4 py-3 font-black">Seleção</th>
-                        <th className="px-4 py-3 font-black">Pos</th>
-                        <th className="px-4 py-3 font-black">Nome</th>
-                        <th className="px-4 py-3 font-black text-center w-12">
-                          Nac
+                      <tr className="bg-zinc-950/50 text-zinc-400 uppercase text-[11px] tracking-widest border-b border-zinc-800 font-normal">
+                        <th className="px-3 py-3 text-center w-10 font-normal">
+                          ☑️
                         </th>
-                        <th className="px-4 py-3 font-black text-center w-24">
-                          Ordenado
+                        <th className="px-3 py-3 text-center w-12 font-normal">
+                          POS
                         </th>
-                        <th className="px-4 py-3 font-black text-center w-12">
-                          Qual
+                        <th className="px-3 py-3 font-normal">NOME</th>
+                        <th className="px-3 py-3 text-center w-14 font-normal">
+                          QUAL
                         </th>
-                        <th className="px-4 py-3 font-black text-center w-12">
-                          Golos
+                        <th className="px-3 py-3 text-center w-14 font-normal">
+                          FORMA
                         </th>
-                        <th className="px-4 py-3 font-black text-center w-16">
-                          Vermelhos
+                        <th className="px-3 py-3 text-center w-12 font-normal">
+                          ⚽
                         </th>
-                        <th className="px-4 py-3 font-black text-center w-16">
-                          Lesões
+                        <th className="px-3 py-3 text-center w-12 font-normal">
+                          🟥
                         </th>
-                        <th className="px-4 py-3 font-black w-32 text-center">
-                          Forma
+                        <th className="px-3 py-3 text-center w-12 font-normal">
+                          🩹
                         </th>
-                        <th className="px-4 py-3 font-black w-44 text-center">
-                          Ações
+                        <th className="px-3 py-3 text-center w-12 font-normal">
+                          NAC
+                        </th>
+                        <th className="px-3 py-3 text-center w-24 font-normal">
+                          ORDENADO
+                        </th>
+                        <th className="px-3 py-3 text-center w-24 font-normal">
+                          AÇÕES
                         </th>
                       </tr>
                     </thead>
-                    <tbody className="divide-y divide-zinc-800/50 font-medium">
+                    <tbody className="divide-y divide-zinc-800/50 font-normal">
                       {annotatedSquad.map((player) => (
                         <tr
                           key={player.id}
                           onClick={() => handleSubSwap(player.id)}
                           className={`cursor-pointer hover:bg-zinc-800/50 transition-colors group select-none ${player.status === "Titular" ? "bg-amber-500/5" : ""} ${swapSource === player.id ? "ring-2 ring-inset ring-amber-500 bg-amber-500/20" : ""} ${player.isSubbedOut ? "opacity-30 grayscale cursor-not-allowed" : ""}`}
                         >
-                          <td className="px-4 py-2.5">
+                          <td className="px-3 py-2.5 text-center text-lg leading-none">
                             <span
-                              className={`text-xs px-2 py-1 rounded font-black tracking-widest uppercase shadow-sm ${player.status === "Titular" ? "bg-amber-500 text-zinc-950" : player.isSubbedOut ? "bg-zinc-900 line-through text-zinc-500 border border-zinc-800" : player.status === "Suplente" ? "bg-zinc-700 text-white" : "text-zinc-600 border border-zinc-800"}`}
+                              className={`inline-flex items-center justify-center rounded-full ${player.status === "Titular" ? "bg-emerald-500/15" : player.status === "Suplente" ? "bg-amber-500/15" : "bg-zinc-900/80"}`}
                             >
-                              {player.isSubbedOut
-                                ? "SUBSTITUÍDO"
-                                : player.status}
+                              {player.status === "Titular"
+                                ? "✅"
+                                : player.status === "Suplente"
+                                  ? "🟡"
+                                  : "❌"}
                             </span>
                           </td>
                           <td
-                            className={`px-4 py-2.5 font-black text-sm tracking-wider ${player.position === "GK" ? "text-yellow-500" : player.position === "DEF" ? "text-blue-500" : "text-green-500"}`}
+                            className={`px-3 py-2.5 text-center text-sm tracking-wider ${player.position === "GK" ? "text-yellow-500" : player.position === "DEF" ? "text-blue-500" : "text-green-500"}`}
                           >
-                            {player.position}
+                            {POSITION_SHORT_LABELS[player.position] ||
+                              player.position}
                           </td>
-                          <td className="px-4 py-2.5 font-bold text-white text-sm md:text-base">
+                          <td className="px-3 py-2.5 text-white text-sm md:text-base whitespace-nowrap">
                             {player.name}
                           </td>
-                          <td className="px-4 py-2.5 text-center text-zinc-400 font-bold">
+                          <td className="px-3 py-2.5 text-center text-zinc-400 text-sm">
                             {player.nationality}
                           </td>
-                          <td className="px-4 py-2.5 text-center font-mono text-zinc-300 text-xs md:text-sm">
+                          <td className="px-3 py-2.5 text-center font-mono text-zinc-300 text-xs md:text-sm">
                             {formatCurrency(player.wage || 0)}
                           </td>
-                          <td className="px-4 py-2.5 text-center">
-                            <span className="bg-zinc-950 text-white font-black px-2 py-1.5 rounded text-sm border border-zinc-800">
+                          <td className="px-3 py-2.5 text-center text-zinc-100 font-normal">
+                            <span className="inline-flex items-center justify-center bg-zinc-950 text-white px-2 py-1 rounded text-sm border border-zinc-800 font-normal">
                               {player.skill}
                             </span>
                           </td>
-                          <td className="px-4 py-2.5 text-center font-black text-emerald-400">
+                          <td className="px-3 py-2.5 text-center text-emerald-400 font-normal">
                             {getPlayerStat(player, ["goals"])}
                           </td>
-                          <td className="px-4 py-2.5 text-center font-black text-red-400">
+                          <td className="px-3 py-2.5 text-center text-red-400 font-normal">
                             {getPlayerStat(player, [
                               "reds",
                               "red_cards",
@@ -1612,7 +1628,7 @@ function App() {
                               "expulsions",
                             ])}
                           </td>
-                          <td className="px-4 py-2.5 text-center font-black text-orange-400">
+                          <td className="px-3 py-2.5 text-center text-orange-400 font-normal">
                             {getPlayerStat(player, [
                               "injuries",
                               "injury_count",
@@ -1620,7 +1636,7 @@ function App() {
                               "lesions",
                             ])}
                           </td>
-                          <td className="px-4 py-2.5">
+                          <td className="px-3 py-2.5">
                             <div className="flex items-center gap-3">
                               <div className="flex-1 bg-zinc-950 rounded-full h-2.5 overflow-hidden">
                                 <div
@@ -1633,40 +1649,46 @@ function App() {
                               </span>
                             </div>
                           </td>
-                          <td className="px-4 py-2.5 text-center">
+                          <td className="px-3 py-2.5 text-center">
                             {player.status === "Titular" ||
                             player.status === "Suplente" ? (
-                              <div className="flex flex-wrap justify-center gap-2">
+                              <div className="flex flex-wrap justify-center gap-1.5">
                                 <button
                                   onClick={(e) => {
                                     e.stopPropagation();
                                     renewPlayerContract(player);
                                   }}
-                                  className="px-3 py-1.5 rounded-lg bg-emerald-600 hover:bg-emerald-500 text-white text-[11px] font-black uppercase"
+                                  title="Renovar"
+                                  aria-label="Renovar"
+                                  className="px-2.5 py-1.5 rounded-lg bg-emerald-600 hover:bg-emerald-500 text-white text-[11px] font-normal uppercase"
                                 >
-                                  Renovar
+                                  R
                                 </button>
                                 <button
                                   onClick={(e) => {
                                     e.stopPropagation();
                                     listPlayerAuction(player);
                                   }}
-                                  className="px-3 py-1.5 rounded-lg bg-amber-600 hover:bg-amber-500 text-zinc-950 text-[11px] font-black uppercase"
+                                  title="Vender em Leilão"
+                                  aria-label="Vender em Leilão"
+                                  className="px-2.5 py-1.5 rounded-lg bg-amber-600 hover:bg-amber-500 text-zinc-950 text-[11px] font-normal uppercase"
                                 >
-                                  Leilão
+                                  V
                                 </button>
                                 <button
                                   onClick={(e) => {
                                     e.stopPropagation();
                                     listPlayerFixed(player);
                                   }}
-                                  className="px-3 py-1.5 rounded-lg bg-zinc-700 hover:bg-zinc-600 text-white text-[11px] font-black uppercase"
+                                  title="Listar no Mercado"
+                                  aria-label="Listar no Mercado"
+                                  className="px-2.5 py-1.5 rounded-lg bg-zinc-700 hover:bg-zinc-600 text-white text-[11px] font-normal uppercase"
                                 >
-                                  Lista
+                                  L
                                 </button>
                               </div>
                             ) : (
-                              <span className="text-xs text-zinc-600 font-bold uppercase">
+                              <span className="text-xs text-zinc-600 font-normal uppercase">
                                 —
                               </span>
                             )}
