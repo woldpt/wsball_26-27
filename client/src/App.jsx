@@ -523,6 +523,19 @@ function App() {
         }
       : undefined;
 
+  const annotatedSquad = useMemo(() => {
+    const mapped = mySquad.map((p) => {
+      const isOut = activeTab === "live" && subbedOut.includes(p.id);
+      return {
+        ...p,
+        status: isOut ? "Out" : tactic.positions[p.id] || "Reserva",
+        isSubbedOut: isOut,
+      };
+    });
+    const order = { Titular: 1, Suplente: 2, Reserva: 3, Out: 4 };
+    return mapped.sort((a, b) => order[a.status] - order[b.status]);
+  }, [mySquad, tactic.positions, activeTab, subbedOut]);
+
   return (
     <div className="min-h-screen bg-zinc-950 text-zinc-100 font-sans pb-12 tracking-tight">
       {/* Toast notifications */}
