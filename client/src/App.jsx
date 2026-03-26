@@ -251,7 +251,7 @@ function App() {
 
   const [matchResults, setMatchResults] = useState(null);
   const [matchweekCount, setMatchweekCount] = useState(0);
-  const [activeTab, setActiveTab] = useState("dashboard");
+  const [activeTab, setActiveTab] = useState("club");
   const [topScorers, setTopScorers] = useState([]);
   const [marketPairs, setMarketPairs] = useState([]);
   const [marketPositionFilter, setMarketPositionFilter] = useState("all");
@@ -758,9 +758,9 @@ function App() {
     }
   }, [showCupDrawPopup, cupDraw, cupDrawRevealIdx]);
 
-  // Load own palmares when História tab is opened
+  // Load own palmares when Clube tab is opened
   useEffect(() => {
-    if (activeTab !== "historia" || !me?.teamId) return;
+    if (activeTab !== "club" || !me?.teamId) return;
     socket.emit("requestPalmares", { teamId: me.teamId });
   }, [activeTab, me?.teamId]);
 
@@ -1489,32 +1489,26 @@ function App() {
       <div className="max-w-350 mx-auto p-4 md:p-8">
         <div className="flex gap-3 mb-5 border-b border-zinc-800 pb-px overflow-x-auto">
           {[
-            "dashboard",
-            "live",
+            "club",
             "standings",
-            "historia",
-            "squad",
             "market",
-            "finances",
+            "live",
+            "squad",
           ].map((tab) => (
             <button
               key={tab}
               onClick={() => setActiveTab(tab)}
               className={`px-4 py-2.5 font-bold text-sm md:text-base uppercase transition-colors border-b-4 ${activeTab === tab ? "border-amber-500 text-white" : "border-transparent text-zinc-500 hover:text-zinc-300"}`}
             >
-              {tab === "dashboard"
-                ? "Geral"
-                : tab === "live"
-                  ? "Jornada"
-                  : tab === "standings"
-                    ? "Classificações"
-                    : tab === "historia"
-                      ? "História"
-                      : tab === "squad"
-                        ? "Plantel"
-                        : tab === "market"
-                          ? "Mercado"
-                          : "Finanças"}
+              {tab === "club"
+                ? "Clube"
+                : tab === "standings"
+                  ? "Classificações"
+                  : tab === "market"
+                    ? "Mercado"
+                    : tab === "live"
+                      ? "Jornada"
+                      : "Plantel"}
             </button>
           ))}
         </div>
@@ -1523,108 +1517,7 @@ function App() {
           className={`grid grid-cols-1 gap-6 ${activeTab === "squad" ? "xl:grid-cols-[minmax(0,3fr)_260px]" : ""}`}
         >
           <div>
-            {activeTab === "dashboard" && (
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <div className="space-y-4">
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                    <div className="bg-zinc-900 p-4 rounded-xl border border-zinc-800 shadow-sm flex flex-col items-center justify-center text-center">
-                      <p className="text-xs text-zinc-500 uppercase font-black tracking-widest mb-1">
-                        Clube
-                      </p>
-                      <p className="text-xl font-black">{teamInfo?.name}</p>
-                      <p className="text-sm font-semibold text-amber-500 mt-1">
-                        {DIVISION_NAMES[teamInfo?.division] ||
-                          `Div ${teamInfo?.division}`}
-                      </p>
-                    </div>
-                    <div className="bg-amber-500 p-4 rounded-xl border border-amber-400 text-zinc-950 flex flex-col justify-center items-center">
-                      <p className="text-xs uppercase font-black tracking-widest opacity-80 mb-1">
-                        Classificação
-                      </p>
-                      <p className="text-4xl font-black">
-                        {(() => {
-                          const divTeams = teams
-                            .filter((t) => t.division === teamInfo?.division)
-                            .sort(
-                              (a, b) =>
-                                (b.points || 0) - (a.points || 0) ||
-                                (b.goals_for || 0) -
-                                  (b.goals_against || 0) -
-                                  ((a.goals_for || 0) - (a.goals_against || 0)),
-                            );
-                          const pos =
-                            divTeams.findIndex((t) => t.id === me.teamId) + 1;
-                          return pos > 0 ? `${pos}º` : "-";
-                        })()}
-                      </p>
-                    </div>
-                  </div>
 
-                  {myMatch && (
-                    <div className="bg-zinc-900 rounded-xl border border-zinc-800 shadow-sm overflow-hidden">
-                      <div className="bg-zinc-800/50 p-3 border-b border-zinc-800 flex justify-between">
-                        <h3 className="font-bold text-white text-sm tracking-widest uppercase">
-                          Último Jogo
-                        </h3>
-                      </div>
-                      <div className="p-4">
-                        <div className="flex items-center justify-center gap-4">
-                          <div className="text-lg font-black flex-1 text-right truncate">
-                            {
-                              teams.find((t) => t.id === myMatch.homeTeamId)
-                                ?.name
-                            }
-                          </div>
-                          <div className="px-4 py-2 bg-zinc-950 border border-zinc-800 rounded-xl text-3xl font-black text-white shadow-inner flex gap-2">
-                            <span>{myMatch.finalHomeGoals ?? 0}</span>
-                            <span className="text-zinc-700">-</span>
-                            <span>{myMatch.finalAwayGoals ?? 0}</span>
-                          </div>
-                          <div className="text-lg font-black flex-1 text-left truncate">
-                            {
-                              teams.find((t) => t.id === myMatch.awayTeamId)
-                                ?.name
-                            }
-                          </div>
-                        </div>
-                      </div>
-                    </div>
-                  )}
-                </div>
-
-                <div className="bg-zinc-900 rounded-xl border border-zinc-800 p-4 shadow-sm max-h-100 overflow-y-auto">
-                  <h3 className="text-amber-500 font-black mb-3 uppercase tracking-widest text-sm border-b border-zinc-800 pb-2 flex items-center gap-2">
-                    🏆 Melhores Marcadores
-                  </h3>
-                  {topScorers.length === 0 ? (
-                    <p className="text-sm text-zinc-500 font-bold">
-                      Nenhum golo marcado ainda.
-                    </p>
-                  ) : (
-                    <ul className="space-y-2">
-                      {topScorers.map((scorer, i) => (
-                        <li
-                          key={scorer.id}
-                          className="flex justify-between items-center text-sm p-2 rounded-lg bg-zinc-950 border border-zinc-800/50"
-                        >
-                          <span className="font-bold text-white w-48 truncate">
-                            {i + 1}. {scorer.name}
-                          </span>
-                          {isDesktopLayout && (
-                            <span className="text-[10px] text-zinc-500 uppercase truncate max-w-25">
-                              {scorer.team_name || "Ag. Livre"}
-                            </span>
-                          )}
-                          <span className="text-emerald-400 font-black text-base">
-                            {scorer.goals}
-                          </span>
-                        </li>
-                      ))}
-                    </ul>
-                  )}
-                </div>
-              </div>
-            )}
 
             {activeTab === "live" && (matchResults || matchAction) && (
               <div className="bg-zinc-900 min-h-150 text-zinc-100 font-sans p-6 rounded-3xl border border-zinc-800 shadow-sm relative overflow-hidden">
@@ -2051,7 +1944,7 @@ function App() {
               </div>
             )}
 
-            {activeTab === "historia" && (
+            {activeTab === "club" && (
               <div className="space-y-6">
                 {/* Own team trophies */}
                 <div className="bg-zinc-900 rounded-3xl border border-zinc-800 shadow-sm p-6">
@@ -2137,6 +2030,99 @@ function App() {
                     </div>
                   </div>
                 )}
+
+                {/* Finances section */}
+                <div className="bg-zinc-900 p-8 rounded-3xl border border-zinc-800 shadow-sm">
+                  <h2 className="text-2xl font-black mb-8 text-emerald-400">
+                    Resumo Financeiro
+                  </h2>
+                  <div className="space-y-6 text-lg">
+                    <div className="flex justify-between border-b border-zinc-800 pb-4">
+                      <span className="text-zinc-400 font-bold">
+                        Orçamento Atual:
+                      </span>
+                      <span className="font-mono text-white text-2xl font-black">
+                        {formatCurrency(teamInfo?.budget || 0)}
+                      </span>
+                    </div>
+                    <div className="flex justify-between border-b border-zinc-800 pb-4">
+                      <span className="text-zinc-400 font-bold">
+                        Salários Activos (Semanais):
+                      </span>
+                      <span className="font-mono text-red-400 font-bold">
+                        -{" "}
+                        {formatCurrency(
+                          mySquad.reduce((acc, p) => acc + p.wage, 0),
+                        )}
+                      </span>
+                    </div>
+                    <div className="flex justify-between border-b border-zinc-800 pb-4">
+                      <span className="text-zinc-400 font-bold">
+                        Bilheteiras (10€ \ lugar):
+                      </span>
+                      <span className="font-mono text-emerald-400 font-bold">
+                        +{" "}
+                        {formatCurrency(
+                          (teamInfo?.stadium_capacity || 5000) * 10,
+                        )}
+                      </span>
+                    </div>
+
+                    <div className="flex justify-between border-b border-zinc-800 pb-4">
+                      <span className="text-zinc-400 font-bold">
+                        Lotação do Estádio:
+                      </span>
+                      <span className="font-mono text-white text-xl font-bold">
+                        {teamInfo?.stadium_capacity?.toLocaleString() || 5000}{" "}
+                        Lugares
+                      </span>
+                    </div>
+
+                    <div className="flex justify-between pb-4">
+                      <span className="text-zinc-400 font-bold">
+                        Dívida ao Banco:
+                      </span>
+                      <span className="font-mono text-red-500 text-xl font-bold">
+                        {formatCurrency(teamInfo?.loan_amount || 0)}{" "}
+                        <span className="text-sm">(5% juros/sem)</span>
+                      </span>
+                    </div>
+
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mt-8 pt-4 border-t border-zinc-800">
+                      <div className="bg-zinc-950 p-4 rounded-xl border border-emerald-900 border-opacity-30">
+                        <p className="text-sm font-bold text-amber-500 mb-3 uppercase tracking-widest">
+                          +2.000 Lugares Estádio
+                        </p>
+                        <button
+                          onClick={() => socket.emit("buildStadium")}
+                          className="w-full bg-amber-600 hover:bg-amber-500 text-zinc-950 font-black py-3 rounded-lg text-sm transition-all uppercase"
+                        >
+                          Expandir (250.000€)
+                        </button>
+                      </div>
+
+                      <div className="bg-zinc-950 p-4 rounded-xl border border-red-900 border-opacity-30">
+                        <p className="text-sm font-bold text-red-500 mb-3 uppercase tracking-widest">
+                          Apoio Bancário
+                        </p>
+                        <div className="flex gap-2">
+                          <button
+                            onClick={() => socket.emit("takeLoan")}
+                            className="flex-1 bg-red-900 hover:bg-red-800 text-white font-black py-3 rounded-lg text-xs transition-all uppercase"
+                          >
+                            Pedir +500K
+                          </button>
+                          <button
+                            onClick={() => socket.emit("payLoan")}
+                            className="flex-1 bg-emerald-900 hover:bg-emerald-800 text-white font-black py-3 rounded-lg text-xs transition-all uppercase"
+                          >
+                            Pagar -500K
+                          </button>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                </div>
               </div>
             )}
 
@@ -2529,99 +2515,7 @@ function App() {
               </div>
             )}
 
-            {activeTab === "finances" && (
-              <div className="bg-zinc-900 p-8 rounded-3xl border border-zinc-800 shadow-sm">
-                <h2 className="text-2xl font-black mb-8 text-emerald-400">
-                  Resumo Financeiro
-                </h2>
-                <div className="space-y-6 text-lg">
-                  <div className="flex justify-between border-b border-zinc-800 pb-4">
-                    <span className="text-zinc-400 font-bold">
-                      Orçamento Atual:
-                    </span>
-                    <span className="font-mono text-white text-2xl font-black">
-                      {formatCurrency(teamInfo?.budget || 0)}
-                    </span>
-                  </div>
-                  <div className="flex justify-between border-b border-zinc-800 pb-4">
-                    <span className="text-zinc-400 font-bold">
-                      Salários Activos (Semanais):
-                    </span>
-                    <span className="font-mono text-red-400 font-bold">
-                      -{" "}
-                      {formatCurrency(
-                        mySquad.reduce((acc, p) => acc + p.wage, 0),
-                      )}
-                    </span>
-                  </div>
-                  <div className="flex justify-between border-b border-zinc-800 pb-4">
-                    <span className="text-zinc-400 font-bold">
-                      Bilheteiras (10€ \ lugar):
-                    </span>
-                    <span className="font-mono text-emerald-400 font-bold">
-                      +{" "}
-                      {formatCurrency(
-                        (teamInfo?.stadium_capacity || 5000) * 10,
-                      )}
-                    </span>
-                  </div>
 
-                  <div className="flex justify-between border-b border-zinc-800 pb-4">
-                    <span className="text-zinc-400 font-bold">
-                      Lotação do Estádio:
-                    </span>
-                    <span className="font-mono text-white text-xl font-bold">
-                      {teamInfo?.stadium_capacity?.toLocaleString() || 5000}{" "}
-                      Lugares
-                    </span>
-                  </div>
-
-                  <div className="flex justify-between pb-4">
-                    <span className="text-zinc-400 font-bold">
-                      Dívida ao Banco:
-                    </span>
-                    <span className="font-mono text-red-500 text-xl font-bold">
-                      {formatCurrency(teamInfo?.loan_amount || 0)}{" "}
-                      <span className="text-sm">(5% juros/sem)</span>
-                    </span>
-                  </div>
-
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mt-8 pt-4 border-t border-zinc-800">
-                    <div className="bg-zinc-950 p-4 rounded-xl border border-emerald-900 border-opacity-30">
-                      <p className="text-sm font-bold text-amber-500 mb-3 uppercase tracking-widest">
-                        +2.000 Lugares Estádio
-                      </p>
-                      <button
-                        onClick={() => socket.emit("buildStadium")}
-                        className="w-full bg-amber-600 hover:bg-amber-500 text-zinc-950 font-black py-3 rounded-lg text-sm transition-all uppercase"
-                      >
-                        Expandir (250.000€)
-                      </button>
-                    </div>
-
-                    <div className="bg-zinc-950 p-4 rounded-xl border border-red-900 border-opacity-30">
-                      <p className="text-sm font-bold text-red-500 mb-3 uppercase tracking-widest">
-                        Apoio Bancário
-                      </p>
-                      <div className="flex gap-2">
-                        <button
-                          onClick={() => socket.emit("takeLoan")}
-                          className="flex-1 bg-red-900 hover:bg-red-800 text-white font-black py-3 rounded-lg text-xs transition-all uppercase"
-                        >
-                          Pedir +500K
-                        </button>
-                        <button
-                          onClick={() => socket.emit("payLoan")}
-                          className="flex-1 bg-emerald-900 hover:bg-emerald-800 text-white font-black py-3 rounded-lg text-xs transition-all uppercase"
-                        >
-                          Pagar -500K
-                        </button>
-                      </div>
-                    </div>
-                  </div>
-                </div>
-              </div>
-            )}
           </div>
 
           {activeTab === "squad" && (
