@@ -1470,6 +1470,16 @@ function App() {
               | SALA: {me.roomCode} | Jornada {matchweekCount + 1}
             </p>
           </div>
+          {activeTab === "live" && isPlayingMatch && (
+            <div className="relative z-10 absolute left-1/2 -translate-x-1/2">
+              <p
+                className="text-2xl md:text-4xl font-black tracking-widest"
+                style={{ color: teamInfo?.color_secondary || "#ffffff" }}
+              >
+                {Math.min(liveMinute, 90)}'
+              </p>
+            </div>
+          )}
           <div className="relative z-10 flex items-center gap-4">
             {isDesktopLayout && (
               <div className="text-right">
