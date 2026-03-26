@@ -16,6 +16,25 @@ const POSITION_SHORT_LABELS = {
   ATK: "A",
 };
 
+// Enable row background color per position
+const ENABLE_ROW_BG = true;
+
+// Text color classes for each position (soft palette)
+const POSITION_TEXT_CLASS = {
+  GK: "text-yellow-500",
+  DEF: "text-blue-500",
+  MID: "text-emerald-500",
+  ATK: "text-rose-500",
+};
+
+// Background color classes for each position (soft, subtle)
+const POSITION_BG_CLASS = {
+  GK: "bg-yellow-50",
+  DEF: "bg-blue-50",
+  MID: "bg-emerald-50",
+  ATK: "bg-rose-50",
+};
+
 const MAX_MATCH_SUBS = 5;
 
 function formatCurrency(value) {
@@ -2040,7 +2059,7 @@ function App() {
                       {annotatedSquad.map((player) => (
                         <tr
                           key={player.id}
-                          className={`hover:bg-zinc-800/50 transition-colors group select-none ${player.status === "Titular" ? "bg-emerald-500/5" : player.status === "Suplente" ? "bg-amber-500/5" : ""}`}
+                          className={`transition-colors group select-none ${ENABLE_ROW_BG ? POSITION_BG_CLASS[player.position] : ""} hover:bg-zinc-800/50 ${player.status === "Titular" ? "bg-emerald-500/5" : player.status === "Suplente" ? "bg-amber-500/5" : ""}`}
                         >
                           <td
                             className="px-3 py-2.5 text-center text-lg leading-none relative"
@@ -2116,7 +2135,7 @@ function App() {
                               })()}
                           </td>
                           <td
-                            className={`px-3 py-2.5 text-center text-sm tracking-wider ${player.position === "GK" ? "text-yellow-500" : player.position === "DEF" ? "text-blue-500" : "text-green-500"}`}
+                            className={`px-3 py-2.5 text-center text-sm tracking-wider ${POSITION_TEXT_CLASS[player.position] || 'text-zinc-300'}`}
                           >
                             {POSITION_SHORT_LABELS[player.position] ||
                               player.position}
@@ -2760,10 +2779,10 @@ function App() {
                       selectedTeamSquad.map((player) => (
                         <tr
                           key={player.id}
-                          className="hover:bg-zinc-800/50 transition-colors"
+                          className={`hover:bg-zinc-800/50 transition-colors ${ENABLE_ROW_BG ? POSITION_BG_CLASS[player.position] : ""}`}
                         >
                           <td
-                            className={`px-4 py-2.5 font-black text-sm tracking-wider ${player.position === "GK" ? "text-yellow-500" : player.position === "DEF" ? "text-blue-500" : "text-green-500"}`}
+                            className={`px-4 py-2.5 font-black text-sm tracking-wider ${POSITION_TEXT_CLASS[player.position] || 'text-zinc-300'}`}
                           >
                             {player.position}
                           </td>
