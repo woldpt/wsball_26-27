@@ -2081,13 +2081,13 @@ function App() {
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mt-8 pt-4 border-t border-zinc-800">
                       <div className="bg-zinc-950 p-4 rounded-xl border border-emerald-900 border-opacity-30">
                         <p className="text-sm font-bold text-amber-500 mb-3 uppercase tracking-widest">
-                          +2.000 Lugares Estádio
+                          +5.000 Lugares Estádio
                         </p>
                         <button
                           onClick={() => socket.emit("buildStadium")}
                           className="w-full bg-amber-600 hover:bg-amber-500 text-zinc-950 font-black py-3 rounded-lg text-sm transition-all uppercase"
                         >
-                          Expandir (250.000€)
+                          Expandir (150.000€)
                         </button>
                       </div>
 
