@@ -1746,7 +1746,7 @@ function App() {
                             return (
                               <div
                                 key={idx}
-                                className={`text-[11px] bg-zinc-950 rounded border ${isMyMatch ? "border-amber-500 bg-amber-500/10 ring-1 ring-amber-500" : "border-zinc-800"}`}
+                                className={`text-base bg-zinc-950 rounded border ${isMyMatch ? "border-amber-500 bg-amber-500/10 ring-1 ring-amber-500" : "border-zinc-800"}`}
                               >
                                 {/* Line 1: teams + score */}
                                 <div className="flex items-center">
@@ -1755,21 +1755,22 @@ function App() {
                                       backgroundColor: hInfo?.color_primary,
                                       color: hInfo?.color_secondary,
                                     }}
-                                    className="flex-1 uppercase truncate font-black text-right px-2 py-1 rounded-tl"
+                                    className="flex-1 uppercase truncate font-black text-right px-2 py-2 rounded-tl text-lg"
                                   >
                                     {hInfo?.name}
                                   </div>
-                                  <div className="px-2 py-1 bg-zinc-900 text-white text-center font-normal min-w-10 flex gap-0.5 items-center justify-center">
+                                  <div className="px-3 py-2 bg-zinc-900 text-white text-center font-normal min-w-16 flex gap-0.5 items-center justify-center text-2xl">
                                     <span
                                       style={{
                                         color: homeFlashing
-                                          ? "#ef4444"
+                                          ? "#ff4444"
                                           : "white",
                                         fontWeight: homeFlashing
-                                          ? "bold"
+                                          ? "900"
                                           : "normal",
-                                        transition:
-                                          "color 2.5s ease, font-weight 0.1s",
+                                        transition: homeFlashing
+                                          ? "none"
+                                          : "color 2.5s ease, font-weight 2.5s ease",
                                       }}
                                     >
                                       {currentHome.length}
@@ -1778,13 +1779,14 @@ function App() {
                                     <span
                                       style={{
                                         color: awayFlashing
-                                          ? "#ef4444"
+                                          ? "#ff4444"
                                           : "white",
                                         fontWeight: awayFlashing
-                                          ? "bold"
+                                          ? "900"
                                           : "normal",
-                                        transition:
-                                          "color 2.5s ease, font-weight 0.1s",
+                                        transition: awayFlashing
+                                          ? "none"
+                                          : "color 2.5s ease, font-weight 2.5s ease",
                                       }}
                                     >
                                       {currentAway.length}
@@ -1795,7 +1797,7 @@ function App() {
                                       backgroundColor: aInfo?.color_primary,
                                       color: aInfo?.color_secondary,
                                     }}
-                                    className="flex-1 uppercase truncate font-black text-left px-2 py-1 rounded-tr"
+                                    className="flex-1 uppercase truncate font-black text-left px-2 py-2 rounded-tr text-lg"
                                   >
                                     {aInfo?.name}
                                   </div>
