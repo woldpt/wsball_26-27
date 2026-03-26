@@ -374,6 +374,7 @@ const CUP_ROUND_NAMES = [
 // Called after matchweek 14 completes. Awards palmares, applies promo/relegation.
 async function applySeasonEnd(game) {
   const season = game.season;
+  const year = game.year; // real-world year of the season just ended
   const allTeams = await runAll(
     game.db,
     "SELECT * FROM teams ORDER BY division, id",
@@ -397,13 +398,13 @@ async function applySeasonEnd(game) {
     await new Promise((resolve) => {
       game.db.run(
         "INSERT INTO palmares (team_id, season, achievement) VALUES (?, ?, ?)",
-        [iLigaWinner.id, season, "Campeão Nacional"],
+        [iLigaWinner.id, year, "Campeão Nacional"],
         resolve,
       );
     });
     io.to(game.roomCode).emit(
       "systemMessage",
-      `🏆 ${iLigaWinner.name} é o Campeão Nacional da temporada ${season}!`,
+      `🏆 ${iLigaWinner.name} é o Campeão Nacional de ${year}!`,
     );
   }
 
@@ -414,7 +415,7 @@ async function applySeasonEnd(game) {
       await new Promise((resolve) => {
         game.db.run(
           "INSERT INTO palmares (team_id, season, achievement) VALUES (?, ?, ?)",
-          [winner.id, season, `Campeão ${DIVISION_NAMES[div]}`],
+          [winner.id, year, `Campeão ${DIVISION_NAMES[div]}`],
           resolve,
         );
       });
@@ -483,6 +484,7 @@ async function applySeasonEnd(game) {
 
   // Advance season
   game.season += 1;
+  game.year += 1; // advance to the next real-world year
   game.cupRound = 0;
   game.cupState = "idle";
   game.cupTeamIds = [];
@@ -493,6 +495,7 @@ async function applySeasonEnd(game) {
   io.to(game.roomCode).emit("teamsData", updatedTeams);
   io.to(game.roomCode).emit("seasonEnd", {
     season,
+    year,
     champion: iLigaWinner
       ? { id: iLigaWinner.id, name: iLigaWinner.name }
       : null,
@@ -773,14 +776,14 @@ async function simulateCupRound(game, round) {
       await new Promise((resolve) => {
         game.db.run(
           "INSERT INTO palmares (team_id, season, achievement) VALUES (?, ?, ?)",
-          [winnerId, season, "Vencedor da Taça de Portugal"],
+          [winnerId, game.year, "Vencedor da Taça de Portugal"],
           resolve,
         );
       });
       if (winnerTeam) {
         io.to(game.roomCode).emit(
           "systemMessage",
-          `🏆 ${winnerTeam.name} venceu a Taça de Portugal da temporada ${season}!`,
+          `🏆 ${winnerTeam.name} venceu a Taça de Portugal de ${game.year}!`,
         );
       }
     }
@@ -1376,6 +1379,7 @@ io.on("connection", (socket) => {
     socket.emit("gameState", {
       matchweek: game.matchweek,
       matchState: game.matchState,
+      year: game.year,
       tactic: game.playersByName[name]?.tactic || null,
     });
     io.to(roomCode).emit("playerListUpdate", getPlayerList(game));

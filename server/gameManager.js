@@ -86,6 +86,7 @@ function getGame(roomCode, onReady) {
     matchweek: 1,
     matchState: "idle",
     season: 1,
+    year: 2026, // real-world year of the current season (starts 2026)
     cupRound: 0, // 0 = no cup in progress; 1-5 = current round
     cupState: "idle", // idle | draw | playing | done_round | done_cup
     cupTeamIds: [], // team IDs still alive in the cup this season
@@ -150,15 +151,28 @@ function getGame(roomCode, onReady) {
                           (err5, row5) => {
                             if (row5) game.cupState = row5.value || "idle";
 
-                            // Load free agents and transfer-listed players for market
-                            db.all(
-                              "SELECT * FROM players WHERE team_id IS NULL OR transfer_status != 'none' ORDER BY RANDOM() LIMIT 40",
-                              (err6, rows) => {
-                                if (!err6 && rows) game.globalMarket = rows;
-                                game.initialized = true;
-                                if (onReady) onReady(game);
+                            db.get(
+                              "SELECT value FROM game_state WHERE key = 'year'",
+                              (err6y, row6y) => {
+                                if (row6y) {
+                                  game.year = parseInt(row6y.value) || (2025 + game.season);
+                                } else {
+                                  // Migrate: derive year from season for existing games
+                                  game.year = 2025 + game.season;
+                                }
+
+                                // Load free agents and transfer-listed players for market
+                                db.all(
+                                  "SELECT * FROM players WHERE team_id IS NULL OR transfer_status != 'none' ORDER BY RANDOM() LIMIT 40",
+                                  (err7, rows) => {
+                                    if (!err7 && rows) game.globalMarket = rows;
+                                    game.initialized = true;
+                                    if (onReady) onReady(game);
+                                  },
+                                );
                               },
                             );
+                          });
                           },
                         );
                       },
@@ -202,6 +216,10 @@ function saveGameState(game) {
   game.db.run(
     "INSERT OR REPLACE INTO game_state (key, value) VALUES ('cupState', ?)",
     [game.cupState || "idle"],
+  );
+  game.db.run(
+    "INSERT OR REPLACE INTO game_state (key, value) VALUES ('year', ?)",
+    [String(game.year || 2026)],
   );
 }
 

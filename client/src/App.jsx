@@ -1437,6 +1437,16 @@ function App() {
   const refereeBalance = nextMatchReferee?.balance ?? 50;
   const refereePicksTeamA = refereeBalance >= 50;
 
+  // ── SEASON / YEAR HELPERS ────────────────────────────────────────────────
+  // matchweekCount is the global (cumulative) matchweek counter.
+  // Each season has 14 matchweeks, starting from year 2026.
+  const seasonYear = 2026 + Math.floor(matchweekCount / 14);
+  // Within-season jornada for the NEXT match to be played (1-14)
+  const currentJornada = (matchweekCount % 14) + 1;
+  // Within-season jornada for the LAST completed match (0 = none played yet)
+  const completedJornada =
+    matchweekCount > 0 ? ((matchweekCount - 1) % 14) + 1 : 0;
+
   return (
     <div className="min-h-screen bg-zinc-950 text-zinc-100 font-sans pb-12 tracking-tight">
       {/* Toast notifications */}
@@ -1461,13 +1471,16 @@ function App() {
               className="text-xl md:text-3xl font-black tracking-tighter"
               style={{ color: teamInfo?.color_secondary || "#ffffff" }}
             >
-              CashBall <span className="opacity-80">26/27</span>
+              CashBall{" "}
+              <span className="opacity-80">
+                {String(seasonYear).slice(2)}/{String(seasonYear + 1).slice(2)}
+              </span>
             </h1>
             <p
               className="text-sm md:text-base font-bold uppercase"
               style={{ color: teamInfo?.color_secondary || "#ffffff" }}
             >
-              | SALA: {me.roomCode} | Jornada {matchweekCount + 1}
+              | SALA: {me.roomCode} | {seasonYear} · Jornada {currentJornada}
             </p>
           </div>
           {activeTab === "live" && isPlayingMatch && (
@@ -1878,7 +1891,7 @@ function App() {
             {activeTab === "standings" && (
               <div className="bg-zinc-900 text-zinc-100 font-sans p-4 rounded-xl border border-zinc-800 shadow-sm relative overflow-hidden">
                 <h2 className="text-xl font-black text-amber-500 mb-4 pb-2 border-b border-zinc-800">
-                  Classificação Geral (Jornada {matchweekCount})
+                  Classificação Geral (Jornada {completedJornada})
                 </h2>
 
                 <div className="grid grid-cols-1 lg:grid-cols-2 gap-x-8 gap-y-4">
@@ -1982,7 +1995,7 @@ function App() {
                               {trophy.achievement}
                             </p>
                             <p className="text-zinc-500 text-xs font-bold">
-                              Temporada {trophy.season}
+                              {trophy.season}
                             </p>
                           </div>
                         </div>
@@ -2016,7 +2029,7 @@ function App() {
                               className="bg-zinc-950 border border-zinc-800 rounded-xl px-5 py-3"
                             >
                               <p className="text-xs text-zinc-500 font-black uppercase tracking-widest mb-2">
-                                Temporada {season}
+                                {season}
                               </p>
                               <div className="flex flex-wrap gap-2">
                                 {bySeasons[season].map((c, i) => (
