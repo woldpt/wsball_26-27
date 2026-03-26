@@ -1471,7 +1471,7 @@ function App() {
             </p>
           </div>
           {activeTab === "live" && isPlayingMatch && (
-            <div className="relative z-10 absolute left-1/2 -translate-x-1/2">
+            <div className="absolute z-10 left-1/2 -translate-x-1/2 top-1/2 -translate-y-1/2">
               <p
                 className="text-2xl md:text-4xl font-black tracking-widest"
                 style={{ color: teamInfo?.color_secondary || "#ffffff" }}
@@ -1755,7 +1755,7 @@ function App() {
                                       backgroundColor: hInfo?.color_primary,
                                       color: hInfo?.color_secondary,
                                     }}
-                                    className="flex-1 uppercase truncate font-black text-right px-2 py-2 rounded-tl text-lg"
+                                    className="flex-1 uppercase truncate font-black text-right px-2 py-2 rounded-tl text-sm"
                                   >
                                     {hInfo?.name}
                                   </div>
@@ -1797,7 +1797,7 @@ function App() {
                                       backgroundColor: aInfo?.color_primary,
                                       color: aInfo?.color_secondary,
                                     }}
-                                    className="flex-1 uppercase truncate font-black text-left px-2 py-2 rounded-tr text-lg"
+                                    className="flex-1 uppercase truncate font-black text-left px-2 py-2 rounded-tr text-sm"
                                   >
                                     {aInfo?.name}
                                   </div>
