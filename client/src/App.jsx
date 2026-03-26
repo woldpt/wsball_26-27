@@ -1054,7 +1054,8 @@ function App() {
                     Entra primeiro na tua conta
                   </h2>
                   <p className="text-sm text-zinc-400 font-medium">
-                    Depois escolhes se queres novo jogo, continuar uma época ou juntar-te a amigos.
+                    Depois escolhes se queres novo jogo, continuar uma época ou
+                    juntar-te a amigos.
                   </p>
                 </div>
                 <div>
@@ -1194,7 +1195,12 @@ function App() {
                 </div>
                 <button
                   onClick={() => handleAuthenticate("register")}
-                  disabled={!name.trim() || !password || authSubmitting || registerPasswordMismatch}
+                  disabled={
+                    !name.trim() ||
+                    !password ||
+                    authSubmitting ||
+                    registerPasswordMismatch
+                  }
                   className="w-full bg-amber-500 hover:bg-amber-400 disabled:bg-zinc-800 disabled:text-zinc-600 text-zinc-950 py-5 rounded-xl font-black text-xl transition-all active:scale-95 border-b-4 border-amber-700 active:border-b-0"
                 >
                   {authSubmitting ? "A CRIAR CONTA..." : "CRIAR CONTA"}
@@ -1245,9 +1251,7 @@ function App() {
                     <p className="text-[10px] uppercase tracking-[0.35em] text-amber-300 font-black mb-1">
                       Novo jogo
                     </p>
-                    <p className="text-base font-black text-white">
-                      Novo jogo
-                    </p>
+                    <p className="text-base font-black text-white">Novo jogo</p>
                     <p className="mt-2 text-xs text-zinc-400 leading-relaxed">
                       Começa do zero e recebe uma nova sala.
                     </p>
@@ -1300,7 +1304,9 @@ function App() {
                       className="w-full bg-zinc-950 border border-zinc-800 p-4 rounded-xl text-white text-lg font-black outline-none transition-all placeholder:text-zinc-700 focus:ring-2 focus:ring-amber-500 uppercase"
                       value={roomCode}
                       placeholder="INVERNO"
-                      onChange={(e) => setRoomCode(e.target.value.toUpperCase())}
+                      onChange={(e) =>
+                        setRoomCode(e.target.value.toUpperCase())
+                      }
                       onKeyDown={(e) => {
                         if (e.key === "Enter") handleJoin();
                       }}
@@ -1501,7 +1507,7 @@ function App() {
                 : tab === "live"
                   ? "Jornada"
                   : tab === "standings"
-                    ? "Tabela"
+                    ? "Classificações"
                     : tab === "historia"
                       ? "História"
                       : tab === "squad"
@@ -1513,7 +1519,9 @@ function App() {
           ))}
         </div>
 
-        <div className="grid grid-cols-1 xl:grid-cols-[minmax(0,3fr)_260px] gap-6">
+        <div
+          className={`grid grid-cols-1 gap-6 ${activeTab === "squad" ? "xl:grid-cols-[minmax(0,3fr)_260px]" : ""}`}
+        >
           <div>
             {activeTab === "dashboard" && (
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
@@ -2251,7 +2259,7 @@ function App() {
                               })()}
                           </td>
                           <td
-                            className={`px-3 py-2.5 text-center text-sm tracking-wider ${POSITION_TEXT_CLASS[player.position] || 'text-zinc-300'}`}
+                            className={`px-3 py-2.5 text-center text-sm tracking-wider ${POSITION_TEXT_CLASS[player.position] || "text-zinc-300"}`}
                           >
                             {POSITION_SHORT_LABELS[player.position] ||
                               player.position}
@@ -2616,184 +2624,192 @@ function App() {
             )}
           </div>
 
-          <div className="space-y-6">
-            <div className="bg-zinc-900 p-5 rounded-3xl border border-zinc-800 flex flex-col items-center sticky top-23">
-              {disconnected && (
-                <p className="text-red-400 text-xs font-bold mb-3 text-center">
-                  ⚠️ Desligado — a reconectar...
-                </p>
-              )}
-              {activeTab === "squad" && (
-                <div className="w-full mb-4 space-y-4">
-                  <div className="p-4 rounded-2xl border border-zinc-800 bg-zinc-950/80">
-                    <p className="text-[10px] uppercase tracking-widest text-zinc-500 font-black mb-3">
-                      Próximo Jogo
-                    </p>
-                    {nextMatchSummaryLoading && !nextMatchSummary ? (
-                      <div className="text-sm font-bold text-zinc-500 py-2">
-                        A carregar resumo...
-                      </div>
-                    ) : nextMatchOpponent ? (
-                      <div className="space-y-3 text-sm">
-                        <div className="flex items-start justify-between gap-3">
-                          <div>
-                            <p className="text-zinc-500 text-[10px] uppercase tracking-widest font-black">
-                              Adversário
-                            </p>
-                            <p className="text-white font-black text-base leading-tight">
-                              {nextMatchOpponent.name}
-                            </p>
-                          </div>
-                          <div className="text-right">
-                            <p className="text-zinc-500 text-[10px] uppercase tracking-widest font-black">
-                              Classificação
-                            </p>
-                            <p className="text-amber-400 font-black text-base">
-                              {nextMatchOpponent.position
-                                ? `${nextMatchOpponent.position}º`
-                                : "-"}
-                            </p>
-                          </div>
+          {activeTab === "squad" && (
+            <div className="space-y-6">
+              <div className="bg-zinc-900 p-5 rounded-3xl border border-zinc-800 flex flex-col items-center sticky top-23">
+                {disconnected && (
+                  <p className="text-red-400 text-xs font-bold mb-3 text-center">
+                    ⚠️ Desligado — a reconectar...
+                  </p>
+                )}
+                {activeTab === "squad" && (
+                  <div className="w-full mb-4 space-y-4">
+                    <div className="p-4 rounded-2xl border border-zinc-800 bg-zinc-950/80">
+                      <p className="text-[10px] uppercase tracking-widest text-zinc-500 font-black mb-3">
+                        Próximo Jogo
+                      </p>
+                      {nextMatchSummaryLoading && !nextMatchSummary ? (
+                        <div className="text-sm font-bold text-zinc-500 py-2">
+                          A carregar resumo...
                         </div>
-                        <div className="flex items-center justify-between gap-3">
-                          <p className="text-zinc-500 text-[10px] uppercase tracking-widest font-black">
-                            Últimos 5
+                      ) : nextMatchOpponent ? (
+                        <div className="space-y-3 text-sm">
+                          <div className="flex items-start justify-between gap-3">
+                            <div>
+                              <p className="text-zinc-500 text-[10px] uppercase tracking-widest font-black">
+                                Adversário
+                              </p>
+                              <p className="text-white font-black text-base leading-tight">
+                                {nextMatchOpponent.name}
+                              </p>
+                            </div>
+                            <div className="text-right">
+                              <p className="text-zinc-500 text-[10px] uppercase tracking-widest font-black">
+                                Classificação
+                              </p>
+                              <p className="text-amber-400 font-black text-base">
+                                {nextMatchOpponent.position
+                                  ? `${nextMatchOpponent.position}º`
+                                  : "-"}
+                              </p>
+                            </div>
+                          </div>
+                          <div className="flex items-center justify-between gap-3">
+                            <p className="text-zinc-500 text-[10px] uppercase tracking-widest font-black">
+                              Últimos 5
+                            </p>
+                            <div className="flex gap-1.5 font-black tracking-[0.35em] text-xs">
+                              {(nextMatchOpponent.last5 || "-----")
+                                .split("")
+                                .slice(0, 5)
+                                .map((result, index) => (
+                                  <span
+                                    key={`${result}-${index}`}
+                                    className={`w-7 h-7 rounded-full flex items-center justify-center border ${result === "V" ? "bg-emerald-500/15 text-emerald-400 border-emerald-500/30" : result === "E" ? "bg-amber-500/15 text-amber-400 border-amber-500/30" : result === "D" ? "bg-red-500/15 text-red-400 border-red-500/30" : "bg-zinc-900 text-zinc-600 border-zinc-800"}`}
+                                  >
+                                    {result}
+                                  </span>
+                                ))}
+                            </div>
+                          </div>
+                          <p className="text-xs text-zinc-500 font-bold">
+                            {nextMatchOpponent.last5 || "Sem histórico ainda."}
                           </p>
-                          <div className="flex gap-1.5 font-black tracking-[0.35em] text-xs">
-                            {(nextMatchOpponent.last5 || "-----")
-                              .split("")
-                              .slice(0, 5)
-                              .map((result, index) => (
-                                <span
-                                  key={`${result}-${index}`}
-                                  className={`w-7 h-7 rounded-full flex items-center justify-center border ${result === "V" ? "bg-emerald-500/15 text-emerald-400 border-emerald-500/30" : result === "E" ? "bg-amber-500/15 text-amber-400 border-amber-500/30" : result === "D" ? "bg-red-500/15 text-red-400 border-red-500/30" : "bg-zinc-900 text-zinc-600 border-zinc-800"}`}
-                                >
-                                  {result}
-                                </span>
-                              ))}
+                          <div className="pt-2 border-t border-zinc-800/80">
+                            <p className="text-zinc-500 text-[10px] uppercase tracking-widest font-black mb-2">
+                              Árbitro
+                            </p>
+                            <button
+                              type="button"
+                              onClick={() => setRefereePopup(nextMatchReferee)}
+                              className="flex w-full items-center justify-between gap-3 rounded-xl border border-zinc-800 bg-zinc-950 px-3 py-2.5 text-left hover:border-amber-500/40 transition-colors"
+                            >
+                              <span className="font-black text-white text-sm">
+                                {nextMatchReferee?.name || "A definir"}
+                              </span>
+                              <span className="text-[10px] uppercase tracking-widest font-black text-amber-400">
+                                Ver balança
+                              </span>
+                            </button>
                           </div>
                         </div>
-                        <p className="text-xs text-zinc-500 font-bold">
-                          {nextMatchOpponent.last5 || "Sem histórico ainda."}
+                      ) : (
+                        <div className="text-sm font-bold text-zinc-500 py-2">
+                          Sem resumo disponível.
+                        </div>
+                      )}
+                    </div>
+
+                    <div className="p-4 rounded-2xl border border-zinc-800 bg-zinc-950/80">
+                      <p className="text-[10px] uppercase tracking-widest text-zinc-500 font-black mb-3">
+                        Tática
+                      </p>
+                      <div className="space-y-3">
+                        <select
+                          className="w-full bg-zinc-950 border border-zinc-700 rounded-lg px-3 py-3 text-sm font-bold text-white focus:ring-2 focus:ring-amber-500"
+                          value={tactic.formation}
+                          onChange={(e) => handleAutoPick(e.target.value)}
+                        >
+                          <option value="4-4-2">4-4-2 Clássico</option>
+                          <option value="4-3-3">4-3-3 Ofensivo</option>
+                          <option value="3-5-2">3-5-2 Controlo da Bola</option>
+                          <option value="5-3-2">5-3-2 Autocarro</option>
+                          <option value="4-5-1">4-5-1 Catenaccio</option>
+                          <option value="3-4-3">3-4-3 Ataque Total</option>
+                          <option value="4-2-4">4-2-4 Avassalador</option>
+                          <option value="5-4-1">5-4-1 Ferrolho</option>
+                        </select>
+                        <select
+                          className="w-full bg-zinc-950 border border-zinc-700 rounded-lg px-3 py-3 text-sm font-bold text-emerald-400 focus:ring-2 focus:ring-amber-500"
+                          value={tactic.style}
+                          onChange={(e) =>
+                            updateTactic({ style: e.target.value })
+                          }
+                        >
+                          <option value="Balanced">Equilibrado</option>
+                          <option value="Offensive">Ofensivo (+15% Atk)</option>
+                          <option value="Defensive">
+                            Defensivo (+20% Def)
+                          </option>
+                        </select>
+                      </div>
+                    </div>
+                  </div>
+                )}
+                {(() => {
+                  const isReady = players.find(
+                    (p) => p.name === me.name,
+                  )?.ready;
+                  const isHalftime = showHalftimePanel && !isPlayingMatch;
+                  const isDisabled =
+                    !isHalftime && !isReady && !isLineupComplete;
+                  return (
+                    <>
+                      <button
+                        onClick={isHalftime ? handleHalftimeReady : handleReady}
+                        disabled={isDisabled}
+                        className={`w-full py-5 font-black rounded-2xl text-xl transition-all uppercase tracking-widest relative overflow-hidden border-b-6 active:border-b-0 active:translate-y-1.5 ${isReady ? "bg-zinc-800 text-zinc-500 border-zinc-950" : isDisabled ? "bg-zinc-800 text-zinc-600 border-zinc-950 cursor-not-allowed opacity-50" : "bg-emerald-500 text-zinc-950 hover:bg-emerald-400 border-emerald-700"}`}
+                      >
+                        {isReady
+                          ? "A AGUARDAR OUTROS"
+                          : isHalftime
+                            ? "2ª PARTE"
+                            : "JOGAR JORNADA"}
+                      </button>
+                      {isDisabled && (
+                        <p className="text-xs font-bold text-red-400 mt-2 text-center">
+                          Escolhe 1 GR + 10 jogadores de campo como Titular
                         </p>
-                        <div className="pt-2 border-t border-zinc-800/80">
-                          <p className="text-zinc-500 text-[10px] uppercase tracking-widest font-black mb-2">
-                            Árbitro
-                          </p>
-                          <button
-                            type="button"
-                            onClick={() => setRefereePopup(nextMatchReferee)}
-                            className="flex w-full items-center justify-between gap-3 rounded-xl border border-zinc-800 bg-zinc-950 px-3 py-2.5 text-left hover:border-amber-500/40 transition-colors"
-                          >
-                            <span className="font-black text-white text-sm">
-                              {nextMatchReferee?.name || "A definir"}
-                            </span>
-                            <span className="text-[10px] uppercase tracking-widest font-black text-amber-400">
-                              Ver balança
-                            </span>
-                          </button>
-                        </div>
-                      </div>
-                    ) : (
-                      <div className="text-sm font-bold text-zinc-500 py-2">
-                        Sem resumo disponível.
-                      </div>
-                    )}
-                  </div>
+                      )}
+                    </>
+                  );
+                })()}
+                <p className="text-xs font-bold text-zinc-500 mt-4 text-center leading-relaxed">
+                  Se jogas com amigos, a jornada só avança quando TODOS
+                  clicarem.
+                </p>
+              </div>
 
-                  <div className="p-4 rounded-2xl border border-zinc-800 bg-zinc-950/80">
-                    <p className="text-[10px] uppercase tracking-widest text-zinc-500 font-black mb-3">
-                      Tática
-                    </p>
-                    <div className="space-y-3">
-                      <select
-                        className="w-full bg-zinc-950 border border-zinc-700 rounded-lg px-3 py-3 text-sm font-bold text-white focus:ring-2 focus:ring-amber-500"
-                        value={tactic.formation}
-                        onChange={(e) => handleAutoPick(e.target.value)}
-                      >
-                        <option value="4-4-2">4-4-2 Clássico</option>
-                        <option value="4-3-3">4-3-3 Ofensivo</option>
-                        <option value="3-5-2">3-5-2 Controlo da Bola</option>
-                        <option value="5-3-2">5-3-2 Autocarro</option>
-                        <option value="4-5-1">4-5-1 Catenaccio</option>
-                        <option value="3-4-3">3-4-3 Ataque Total</option>
-                        <option value="4-2-4">4-2-4 Avassalador</option>
-                        <option value="5-4-1">5-4-1 Ferrolho</option>
-                      </select>
-                      <select
-                        className="w-full bg-zinc-950 border border-zinc-700 rounded-lg px-3 py-3 text-sm font-bold text-emerald-400 focus:ring-2 focus:ring-amber-500"
-                        value={tactic.style}
-                        onChange={(e) =>
-                          updateTactic({ style: e.target.value })
-                        }
-                      >
-                        <option value="Balanced">Equilibrado</option>
-                        <option value="Offensive">Ofensivo (+15% Atk)</option>
-                        <option value="Defensive">Defensivo (+20% Def)</option>
-                      </select>
-                    </div>
-                  </div>
-                </div>
-              )}
-              {(() => {
-                const isReady = players.find((p) => p.name === me.name)?.ready;
-                const isHalftime = showHalftimePanel && !isPlayingMatch;
-                const isDisabled = !isHalftime && !isReady && !isLineupComplete;
-                return (
-                  <>
-                    <button
-                      onClick={isHalftime ? handleHalftimeReady : handleReady}
-                      disabled={isDisabled}
-                      className={`w-full py-5 font-black rounded-2xl text-xl transition-all uppercase tracking-widest relative overflow-hidden border-b-6 active:border-b-0 active:translate-y-1.5 ${isReady ? "bg-zinc-800 text-zinc-500 border-zinc-950" : isDisabled ? "bg-zinc-800 text-zinc-600 border-zinc-950 cursor-not-allowed opacity-50" : "bg-emerald-500 text-zinc-950 hover:bg-emerald-400 border-emerald-700"}`}
+              <div className="bg-zinc-900 p-5 rounded-3xl border border-zinc-800">
+                <h2 className="text-sm font-black mb-5 text-zinc-400 uppercase flex justify-between">
+                  <span>Liga Activa</span>
+                  <span className="text-amber-500">({players.length}/8)</span>
+                </h2>
+                <ul className="space-y-3">
+                  {players.map((p, i) => (
+                    <li
+                      key={i}
+                      className="flex justify-between items-center bg-zinc-950 border border-zinc-800/50 p-3 rounded-2xl"
                     >
-                      {isReady
-                        ? "A AGUARDAR OUTROS"
-                        : isHalftime
-                          ? "2ª PARTE"
-                          : "JOGAR JORNADA"}
-                    </button>
-                    {isDisabled && (
-                      <p className="text-xs font-bold text-red-400 mt-2 text-center">
-                        Escolhe 1 GR + 10 jogadores de campo como Titular
-                      </p>
-                    )}
-                  </>
-                );
-              })()}
-              <p className="text-xs font-bold text-zinc-500 mt-4 text-center leading-relaxed">
-                Se jogas com amigos, a jornada só avança quando TODOS clicarem.
-              </p>
+                      <div className="min-w-0 pr-2">
+                        <p className="font-bold text-sm text-white truncate">
+                          {p.name}
+                        </p>
+                        <p className="text-xs font-bold uppercase text-zinc-500 truncate">
+                          {teams.find((t) => t.id == p.teamId)?.name}
+                        </p>
+                      </div>
+                      <div
+                        className={`px-3 py-1 rounded border text-[10px] font-black uppercase ${p.ready ? "bg-emerald-500/10 text-emerald-400 border-emerald-500/20" : "text-zinc-600 border-zinc-800"}`}
+                      >
+                        {p.ready ? "PRONTO" : "ESPERA"}
+                      </div>
+                    </li>
+                  ))}
+                </ul>
+              </div>
             </div>
-
-            <div className="bg-zinc-900 p-5 rounded-3xl border border-zinc-800">
-              <h2 className="text-sm font-black mb-5 text-zinc-400 uppercase flex justify-between">
-                <span>Liga Activa</span>
-                <span className="text-amber-500">({players.length}/8)</span>
-              </h2>
-              <ul className="space-y-3">
-                {players.map((p, i) => (
-                  <li
-                    key={i}
-                    className="flex justify-between items-center bg-zinc-950 border border-zinc-800/50 p-3 rounded-2xl"
-                  >
-                    <div className="min-w-0 pr-2">
-                      <p className="font-bold text-sm text-white truncate">
-                        {p.name}
-                      </p>
-                      <p className="text-xs font-bold uppercase text-zinc-500 truncate">
-                        {teams.find((t) => t.id == p.teamId)?.name}
-                      </p>
-                    </div>
-                    <div
-                      className={`px-3 py-1 rounded border text-[10px] font-black uppercase ${p.ready ? "bg-emerald-500/10 text-emerald-400 border-emerald-500/20" : "text-zinc-600 border-zinc-800"}`}
-                    >
-                      {p.ready ? "PRONTO" : "ESPERA"}
-                    </div>
-                  </li>
-                ))}
-              </ul>
-            </div>
-          </div>
+          )}
         </div>
       </div>
 
@@ -2898,7 +2914,7 @@ function App() {
                           className={`hover:bg-zinc-800/50 transition-colors ${ENABLE_ROW_BG ? POSITION_BG_CLASS[player.position] : ""}`}
                         >
                           <td
-                            className={`px-4 py-2.5 font-black text-sm tracking-wider ${POSITION_TEXT_CLASS[player.position] || 'text-zinc-300'}`}
+                            className={`px-4 py-2.5 font-black text-sm tracking-wider ${POSITION_TEXT_CLASS[player.position] || "text-zinc-300"}`}
                           >
                             {player.position}
                           </td>
