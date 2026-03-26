@@ -1591,20 +1591,20 @@ io.on("connection", (socket) => {
       "SELECT budget, stadium_capacity FROM teams WHERE id = ?",
       [playerState.teamId],
       (err, team) => {
-        const cost = 250000;
+        const cost = 150000;
         if (team && team.budget >= cost) {
           game.db.run(
-            "UPDATE teams SET budget = budget - ?, stadium_capacity = stadium_capacity + 2000 WHERE id = ?",
+            "UPDATE teams SET budget = budget - ?, stadium_capacity = stadium_capacity + 5000 WHERE id = ?",
             [cost, playerState.teamId],
             () => {
               game.db.all("SELECT * FROM teams", (err2, teams) =>
                 io.to(game.roomCode).emit("teamsData", teams),
               );
-              socket.emit("systemMessage", "+2000 Lugares Construídos!");
+              socket.emit("systemMessage", "+5000 Lugares Construídos!");
             },
           );
         } else {
-          socket.emit("systemMessage", "Sem dinheiro (Custo: 250.000€)!");
+          socket.emit("systemMessage", "Sem dinheiro (Custo: 150.000€)!");
         }
       },
     );
