@@ -251,7 +251,7 @@ function App() {
 
   const [matchResults, setMatchResults] = useState(null);
   const [matchweekCount, setMatchweekCount] = useState(0);
-  const [activeTab, setActiveTab] = useState("club");
+  const [activeTab, setActiveTab] = useState("squad");
   const [topScorers, setTopScorers] = useState([]);
   const [marketPairs, setMarketPairs] = useState([]);
   const [marketPositionFilter, setMarketPositionFilter] = useState("all");
