@@ -1,0 +1,54 @@
+{
+  "divisions": {
+    "1": [
+      "Sporting Lisbon",
+      "FC Porto",
+      "SL Benfica",
+      "SC Braga",
+      "Vitoria SC",
+      "Boavista FC",
+      "Marítimo",
+      "Gil Vicente"
+    ],
+    "2": [
+      "Rio Ave",
+      "Moreirense",
+      "Tondela",
+      "Estoril",
+      "Famalicao",
+      "Nacional",
+      "Santa Clara",
+      "Portimonense"
+    ],
+    "3": [
+      "Arouca",
+      "Casa Pia",
+      "Farense",
+      "Leixoes",
+      "Varzim",
+      "Covilha",
+      "Penafiel",
+      "Chaves"
+    ],
+    "4": [
+      "Feirense",
+      "Olhanense",
+      "Freamunde",
+      "Santa Marta",
+      "Louletano",
+      "União Madeira",
+      "Cova da Piedade",
+      "Vilafranquense"
+    ],
+    "5": [
+      "Amadores FC",
+      "Recreativo FC",
+      "União da Aldeia",
+      "Atlético Cidade",
+      "Associação Desportiva",
+      "Clube do Povo",
+      "Desportivo Local",
+      "Guerreiros da Vila"
+    ]
+  }
+}
