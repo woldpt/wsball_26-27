@@ -99,7 +99,15 @@ function getRandomName() {
   }
 }
 
+db.configure("busyTimeout", 10000);
+
 db.serialize(() => {
+  db.run("BEGIN EXCLUSIVE", (err) => {
+    if (err) {
+      console.error("[seed] Failed to start transaction:", err.message);
+      process.exit(1);
+    }
+  });
   db.run("DELETE FROM players");
   db.run("DELETE FROM teams");
   db.run("DELETE FROM managers");
@@ -484,9 +492,18 @@ db.serialize(() => {
   insertManager.finalize();
   insertTeam.finalize();
   insertPlayer.finalize((err) => {
-    console.log("Base Seed complete.");
-    db.close(() => {
-      process.exit(0);
+    if (err) {
+      console.error("[seed] Error finalizing players:", err.message);
+      db.run("ROLLBACK", () => process.exit(1));
+      return;
+    }
+    db.run("COMMIT", (commitErr) => {
+      if (commitErr) {
+        console.error("[seed] COMMIT failed:", commitErr.message);
+        process.exit(1);
+      }
+      console.log("Base Seed complete.");
+      db.close(() => process.exit(0));
     });
   });
 });
