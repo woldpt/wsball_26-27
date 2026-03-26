@@ -284,7 +284,9 @@ function App() {
   const [matchAction, setMatchAction] = useState(null);
   const [subsMade, setSubsMade] = useState(0);
   const [swapSource, setSwapSource] = useState(null);
+  const [swapTarget, setSwapTarget] = useState(null); // player coming IN (Suplente)
   const [subbedOut, setSubbedOut] = useState([]); // Track players who left the pitch
+  const [confirmedSubs, setConfirmedSubs] = useState([]); // [{out: id, in: id}]
   const [openStatusPickerId, setOpenStatusPickerId] = useState(null);
   const meRef = React.useRef(null);
   const selectedTeamRef = React.useRef(null);
@@ -402,7 +404,9 @@ function App() {
       setLiveMinute(0);
       setSubsMade(0);
       setSubbedOut([]); // Reset substituted-out players for the new match
+      setConfirmedSubs([]);
       setSwapSource(null);
+      setSwapTarget(null);
       setShowHalftimePanel(true);
       setIsPlayingMatch(true);
       setActiveTab("live");
@@ -810,44 +814,40 @@ function App() {
   );
 
   // ── SUBSTITUTION SWAP ─────────────────────────────────────────────────────
-  const handleSubSwap = useCallback(
-    (playerId) => {
-      if (subsMade >= MAX_MATCH_SUBS) return;
-      setSwapSource((currentSource) => {
-        if (!currentSource) {
-          // First click – select the player going out (must be Titular or Suplente)
-          return playerId;
-        }
-        if (currentSource === playerId) {
-          // Deselect
-          return null;
-        }
-        // Second click – execute swap
-        setTactic((prevTactic) => {
-          const prevPositions = prevTactic.positions || {};
-          const sourceStatus = prevPositions[currentSource] || "Reserva";
-          const targetStatus = prevPositions[playerId] || "Reserva";
-          // Only proceed if swapping Titular ↔ non-Titular
-          if (sourceStatus !== "Titular" && targetStatus !== "Titular") {
-            return prevTactic; // nothing to do
-          }
-          const newPositions = { ...prevPositions };
-          newPositions[currentSource] =
-            targetStatus === "Suplente" ? "Suplente" : "Excluído";
-          newPositions[playerId] = "Titular";
-          const outgoingId =
-            sourceStatus === "Titular" ? currentSource : playerId;
-          setSubbedOut((prev) => [...prev, outgoingId]);
-          setSubsMade((n) => n + 1);
-          const next = { ...prevTactic, positions: newPositions };
-          socket.emit("setTactic", next);
-          return next;
-        });
-        return null;
-      });
-    },
-    [subsMade], // eslint-disable-line react-hooks/exhaustive-deps
-  );
+  // Step 1: click a Titular to mark as OUT
+  const handleSelectOut = useCallback((playerId) => {
+    setSwapSource((prev) => (prev === playerId ? null : playerId));
+    setSwapTarget(null);
+  }, []); // eslint-disable-line react-hooks/exhaustive-deps
+
+  // Step 2: click a Suplente to mark as IN
+  const handleSelectIn = useCallback((playerId) => {
+    setSwapTarget((prev) => (prev === playerId ? null : playerId));
+  }, []);
+
+  // Confirm the pending swap
+  const handleConfirmSub = useCallback(() => {
+    if (!swapSource || !swapTarget || subsMade >= MAX_MATCH_SUBS) return;
+    setTactic((prevTactic) => {
+      const newPositions = { ...prevTactic.positions };
+      newPositions[swapSource] = "Suplente";
+      newPositions[swapTarget] = "Titular";
+      const next = { ...prevTactic, positions: newPositions };
+      socket.emit("setTactic", next);
+      return next;
+    });
+    setSubbedOut((prev) => [...prev, swapSource]);
+    setConfirmedSubs((prev) => [...prev, { out: swapSource, in: swapTarget }]);
+    setSubsMade((n) => n + 1);
+    setSwapSource(null);
+    setSwapTarget(null);
+  }, [swapSource, swapTarget, subsMade]); // eslint-disable-line react-hooks/exhaustive-deps
+
+  // Reset pending selection without applying
+  const handleResetSub = useCallback(() => {
+    setSwapSource(null);
+    setSwapTarget(null);
+  }, []);
 
   // ── SQUAD STATUS PICKER ───────────────────────────────────────────────────
   const handleSetPlayerStatus = useCallback(
@@ -1615,80 +1615,152 @@ function App() {
 
                 {/* BUG-11 FIX: showHalftimePanel (not liveMinute===45) controls this overlay */}
                 {showHalftimePanel && !isPlayingMatch && (
-                  <div className="absolute inset-0 bg-zinc-950/95 z-50 p-6 flex flex-col backdrop-blur-sm">
-                    <h2 className="text-3xl font-black text-amber-500 mb-2 tracking-widest text-center uppercase">
+                  <div className="absolute inset-0 bg-zinc-950/97 z-50 p-3 flex flex-col backdrop-blur-sm overflow-y-auto">
+                    <h2 className="text-lg font-black text-amber-500 mb-1 tracking-widest text-center uppercase">
                       INTERVALO
                     </h2>
-                    <p className="text-center text-zinc-400 font-bold mb-5 text-sm">
-                      Seleciona na Esquerda e na Direita para Substituir
-                      (Restam: {MAX_MATCH_SUBS - subsMade})
+                    <p className="text-center text-zinc-500 font-bold mb-3 text-xs">
+                      Substituições disponíveis: {MAX_MATCH_SUBS - subsMade}/{MAX_MATCH_SUBS}
                     </p>
 
-                    <div className="flex-1 overflow-y-auto mb-5 grid grid-cols-2 gap-4 bg-zinc-900/50 p-4 rounded-2xl border border-zinc-800">
+                    {/* Player columns */}
+                    <div className="grid grid-cols-2 gap-2 mb-2">
+                      {/* Titulares */}
                       <div>
-                        <h3 className="text-emerald-500 font-black mb-3 uppercase tracking-widest text-center text-sm">
-                          Em Campo (Titulares)
-                        </h3>
-                        <div className="space-y-1.5">
+                        <p className="text-emerald-500 font-black uppercase tracking-widest text-center text-[10px] mb-1">
+                          Em Campo
+                        </p>
+                        <div className="space-y-0.5">
                           {annotatedSquad
-                            .filter((p) => p.status === "Titular")
+                            .filter((p) => tactic.positions[p.id] === "Titular" && !subbedOut.includes(p.id))
                             .map((p) => (
                               <div
                                 key={p.id}
-                                onClick={() => handleSubSwap(p.id)}
-                                className={`px-3 py-2 rounded-lg border cursor-pointer font-bold text-sm transition-all flex justify-between select-none ${swapSource === p.id ? "bg-amber-500 text-zinc-950 border-amber-400 scale-[1.01]" : "bg-zinc-950 border-zinc-800 hover:border-emerald-500 hover:bg-zinc-800"}`}
+                                onClick={() => subsMade < MAX_MATCH_SUBS && handleSelectOut(p.id)}
+                                className={`px-2 py-1 rounded-md border text-xs font-bold flex justify-between select-none transition-all ${
+                                  swapSource === p.id
+                                    ? "bg-red-500/20 border-red-400 text-red-200"
+                                    : subsMade < MAX_MATCH_SUBS
+                                      ? "bg-zinc-900 border-zinc-800 hover:border-red-500 cursor-pointer"
+                                      : "bg-zinc-900 border-zinc-800 opacity-50 cursor-not-allowed"
+                                }`}
                               >
-                                <span>
-                                  {p.name}{" "}
-                                  <span className="text-[10px] opacity-70 ml-2">
-                                    {p.position}
-                                  </span>
-                                </span>
-                                <span className="opacity-50">{p.skill}</span>
+                                <span className="truncate">{p.name}</span>
+                                <span className="opacity-50 ml-1 shrink-0">{p.position} {p.skill}</span>
                               </div>
                             ))}
                         </div>
                       </div>
+
+                      {/* Suplentes (only the 5 bench players, not reservas) */}
                       <div>
-                        <h3 className="text-zinc-500 font-black mb-3 uppercase tracking-widest text-center text-sm">
-                          Banco (Suplentes)
-                        </h3>
-                        <div className="space-y-1.5">
+                        <p className="text-zinc-400 font-black uppercase tracking-widest text-center text-[10px] mb-1">
+                          Banco (5 Suplentes)
+                        </p>
+                        <div className="space-y-0.5">
                           {annotatedSquad
-                            .filter((p) => p.status !== "Titular")
-                            .map((p) => (
-                              <div
-                                key={p.id}
-                                onClick={() => handleSubSwap(p.id)}
-                                className={`px-3 py-2 rounded-lg border font-bold text-sm transition-all flex justify-between select-none ${p.isSubbedOut ? "opacity-30 cursor-not-allowed bg-zinc-950 border-zinc-800 grayscale" : swapSource === p.id ? "bg-amber-500 text-zinc-950 border-amber-400 scale-[1.01] cursor-pointer" : "bg-zinc-950 border-zinc-800 hover:border-zinc-500 hover:bg-zinc-800 cursor-pointer"}`}
-                              >
-                                <span>
-                                  {p.name}{" "}
-                                  <span className="text-[10px] opacity-70 ml-2">
-                                    {p.position}
-                                  </span>
-                                </span>
-                                <span
-                                  className={`opacity-80 ${p.status === "Suplente" ? "text-emerald-400" : "text-zinc-600"}`}
+                            .filter((p) => tactic.positions[p.id] === "Suplente")
+                            .map((p) => {
+                              const disabled = subbedOut.includes(p.id) || !swapSource || subsMade >= MAX_MATCH_SUBS;
+                              return (
+                                <div
+                                  key={p.id}
+                                  onClick={() => !disabled && handleSelectIn(p.id)}
+                                  className={`px-2 py-1 rounded-md border text-xs font-bold flex justify-between select-none transition-all ${
+                                    subbedOut.includes(p.id)
+                                      ? "opacity-30 bg-zinc-900 border-zinc-800 cursor-not-allowed"
+                                      : swapTarget === p.id
+                                        ? "bg-emerald-500/20 border-emerald-400 text-emerald-200 cursor-pointer"
+                                        : disabled
+                                          ? "bg-zinc-900 border-zinc-800 opacity-50 cursor-not-allowed"
+                                          : "bg-zinc-900 border-zinc-800 hover:border-emerald-500 cursor-pointer"
+                                  }`}
                                 >
-                                  {p.isSubbedOut
-                                    ? "SUBSTITUÍDO"
-                                    : `${p.status} ${p.skill}`}
-                                </span>
-                              </div>
-                            ))}
+                                  <span className="truncate">{p.name}</span>
+                                  <span className={`ml-1 shrink-0 ${
+                                    subbedOut.includes(p.id) ? "text-zinc-600" : "text-zinc-400"
+                                  }`}>
+                                    {subbedOut.includes(p.id) ? "SAIU" : `${p.position} ${p.skill}`}
+                                  </span>
+                                </div>
+                              );
+                            })}
                         </div>
                       </div>
                     </div>
 
+                    {/* Pending swap action area */}
+                    {(swapSource || swapTarget) && (
+                      <div className="mb-2 p-2 rounded-xl bg-zinc-900 border border-zinc-700">
+                        <p className="text-xs font-black text-zinc-400 uppercase tracking-widest mb-1.5 text-center">Substituição Pendente</p>
+                        <div className="flex items-center justify-center gap-2 text-xs font-bold mb-2">
+                          <span className={`px-2 py-1 rounded-md ${
+                            swapSource ? "bg-red-500/20 text-red-300 border border-red-500/40" : "bg-zinc-800 text-zinc-500 border border-zinc-700"
+                          }`}>
+                            {swapSource
+                              ? (annotatedSquad.find((p) => p.id === swapSource)?.name ?? "?")
+                              : "Selecionar saída"}
+                          </span>
+                          <span className="text-zinc-500">→</span>
+                          <span className={`px-2 py-1 rounded-md ${
+                            swapTarget ? "bg-emerald-500/20 text-emerald-300 border border-emerald-500/40" : "bg-zinc-800 text-zinc-500 border border-zinc-700"
+                          }`}>
+                            {swapTarget
+                              ? (annotatedSquad.find((p) => p.id === swapTarget)?.name ?? "?")
+                              : "Selecionar entrada"}
+                          </span>
+                        </div>
+                        <div className="flex gap-2">
+                          <button
+                            onClick={handleResetSub}
+                            className="flex-1 py-1.5 rounded-lg text-xs font-black uppercase border border-zinc-700 text-zinc-400 hover:bg-zinc-800 transition-colors"
+                          >
+                            Cancelar
+                          </button>
+                          <button
+                            onClick={handleConfirmSub}
+                            disabled={!swapSource || !swapTarget}
+                            className={`flex-1 py-1.5 rounded-lg text-xs font-black uppercase transition-colors ${
+                              swapSource && swapTarget
+                                ? "bg-emerald-600 hover:bg-emerald-500 text-white"
+                                : "bg-zinc-800 text-zinc-600 cursor-not-allowed"
+                            }`}
+                          >
+                            Confirmar Sub
+                          </button>
+                        </div>
+                      </div>
+                    )}
+
+                    {/* Confirmed subs list */}
+                    {confirmedSubs.length > 0 && (
+                      <div className="mb-2 flex flex-col gap-0.5">
+                        {confirmedSubs.map((sub, i) => {
+                          const outP = mySquad.find((p) => p.id === sub.out);
+                          const inP = mySquad.find((p) => p.id === sub.in);
+                          return (
+                            <p key={i} className="text-[10px] font-bold text-zinc-500 text-center">
+                              🔄 <span className="text-red-400">{outP?.name ?? "?"}</span>
+                              <span className="text-zinc-600"> → </span>
+                              <span className="text-emerald-400">{inP?.name ?? "?"}</span>
+                            </p>
+                          );
+                        })}
+                      </div>
+                    )}
+
                     {/* BUG-06 FIX: Use handleHalftimeReady which always sends true */}
                     <button
                       onClick={handleHalftimeReady}
-                      className={`w-full py-4 rounded-2xl text-lg font-black uppercase tracking-widest transition-all shadow-[0_0_30px_rgba(217,119,6,0.3)] ${players.find((p) => p.name === me.name)?.ready ? "bg-zinc-800 text-zinc-500" : "bg-amber-600 hover:bg-amber-500 text-zinc-950"}`}
+                      className={`mt-auto w-full py-3 rounded-2xl text-sm font-black uppercase tracking-widest transition-all ${
+                        players.find((p) => p.name === me.name)?.ready
+                          ? "bg-zinc-800 text-zinc-500"
+                          : "bg-amber-600 hover:bg-amber-500 text-zinc-950"
+                      }`}
                     >
                       {players.find((p) => p.name === me.name)?.ready
-                        ? "A AGUARDAR ADVERSÁRIOS..."
-                        : "CONFIRMAR E IR PARA A 2ª PARTE"}
+                        ? "A AGUARDAR..."
+                        : "▶ INICIAR 2ª PARTE"}
                     </button>
                   </div>
                 )}
