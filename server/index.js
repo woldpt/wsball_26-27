@@ -1,3 +1,5 @@
+require("dotenv").config();
+
 const express = require("express");
 const http = require("http");
 const { Server } = require("socket.io");
@@ -28,11 +30,13 @@ const {
   recordRoomAccess,
   getManagerRooms,
 } = require("./auth");
+const adminRoutes = require("./adminRoutes");
 
 const app = express();
 app.set("trust proxy", 1);
 app.use(cors());
 app.use(express.json());
+app.use("/admin", adminRoutes);
 
 // ── RATE LIMITER ─────────────────────────────────────────────────────────────
 // Protects endpoints that perform I/O from being flooded.

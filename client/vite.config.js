@@ -9,6 +9,7 @@ export default defineConfig({
     proxy: {
       "/auth": "http://localhost:3000",
       "/saves": "http://localhost:3000",
+      "/admin": "http://localhost:3000",
     },
   },
 });

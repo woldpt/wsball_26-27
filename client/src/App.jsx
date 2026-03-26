@@ -1,5 +1,6 @@
 import React, { useEffect, useState, useMemo, useCallback } from "react";
 import { socket } from "./socket";
+import AdminPanel from "./AdminPanel.jsx";
 
 const DIVISION_NAMES = {
   1: "I Liga",
@@ -36,6 +37,39 @@ const POSITION_BG_CLASS = {
 };
 
 const MAX_MATCH_SUBS = 5;
+const ADMIN_SESSION_KEY = "cashballAdminSession";
+
+function loadAdminSession() {
+  try {
+    const raw = window.localStorage.getItem(ADMIN_SESSION_KEY);
+    if (!raw) return null;
+    const parsed = JSON.parse(raw);
+    if (!parsed?.token || !parsed?.username) return null;
+    if (parsed.expiresAt && Number(parsed.expiresAt) <= Date.now()) {
+      window.localStorage.removeItem(ADMIN_SESSION_KEY);
+      return null;
+    }
+    return parsed;
+  } catch {
+    return null;
+  }
+}
+
+function saveAdminSession(session) {
+  try {
+    window.localStorage.setItem(ADMIN_SESSION_KEY, JSON.stringify(session));
+  } catch {
+    // Ignore storage failures.
+  }
+}
+
+function clearAdminSession() {
+  try {
+    window.localStorage.removeItem(ADMIN_SESSION_KEY);
+  } catch {
+    // Ignore storage failures.
+  }
+}
 
 function formatCurrency(value) {
   return new Intl.NumberFormat("pt-PT", {
@@ -211,6 +245,7 @@ const playNotification = () => {
 function App() {
   const savedSessionRef = React.useRef(loadSavedSession());
   const savedSession = savedSessionRef.current;
+  const [adminSession, setAdminSession] = useState(() => loadAdminSession());
 
   const [teams, setTeams] = useState([]);
   const [players, setPlayers] = useState([]);
@@ -300,6 +335,7 @@ function App() {
 
   // Re-fetch this coach's saved rooms whenever the name changes while in "saved-game" mode.
   useEffect(() => {
+    if (adminSession) return;
     if (joinMode === "saved-game" && name) {
       const timeout = setTimeout(() => {
         fetch(`${backendUrl}/saves?name=${encodeURIComponent(name)}`)
@@ -321,7 +357,7 @@ function App() {
         })
         .catch(() => {});
     }
-  }, [name, joinMode]); // eslint-disable-line react-hooks/exhaustive-deps
+  }, [name, joinMode, adminSession]); // eslint-disable-line react-hooks/exhaustive-deps
 
   // BUG-07 FIX: All socket listeners in a single effect with [] dep so they're
   // registered exactly once and cleaned up correctly on unmount.
@@ -496,6 +532,7 @@ function App() {
   }, [marketPairs]);
 
   useEffect(() => {
+    if (adminSession) return;
     if (!me?.name || !me?.password || !me?.roomCode) return;
     try {
       window.localStorage.setItem(
@@ -509,10 +546,10 @@ function App() {
     } catch {
       // Ignore storage failures.
     }
-  }, [me]);
+  }, [me, adminSession]);
 
   useEffect(() => {
-    if (!savedSession || me?.teamId) return;
+    if (adminSession || !savedSession || me?.teamId) return;
     socket.emit("joinGame", {
       name: savedSession.name,
       password: savedSession.password,
@@ -528,7 +565,7 @@ function App() {
     return () => {
       if (joinTimerRef.current) clearTimeout(joinTimerRef.current);
     };
-  }, [savedSession, me?.teamId]);
+  }, [savedSession, me?.teamId, adminSession]);
 
   useEffect(() => {
     if (activeTab !== "squad" || !me?.teamId) return;
@@ -672,6 +709,50 @@ function App() {
     }
   };
 
+  const handleAdminAuthenticate = async () => {
+    if (!name || !password || authSubmitting) return;
+
+    setAuthSubmitting(true);
+    setAuthError("");
+
+    try {
+      const response = await fetch(`${backendUrl}/admin/login`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          username: name.trim(),
+          password,
+        }),
+      });
+
+      const data = await response.json().catch(() => ({}));
+      if (!response.ok) {
+        setAuthError(data.error || "Não foi possível autenticar o admin.");
+        return;
+      }
+
+      const session = {
+        token: data.token,
+        username: data.username,
+        expiresAt: Date.now() + Number(data.expiresIn || 0),
+      };
+      saveAdminSession(session);
+      setAdminSession(session);
+      setMe(null);
+      setJoining(false);
+      setJoinMode(null);
+      setRoomCode("");
+      setJoinError("");
+      setAuthPhase("login");
+    } catch {
+      setAuthError("Sem ligação ao servidor. Tenta novamente.");
+    } finally {
+      setAuthSubmitting(false);
+    }
+  };
+
   const handleLogout = () => {
     try {
       window.localStorage.removeItem("cashballSession");
@@ -686,6 +767,20 @@ function App() {
     setJoining(false);
     setJoinError("");
     resetAuthFlow();
+  };
+
+  const handleAdminLogout = () => {
+    clearAdminSession();
+    setAdminSession(null);
+    setName("");
+    setPassword("");
+    setConfirmPassword("");
+    setRoomCode("");
+    setJoining(false);
+    setJoinError("");
+    setAuthError("");
+    setAuthPhase("login");
+    setJoinMode(null);
   };
 
   const handleJoin = () => {
@@ -1002,6 +1097,16 @@ function App() {
       .sort(comparePlayers);
   }, [marketPairs, marketPositionFilter, marketSort, me?.teamId]);
 
+  if (adminSession) {
+    return (
+      <AdminPanel
+        token={adminSession.token}
+        username={adminSession.username}
+        onLogout={handleAdminLogout}
+      />
+    );
+  }
+
   if (!me || !me.teamId) {
     if (joining && me) {
       return (
@@ -1097,6 +1202,13 @@ function App() {
                   className="w-full bg-amber-500 hover:bg-amber-400 disabled:bg-zinc-800 disabled:text-zinc-600 text-zinc-950 py-5 rounded-xl font-black text-xl transition-all active:scale-95 border-b-4 border-amber-700 active:border-b-0"
                 >
                   {authSubmitting ? "A VALIDAR CONTA..." : "ENTRAR"}
+                </button>
+                <button
+                  onClick={handleAdminAuthenticate}
+                  disabled={!name.trim() || !password || authSubmitting}
+                  className="w-full border border-cyan-500/30 bg-cyan-500/10 hover:bg-cyan-500/20 disabled:bg-zinc-900 disabled:text-zinc-700 text-cyan-100 py-4 rounded-xl font-black text-sm uppercase tracking-[0.25em] transition-all"
+                >
+                  Entrar como Admin
                 </button>
                 <button
                   onClick={() => {
@@ -1620,7 +1732,8 @@ function App() {
                       INTERVALO
                     </h2>
                     <p className="text-center text-zinc-500 font-bold mb-3 text-xs">
-                      Substituições disponíveis: {MAX_MATCH_SUBS - subsMade}/{MAX_MATCH_SUBS}
+                      Substituições disponíveis: {MAX_MATCH_SUBS - subsMade}/
+                      {MAX_MATCH_SUBS}
                     </p>
 
                     {/* Player columns */}
@@ -1632,11 +1745,18 @@ function App() {
                         </p>
                         <div className="space-y-0.5">
                           {annotatedSquad
-                            .filter((p) => tactic.positions[p.id] === "Titular" && !subbedOut.includes(p.id))
+                            .filter(
+                              (p) =>
+                                tactic.positions[p.id] === "Titular" &&
+                                !subbedOut.includes(p.id),
+                            )
                             .map((p) => (
                               <div
                                 key={p.id}
-                                onClick={() => subsMade < MAX_MATCH_SUBS && handleSelectOut(p.id)}
+                                onClick={() =>
+                                  subsMade < MAX_MATCH_SUBS &&
+                                  handleSelectOut(p.id)
+                                }
                                 className={`px-2 py-1 rounded-md border text-xs font-bold flex justify-between select-none transition-all ${
                                   swapSource === p.id
                                     ? "bg-red-500/20 border-red-400 text-red-200"
@@ -1646,7 +1766,9 @@ function App() {
                                 }`}
                               >
                                 <span className="truncate">{p.name}</span>
-                                <span className="opacity-50 ml-1 shrink-0">{p.position} {p.skill}</span>
+                                <span className="opacity-50 ml-1 shrink-0">
+                                  {p.position} {p.skill}
+                                </span>
                               </div>
                             ))}
                         </div>
@@ -1659,13 +1781,20 @@ function App() {
                         </p>
                         <div className="space-y-0.5">
                           {annotatedSquad
-                            .filter((p) => tactic.positions[p.id] === "Suplente")
+                            .filter(
+                              (p) => tactic.positions[p.id] === "Suplente",
+                            )
                             .map((p) => {
-                              const disabled = subbedOut.includes(p.id) || !swapSource || subsMade >= MAX_MATCH_SUBS;
+                              const disabled =
+                                subbedOut.includes(p.id) ||
+                                !swapSource ||
+                                subsMade >= MAX_MATCH_SUBS;
                               return (
                                 <div
                                   key={p.id}
-                                  onClick={() => !disabled && handleSelectIn(p.id)}
+                                  onClick={() =>
+                                    !disabled && handleSelectIn(p.id)
+                                  }
                                   className={`px-2 py-1 rounded-md border text-xs font-bold flex justify-between select-none transition-all ${
                                     subbedOut.includes(p.id)
                                       ? "opacity-30 bg-zinc-900 border-zinc-800 cursor-not-allowed"
@@ -1677,10 +1806,16 @@ function App() {
                                   }`}
                                 >
                                   <span className="truncate">{p.name}</span>
-                                  <span className={`ml-1 shrink-0 ${
-                                    subbedOut.includes(p.id) ? "text-zinc-600" : "text-zinc-400"
-                                  }`}>
-                                    {subbedOut.includes(p.id) ? "SAIU" : `${p.position} ${p.skill}`}
+                                  <span
+                                    className={`ml-1 shrink-0 ${
+                                      subbedOut.includes(p.id)
+                                        ? "text-zinc-600"
+                                        : "text-zinc-400"
+                                    }`}
+                                  >
+                                    {subbedOut.includes(p.id)
+                                      ? "SAIU"
+                                      : `${p.position} ${p.skill}`}
                                   </span>
                                 </div>
                               );
@@ -1692,21 +1827,33 @@ function App() {
                     {/* Pending swap action area */}
                     {(swapSource || swapTarget) && (
                       <div className="mb-2 p-2 rounded-xl bg-zinc-900 border border-zinc-700">
-                        <p className="text-xs font-black text-zinc-400 uppercase tracking-widest mb-1.5 text-center">Substituição Pendente</p>
+                        <p className="text-xs font-black text-zinc-400 uppercase tracking-widest mb-1.5 text-center">
+                          Substituição Pendente
+                        </p>
                         <div className="flex items-center justify-center gap-2 text-xs font-bold mb-2">
-                          <span className={`px-2 py-1 rounded-md ${
-                            swapSource ? "bg-red-500/20 text-red-300 border border-red-500/40" : "bg-zinc-800 text-zinc-500 border border-zinc-700"
-                          }`}>
+                          <span
+                            className={`px-2 py-1 rounded-md ${
+                              swapSource
+                                ? "bg-red-500/20 text-red-300 border border-red-500/40"
+                                : "bg-zinc-800 text-zinc-500 border border-zinc-700"
+                            }`}
+                          >
                             {swapSource
-                              ? (annotatedSquad.find((p) => p.id === swapSource)?.name ?? "?")
+                              ? (annotatedSquad.find((p) => p.id === swapSource)
+                                  ?.name ?? "?")
                               : "Selecionar saída"}
                           </span>
                           <span className="text-zinc-500">→</span>
-                          <span className={`px-2 py-1 rounded-md ${
-                            swapTarget ? "bg-emerald-500/20 text-emerald-300 border border-emerald-500/40" : "bg-zinc-800 text-zinc-500 border border-zinc-700"
-                          }`}>
+                          <span
+                            className={`px-2 py-1 rounded-md ${
+                              swapTarget
+                                ? "bg-emerald-500/20 text-emerald-300 border border-emerald-500/40"
+                                : "bg-zinc-800 text-zinc-500 border border-zinc-700"
+                            }`}
+                          >
                             {swapTarget
-                              ? (annotatedSquad.find((p) => p.id === swapTarget)?.name ?? "?")
+                              ? (annotatedSquad.find((p) => p.id === swapTarget)
+                                  ?.name ?? "?")
                               : "Selecionar entrada"}
                           </span>
                         </div>
@@ -1739,10 +1886,18 @@ function App() {
                           const outP = mySquad.find((p) => p.id === sub.out);
                           const inP = mySquad.find((p) => p.id === sub.in);
                           return (
-                            <p key={i} className="text-[10px] font-bold text-zinc-500 text-center">
-                              🔄 <span className="text-red-400">{outP?.name ?? "?"}</span>
+                            <p
+                              key={i}
+                              className="text-[10px] font-bold text-zinc-500 text-center"
+                            >
+                              🔄{" "}
+                              <span className="text-red-400">
+                                {outP?.name ?? "?"}
+                              </span>
                               <span className="text-zinc-600"> → </span>
-                              <span className="text-emerald-400">{inP?.name ?? "?"}</span>
+                              <span className="text-emerald-400">
+                                {inP?.name ?? "?"}
+                              </span>
                             </p>
                           );
                         })}
@@ -2353,14 +2508,17 @@ function App() {
                               player.position}
                           </td>
                           <td className="px-3 py-2.5 text-white text-sm md:text-base whitespace-nowrap">
-                            {player.name}{!!player.is_star && (player.position === "MID" || player.position === "ATK") && (
-                              <span
-                                className="ml-1 text-amber-400 font-black"
-                                title="Craque"
-                              >
-                                *
-                              </span>
-                            )}
+                            {player.name}
+                            {!!player.is_star &&
+                              (player.position === "MID" ||
+                                player.position === "ATK") && (
+                                <span
+                                  className="ml-1 text-amber-400 font-black"
+                                  title="Craque"
+                                >
+                                  *
+                                </span>
+                              )}
                           </td>
                           <td className="px-3 py-2.5 text-center text-zinc-100 font-normal">
                             <span className="inline-flex items-center justify-center bg-zinc-950 text-white px-2 py-1 rounded text-sm border border-zinc-800 font-normal">
@@ -2548,9 +2706,17 @@ function App() {
                           <td className="px-4 py-2">
                             <div className="flex items-center gap-2">
                               <p className="font-bold text-white text-sm leading-tight">
-                                {player.name}{!!player.is_star && (player.position === "MID" || player.position === "ATK") && (
-                                  <span className="ml-1 text-amber-400 font-black" title="Craque">*</span>
-                                )}
+                                {player.name}
+                                {!!player.is_star &&
+                                  (player.position === "MID" ||
+                                    player.position === "ATK") && (
+                                    <span
+                                      className="ml-1 text-amber-400 font-black"
+                                      title="Craque"
+                                    >
+                                      *
+                                    </span>
+                                  )}
                               </p>
                               {isListed && (
                                 <span
@@ -2925,14 +3091,17 @@ function App() {
                             {player.position}
                           </td>
                           <td className="px-4 py-2.5 font-bold text-white">
-                            {player.name}{!!player.is_star && (player.position === "MID" || player.position === "ATK") && (
-                              <span
-                                className="ml-1 text-amber-400 font-black"
-                                title="Craque"
-                              >
-                                *
-                              </span>
-                            )}
+                            {player.name}
+                            {!!player.is_star &&
+                              (player.position === "MID" ||
+                                player.position === "ATK") && (
+                                <span
+                                  className="ml-1 text-amber-400 font-black"
+                                  title="Craque"
+                                >
+                                  *
+                                </span>
+                              )}
                           </td>
                           <td className="px-4 py-2.5 text-center">
                             <span className="bg-zinc-950 text-white font-black px-2 py-1.5 rounded text-sm border border-zinc-800">
