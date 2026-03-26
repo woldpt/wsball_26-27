@@ -228,10 +228,12 @@ function App() {
   const [name, setName] = useState(savedSession?.name || "");
   const [password, setPassword] = useState(savedSession?.password || "");
   const [roomCode, setRoomCode] = useState(savedSession?.roomCode || "");
-  const [authPhase, setAuthPhase] = useState("access");
+  const [authPhase, setAuthPhase] = useState("login");
   const [joinMode, setJoinMode] = useState(null);
   const [confirmPassword, setConfirmPassword] = useState("");
   const [availableSaves, setAvailableSaves] = useState([]);
+  const [authSubmitting, setAuthSubmitting] = useState(false);
+  const [authError, setAuthError] = useState("");
   const [joining, setJoining] = useState(Boolean(savedSession));
   const [disconnected, setDisconnected] = useState(false);
   const [joinError, setJoinError] = useState("");
@@ -617,7 +619,53 @@ function App() {
   const selectJoinMode = (mode) => {
     setJoinMode(mode);
     setRoomCode("");
-    setAuthPhase(mode === "new-game" ? "register" : "login");
+    setJoinError("");
+  };
+
+  const resetAuthFlow = () => {
+    setAuthPhase("login");
+    setJoinMode(null);
+    setRoomCode("");
+    setJoinError("");
+    setAuthError("");
+    setAuthSubmitting(false);
+  };
+
+  const handleAuthenticate = async (mode) => {
+    if (!name || !password || authSubmitting) return;
+
+    setAuthSubmitting(true);
+    setAuthError("");
+
+    try {
+      const response = await fetch(`${backendUrl}/auth/${mode}`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          name: name.trim(),
+          password,
+        }),
+      });
+
+      const data = await response.json().catch(() => ({}));
+      if (!response.ok) {
+        setAuthError(data.error || "Não foi possível autenticar a conta.");
+        return;
+      }
+
+      setName(name.trim());
+      setConfirmPassword("");
+      setJoinMode(null);
+      setRoomCode("");
+      setJoinError("");
+      setAuthPhase("mode");
+    } catch {
+      setAuthError("Sem ligação ao servidor. Tenta novamente.");
+    } finally {
+      setAuthSubmitting(false);
+    }
   };
 
   const handleLogout = () => {
@@ -633,8 +681,7 @@ function App() {
     setRoomCode("");
     setJoining(false);
     setJoinError("");
-    setAuthPhase("access");
-    setJoinMode(null);
+    resetAuthFlow();
   };
 
   const handleJoin = () => {
@@ -997,12 +1044,196 @@ function App() {
           <div className="bg-zinc-900/95 rounded-4xl border border-zinc-800 relative overflow-hidden shadow-2xl backdrop-blur-xl">
             <div className="absolute top-0 inset-x-0 h-1 bg-linear-to-r from-amber-600 via-amber-400 to-amber-600"></div>
 
-            {/* PHASE: access — choose join mode */}
-            {authPhase === "access" && (
-              <div className="p-8">
-                <p className="text-zinc-500 text-sm font-bold mb-6 text-center uppercase tracking-widest">
-                  Escolhe o teu destino
-                </p>
+            {authPhase === "login" && (
+              <div className="p-8 space-y-5">
+                <div className="space-y-2 text-center">
+                  <p className="text-xs text-zinc-500 uppercase font-black tracking-[0.35em]">
+                    Login
+                  </p>
+                  <h2 className="text-3xl font-black text-white tracking-tight">
+                    Entra primeiro na tua conta
+                  </h2>
+                  <p className="text-sm text-zinc-400 font-medium">
+                    Depois escolhes se queres novo jogo, continuar uma época ou juntar-te a amigos.
+                  </p>
+                </div>
+                <div>
+                  <label className="block text-[10px] uppercase text-zinc-500 mb-2 font-bold">
+                    O teu nome de Treinador
+                  </label>
+                  <input
+                    type="text"
+                    className="w-full bg-zinc-950 border border-zinc-800 p-4 rounded-xl text-white text-lg font-black outline-none transition-all placeholder:text-zinc-700 focus:ring-2 focus:ring-amber-500"
+                    value={name}
+                    placeholder="Ex: Amorim"
+                    onChange={(e) => {
+                      setName(e.target.value);
+                      setAuthError("");
+                    }}
+                  />
+                </div>
+                <div>
+                  <label className="block text-[10px] uppercase text-zinc-500 mb-2 font-bold">
+                    Palavra-passe
+                  </label>
+                  <input
+                    type="password"
+                    className="w-full bg-zinc-950 border border-zinc-800 p-4 rounded-xl text-white text-lg font-black outline-none transition-all placeholder:text-zinc-700 focus:ring-2 focus:ring-amber-500"
+                    value={password}
+                    placeholder="••••••••"
+                    onChange={(e) => {
+                      setPassword(e.target.value);
+                      setAuthError("");
+                    }}
+                    onKeyDown={(e) => {
+                      if (e.key === "Enter") handleAuthenticate("login");
+                    }}
+                  />
+                </div>
+                <button
+                  onClick={() => handleAuthenticate("login")}
+                  disabled={!name.trim() || !password || authSubmitting}
+                  className="w-full bg-amber-500 hover:bg-amber-400 disabled:bg-zinc-800 disabled:text-zinc-600 text-zinc-950 py-5 rounded-xl font-black text-xl transition-all active:scale-95 border-b-4 border-amber-700 active:border-b-0"
+                >
+                  {authSubmitting ? "A VALIDAR CONTA..." : "ENTRAR"}
+                </button>
+                <button
+                  onClick={() => {
+                    setConfirmPassword("");
+                    setAuthError("");
+                    setJoinError("");
+                    setAuthPhase("register");
+                  }}
+                  className="w-full border border-zinc-700 bg-zinc-950 hover:border-zinc-500 text-zinc-100 py-4 rounded-xl font-black text-sm uppercase tracking-[0.25em] transition-all"
+                >
+                  Criar nova conta
+                </button>
+                {authError && (
+                  <p className="text-red-400 text-sm text-center font-bold">
+                    ⚠️ {authError}
+                  </p>
+                )}
+                {!authError && disconnected && (
+                  <p className="text-red-400 text-sm text-center font-bold">
+                    ⚠️ Sem ligação ao servidor. Tenta novamente.
+                  </p>
+                )}
+              </div>
+            )}
+
+            {authPhase === "register" && (
+              <div className="p-8 space-y-5">
+                <button
+                  onClick={resetAuthFlow}
+                  className="text-xs text-zinc-500 hover:text-zinc-300 font-black uppercase tracking-widest flex items-center gap-1"
+                >
+                  ← Voltar
+                </button>
+                <div className="space-y-2 text-center">
+                  <p className="text-xs text-zinc-500 uppercase font-black tracking-[0.35em]">
+                    Nova conta
+                  </p>
+                  <h2 className="text-3xl font-black text-white tracking-tight">
+                    Cria a tua conta de treinador
+                  </h2>
+                </div>
+                <div>
+                  <label className="block text-[10px] uppercase text-zinc-500 mb-2 font-bold">
+                    O teu nome de Treinador
+                  </label>
+                  <input
+                    type="text"
+                    className="w-full bg-zinc-950 border border-zinc-800 p-4 rounded-xl text-white text-lg font-black outline-none transition-all placeholder:text-zinc-700 focus:ring-2 focus:ring-amber-500"
+                    value={name}
+                    placeholder="Ex: Amorim"
+                    onChange={(e) => {
+                      setName(e.target.value);
+                      setAuthError("");
+                    }}
+                  />
+                </div>
+                <div>
+                  <label className="block text-[10px] uppercase text-zinc-500 mb-2 font-bold">
+                    Palavra-passe
+                  </label>
+                  <input
+                    type="password"
+                    className="w-full bg-zinc-950 border border-zinc-800 p-4 rounded-xl text-white text-lg font-black outline-none transition-all placeholder:text-zinc-700 focus:ring-2 focus:ring-amber-500"
+                    value={password}
+                    placeholder="••••••••"
+                    onChange={(e) => {
+                      setPassword(e.target.value);
+                      setAuthError("");
+                    }}
+                  />
+                </div>
+                <div>
+                  <label className="block text-[10px] uppercase text-zinc-500 mb-2 font-bold">
+                    Confirmar Palavra-passe
+                  </label>
+                  <input
+                    type="password"
+                    className={`w-full bg-zinc-950 border p-4 rounded-xl text-white text-lg font-black outline-none transition-all placeholder:text-zinc-700 focus:ring-2 ${registerPasswordMismatch ? "border-red-500 focus:ring-red-500" : "border-zinc-800 focus:ring-amber-500"}`}
+                    value={confirmPassword}
+                    placeholder="••••••••"
+                    onChange={(e) => {
+                      setConfirmPassword(e.target.value);
+                      setAuthError("");
+                    }}
+                    onKeyDown={(e) => {
+                      if (e.key === "Enter" && !registerPasswordMismatch) {
+                        handleAuthenticate("register");
+                      }
+                    }}
+                  />
+                  {registerPasswordMismatch && (
+                    <p className="text-red-400 text-xs mt-1 font-bold">
+                      As palavras-passe não coincidem.
+                    </p>
+                  )}
+                </div>
+                <button
+                  onClick={() => handleAuthenticate("register")}
+                  disabled={!name.trim() || !password || authSubmitting || registerPasswordMismatch}
+                  className="w-full bg-amber-500 hover:bg-amber-400 disabled:bg-zinc-800 disabled:text-zinc-600 text-zinc-950 py-5 rounded-xl font-black text-xl transition-all active:scale-95 border-b-4 border-amber-700 active:border-b-0"
+                >
+                  {authSubmitting ? "A CRIAR CONTA..." : "CRIAR CONTA"}
+                </button>
+                {authError && (
+                  <p className="text-red-400 text-sm text-center font-bold">
+                    ⚠️ {authError}
+                  </p>
+                )}
+                {!authError && disconnected && (
+                  <p className="text-red-400 text-sm text-center font-bold">
+                    ⚠️ Sem ligação ao servidor. Tenta novamente.
+                  </p>
+                )}
+              </div>
+            )}
+
+            {authPhase === "mode" && (
+              <div className="p-8 space-y-5">
+                <div className="flex items-start justify-between gap-4">
+                  <div>
+                    <p className="text-xs text-zinc-500 uppercase font-black tracking-[0.35em] mb-2">
+                      Sessão autenticada
+                    </p>
+                    <h2 className="text-3xl font-black text-white tracking-tight">
+                      Escolhe como queres jogar
+                    </h2>
+                    <p className="text-sm text-zinc-400 font-medium mt-2">
+                      {name} já está autenticado. Agora escolhe a experiência.
+                    </p>
+                  </div>
+                  <button
+                    onClick={resetAuthFlow}
+                    className="shrink-0 text-xs text-zinc-500 hover:text-zinc-300 font-black uppercase tracking-widest"
+                  >
+                    Trocar conta
+                  </button>
+                </div>
+
                 <div className="grid gap-3 sm:grid-cols-3">
                   <button
                     onClick={() => selectJoinMode("new-game")}
@@ -1015,7 +1246,7 @@ function App() {
                       Novo jogo
                     </p>
                     <p className="text-base font-black text-white">
-                      Criar Novo Jogo
+                      Novo jogo
                     </p>
                     <p className="mt-2 text-xs text-zinc-400 leading-relaxed">
                       Começa do zero e recebe uma nova sala.
@@ -1033,7 +1264,7 @@ function App() {
                       Save
                     </p>
                     <p className="text-base font-black text-white">
-                      Continuar jogo gravado
+                      Continuar jogo
                     </p>
                     <p className="mt-2 text-xs text-zinc-400 leading-relaxed">
                       Reabre uma época guardada.
@@ -1048,162 +1279,41 @@ function App() {
                       ↗
                     </div>
                     <p className="text-[10px] uppercase tracking-[0.35em] text-emerald-300 font-black mb-1">
-                      Amigo
+                      Amigos
                     </p>
                     <p className="text-base font-black text-white">
-                      Entrar em sala de um amigo
+                      Juntar a amigos
                     </p>
                     <p className="mt-2 text-xs text-zinc-400 leading-relaxed">
                       Junta-te a outra equipa com um código.
                     </p>
                   </button>
                 </div>
-              </div>
-            )}
 
-            {/* PHASE: register — new game */}
-            {authPhase === "register" && (
-              <div className="p-8 space-y-5">
-                <button
-                  onClick={() => {
-                    setAuthPhase("access");
-                    setRoomCode("");
-                  }}
-                  className="text-xs text-zinc-500 hover:text-zinc-300 font-black uppercase tracking-widest flex items-center gap-1"
-                >
-                  ← Voltar
-                </button>
-                <div>
-                  <label className="block text-[10px] uppercase text-zinc-500 mb-2 font-bold">
-                    O teu nome de Treinador
-                  </label>
-                  <input
-                    type="text"
-                    className="w-full bg-zinc-950 border border-zinc-800 p-4 rounded-xl text-white text-lg font-black outline-none transition-all placeholder:text-zinc-700 focus:ring-2 focus:ring-amber-500"
-                    value={name}
-                    placeholder="Ex: Amorim"
-                    onChange={(e) => setName(e.target.value)}
-                  />
-                </div>
-                <div>
-                  <label className="block text-[10px] uppercase text-zinc-500 mb-2 font-bold">
-                    Palavra-passe
-                  </label>
-                  <input
-                    type="password"
-                    className="w-full bg-zinc-950 border border-zinc-800 p-4 rounded-xl text-white text-lg font-black outline-none transition-all placeholder:text-zinc-700 focus:ring-2 focus:ring-amber-500"
-                    value={password}
-                    placeholder="••••••••"
-                    onChange={(e) => setPassword(e.target.value)}
-                  />
-                </div>
-                <div>
-                  <label className="block text-[10px] uppercase text-zinc-500 mb-2 font-bold">
-                    Confirmar Palavra-passe
-                  </label>
-                  <input
-                    type="password"
-                    className={`w-full bg-zinc-950 border p-4 rounded-xl text-white text-lg font-black outline-none transition-all placeholder:text-zinc-700 focus:ring-2 ${registerPasswordMismatch ? "border-red-500 focus:ring-red-500" : "border-zinc-800 focus:ring-amber-500"}`}
-                    value={confirmPassword}
-                    placeholder="••••••••"
-                    onChange={(e) => setConfirmPassword(e.target.value)}
-                  />
-                  {registerPasswordMismatch && (
-                    <p className="text-red-400 text-xs mt-1 font-bold">
-                      As palavras-passe não coincidem.
+                {joinMode === "new-game" && (
+                  <div className="space-y-3 rounded-3xl border border-amber-500/30 bg-amber-500/8 p-5">
+                    <label className="block text-[10px] uppercase text-amber-300 mb-2 font-bold tracking-[0.3em]">
+                      Nome do novo jogo
+                    </label>
+                    <input
+                      type="text"
+                      className="w-full bg-zinc-950 border border-zinc-800 p-4 rounded-xl text-white text-lg font-black outline-none transition-all placeholder:text-zinc-700 focus:ring-2 focus:ring-amber-500 uppercase"
+                      value={roomCode}
+                      placeholder="INVERNO"
+                      onChange={(e) => setRoomCode(e.target.value.toUpperCase())}
+                      onKeyDown={(e) => {
+                        if (e.key === "Enter") handleJoin();
+                      }}
+                    />
+                    <p className="text-sm font-bold text-amber-200/90">
+                      Ficarás com um clube mágico da 4ª Divisão.
                     </p>
-                  )}
-                </div>
-                <div>
-                  <label className="block text-[10px] uppercase text-zinc-500 mb-2 font-bold">
-                    Nome do Novo Jogo (SALA)
-                  </label>
-                  <input
-                    type="text"
-                    className="w-full bg-zinc-950 border border-zinc-800 p-4 rounded-xl text-white text-lg font-black outline-none transition-all placeholder:text-zinc-700 focus:ring-2 focus:ring-amber-500 uppercase"
-                    value={roomCode}
-                    placeholder="INVERNO"
-                    onChange={(e) => setRoomCode(e.target.value.toUpperCase())}
-                    onKeyDown={(e) => {
-                      if (e.key === "Enter") handleJoin();
-                    }}
-                  />
-                  <p className="text-sm font-bold text-amber-500 mt-3 text-center bg-amber-500/10 p-2 rounded-lg">
-                    Ficarás com um clube mágico da 4ª Divisão!
-                  </p>
-                </div>
-                <button
-                  onClick={handleJoin}
-                  disabled={
-                    !name ||
-                    !password ||
-                    !roomCode ||
-                    joining ||
-                    registerPasswordMismatch
-                  }
-                  className="w-full bg-amber-500 hover:bg-amber-400 disabled:bg-zinc-800 disabled:text-zinc-600 text-zinc-950 py-5 rounded-xl font-black text-xl transition-all active:scale-95 border-b-4 border-amber-700 active:border-b-0"
-                >
-                  {joining ? "A GERAR CONTRATO..." : "CRIAR JOGO"}
-                </button>
-                {joinError && (
-                  <p className="text-red-400 text-sm text-center font-bold">
-                    ⚠️ {joinError}
-                  </p>
+                  </div>
                 )}
-                {!joinError && disconnected && (
-                  <p className="text-red-400 text-sm text-center font-bold">
-                    ⚠️ Sem ligação ao servidor. Tenta novamente.
-                  </p>
-                )}
-              </div>
-            )}
-
-            {/* PHASE: login — load save or join friend */}
-            {authPhase === "login" && (
-              <div className="p-8 space-y-5">
-                <button
-                  onClick={() => {
-                    setAuthPhase("access");
-                    setRoomCode("");
-                  }}
-                  className="text-xs text-zinc-500 hover:text-zinc-300 font-black uppercase tracking-widest flex items-center gap-1"
-                >
-                  ← Voltar
-                </button>
-                <div>
-                  <label className="block text-[10px] uppercase text-zinc-500 mb-2 font-bold">
-                    O teu nome de Treinador
-                  </label>
-                  <input
-                    type="text"
-                    className="w-full bg-zinc-950 border border-zinc-800 p-4 rounded-xl text-white text-lg font-black outline-none transition-all placeholder:text-zinc-700 focus:ring-2 focus:ring-amber-500"
-                    value={name}
-                    placeholder="Ex: Amorim"
-                    onChange={(e) => setName(e.target.value)}
-                  />
-                </div>
-                <div>
-                  <label className="block text-[10px] uppercase text-zinc-500 mb-2 font-bold">
-                    Palavra-passe
-                  </label>
-                  <input
-                    type="password"
-                    className="w-full bg-zinc-950 border border-zinc-800 p-4 rounded-xl text-white text-lg font-black outline-none transition-all placeholder:text-zinc-700 focus:ring-2 focus:ring-amber-500"
-                    value={password}
-                    placeholder="••••••••"
-                    onChange={(e) => setPassword(e.target.value)}
-                    onKeyDown={(e) => {
-                      if (e.key === "Enter") handleJoin();
-                    }}
-                  />
-                  <p className="text-xs text-zinc-600 mt-1 font-bold">
-                    Usa sempre a mesma palavra-passe da tua conta.
-                  </p>
-                </div>
 
                 {joinMode === "saved-game" && (
-                  <div>
-                    <label className="block text-[10px] uppercase text-zinc-500 mb-2 font-bold">
+                  <div className="space-y-3 rounded-3xl border border-cyan-500/30 bg-cyan-500/8 p-5">
+                    <label className="block text-[10px] uppercase text-cyan-300 mb-2 font-bold tracking-[0.3em]">
                       As tuas Salas Gravadas
                     </label>
                     <select
@@ -1222,17 +1332,15 @@ function App() {
                     </select>
                     {availableSaves.length === 0 && (
                       <p className="text-zinc-500 text-sm mt-2">
-                        {name
-                          ? "Nenhum save encontrado para este treinador."
-                          : "Insere o teu nome para ver os teus saves."}
+                        Nenhum save encontrado para este treinador.
                       </p>
                     )}
                   </div>
                 )}
 
                 {joinMode === "friend-room" && (
-                  <div>
-                    <label className="block text-[10px] uppercase text-zinc-500 mb-2 font-bold">
+                  <div className="space-y-3 rounded-3xl border border-emerald-500/30 bg-emerald-500/8 p-5">
+                    <label className="block text-[10px] uppercase text-emerald-300 mb-2 font-bold tracking-[0.3em]">
                       Código da Sala do Amigo
                     </label>
                     <input
@@ -1250,13 +1358,21 @@ function App() {
                   </div>
                 )}
 
-                <button
-                  onClick={handleJoin}
-                  disabled={!name || !password || !roomCode || joining}
-                  className={`w-full disabled:bg-zinc-800 disabled:text-zinc-600 text-zinc-950 py-5 rounded-xl font-black text-xl transition-all active:scale-95 border-b-4 active:border-b-0 ${joinMode === "saved-game" ? "bg-cyan-500 hover:bg-cyan-400 border-cyan-700" : "bg-emerald-500 hover:bg-emerald-400 border-emerald-700"}`}
-                >
-                  {joining ? "A GERAR CONTRATO..." : "ASSINAR CONTRATO"}
-                </button>
+                {joinMode && (
+                  <button
+                    onClick={handleJoin}
+                    disabled={!roomCode || joining}
+                    className={`w-full disabled:bg-zinc-800 disabled:text-zinc-600 text-zinc-950 py-5 rounded-xl font-black text-xl transition-all active:scale-95 border-b-4 active:border-b-0 ${joinMode === "new-game" ? "bg-amber-500 hover:bg-amber-400 border-amber-700" : joinMode === "saved-game" ? "bg-cyan-500 hover:bg-cyan-400 border-cyan-700" : "bg-emerald-500 hover:bg-emerald-400 border-emerald-700"}`}
+                  >
+                    {joining
+                      ? "A GERAR CONTRATO..."
+                      : joinMode === "new-game"
+                        ? "CRIAR JOGO"
+                        : joinMode === "saved-game"
+                          ? "CONTINUAR JOGO"
+                          : "JUNTAR A AMIGOS"}
+                  </button>
+                )}
                 {joinError && (
                   <p className="text-red-400 text-sm text-center font-bold">
                     ⚠️ {joinError}
