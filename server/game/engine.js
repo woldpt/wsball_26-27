@@ -201,6 +201,7 @@ async function applyInjuryEvent({
   fixture,
   teamSide,
   squad,
+  fullRoster,
   lineupIds,
   currentMatchweek,
   io,
@@ -246,7 +247,7 @@ async function applyInjuryEvent({
   });
 
   const teamId = teamSide === "home" ? fixture.homeTeamId : fixture.awayTeamId;
-  const availableBench = getAvailableBench(squad, lineupIds);
+  const availableBench = getAvailableBench(fullRoster || squad, lineupIds);
   const fallback = () => pickBestPlayer(availableBench)?.id || null;
   const result = await waitForMatchAction({
     game,
@@ -405,6 +406,36 @@ async function simulateMatchSegment(
     currentMatchweek,
   );
 
+  // Load full rosters for bench availability during injuries
+  const homeFullRoster = await new Promise((resolve, reject) => {
+    db.all(
+      "SELECT * FROM players WHERE team_id = ?",
+      [fixture.homeTeamId],
+      (err, rows) => {
+        if (err) return reject(err);
+        resolve(
+          (rows || []).filter((p) => isPlayerAvailable(p, currentMatchweek)),
+        );
+      },
+    );
+  });
+  const awayFullRoster = await new Promise((resolve, reject) => {
+    db.all(
+      "SELECT * FROM players WHERE team_id = ?",
+      [fixture.awayTeamId],
+      (err, rows) => {
+        if (err) return reject(err);
+        resolve(
+          (rows || []).filter((p) => isPlayerAvailable(p, currentMatchweek)),
+        );
+      },
+    );
+  });
+
+  // Persistent lineup tracking across all minutes in this segment
+  const homeLineupIds = new Set(homeSquad.map((p) => p.id));
+  const awayLineupIds = new Set(awaySquad.map((p) => p.id));
+
   const getPower = (squad, style) => {
     let attack = 0,
       defense = 0,
@@ -429,7 +460,7 @@ async function simulateMatchSegment(
     ).length;
     if (starCount >= 3) {
       const excessStars = starCount - 2; // every star beyond 2 adds friction
-      const egoPenalty = Math.min(0.30, excessStars * 0.08); // up to -30%
+      const egoPenalty = Math.min(0.3, excessStars * 0.08); // up to -30%
       attack *= 1 - egoPenalty;
       midfield *= 1 - egoPenalty * 0.6; // midfield hit is softer
     }
@@ -492,40 +523,20 @@ async function simulateMatchSegment(
           io,
           game,
         });
-      } else if (
-        Math.random() * (currentHStrength + currentAStrength) <
-        currentHStrength
-      ) {
-        const scorers = home.squad.filter(
-          (p) => p.position === "ATK" || p.position === "MID",
-        );
-        const scorer =
-          scorers.length > 0 ? weightedPickScorer(scorers) : home.squad[0];
-        fixture.finalHomeGoals++;
-        fixture.events.push({
-          minute,
-          type: "goal",
-          team: "home",
-          emoji: "⚽",
-          playerId: scorer ? scorer.id : null,
-          playerName: scorer ? scorer.name : "Jogador",
-          text: `[${minute}'] ⚽ GOLO! ${scorer ? scorer.name : "Jogador"}`,
-        });
-        if (scorer)
-          db.run("UPDATE players SET goals = goals + 1 WHERE id = ?", [
-            scorer.id,
-          ]);
       } else {
-        const scorers = away.squad.filter(
+        const scoringSquad = attackingSide === "home" ? home.squad : away.squad;
+        const scoringTeam = attackingSide;
+        const scorers = scoringSquad.filter(
           (p) => p.position === "ATK" || p.position === "MID",
         );
         const scorer =
-          scorers.length > 0 ? weightedPickScorer(scorers) : away.squad[0];
-        fixture.finalAwayGoals++;
+          scorers.length > 0 ? weightedPickScorer(scorers) : scoringSquad[0];
+        if (attackingSide === "home") fixture.finalHomeGoals++;
+        else fixture.finalAwayGoals++;
         fixture.events.push({
           minute,
           type: "goal",
-          team: "away",
+          team: scoringTeam,
           emoji: "⚽",
           playerId: scorer ? scorer.id : null,
           playerName: scorer ? scorer.name : "Jogador",
@@ -604,13 +615,15 @@ async function simulateMatchSegment(
       const isHomeInjury = Math.random() > 0.5;
       const squad = isHomeInjury ? home.squad : away.squad;
       const side = isHomeInjury ? "home" : "away";
-      const lineupIds = new Set(squad.map((p) => p.id));
+      const lineupIds = isHomeInjury ? homeLineupIds : awayLineupIds;
+      const fullRoster = isHomeInjury ? homeFullRoster : awayFullRoster;
       if (squad.length > 0) {
         const injuryResult = await applyInjuryEvent({
           db,
           fixture,
           teamSide: side,
           squad,
+          fullRoster,
           lineupIds,
           currentMatchweek,
           io,
@@ -646,7 +659,7 @@ async function applyPostMatchQualityEvolution(db, fixtures, currentMatchweek) {
     }
 
     db.all(
-      "SELECT id, team_id, skill, injury_until_matchweek, suspension_until_matchweek FROM players WHERE team_id IS NOT NULL ORDER BY team_id, id",
+      "SELECT id, team_id, skill, form, injury_until_matchweek, suspension_until_matchweek FROM players WHERE team_id IS NOT NULL ORDER BY team_id, id",
       (err, players) => {
         if (err || !players || players.length === 0) {
           resolve();
@@ -700,10 +713,24 @@ async function applyPostMatchQualityEvolution(db, fixtures, currentMatchweek) {
             delta += 1;
           }
 
-          if (delta !== 0) {
+          // Form update based on match result
+          let formDelta = 0;
+          if (teamResult === "W")
+            formDelta = 2 + Math.floor(Math.random() * 4); // +2 to +5
+          else if (teamResult === "L")
+            formDelta = -(2 + Math.floor(Math.random() * 4)); // -2 to -5
+          else formDelta = Math.floor(Math.random() * 5) - 2; // -2 to +2
+
+          const newForm = Math.max(
+            40,
+            Math.min(100, (player.form || 75) + formDelta),
+          );
+
+          if (delta !== 0 || formDelta !== 0) {
             updates.push({
               id: player.id,
               skill: clampSkill((player.skill || 0) + delta),
+              form: newForm,
             });
           }
         }
@@ -717,8 +744,8 @@ async function applyPostMatchQualityEvolution(db, fixtures, currentMatchweek) {
         db.serialize(() => {
           updates.forEach((update) => {
             db.run(
-              "UPDATE players SET skill = ? WHERE id = ?",
-              [update.skill, update.id],
+              "UPDATE players SET skill = ?, form = ? WHERE id = ?",
+              [update.skill, update.form, update.id],
               () => {
                 remaining -= 1;
                 if (remaining === 0) resolve();

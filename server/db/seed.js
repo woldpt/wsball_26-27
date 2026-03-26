@@ -1,24 +1,24 @@
-const fs = require('fs');
-const path = require('path');
-const db = require('./database');
+const fs = require("fs");
+const path = require("path");
+const db = require("./database");
 
 // Support fixtures: use `--real` to load JSON fixtures from server/db/fixtures/
-const useReal = process.argv.includes('--real') || process.argv.includes('-r');
-const fixturesDir = path.join(__dirname, 'fixtures');
+const useReal = process.argv.includes("--real") || process.argv.includes("-r");
+const fixturesDir = path.join(__dirname, "fixtures");
 
 let allTeamsData = null;
 
 if (useReal) {
   try {
-    const allTeamsFile = path.join(fixturesDir, 'all_teams.json');
+    const allTeamsFile = path.join(fixturesDir, "all_teams.json");
     if (fs.existsSync(allTeamsFile)) {
-      const data = JSON.parse(fs.readFileSync(allTeamsFile, 'utf8'));
+      const data = JSON.parse(fs.readFileSync(allTeamsFile, "utf8"));
       if (data.teams && Array.isArray(data.teams)) {
         allTeamsData = data.teams;
       }
     }
   } catch (e) {
-    console.error('Error loading all_teams.json:', e);
+    console.error("Error loading all_teams.json:", e);
     allTeamsData = null;
   }
 }
@@ -110,38 +110,111 @@ db.serialize(() => {
   db.run("DELETE FROM sqlite_sequence WHERE name='managers'");
 
   if (allTeamsData && allTeamsData.length > 0) {
-    console.log(`Seeding ${allTeamsData.length} teams from all_teams.json with 20 players each...`);
+    console.log(
+      `Seeding ${allTeamsData.length} teams from all_teams.json with 20 players each...`,
+    );
   } else {
     console.log(
       "Seeding 40 fictitious teams and 640 players across 5 divisions (inc. Distritais) (Base DB)...",
     );
   }
 
-  const insertManager = db.prepare('INSERT INTO managers (name, reputation) VALUES (?, ?)');
-  const insertTeam = db.prepare('INSERT INTO teams (name, manager_id, division, stadium_capacity, budget, color_primary, color_secondary) VALUES (?, ?, ?, ?, ?, ?, ?)');
-  const insertPlayer = db.prepare('INSERT INTO players (name, position, skill, age, form, aggressiveness, nationality, value, wage, goals, is_star, team_id) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, 0, ?, ?)');
+  const insertManager = db.prepare(
+    "INSERT INTO managers (name, reputation) VALUES (?, ?)",
+  );
+  const insertTeam = db.prepare(
+    "INSERT INTO teams (name, manager_id, division, stadium_capacity, budget, color_primary, color_secondary) VALUES (?, ?, ?, ?, ?, ?, ?)",
+  );
+  const insertPlayer = db.prepare(
+    "INSERT INTO players (name, position, skill, age, form, aggressiveness, nationality, value, wage, goals, is_star, team_id) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, 0, ?, ?)",
+  );
 
   let teamId = 1;
   let managerId = 1;
   const usedManagers = new Set();
-  
+
   // Fallback divisions if no fixtures loaded
   const divisionsData = {
-    1: { teams: ['Triunfo FC','Atlético do Norte','Desportivo Central','União da Serra','Estrela da Manhã','Guerreiros SC','Invicta FC','Real Clube'], budget: 10000000 },
-    2: { teams: ['Academia Sul','Leões da Fronteira','Bravos de Leste','Trovão FC','Fénix Azul','Pioneiros SC','Vanguarda Desportiva','Dragões do Vale'], budget: 5000000 },
-    3: { teams: ['Titãs do Ouro','Alvorada FC','Centauros AC','Falcões de Ferro','Gigantes SC','Lobos da Planície','Meteoros FC','Panteras Negras'], budget: 2500000 },
-    4: { teams: ['Águias Douradas','Corsários FC','Gladiadores SC','Tempestade AC','Vulcanos FC','Zeus Desportivo','Cometas SC','Piratas do Mar'], budget: 1500000 },
-    5: { teams: ['Amadores de Viseu','Rio Maior FC','Desportivo da Aldeia','Recreativo Serrano','União de Bairro','Sporting da Aldeia','Coruchense FC','Lousã Desportiva'], budget: 500000 }
+    1: {
+      teams: [
+        "Triunfo FC",
+        "Atlético do Norte",
+        "Desportivo Central",
+        "União da Serra",
+        "Estrela da Manhã",
+        "Guerreiros SC",
+        "Invicta FC",
+        "Real Clube",
+      ],
+      budget: 10000000,
+      stadiumCapacity: 50000,
+    },
+    2: {
+      teams: [
+        "Academia Sul",
+        "Leões da Fronteira",
+        "Bravos de Leste",
+        "Trovão FC",
+        "Fénix Azul",
+        "Pioneiros SC",
+        "Vanguarda Desportiva",
+        "Dragões do Vale",
+      ],
+      budget: 5000000,
+      stadiumCapacity: 25000,
+    },
+    3: {
+      teams: [
+        "Titãs do Ouro",
+        "Alvorada FC",
+        "Centauros AC",
+        "Falcões de Ferro",
+        "Gigantes SC",
+        "Lobos da Planície",
+        "Meteoros FC",
+        "Panteras Negras",
+      ],
+      budget: 2500000,
+      stadiumCapacity: 12000,
+    },
+    4: {
+      teams: [
+        "Águias Douradas",
+        "Corsários FC",
+        "Gladiadores SC",
+        "Tempestade AC",
+        "Vulcanos FC",
+        "Zeus Desportivo",
+        "Cometas SC",
+        "Piratas do Mar",
+      ],
+      budget: 1500000,
+      stadiumCapacity: 6000,
+    },
+    5: {
+      teams: [
+        "Amadores de Viseu",
+        "Rio Maior FC",
+        "Desportivo da Aldeia",
+        "Recreativo Serrano",
+        "União de Bairro",
+        "Sporting da Aldeia",
+        "Coruchense FC",
+        "Lousã Desportiva",
+      ],
+      budget: 500000,
+      stadiumCapacity: 2000,
+    },
   };
 
   // Use allTeamsData if available, otherwise fallback to generated teams
   const teamsToSeed = allTeamsData || [];
-  
+
   if (teamsToSeed.length > 0) {
     // Seed from all_teams.json
     teamsToSeed.forEach((teamData) => {
       // Insert manager
-      let managerName = teamData.manager?.name || 'Mr. ' + getRandomName();
+      let managerName = teamData.manager?.name || "Mr. " + getRandomName();
       const base = managerName;
       let candidate = base;
       let suffix = 1;
@@ -151,19 +224,25 @@ db.serialize(() => {
       }
       managerName = candidate;
       usedManagers.add(managerName);
-      
+
       insertManager.run(managerName, 50);
 
       // Colors from fixture or fallback
-      const colors = teamData.colors || { primary: '#dc2626', secondary: '#ffffff' };
-      const primaryColor = colors.primary || '#dc2626';
-      const secondaryColor = colors.secondary || '#ffffff';
-      
+      const colors = teamData.colors || {
+        primary: "#dc2626",
+        secondary: "#ffffff",
+      };
+      const primaryColor = colors.primary || "#dc2626";
+      const secondaryColor = colors.secondary || "#ffffff";
+
       // Stadium from fixture
-      const stadium = teamData.stadium || { name: 'Generic Stadium', capacity: 10000 };
+      const stadium = teamData.stadium || {
+        name: "Generic Stadium",
+        capacity: 10000,
+      };
       const stadiumCapacity = stadium.capacity || 10000;
       const budget = 1500000; // default budget for all
-      
+
       insertTeam.run(
         teamData.name,
         managerId,
@@ -171,25 +250,53 @@ db.serialize(() => {
         stadiumCapacity,
         budget,
         primaryColor,
-        secondaryColor
+        secondaryColor,
       );
 
       // Generate 20 players per team
       const desiredPlayers = 20;
       const providedPlayers = teamData.players || [];
-      const positionsDefault = ['GK','GK','DEF','DEF','DEF','DEF','DEF','DEF','MID','MID','MID','MID','MID','MID','ATK','ATK','ATK','ATK','MID','DEF'];
-      
+      const positionsDefault = [
+        "GK",
+        "GK",
+        "DEF",
+        "DEF",
+        "DEF",
+        "DEF",
+        "DEF",
+        "DEF",
+        "MID",
+        "MID",
+        "MID",
+        "MID",
+        "MID",
+        "MID",
+        "ATK",
+        "ATK",
+        "ATK",
+        "ATK",
+        "MID",
+        "DEF",
+      ];
+
       for (let i = 0; i < desiredPlayers; i++) {
         let p = providedPlayers[i];
         let pos = positionsDefault[i % positionsDefault.length];
         let name = getRandomName();
         let division = teamData.division || 5;
-        let skill = randomSkill((skillRanges[division]||[5,20])[0], (skillRanges[division]||[5,20])[1]);
+        let skill = randomSkill(
+          (skillRanges[division] || [5, 20])[0],
+          (skillRanges[division] || [5, 20])[1],
+        );
         let age = Math.floor(Math.random() * 16) + 18;
         let form = Math.floor(Math.random() * 20) + 80;
-        let agg = aggressivenessLevels[Math.floor(Math.random() * aggressivenessLevels.length)];
-        let nat = nationalities[Math.floor(Math.random() * nationalities.length)];
-        
+        let agg =
+          aggressivenessLevels[
+            Math.floor(Math.random() * aggressivenessLevels.length)
+          ];
+        let nat =
+          nationalities[Math.floor(Math.random() * nationalities.length)];
+
         if (p) {
           if (p.name) name = p.name;
           if (p.position) pos = p.position;
@@ -199,13 +306,26 @@ db.serialize(() => {
           if (p.aggressiveness) agg = p.aggressiveness;
           if (p.nationality) nat = p.nationality;
         }
-        
+
         const value = skill * 5000;
         const wage = skill * 50;
-        const isStar = (pos === 'MID' || pos === 'ATK') && Math.random() < 0.07 ? 1 : 0;
-        insertPlayer.run(name, pos, skill, age, form, agg, nat, value, wage, isStar, teamId);
+        const isStar =
+          (pos === "MID" || pos === "ATK") && Math.random() < 0.07 ? 1 : 0;
+        insertPlayer.run(
+          name,
+          pos,
+          skill,
+          age,
+          form,
+          agg,
+          nat,
+          value,
+          wage,
+          isStar,
+          teamId,
+        );
       }
-      
+
       teamId++;
       managerId++;
     });
@@ -216,7 +336,8 @@ db.serialize(() => {
       if (!data) continue;
       data.teams.forEach((teamName) => {
         // manager: randomly generated
-        let managerName = 'Mr. ' + getRandomName() + ' (' + teamName.split(' ')[0] + ')';
+        let managerName =
+          "Mr. " + getRandomName() + " (" + teamName.split(" ")[0] + ")";
         const base = managerName;
         let candidate = base;
         let suffix = 1;
@@ -230,31 +351,91 @@ db.serialize(() => {
         insertManager.run(managerName, 50);
 
         const colors = [
-          ['#dc2626', '#ffffff'], ['#2563eb', '#ffffff'], ['#16a34a', '#ffffff'], ['#000000', '#ffffff'], ['#ca8a04', '#000000'], ['#7c3aed', '#ffffff'], ['#db2777', '#ffffff'], ['#ea580c', '#ffffff'], ['#0891b2', '#ffffff'], ['#4f46e5', '#ffffff'], ['#059669', '#ffffff'], ['#ffffff', '#000000']
+          ["#dc2626", "#ffffff"],
+          ["#2563eb", "#ffffff"],
+          ["#16a34a", "#ffffff"],
+          ["#000000", "#ffffff"],
+          ["#ca8a04", "#000000"],
+          ["#7c3aed", "#ffffff"],
+          ["#db2777", "#ffffff"],
+          ["#ea580c", "#ffffff"],
+          ["#0891b2", "#ffffff"],
+          ["#4f46e5", "#ffffff"],
+          ["#059669", "#ffffff"],
+          ["#ffffff", "#000000"],
         ];
         const teamColors = colors[teamId % colors.length];
-        let stadiumCapacity = data.budget || 10000;
-        
-        insertTeam.run(teamName, managerId, div, stadiumCapacity, data.budget || 150000, teamColors[0], teamColors[1]);
+        let stadiumCapacity = data.stadiumCapacity || 10000;
+
+        insertTeam.run(
+          teamName,
+          managerId,
+          div,
+          stadiumCapacity,
+          data.budget || 150000,
+          teamColors[0],
+          teamColors[1],
+        );
 
         // insert 20 players per team
         const desiredPlayers = 20;
-        const positionsDefault = ['GK','GK','DEF','DEF','DEF','DEF','DEF','DEF','MID','MID','MID','MID','MID','MID','ATK','ATK','ATK','ATK','MID','DEF'];
-        
+        const positionsDefault = [
+          "GK",
+          "GK",
+          "DEF",
+          "DEF",
+          "DEF",
+          "DEF",
+          "DEF",
+          "DEF",
+          "MID",
+          "MID",
+          "MID",
+          "MID",
+          "MID",
+          "MID",
+          "ATK",
+          "ATK",
+          "ATK",
+          "ATK",
+          "MID",
+          "DEF",
+        ];
+
         for (let i = 0; i < desiredPlayers; i++) {
           let pos = positionsDefault[i % positionsDefault.length];
           let name = getRandomName();
-          let skill = randomSkill((skillRanges[div]||[5,20])[0], (skillRanges[div]||[5,20])[1]);
+          let skill = randomSkill(
+            (skillRanges[div] || [5, 20])[0],
+            (skillRanges[div] || [5, 20])[1],
+          );
           let age = Math.floor(Math.random() * 16) + 18;
           let form = Math.floor(Math.random() * 20) + 80;
-          let agg = aggressivenessLevels[Math.floor(Math.random() * aggressivenessLevels.length)];
-          let nat = nationalities[Math.floor(Math.random() * nationalities.length)];
+          let agg =
+            aggressivenessLevels[
+              Math.floor(Math.random() * aggressivenessLevels.length)
+            ];
+          let nat =
+            nationalities[Math.floor(Math.random() * nationalities.length)];
           const value = skill * 5000;
           const wage = skill * 50;
-          const isStar = (pos === 'MID' || pos === 'ATK') && Math.random() < 0.07 ? 1 : 0;
-          insertPlayer.run(name, pos, skill, age, form, agg, nat, value, wage, isStar, teamId);
+          const isStar =
+            (pos === "MID" || pos === "ATK") && Math.random() < 0.07 ? 1 : 0;
+          insertPlayer.run(
+            name,
+            pos,
+            skill,
+            age,
+            form,
+            agg,
+            nat,
+            value,
+            wage,
+            isStar,
+            teamId,
+          );
         }
-        
+
         teamId++;
         managerId++;
       });

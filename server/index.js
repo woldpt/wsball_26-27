@@ -474,10 +474,42 @@ async function applySeasonEnd(game) {
     });
   }
 
-  // Reset standings for all divisions 1-4 (Distritais don't have tracked standings)
+  // Reset standings for all divisions (including Distritais)
   await new Promise((resolve) => {
     game.db.run(
-      "UPDATE teams SET points=0, wins=0, draws=0, losses=0, goals_for=0, goals_against=0 WHERE division <= 4",
+      "UPDATE teams SET points=0, wins=0, draws=0, losses=0, goals_for=0, goals_against=0",
+      resolve,
+    );
+  });
+
+  // ── AGING + RETIREMENT ──────────────────────────────────────────────────
+  // All players age +1 per season
+  await new Promise((resolve) => {
+    game.db.run("UPDATE players SET age = age + 1", resolve);
+  });
+  // Players 36+ may retire (probability increases with age)
+  const retirementCandidates = await runAll(
+    game.db,
+    "SELECT id, age FROM players WHERE age >= 36 AND team_id IS NOT NULL",
+  );
+  for (const p of retirementCandidates) {
+    const retireChance =
+      p.age >= 39 ? 0.95 : p.age >= 38 ? 0.8 : p.age >= 37 ? 0.6 : 0.35;
+    if (Math.random() < retireChance) {
+      await new Promise((resolve) => {
+        game.db.run(
+          "UPDATE players SET team_id = NULL, transfer_status = 'none', transfer_price = 0 WHERE id = ?",
+          [p.id],
+          resolve,
+        );
+      });
+    }
+  }
+
+  // ── RESET GOAL STATS FOR NEW SEASON ─────────────────────────────────────
+  await new Promise((resolve) => {
+    game.db.run(
+      "UPDATE players SET goals = 0, red_cards = 0, injuries = 0, suspension_games = 0, suspension_until_matchweek = 0, injury_until_matchweek = 0",
       resolve,
     );
   });
@@ -594,11 +626,21 @@ async function startCupRound(game, round) {
   });
 
   if (!humanInCup) {
-    // No human in cup: auto-simulate immediately after a brief delay
-    setTimeout(() => simulateCupRound(game, round), 800);
+    // No human in cup: auto-simulate and await completion
+    await simulateCupRound(game, round);
   } else {
     game.cupState = "draw";
     // Simulation starts after all humans ack (see "cupDrawAcknowledged" handler)
+    // Safety timeout: if humans don't ack within 30s, auto-proceed
+    if (game._cupDrawTimeout) clearTimeout(game._cupDrawTimeout);
+    game._cupDrawTimeout = setTimeout(() => {
+      if (game.cupState === "draw") {
+        console.log(
+          `[${game.roomCode}] Cup draw timeout — auto-proceeding round ${round}`,
+        );
+        simulateCupRound(game, round);
+      }
+    }, 30000);
   }
 }
 
@@ -799,6 +841,18 @@ async function simulateCupRound(game, round) {
     season,
     isFinal: round === 5,
   });
+
+  // If this was the cup final AND a season-ending matchweek, trigger season end now
+  if (round === 5) {
+    const normMw = ((game.matchweek - 2) % 14) + 1; // matchweek was already incremented
+    if (normMw === 14 || normMw === 0) {
+      try {
+        await applySeasonEnd(game);
+      } catch (seErr) {
+        console.error(`[${game.roomCode}] Season end error (from cup):`, seErr);
+      }
+    }
+  }
 }
 
 function refreshMarket(game, emitToRoom = true) {
@@ -909,6 +963,8 @@ function startAuction(game, player, startingPrice, callback) {
 
       refreshMarket(game);
       io.to(game.roomCode).emit("auctionUpdate", game.auctions[player.id]);
+      // Trigger NPC bids for this auction
+      scheduleNpcAuctionBids(game, player.id);
       if (callback) callback(true, startingPrice, player);
     },
   );
@@ -1162,6 +1218,180 @@ function maybeTriggerContractRequest(game, io, player) {
   );
 }
 
+// ─── CONTRACT EXPIRY CHECK ─────────────────────────────────────────────────
+// Called after each matchweek. Releases players whose contracts expired and
+// triggers renewal requests for players approaching contract end.
+async function processContractExpiries(game) {
+  const currentMw = game.matchweek;
+
+  // Release players whose contracts have expired
+  const expired = await runAll(
+    game.db,
+    "SELECT * FROM players WHERE team_id IS NOT NULL AND contract_until_matchweek > 0 AND contract_until_matchweek <= ?",
+    [currentMw],
+  );
+  for (const p of expired) {
+    // Only auto-release NPC-managed players; human players get warnings
+    const coach = Object.values(game.playersByName).find(
+      (pl) => pl.teamId === p.team_id && pl.socketId,
+    );
+    if (!coach) {
+      // NPC team — auto-renew if affordable, otherwise release
+      const team = await runGet(
+        game.db,
+        "SELECT budget FROM teams WHERE id = ?",
+        [p.team_id],
+      );
+      const newWage = Math.max(Math.round((p.skill || 0) * 55), p.wage || 0);
+      if (team && team.budget > newWage * 14) {
+        await new Promise((resolve) => {
+          game.db.run(
+            "UPDATE players SET wage = ?, contract_until_matchweek = ?, contract_request_pending = 0 WHERE id = ?",
+            [newWage, getSeasonEndMatchweek(currentMw), p.id],
+            resolve,
+          );
+        });
+      } else {
+        await new Promise((resolve) => {
+          game.db.run(
+            "UPDATE players SET team_id = NULL, transfer_status = 'none', transfer_price = 0, contract_request_pending = 0 WHERE id = ?",
+            [p.id],
+            resolve,
+          );
+        });
+      }
+    }
+    // Human-managed teams: leave as-is, they should have been warned via contract requests
+  }
+
+  // Trigger renewal requests for players expiring within 3 matchweeks
+  const soonExpiring = await runAll(
+    game.db,
+    "SELECT * FROM players WHERE team_id IS NOT NULL AND contract_until_matchweek > 0 AND contract_until_matchweek <= ? AND contract_until_matchweek > ? AND contract_request_pending = 0",
+    [currentMw + 3, currentMw],
+  );
+  for (const p of soonExpiring) {
+    maybeTriggerContractRequest(game, io, p);
+  }
+}
+
+// ─── NPC TRANSFER ACTIVITY ─────────────────────────────────────────────────
+// Called after each matchweek. NPC teams buy players they need.
+async function processNpcTransferActivity(game) {
+  const humanTeamIds = new Set(
+    Object.values(game.playersByName)
+      .map((p) => p.teamId)
+      .filter(Boolean),
+  );
+
+  // Get all teams
+  const allTeams = await runAll(
+    game.db,
+    "SELECT * FROM teams WHERE budget > 20000",
+  );
+  const npcTeams = allTeams.filter((t) => !humanTeamIds.has(t.id));
+
+  if (npcTeams.length === 0) return;
+
+  // Get listed players (fixed price) and free agents
+  const marketPlayers = await runAll(
+    game.db,
+    "SELECT * FROM players WHERE (team_id IS NULL OR transfer_status = 'fixed') AND transfer_status != 'auction' ORDER BY skill DESC, value ASC",
+  );
+
+  for (const npcTeam of npcTeams) {
+    // Check squad size
+    const squadRows = await runAll(
+      game.db,
+      "SELECT id FROM players WHERE team_id = ?",
+      [npcTeam.id],
+    );
+    if (squadRows.length >= 22) continue; // full squad
+    if (Math.random() > 0.25) continue; // 25% chance per matchweek to attempt a purchase
+
+    for (const player of marketPlayers) {
+      if (player.team_id === npcTeam.id) continue; // own player
+      const price =
+        player.transfer_status === "fixed" && player.transfer_price > 0
+          ? player.transfer_price
+          : Math.round((player.value || 0) * 1.2);
+      if (price <= 0) continue;
+      if (price > npcTeam.budget * 0.35) continue; // won't overspend
+
+      // NPC prefers players with skill near their division level
+      if (Math.random() > 0.4) continue;
+
+      // Buy the player
+      await new Promise((resolve) => {
+        game.db.run(
+          "UPDATE teams SET budget = budget - ? WHERE id = ?",
+          [price, npcTeam.id],
+          resolve,
+        );
+      });
+      if (player.team_id) {
+        await new Promise((resolve) => {
+          game.db.run(
+            "UPDATE teams SET budget = budget + ? WHERE id = ?",
+            [price, player.team_id],
+            resolve,
+          );
+        });
+      }
+      await new Promise((resolve) => {
+        game.db.run(
+          "UPDATE players SET team_id = ?, transfer_status = 'none', transfer_price = 0, contract_until_matchweek = ?, contract_request_pending = 0, contract_requested_wage = 0 WHERE id = ?",
+          [npcTeam.id, getSeasonEndMatchweek(game.matchweek), player.id],
+          resolve,
+        );
+      });
+      npcTeam.budget -= price;
+      break; // one purchase per matchweek per NPC
+    }
+  }
+}
+
+// ─── NPC AUCTION BIDDING ───────────────────────────────────────────────────
+// Called when an auction starts. NPC teams may place bids after a delay.
+function scheduleNpcAuctionBids(game, playerId) {
+  const auction = game.auctions?.[playerId];
+  if (!auction) return;
+
+  const humanTeamIds = new Set(
+    Object.values(game.playersByName)
+      .map((p) => p.teamId)
+      .filter(Boolean),
+  );
+
+  game.db.all(
+    "SELECT * FROM teams WHERE budget > ?",
+    [auction.highestBid + auction.minIncrement],
+    (err, teams) => {
+      if (err || !teams) return;
+      const npcTeams = teams.filter(
+        (t) => !humanTeamIds.has(t.id) && t.id !== auction.sellerTeamId,
+      );
+
+      let bidDelay = 3000 + Math.floor(Math.random() * 5000);
+      for (const npcTeam of npcTeams) {
+        if (Math.random() > 0.2) continue; // 20% chance each NPC bids
+
+        setTimeout(() => {
+          const currentAuction = game.auctions?.[playerId];
+          if (!currentAuction || currentAuction.status !== "open") return;
+          const bidAmount =
+            currentAuction.highestBid + currentAuction.minIncrement;
+          if (bidAmount > npcTeam.budget * 0.4) return;
+
+          placeAuctionBid(game, npcTeam.id, playerId, bidAmount, io);
+        }, bidDelay);
+
+        bidDelay += 3000 + Math.floor(Math.random() * 8000);
+      }
+    },
+  );
+}
+
 io.on("connection", (socket) => {
   // ── JOIN GAME ──────────────────────────────────────────────────────────────
   socket.on("joinGame", async (data) => {
@@ -1191,7 +1421,12 @@ io.on("connection", (socket) => {
     // has been fully loaded (matchweek, matchState, globalMarket).
     getGame(roomCode, (game, gameErr) => {
       if (!game || gameErr) {
-        return socket.emit("joinError", gameErr ? gameErr.message : "Erro ao carregar o jogo. Contacta o administrador.");
+        return socket.emit(
+          "joinError",
+          gameErr
+            ? gameErr.message
+            : "Erro ao carregar o jogo. Contacta o administrador.",
+        );
       }
       socket.join(roomCode);
 
@@ -1277,6 +1512,7 @@ io.on("connection", (socket) => {
       (p) => !p.socketId || game.cupDrawAcks.has(p.socketId),
     );
     if (allAcked) {
+      if (game._cupDrawTimeout) clearTimeout(game._cupDrawTimeout);
       simulateCupRound(game, game.cupRound);
     }
   });
@@ -1314,20 +1550,27 @@ io.on("connection", (socket) => {
     const takenTeamIds = Object.values(game.playersByName)
       .map((p) => p.teamId)
       .filter(Boolean);
+    const placeholders = takenTeamIds.map(() => "?").join(",");
     let query =
       "SELECT id, name FROM teams WHERE division = 4 AND manager_id IS NULL";
-    if (takenTeamIds.length > 0)
-      query += ` AND id NOT IN (${takenTeamIds.join(",")})`;
+    let params = [];
+    if (takenTeamIds.length > 0) {
+      query += ` AND id NOT IN (${placeholders})`;
+      params = [...takenTeamIds];
+    }
     query += " ORDER BY RANDOM() LIMIT 1";
 
-    game.db.get(query, (err, team) => {
+    game.db.get(query, params, (err, team) => {
       if (err || !team) {
         let fallbackQuery = "SELECT id, name FROM teams WHERE division = 4";
-        if (takenTeamIds.length > 0)
-          fallbackQuery += ` AND id NOT IN (${takenTeamIds.join(",")})`;
+        let fallbackParams = [];
+        if (takenTeamIds.length > 0) {
+          fallbackQuery += ` AND id NOT IN (${placeholders})`;
+          fallbackParams = [...takenTeamIds];
+        }
         fallbackQuery += " ORDER BY RANDOM() LIMIT 1";
 
-        game.db.get(fallbackQuery, (err2, team2) => {
+        game.db.get(fallbackQuery, fallbackParams, (err2, team2) => {
           if (err2 || !team2) {
             socket.emit(
               "systemMessage",
@@ -1483,27 +1726,33 @@ io.on("connection", (socket) => {
       (err, player) => {
         if (!player) return;
         const finalMode = mode === "auction" ? "auction" : "fixed";
-        const finalPrice =
-          finalMode === "auction"
-            ? Math.max(
-                Math.round(player.value * 0.65),
-                Math.round(player.value * 0.45),
-              )
-            : Math.max(0, Math.round(price || player.value));
+        const finalPrice = Math.max(
+          0,
+          Math.round(
+            price || player.value * (finalMode === "auction" ? 0.75 : 1.0),
+          ),
+        );
 
-        game.db.run(
-          "UPDATE players SET transfer_status = ?, transfer_price = ? WHERE id = ?",
-          [finalMode, finalPrice, playerId],
-          () => {
-            refreshMarket(game);
+        if (finalMode === "auction") {
+          startAuction(game, player, finalPrice, () => {
             socket.emit(
               "systemMessage",
-              finalMode === "auction"
-                ? `${player.name} colocado em leilão.`
-                : `${player.name} colocado na lista por €${finalPrice}.`,
+              `${player.name} colocado em leilão por €${finalPrice}.`,
             );
-          },
-        );
+          });
+        } else {
+          game.db.run(
+            "UPDATE players SET transfer_status = ?, transfer_price = ? WHERE id = ?",
+            [finalMode, finalPrice, playerId],
+            () => {
+              refreshMarket(game);
+              socket.emit(
+                "systemMessage",
+                `${player.name} colocado na lista por €${finalPrice}.`,
+              );
+            },
+          );
+        }
       },
     );
   });
@@ -1623,16 +1872,30 @@ io.on("connection", (socket) => {
     if (!game) return;
     const playerState = getPlayerBySocket(game, socket.id);
     if (!playerState) return;
-    game.db.run(
-      "UPDATE teams SET budget = budget + 500000, loan_amount = loan_amount + 500000 WHERE id = ?",
+    game.db.get(
+      "SELECT budget, loan_amount FROM teams WHERE id = ?",
       [playerState.teamId],
-      () => {
-        game.db.all("SELECT * FROM teams", (err, teams) =>
-          io.to(game.roomCode).emit("teamsData", teams),
-        );
-        socket.emit(
-          "systemMessage",
-          "Empréstimo de 500.000€ aprovado (Juro 5%/Semana).",
+      (err, team) => {
+        if (!team) return;
+        if (team.loan_amount >= 2000000) {
+          socket.emit(
+            "systemMessage",
+            "Já tens demasiada dívida (máx: 2.000.000€)!",
+          );
+          return;
+        }
+        game.db.run(
+          "UPDATE teams SET budget = budget + 500000, loan_amount = loan_amount + 500000 WHERE id = ?",
+          [playerState.teamId],
+          () => {
+            game.db.all("SELECT * FROM teams", (err2, teams) =>
+              io.to(game.roomCode).emit("teamsData", teams),
+            );
+            socket.emit(
+              "systemMessage",
+              "Empréstimo de 500.000€ aprovado (Juro 1%/Semana).",
+            );
+          },
         );
       },
     );
@@ -1759,7 +2022,7 @@ async function checkAllReady(game) {
       `
       UPDATE teams 
       SET budget = budget 
-        - CAST((loan_amount * 0.05) AS INTEGER) 
+        - CAST((loan_amount * 0.01) AS INTEGER) 
         + (stadium_capacity * 10)
         - (SELECT COALESCE(SUM(wage), 0) FROM players WHERE players.team_id = teams.id)
     `,
@@ -1777,7 +2040,8 @@ async function checkAllReady(game) {
         const f2 = await generateFixturesForDivision(game.db, 2, mw);
         const f3 = await generateFixturesForDivision(game.db, 3, mw);
         const f4 = await generateFixturesForDivision(game.db, 4, mw);
-        game.fixtures = [...f1, ...f2, ...f3, ...f4];
+        const f5 = await generateFixturesForDivision(game.db, 5, mw);
+        game.fixtures = [...f1, ...f2, ...f3, ...f4, ...f5];
 
         await processSegment(game, 1, 45, "halftime");
         weeklyLoopRunning[game.roomCode] = false;
@@ -1865,14 +2129,6 @@ async function processSegment(game, startMin, endMin, nextState) {
           `UPDATE teams SET points=points+?, wins=wins+?, draws=draws+?, losses=losses+?, goals_for=goals_for+?, goals_against=goals_against+? WHERE id=?`,
           [aPts, aW, aD, aL, aG, hG, match.awayTeamId],
         );
-
-        for (const event of match.events) {
-          if (event.type === "goal" && event.playerId) {
-            game.db.run(`UPDATE players SET goals=goals+1 WHERE id=?`, [
-              event.playerId,
-            ]);
-          }
-        }
       }
 
       game.db.run("COMMIT", (err) => {
@@ -1916,13 +2172,33 @@ async function processSegment(game, startMin, endMin, nextState) {
               }
 
               // ── SEASON END ──────────────────────────────────────────────
-              if (normMw === 14) {
+              // Only trigger here if there was NO cup final this matchweek.
+              // When a cup final (round 5) exists, simulateCupRound handles season end.
+              if (normMw === 14 && !cupRound) {
                 try {
                   await applySeasonEnd(game);
                 } catch (seErr) {
                   console.error(`[${game.roomCode}] Season end error:`, seErr);
                 }
               }
+
+              // ── CONTRACT EXPIRY + NPC TRANSFERS ─────────────────────────
+              try {
+                await processContractExpiries(game);
+              } catch (ceErr) {
+                console.error(
+                  `[${game.roomCode}] Contract expiry error:`,
+                  ceErr,
+                );
+              }
+              try {
+                await processNpcTransferActivity(game);
+              } catch (ntErr) {
+                console.error(`[${game.roomCode}] NPC transfer error:`, ntErr);
+              }
+
+              // Refresh market after NPC activity
+              refreshMarket(game);
 
               game.db.all("SELECT * FROM teams", (err2, teams) => {
                 if (!err2) io.to(game.roomCode).emit("teamsData", teams);

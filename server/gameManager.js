@@ -72,14 +72,24 @@ function getGame(roomCode, onReady) {
   if (!fs.existsSync(dbPath)) {
     if (!fs.existsSync(basePath)) {
       console.error("[gameManager] base.db not found — run: npm run seed:real");
-      if (onReady) onReady(null, new Error("Base DB not found. Server needs to be seeded first."));
+      if (onReady)
+        onReady(
+          null,
+          new Error("Base DB not found. Server needs to be seeded first."),
+        );
       return null;
     }
     // Validate base.db is not empty before copying
     const stat = fs.statSync(basePath);
     if (stat.size < 1024) {
-      console.error("[gameManager] base.db is empty or corrupt — run: npm run seed:real");
-      if (onReady) onReady(null, new Error("Base DB is empty. Server needs to be seeded first."));
+      console.error(
+        "[gameManager] base.db is empty or corrupt — run: npm run seed:real",
+      );
+      if (onReady)
+        onReady(
+          null,
+          new Error("Base DB is empty. Server needs to be seeded first."),
+        );
       return null;
     }
     fs.copyFileSync(basePath, dbPath);
@@ -144,6 +154,17 @@ function getGame(roomCode, onReady) {
               "SELECT value FROM game_state WHERE key = 'matchState'",
               (err2, row2) => {
                 if (row2) game.matchState = row2.value || "idle";
+                // Recovery: if matchState is stuck in a transient state, reset to idle
+                const stuckStates = [
+                  "running_first_half",
+                  "playing_second_half",
+                ];
+                if (stuckStates.includes(game.matchState)) {
+                  console.warn(
+                    `[gameManager] Recovering stuck matchState '${game.matchState}' -> 'idle' for room ${roomCode}`,
+                  );
+                  game.matchState = "idle";
+                }
 
                 db.get(
                   "SELECT value FROM game_state WHERE key = 'season'",
@@ -164,7 +185,8 @@ function getGame(roomCode, onReady) {
                               "SELECT value FROM game_state WHERE key = 'year'",
                               (err6y, row6y) => {
                                 if (row6y) {
-                                  game.year = parseInt(row6y.value) || (2025 + game.season);
+                                  game.year =
+                                    parseInt(row6y.value) || 2025 + game.season;
                                 } else {
                                   // Migrate: derive year from season for existing games
                                   game.year = 2025 + game.season;
@@ -181,7 +203,8 @@ function getGame(roomCode, onReady) {
                                 );
                               },
                             );
-                          });
+                          },
+                        );
                       },
                     );
                   },
