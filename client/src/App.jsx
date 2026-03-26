@@ -29,10 +29,10 @@ const POSITION_TEXT_CLASS = {
 
 // Background color classes for each position (soft, subtle)
 const POSITION_BG_CLASS = {
-  GK: "bg-yellow-50",
-  DEF: "bg-blue-50",
-  MID: "bg-emerald-50",
-  ATK: "bg-rose-50",
+  GK: "bg-yellow-500/8",
+  DEF: "bg-blue-500/8",
+  MID: "bg-emerald-500/8",
+  ATK: "bg-rose-500/8",
 };
 
 const MAX_MATCH_SUBS = 5;
@@ -2175,7 +2175,7 @@ function App() {
                       {annotatedSquad.map((player) => (
                         <tr
                           key={player.id}
-                          className={`transition-colors group select-none ${ENABLE_ROW_BG ? POSITION_BG_CLASS[player.position] : ""} hover:bg-zinc-800/50 ${player.status === "Titular" ? "bg-emerald-500/5" : player.status === "Suplente" ? "bg-amber-500/5" : ""}`}
+                          className={`transition-colors group select-none ${ENABLE_ROW_BG ? POSITION_BG_CLASS[player.position] : ""} hover:bg-zinc-800/50`}
                         >
                           <td
                             className="px-3 py-2.5 text-center text-lg leading-none relative"
