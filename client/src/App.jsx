@@ -1755,11 +1755,11 @@ function App() {
                                       backgroundColor: hInfo?.color_primary,
                                       color: hInfo?.color_secondary,
                                     }}
-                                    className="flex-1 uppercase truncate font-black text-right px-2 py-2 rounded-tl text-sm"
+                                    className="flex-1 uppercase truncate font-black text-right px-2 py-1 rounded-tl text-sm"
                                   >
                                     {hInfo?.name}
                                   </div>
-                                  <div className="px-3 py-2 bg-zinc-900 text-white text-center font-normal min-w-16 flex gap-0.5 items-center justify-center text-2xl">
+                                  <div className="px-3 py-1 bg-zinc-900 text-white text-center font-normal min-w-16 flex gap-0.5 items-center justify-center text-2xl">
                                     <span
                                       style={{
                                         color: homeFlashing
@@ -1797,7 +1797,7 @@ function App() {
                                       backgroundColor: aInfo?.color_primary,
                                       color: aInfo?.color_secondary,
                                     }}
-                                    className="flex-1 uppercase truncate font-black text-left px-2 py-2 rounded-tr text-sm"
+                                    className="flex-1 uppercase truncate font-black text-left px-2 py-1 rounded-tr text-sm"
                                   >
                                     {aInfo?.name}
                                   </div>
