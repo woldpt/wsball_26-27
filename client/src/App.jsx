@@ -1544,7 +1544,7 @@ function App() {
             onClick={() => setActiveTab("live")}
             className={`px-4 py-2.5 font-bold text-sm md:text-base uppercase transition-colors border-b-4 whitespace-nowrap ml-auto ${activeTab === "live" ? "border-amber-500 text-white" : "border-transparent text-zinc-500 hover:text-zinc-300"}`}
           >
-            Jornada
+            Live
           </button>
         </div>
 
