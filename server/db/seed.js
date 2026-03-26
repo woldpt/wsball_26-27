@@ -302,9 +302,10 @@ db.serialize(() => {
 
   insertManager.finalize();
   insertTeam.finalize();
-  insertPlayer.finalize();
-
-  console.log("Base Seed complete.");
+  insertPlayer.finalize((err) => {
+    console.log("Base Seed complete.");
+    db.close(() => {
+      process.exit(0);
+    });
+  });
 });
-
-db.close();
