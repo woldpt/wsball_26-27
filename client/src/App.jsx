@@ -1,4 +1,10 @@
-import React, { useEffect, useState, useMemo, useCallback } from "react";
+import React, {
+  useEffect,
+  useLayoutEffect,
+  useState,
+  useMemo,
+  useCallback,
+} from "react";
 import { socket } from "./socket";
 import AdminPanel from "./AdminPanel.jsx";
 
@@ -175,7 +181,10 @@ function getMatchLastEventText(events = [], liveMinute = 90) {
   }
 
   if (latest.type === "red") {
-    const name = latest.playerName || latest.text?.match(/Vermelho!\s*(.*)$/i)?.[1] || "Jogador";
+    const name =
+      latest.playerName ||
+      latest.text?.match(/Vermelho!\s*(.*)$/i)?.[1] ||
+      "Jogador";
     return `${minuteText} 🟥 Vermelho! ${name}`;
   }
 
@@ -192,6 +201,29 @@ function loadSavedSession() {
     return parsed;
   } catch {
     return null;
+  }
+}
+
+function hasSeenWelcome(coachName, roomCode) {
+  try {
+    return (
+      window.localStorage.getItem(
+        `cashball_welcome:${coachName}:${roomCode}`,
+      ) === "1"
+    );
+  } catch {
+    return false;
+  }
+}
+
+function markWelcomeSeen(coachName, roomCode) {
+  try {
+    window.localStorage.setItem(
+      `cashball_welcome:${coachName}:${roomCode}`,
+      "1",
+    );
+  } catch {
+    // Ignore storage failures.
   }
 }
 
@@ -303,6 +335,7 @@ function App() {
   const [showCupResults, setShowCupResults] = useState(false);
   const [cupPenaltyPopup, setCupPenaltyPopup] = useState(null); // shootout data
   const [cupPenaltyKickIdx, setCupPenaltyKickIdx] = useState(0); // how many kicks revealed
+  const [welcomeModal, setWelcomeModal] = useState(null); // { teamName }
   // Cup match live state
   const [isCupMatch, setIsCupMatch] = useState(false);
   const [cupMatchRoundName, setCupMatchRoundName] = useState("");
@@ -324,6 +357,7 @@ function App() {
   const [injuryCountdown, setInjuryCountdown] = useState(null);
   const injuryCountdownRef = React.useRef(null);
   const [subsMade, setSubsMade] = useState(0);
+  const [, forceGoalFlashRender] = useState(0);
   const [swapSource, setSwapSource] = useState(null);
   const [swapTarget, setSwapTarget] = useState(null); // player coming IN (Suplente)
   const [subbedOut, setSubbedOut] = useState([]); // Track players who left the pitch
@@ -528,6 +562,16 @@ function App() {
       setPalmaresTeamId(data.teamId);
     });
     socket.on("systemMessage", (msg) => addToast(msg));
+    socket.on("teamAssigned", (data) => {
+      const currentMe = meRef.current;
+      if (
+        currentMe?.name &&
+        currentMe?.roomCode &&
+        !hasSeenWelcome(currentMe.name, currentMe.roomCode)
+      ) {
+        setWelcomeModal({ teamName: data.teamName });
+      }
+    });
     socket.on("joinError", (msg) => {
       setJoinError(msg);
       setJoining(false);
@@ -647,6 +691,7 @@ function App() {
       socket.off("auctionUpdate");
       socket.off("auctionClosed");
       socket.off("systemMessage");
+      socket.off("teamAssigned");
       socket.off("joinError");
       socket.off("teamSquadData");
       socket.off("nextMatchSummary");
@@ -771,8 +816,9 @@ function App() {
   }, [isPlayingMatch, liveMinute, matchResults, showHalftimePanel, isCupMatch]);
 
   // Detect per-minute events: flash goal score & play notification for human matches
-  useEffect(() => {
+  useLayoutEffect(() => {
     if (!isPlayingMatch || !matchResults?.results || liveMinute < 1) return;
+    let didFlashGoal = false;
     matchResults.results.forEach((match) => {
       const events = (match.events || []).filter(
         (e) => e.minute === liveMinute,
@@ -783,6 +829,7 @@ function App() {
         if (e.type === "goal") {
           const key = `${match.homeTeamId}_${match.awayTeamId}_${e.team}`;
           goalFlashRef.current[key] = Date.now();
+          didFlashGoal = true;
         }
       });
       // Sound only for matches involving a human coach
@@ -796,6 +843,9 @@ function App() {
         if (notifiable) playNotification();
       }
     });
+    if (didFlashGoal) {
+      forceGoalFlashRender((value) => value + 1);
+    }
   }, [liveMinute]); // eslint-disable-line react-hooks/exhaustive-deps
 
   useEffect(() => {
@@ -1230,7 +1280,10 @@ function App() {
       if (!prev) return prev;
       const amount = Number(auctionBid);
       if (!Number.isFinite(amount) || amount <= 0) return prev;
-      socket.emit("placeAuctionBid", { playerId: prev.playerId || prev.id, bidAmount: amount });
+      socket.emit("placeAuctionBid", {
+        playerId: prev.playerId || prev.id,
+        bidAmount: amount,
+      });
       return prev;
     });
   }, [auctionBid]); // eslint-disable-line react-hooks/exhaustive-deps
@@ -1737,6 +1790,28 @@ function App() {
   const completedJornada =
     matchweekCount > 0 ? ((matchweekCount - 1) % 14) + 1 : 0;
 
+  // ── FINANCIAL PROJECTIONS ─────────────────────────────────────────────────
+  // All values are estimates based on current season data (no historical log).
+  const totalWeeklyWage = mySquad.reduce((acc, p) => acc + (p.wage || 0), 0);
+  // Home games: 7 per season (half of 14 matchweeks, balanced schedule)
+  const HOME_GAMES_PER_SEASON = 7;
+  // Rough estimate of home games played so far (completedJornada / 2)
+  const homeGamesPlayed = Math.round(completedJornada / 2);
+  const homeGamesRemaining = Math.max(
+    0,
+    HOME_GAMES_PER_SEASON - homeGamesPlayed,
+  );
+  const matchweeksRemaining = Math.max(0, 14 - completedJornada);
+  const capacityRevPerGame = (teamInfo?.stadium_capacity || 5000) * 10;
+  const loanAmount = teamInfo?.loan_amount || 0;
+  const loanInterestPerWeek = Math.round(loanAmount * 0.01);
+  const currentBudget = teamInfo?.budget || 0;
+  const projectedFinalBudget =
+    currentBudget +
+    capacityRevPerGame * homeGamesRemaining -
+    totalWeeklyWage * matchweeksRemaining -
+    loanInterestPerWeek * matchweeksRemaining;
+
   return (
     <div className="min-h-screen bg-zinc-950 text-zinc-100 font-sans pb-12 tracking-tight">
       {/* Toast notifications */}
@@ -1761,10 +1836,7 @@ function App() {
               className="text-xl md:text-3xl font-black tracking-tighter"
               style={{ color: teamInfo?.color_secondary || "#ffffff" }}
             >
-              CashBall{" "}
-              <span className="opacity-80">
-                {String(seasonYear).slice(2)}/{String(seasonYear + 1).slice(2)}
-              </span>
+              CashBall 26/27
             </h1>
             <p
               className="text-sm md:text-base font-bold uppercase"
@@ -1800,12 +1872,41 @@ function App() {
                 </p>
               </div>
             )}
+            {players.length > 0 && (
+              <div className="hidden sm:flex flex-col items-end gap-0.5">
+                <div className="flex items-center gap-1">
+                  {players.map((p, i) => (
+                    <div
+                      key={i}
+                      title={`${p.name} · ${teams.find((t) => t.id == p.teamId)?.name || "?"} · ${p.ready ? "Pronto" : "A aguardar"}`}
+                      className={`w-2 h-2 rounded-full ${p.ready ? "bg-emerald-400" : "bg-zinc-600"}`}
+                    />
+                  ))}
+                  <span
+                    className="text-[10px] font-black uppercase tracking-widest ml-1 opacity-70"
+                    style={{ color: teamInfo?.color_secondary || "#ffffff" }}
+                  >
+                    {players.filter((p) => p.ready).length}/{players.length}
+                  </span>
+                </div>
+                {disconnected && (
+                  <span className="text-red-400 text-[10px] font-black uppercase tracking-widest">
+                    ⚠ Desligado
+                  </span>
+                )}
+                {!disconnected && awaitingCoaches.length > 0 && (
+                  <span className="text-amber-400 text-[10px] font-black uppercase tracking-widest">
+                    ⏸ {awaitingCoaches.join(", ")}
+                  </span>
+                )}
+              </div>
+            )}
             <button
               onClick={handleLogout}
               title="Terminar sessão"
               className="text-zinc-400 hover:text-white hover:bg-zinc-700 transition-colors rounded-lg px-3 py-2 text-xs font-black uppercase tracking-widest border border-zinc-700 hover:border-zinc-500"
             >
-              Sair
+              Sair do Jogo
             </button>
           </div>
         </div>
@@ -1814,7 +1915,7 @@ function App() {
       <div className="max-w-350 mx-auto p-4 md:p-8">
         <div className="flex gap-3 mb-5 border-b border-zinc-800 pb-px overflow-x-auto justify-between">
           <div className="flex gap-3 overflow-x-auto">
-            {["club", "standings", "market", "squad"].map((tab) => (
+            {["club", "finances", "standings", "market", "squad"].map((tab) => (
               <button
                 key={tab}
                 onClick={() => setActiveTab(tab)}
@@ -1822,11 +1923,13 @@ function App() {
               >
                 {tab === "club"
                   ? "Clube"
-                  : tab === "standings"
-                    ? "Classificações"
-                    : tab === "market"
-                      ? "Mercado"
-                      : "Plantel"}
+                  : tab === "finances"
+                    ? "Finanças"
+                    : tab === "standings"
+                      ? "Classificações"
+                      : tab === "market"
+                        ? "Mercado"
+                        : "Plantel"}
               </button>
             ))}
           </div>
@@ -1911,168 +2014,156 @@ function App() {
 
                 {/* BUG-11 FIX: showHalftimePanel (not liveMinute===45) controls this overlay */}
                 {showHalftimePanel && !isPlayingMatch && (
-                  <div className="absolute inset-0 bg-zinc-950/97 z-50 p-3 flex flex-col backdrop-blur-sm overflow-y-auto">
-                    <h2 className="text-lg font-black text-amber-500 mb-1 tracking-widest text-center uppercase">
-                      INTERVALO
-                    </h2>
-                    <p className="text-center text-zinc-500 font-bold mb-3 text-xs">
-                      Substituições disponíveis: {MAX_MATCH_SUBS - subsMade}/
-                      {MAX_MATCH_SUBS}
-                    </p>
+                  <div className="absolute inset-0 bg-zinc-950 z-50 flex flex-col overflow-y-auto">
+                    {/* Header */}
+                    <div className="flex items-center justify-between px-4 py-2.5 border-b border-zinc-800">
+                      <span className="text-amber-500 font-black uppercase tracking-widest text-sm">
+                        INTERVALO
+                      </span>
+                      <span className="text-zinc-500 text-xs font-bold">
+                        Subs: {MAX_MATCH_SUBS - subsMade}/{MAX_MATCH_SUBS}
+                      </span>
+                    </div>
 
-                    {/* Player columns */}
-                    <div className="grid grid-cols-2 gap-2 mb-2">
-                      {/* Titulares */}
-                      <div>
-                        <p className="text-emerald-500 font-black uppercase tracking-widest text-center text-[10px] mb-1">
+                    {/* Two-column player list */}
+                    <div className="flex flex-1 divide-x divide-zinc-800 min-h-0">
+                      {/* Em Campo */}
+                      <div className="flex-1 flex flex-col min-w-0">
+                        <p className="text-[10px] font-black uppercase tracking-widest text-emerald-500 px-3 py-1.5 border-b border-zinc-800">
                           Em Campo
                         </p>
-                        <div className="space-y-0.5">
-                          {annotatedSquad
-                            .filter(
-                              (p) =>
-                                tactic.positions[p.id] === "Titular" &&
-                                !subbedOut.includes(p.id),
-                            )
-                            .map((p) => (
+                        {annotatedSquad
+                          .filter(
+                            (p) =>
+                              tactic.positions[p.id] === "Titular" &&
+                              !subbedOut.includes(p.id),
+                          )
+                          .map((p) => (
+                            <div
+                              key={p.id}
+                              onClick={() =>
+                                subsMade < MAX_MATCH_SUBS &&
+                                handleSelectOut(p.id)
+                              }
+                              className={`flex items-center gap-2 px-3 py-1.5 border-b border-zinc-800/50 text-xs font-bold select-none transition-colors ${
+                                swapSource === p.id
+                                  ? "bg-red-500/15 text-red-200"
+                                  : subsMade < MAX_MATCH_SUBS
+                                    ? "cursor-pointer hover:bg-zinc-800/60"
+                                    : "opacity-40 cursor-not-allowed"
+                              }`}
+                            >
+                              <span
+                                className={`w-4 shrink-0 font-black ${POSITION_TEXT_CLASS[p.position]}`}
+                              >
+                                {POSITION_SHORT_LABELS[p.position]}
+                              </span>
+                              <span className="flex-1 truncate">{p.name}</span>
+                              <span className="text-zinc-500 shrink-0">
+                                {p.skill}
+                              </span>
+                            </div>
+                          ))}
+                      </div>
+
+                      {/* Banco */}
+                      <div className="flex-1 flex flex-col min-w-0">
+                        <p className="text-[10px] font-black uppercase tracking-widest text-zinc-400 px-3 py-1.5 border-b border-zinc-800">
+                          Banco
+                        </p>
+                        {annotatedSquad
+                          .filter((p) => tactic.positions[p.id] === "Suplente")
+                          .map((p) => {
+                            const alreadyUsed = subbedOut.includes(p.id);
+                            const disabled =
+                              alreadyUsed ||
+                              !swapSource ||
+                              subsMade >= MAX_MATCH_SUBS;
+                            return (
                               <div
                                 key={p.id}
                                 onClick={() =>
-                                  subsMade < MAX_MATCH_SUBS &&
-                                  handleSelectOut(p.id)
+                                  !disabled && handleSelectIn(p.id)
                                 }
-                                className={`px-2 py-1 rounded-md border text-xs font-bold flex justify-between select-none transition-all ${
-                                  swapSource === p.id
-                                    ? "bg-red-500/20 border-red-400 text-red-200"
-                                    : subsMade < MAX_MATCH_SUBS
-                                      ? "bg-zinc-900 border-zinc-800 hover:border-red-500 cursor-pointer"
-                                      : "bg-zinc-900 border-zinc-800 opacity-50 cursor-not-allowed"
+                                className={`flex items-center gap-2 px-3 py-1.5 border-b border-zinc-800/50 text-xs font-bold select-none transition-colors ${
+                                  alreadyUsed
+                                    ? "opacity-25 cursor-not-allowed"
+                                    : swapTarget === p.id
+                                      ? "bg-emerald-500/15 text-emerald-200 cursor-pointer"
+                                      : disabled
+                                        ? "opacity-40 cursor-not-allowed"
+                                        : "cursor-pointer hover:bg-zinc-800/60"
                                 }`}
                               >
-                                <span className="truncate">{p.name}</span>
-                                <span className="opacity-50 ml-1 shrink-0">
-                                  {p.position} {p.skill}
+                                <span
+                                  className={`w-4 shrink-0 font-black ${alreadyUsed ? "text-zinc-600" : POSITION_TEXT_CLASS[p.position]}`}
+                                >
+                                  {POSITION_SHORT_LABELS[p.position]}
+                                </span>
+                                <span className="flex-1 truncate">
+                                  {p.name}
+                                </span>
+                                <span
+                                  className={`shrink-0 ${alreadyUsed ? "text-zinc-700" : "text-zinc-500"}`}
+                                >
+                                  {alreadyUsed ? "SAIU" : p.skill}
                                 </span>
                               </div>
-                            ))}
-                        </div>
-                      </div>
-
-                      {/* Suplentes (only the 5 bench players, not reservas) */}
-                      <div>
-                        <p className="text-zinc-400 font-black uppercase tracking-widest text-center text-[10px] mb-1">
-                          Banco (5 Suplentes)
-                        </p>
-                        <div className="space-y-0.5">
-                          {annotatedSquad
-                            .filter(
-                              (p) => tactic.positions[p.id] === "Suplente",
-                            )
-                            .map((p) => {
-                              const disabled =
-                                subbedOut.includes(p.id) ||
-                                !swapSource ||
-                                subsMade >= MAX_MATCH_SUBS;
-                              return (
-                                <div
-                                  key={p.id}
-                                  onClick={() =>
-                                    !disabled && handleSelectIn(p.id)
-                                  }
-                                  className={`px-2 py-1 rounded-md border text-xs font-bold flex justify-between select-none transition-all ${
-                                    subbedOut.includes(p.id)
-                                      ? "opacity-30 bg-zinc-900 border-zinc-800 cursor-not-allowed"
-                                      : swapTarget === p.id
-                                        ? "bg-emerald-500/20 border-emerald-400 text-emerald-200 cursor-pointer"
-                                        : disabled
-                                          ? "bg-zinc-900 border-zinc-800 opacity-50 cursor-not-allowed"
-                                          : "bg-zinc-900 border-zinc-800 hover:border-emerald-500 cursor-pointer"
-                                  }`}
-                                >
-                                  <span className="truncate">{p.name}</span>
-                                  <span
-                                    className={`ml-1 shrink-0 ${
-                                      subbedOut.includes(p.id)
-                                        ? "text-zinc-600"
-                                        : "text-zinc-400"
-                                    }`}
-                                  >
-                                    {subbedOut.includes(p.id)
-                                      ? "SAIU"
-                                      : `${p.position} ${p.skill}`}
-                                  </span>
-                                </div>
-                              );
-                            })}
-                        </div>
+                            );
+                          })}
                       </div>
                     </div>
 
-                    {/* Pending swap action area */}
-                    {(swapSource || swapTarget) && (
-                      <div className="mb-2 p-2 rounded-xl bg-zinc-900 border border-zinc-700">
-                        <p className="text-xs font-black text-zinc-400 uppercase tracking-widest mb-1.5 text-center">
-                          Substituição Pendente
-                        </p>
-                        <div className="flex items-center justify-center gap-2 text-xs font-bold mb-2">
-                          <span
-                            className={`px-2 py-1 rounded-md ${
-                              swapSource
-                                ? "bg-red-500/20 text-red-300 border border-red-500/40"
-                                : "bg-zinc-800 text-zinc-500 border border-zinc-700"
-                            }`}
-                          >
-                            {swapSource
-                              ? (annotatedSquad.find((p) => p.id === swapSource)
-                                  ?.name ?? "?")
-                              : "Selecionar saída"}
+                    {/* Inline action bar */}
+                    {swapSource && (
+                      <div className="flex items-center gap-2 px-3 py-2 border-t border-zinc-800 bg-zinc-900">
+                        <span className="flex-1 text-xs font-bold truncate">
+                          <span className="text-red-400">
+                            {annotatedSquad.find((p) => p.id === swapSource)
+                              ?.name ?? "?"}
                           </span>
-                          <span className="text-zinc-500">→</span>
-                          <span
-                            className={`px-2 py-1 rounded-md ${
-                              swapTarget
-                                ? "bg-emerald-500/20 text-emerald-300 border border-emerald-500/40"
-                                : "bg-zinc-800 text-zinc-500 border border-zinc-700"
-                            }`}
-                          >
-                            {swapTarget
-                              ? (annotatedSquad.find((p) => p.id === swapTarget)
-                                  ?.name ?? "?")
-                              : "Selecionar entrada"}
-                          </span>
-                        </div>
-                        <div className="flex gap-2">
-                          <button
-                            onClick={handleResetSub}
-                            className="flex-1 py-1.5 rounded-lg text-xs font-black uppercase border border-zinc-700 text-zinc-400 hover:bg-zinc-800 transition-colors"
-                          >
-                            Cancelar
-                          </button>
-                          <button
-                            onClick={handleConfirmSub}
-                            disabled={!swapSource || !swapTarget}
-                            className={`flex-1 py-1.5 rounded-lg text-xs font-black uppercase transition-colors ${
-                              swapSource && swapTarget
-                                ? "bg-emerald-600 hover:bg-emerald-500 text-white"
-                                : "bg-zinc-800 text-zinc-600 cursor-not-allowed"
-                            }`}
-                          >
-                            Confirmar Sub
-                          </button>
-                        </div>
+                          <span className="text-zinc-600 mx-1">→</span>
+                          {swapTarget ? (
+                            <span className="text-emerald-400">
+                              {annotatedSquad.find((p) => p.id === swapTarget)
+                                ?.name ?? "?"}
+                            </span>
+                          ) : (
+                            <span className="text-zinc-600">
+                              escolhe do banco
+                            </span>
+                          )}
+                        </span>
+                        <button
+                          onClick={handleResetSub}
+                          className="px-2 py-1 text-[10px] font-black text-zinc-500 hover:text-zinc-300 transition-colors"
+                        >
+                          ✕
+                        </button>
+                        <button
+                          onClick={handleConfirmSub}
+                          disabled={!swapTarget}
+                          className={`px-3 py-1 rounded text-[10px] font-black uppercase transition-colors ${
+                            swapTarget
+                              ? "bg-emerald-600 hover:bg-emerald-500 text-white"
+                              : "bg-zinc-800 text-zinc-600 cursor-not-allowed"
+                          }`}
+                        >
+                          Substituir
+                        </button>
                       </div>
                     )}
 
-                    {/* Confirmed subs list */}
+                    {/* Confirmed subs */}
                     {confirmedSubs.length > 0 && (
-                      <div className="mb-2 flex flex-col gap-0.5">
+                      <div className="px-3 py-1.5 border-t border-zinc-800 flex flex-col gap-0.5">
                         {confirmedSubs.map((sub, i) => {
                           const outP = mySquad.find((p) => p.id === sub.out);
                           const inP = mySquad.find((p) => p.id === sub.in);
                           return (
                             <p
                               key={i}
-                              className="text-[10px] font-bold text-zinc-500 text-center"
+                              className="text-[10px] font-bold text-zinc-500"
                             >
                               🔄{" "}
                               <span className="text-red-400">
@@ -2091,7 +2182,7 @@ function App() {
                     {/* BUG-06 FIX: Use handleHalftimeReady which always sends true */}
                     <button
                       onClick={handleHalftimeReady}
-                      className={`mt-auto w-full py-3 rounded-2xl text-sm font-black uppercase tracking-widest transition-all ${
+                      className={`w-full py-3 text-sm font-black uppercase tracking-widest transition-all ${
                         players.find((p) => p.name === me.name)?.ready
                           ? "bg-zinc-800 text-zinc-500"
                           : isCupMatch
@@ -2129,13 +2220,19 @@ function App() {
                   )}
                 </h2>
 
-                <div className={isCupMatch ? "flex flex-col gap-2" : "grid grid-cols-1 lg:grid-cols-2 gap-6"}>
+                <div
+                  className={
+                    isCupMatch
+                      ? "flex flex-col gap-2"
+                      : "grid grid-cols-1 lg:grid-cols-2 gap-6"
+                  }
+                >
                   {(isCupMatch ? [null] : [1, 2, 3, 4]).map((div) => (
                     <div key={div ?? "cup"}>
                       {!isCupMatch && (
-                      <h3 className="text-zinc-500 font-black uppercase text-xs mb-2 border-b border-zinc-800/50">
-                        {DIVISION_NAMES[div] || `Div ${div}`}
-                      </h3>
+                        <h3 className="text-zinc-500 font-black uppercase text-xs mb-2 border-b border-zinc-800/50">
+                          {DIVISION_NAMES[div] || `Div ${div}`}
+                        </h3>
                       )}
                       <div className="space-y-1">
                         {matchResults.results
@@ -2184,9 +2281,9 @@ function App() {
                               ];
                             const now = Date.now();
                             const homeFlashing =
-                              flashHome && now - flashHome < 3500;
+                              flashHome && now - flashHome < 1500;
                             const awayFlashing =
-                              flashAway && now - flashAway < 3500;
+                              flashAway && now - flashAway < 1500;
 
                             return (
                               <div
@@ -2204,7 +2301,7 @@ function App() {
                                   >
                                     {hInfo?.name}
                                   </div>
-                                  <div className="px-3 py-1 bg-zinc-900 text-white text-center font-normal min-w-16 flex gap-0.5 items-center justify-center text-xl">
+                                  <div className="px-2.5 py-0.5 bg-zinc-900 text-white text-center font-normal min-w-16 flex gap-0.5 items-center justify-center text-lg leading-none">
                                     <span
                                       style={{
                                         color: homeFlashing
@@ -2215,7 +2312,7 @@ function App() {
                                           : "normal",
                                         transition: homeFlashing
                                           ? "none"
-                                          : "color 2.5s ease, font-weight 2.5s ease",
+                                          : "color 1.25s ease, font-weight 1.25s ease",
                                       }}
                                     >
                                       {currentHome.length}
@@ -2231,7 +2328,7 @@ function App() {
                                           : "normal",
                                         transition: awayFlashing
                                           ? "none"
-                                          : "color 2.5s ease, font-weight 2.5s ease",
+                                          : "color 1.25s ease, font-weight 1.25s ease",
                                       }}
                                     >
                                       {currentAway.length}
@@ -2407,6 +2504,64 @@ function App() {
 
             {activeTab === "club" && (
               <div className="space-y-6">
+                {/* Club identity card */}
+                <div
+                  className="rounded-3xl border border-zinc-800 shadow-sm p-6 relative overflow-hidden"
+                  style={{
+                    background: teamInfo?.color_primary
+                      ? `${teamInfo.color_primary}22`
+                      : undefined,
+                    borderColor: teamInfo?.color_primary || undefined,
+                  }}
+                >
+                  <div className="flex flex-col md:flex-row md:items-center gap-4">
+                    <div
+                      className="w-16 h-16 rounded-2xl flex items-center justify-center text-3xl font-black shrink-0"
+                      style={{
+                        background: teamInfo?.color_primary || "#18181b",
+                        color: teamInfo?.color_secondary || "#fff",
+                      }}
+                    >
+                      {teamInfo?.name?.[0] || "?"}
+                    </div>
+                    <div className="flex-1">
+                      <h1
+                        className="text-2xl font-black tracking-tight"
+                        style={{ color: teamInfo?.color_primary || "#fff" }}
+                      >
+                        {teamInfo?.name || "—"}
+                      </h1>
+                      <p className="text-zinc-400 text-sm font-bold mt-0.5">
+                        {DIVISION_NAMES[teamInfo?.division] ||
+                          `Divisão ${teamInfo?.division}`}{" "}
+                        · Época {seasonYear}/{seasonYear + 1}
+                      </p>
+                      <p className="text-zinc-500 text-xs mt-1">
+                        Manager:{" "}
+                        <strong className="text-zinc-300">{me?.name}</strong>
+                      </p>
+                    </div>
+                    <div className="flex flex-col items-end gap-1 shrink-0">
+                      <span className="text-zinc-500 text-[10px] font-black uppercase tracking-widest">
+                        Moral
+                      </span>
+                      <div className="flex items-center gap-2">
+                        <div className="w-28 h-2 bg-zinc-800 rounded-full overflow-hidden">
+                          <div
+                            className={`h-full rounded-full ${(teamInfo?.morale || 75) >= 70 ? "bg-emerald-500" : (teamInfo?.morale || 75) >= 40 ? "bg-amber-500" : "bg-red-500"}`}
+                            style={{ width: `${teamInfo?.morale || 75}%` }}
+                          />
+                        </div>
+                        <span
+                          className={`font-black text-sm ${(teamInfo?.morale || 75) >= 70 ? "text-emerald-400" : (teamInfo?.morale || 75) >= 40 ? "text-amber-400" : "text-red-400"}`}
+                        >
+                          {teamInfo?.morale || 75}
+                        </span>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+
                 {/* Own team trophies */}
                 <div className="bg-zinc-900 rounded-3xl border border-zinc-800 shadow-sm p-6">
                   <h2 className="text-xs text-amber-400 font-black uppercase tracking-widest mb-4 flex items-center gap-2">
@@ -2493,98 +2648,347 @@ function App() {
                 )}
 
                 {/* Finances section */}
-                <div className="bg-zinc-900 p-8 rounded-3xl border border-zinc-800 shadow-sm">
-                  <h2 className="text-2xl font-black mb-8 text-emerald-400">
-                    Resumo Financeiro
+                <div className="bg-zinc-900 p-6 rounded-3xl border border-zinc-800 shadow-sm">
+                  <h2 className="text-xs text-zinc-400 font-black uppercase tracking-widest mb-4">
+                    Estádio
                   </h2>
-                  <div className="space-y-6 text-lg">
-                    <div className="flex justify-between border-b border-zinc-800 pb-4">
-                      <span className="text-zinc-400 font-bold">
-                        Orçamento Atual:
+                  <div className="flex flex-col gap-3">
+                    <div className="flex items-center justify-between">
+                      <span className="text-zinc-400 font-bold text-sm">
+                        Capacidade
                       </span>
-                      <span className="font-mono text-white text-2xl font-black">
-                        {formatCurrency(teamInfo?.budget || 0)}
-                      </span>
-                    </div>
-                    <div className="flex justify-between border-b border-zinc-800 pb-4">
-                      <span className="text-zinc-400 font-bold">
-                        Salários Activos (Semanais):
-                      </span>
-                      <span className="font-mono text-red-400 font-bold">
-                        -{" "}
-                        {formatCurrency(
-                          mySquad.reduce((acc, p) => acc + p.wage, 0),
-                        )}
-                      </span>
-                    </div>
-                    <div className="flex justify-between border-b border-zinc-800 pb-4">
-                      <span className="text-zinc-400 font-bold">
-                        Bilheteiras (10€/lugar — variável):
-                      </span>
-                      <span className="font-mono text-emerald-400 font-bold">
-                        +{" "}
-                        {formatCurrency(
-                          (teamInfo?.stadium_capacity || 5000) * 10,
+                      <span className="font-mono text-white font-black text-lg">
+                        🏟️{" "}
+                        {(teamInfo?.stadium_capacity || 5000).toLocaleString(
+                          "pt-PT",
                         )}{" "}
-                        <span className="text-zinc-500 text-sm font-normal">
-                          (máx.)
-                        </span>
+                        lugares
                       </span>
                     </div>
-
-                    <div className="flex justify-between border-b border-zinc-800 pb-4">
-                      <span className="text-zinc-400 font-bold">
-                        Lotação do Estádio:
+                    <div className="flex items-center justify-between border-t border-zinc-800 pt-3">
+                      <span className="text-zinc-400 font-bold text-sm">
+                        Receita Máx./Jogo em Casa
                       </span>
-                      <span className="font-mono text-white text-xl font-bold">
-                        {teamInfo?.stadium_capacity?.toLocaleString() || 5000}{" "}
-                        Lugares
+                      <span className="font-mono text-emerald-400 font-bold text-sm">
+                        {formatCurrency(capacityRevPerGame)}
                       </span>
                     </div>
+                    <p className="text-zinc-500 text-xs mt-1">
+                      Para expandir estádio ou gerir empréstimos, vê o separador{" "}
+                      <strong className="text-amber-400">Finanças</strong>.
+                    </p>
+                  </div>
+                </div>
+              </div>
+            )}
 
-                    <div className="flex justify-between pb-4">
-                      <span className="text-zinc-400 font-bold">
-                        Dívida ao Banco:
+            {activeTab === "finances" && (
+              <div className="space-y-6">
+                {/* ── KPI CARDS ─────────────────────────────────────────────────── */}
+                <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
+                  {/* Saldo Actual */}
+                  <div className="bg-zinc-900 rounded-2xl border border-zinc-800 p-5 flex flex-col gap-1">
+                    <span className="text-zinc-500 font-black uppercase text-[10px] tracking-widest">
+                      Saldo Actual
+                    </span>
+                    <span
+                      className={`font-mono text-xl font-black ${currentBudget >= 0 ? "text-white" : "text-red-400"}`}
+                    >
+                      {formatCurrency(currentBudget)}
+                    </span>
+                    <span className="text-zinc-600 text-[10px]">
+                      época {seasonYear}/{seasonYear + 1}
+                    </span>
+                  </div>
+                  {/* Progresso do Ano Fiscal */}
+                  <div className="bg-zinc-900 rounded-2xl border border-zinc-800 p-5 flex flex-col gap-2">
+                    <span className="text-zinc-500 font-black uppercase text-[10px] tracking-widest">
+                      Ano Fiscal
+                    </span>
+                    <span className="text-white font-black text-xl">
+                      {completedJornada}{" "}
+                      <span className="text-zinc-500 font-normal text-sm">
+                        / 14 jornadas
                       </span>
-                      <span className="font-mono text-red-500 text-xl font-bold">
-                        {formatCurrency(teamInfo?.loan_amount || 0)}{" "}
-                        <span className="text-sm">(5% juros/sem)</span>
-                      </span>
+                    </span>
+                    <div className="w-full h-1.5 bg-zinc-800 rounded-full overflow-hidden">
+                      <div
+                        className="h-full bg-amber-500 rounded-full transition-all"
+                        style={{ width: `${(completedJornada / 14) * 100}%` }}
+                      />
                     </div>
+                  </div>
+                  {/* Receita por Jogo */}
+                  <div className="bg-zinc-900 rounded-2xl border border-zinc-800 p-5 flex flex-col gap-1">
+                    <span className="text-zinc-500 font-black uppercase text-[10px] tracking-widest">
+                      Bilheteiras/Jogo em Casa
+                    </span>
+                    <span className="font-mono text-emerald-400 text-xl font-black">
+                      +{formatCurrency(capacityRevPerGame)}
+                    </span>
+                    <span className="text-zinc-600 text-[10px]">
+                      {(teamInfo?.stadium_capacity || 5000).toLocaleString(
+                        "pt-PT",
+                      )}{" "}
+                      lugares × 10€
+                    </span>
+                  </div>
+                  {/* Balanço Final Projetado */}
+                  <div className="bg-zinc-900 rounded-2xl border border-zinc-800 p-5 flex flex-col gap-1">
+                    <span className="text-zinc-500 font-black uppercase text-[10px] tracking-widest">
+                      Balanço Proj. Final
+                    </span>
+                    <span
+                      className={`font-mono text-xl font-black ${projectedFinalBudget >= currentBudget ? "text-emerald-400" : "text-red-400"}`}
+                    >
+                      {formatCurrency(projectedFinalBudget)}
+                    </span>
+                    <span className="text-zinc-600 text-[10px]">
+                      {matchweeksRemaining} jornadas restantes
+                    </span>
+                  </div>
+                </div>
 
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mt-8 pt-4 border-t border-zinc-800">
-                      <div className="bg-zinc-950 p-4 rounded-xl border border-emerald-900 border-opacity-30">
-                        <p className="text-sm font-bold text-amber-500 mb-3 uppercase tracking-widest">
-                          +5.000 Lugares Estádio
-                        </p>
-                        <button
-                          onClick={() => socket.emit("buildStadium")}
-                          className="w-full bg-amber-600 hover:bg-amber-500 text-zinc-950 font-black py-3 rounded-lg text-sm transition-all uppercase"
-                        >
-                          Expandir (150.000€)
-                        </button>
-                      </div>
-
-                      <div className="bg-zinc-950 p-4 rounded-xl border border-red-900 border-opacity-30">
-                        <p className="text-sm font-bold text-red-500 mb-3 uppercase tracking-widest">
-                          Apoio Bancário
-                        </p>
-                        <div className="flex gap-2">
-                          <button
-                            onClick={() => socket.emit("takeLoan")}
-                            className="flex-1 bg-red-900 hover:bg-red-800 text-white font-black py-3 rounded-lg text-xs transition-all uppercase"
-                          >
-                            Pedir +500K
-                          </button>
-                          <button
-                            onClick={() => socket.emit("payLoan")}
-                            className="flex-1 bg-emerald-900 hover:bg-emerald-800 text-white font-black py-3 rounded-lg text-xs transition-all uppercase"
-                          >
-                            Pagar -500K
-                          </button>
+                {/* ── RECEITAS ──────────────────────────────────────────────────── */}
+                <div className="bg-zinc-900 rounded-3xl border border-zinc-800 shadow-sm overflow-hidden">
+                  <div className="px-6 py-4 border-b border-zinc-800 flex items-center gap-3">
+                    <span className="text-lg">💰</span>
+                    <h2 className="text-xs font-black uppercase tracking-widest text-emerald-400">
+                      Receitas
+                    </h2>
+                  </div>
+                  <div className="p-6 space-y-5">
+                    {/* Bilheteiras */}
+                    <div>
+                      <div className="flex items-start justify-between mb-2">
+                        <div>
+                          <p className="text-white font-bold text-sm">
+                            Bilheteiras
+                          </p>
+                          <p className="text-zinc-500 text-xs">
+                            10€/lugar × lotação — jornadas em casa
+                          </p>
+                        </div>
+                        <div className="text-right">
+                          <p className="text-emerald-400 font-mono font-black text-base">
+                            {formatCurrency(capacityRevPerGame)}
+                            <span className="text-zinc-500 text-xs font-normal">
+                              {" "}
+                              /jogo
+                            </span>
+                          </p>
                         </div>
                       </div>
+                      {/* Home-games progress bar */}
+                      <div className="flex items-center gap-2 mt-3">
+                        <span className="text-zinc-600 text-[10px] w-20 shrink-0">
+                          Em casa
+                        </span>
+                        <div className="flex-1 flex gap-0.5">
+                          {Array.from({ length: HOME_GAMES_PER_SEASON }).map(
+                            (_, i) => (
+                              <div
+                                key={i}
+                                className={`flex-1 h-2 rounded-sm ${i < homeGamesPlayed ? "bg-emerald-500" : i === homeGamesPlayed ? "bg-emerald-800 animate-pulse" : "bg-zinc-800"}`}
+                              />
+                            ),
+                          )}
+                        </div>
+                        <span className="text-zinc-500 text-[10px] w-10 text-right">
+                          {homeGamesPlayed}/{HOME_GAMES_PER_SEASON}
+                        </span>
+                      </div>
                     </div>
+                  </div>
+                </div>
+
+                {/* ── DESPESAS ──────────────────────────────────────────────────── */}
+                <div className="bg-zinc-900 rounded-3xl border border-zinc-800 shadow-sm overflow-hidden">
+                  <div className="px-6 py-4 border-b border-zinc-800 flex items-center gap-3">
+                    <span className="text-lg">📤</span>
+                    <h2 className="text-xs font-black uppercase tracking-widest text-red-400">
+                      Despesas
+                    </h2>
+                  </div>
+                  <div className="p-6 space-y-5">
+                    {/* Folha Salarial */}
+                    <div>
+                      <div className="flex items-start justify-between">
+                        <div>
+                          <p className="text-white font-bold text-sm">
+                            Folha Salarial
+                          </p>
+                          <p className="text-zinc-500 text-xs">
+                            Pago por jornada · {mySquad.length} atletas
+                          </p>
+                        </div>
+                        <p className="text-red-400 font-mono font-black text-base">
+                          -{formatCurrency(totalWeeklyWage)}
+                          <span className="text-zinc-500 text-xs font-normal">
+                            {" "}
+                            /jornada
+                          </span>
+                        </p>
+                      </div>
+                    </div>
+
+                    {/* Juros Bancários — só mostra se houver dívida */}
+                    {loanAmount > 0 && (
+                      <div className="border-t border-zinc-800 pt-4">
+                        <div className="flex items-start justify-between">
+                          <div>
+                            <p className="text-white font-bold text-sm">
+                              Juros Bancários
+                            </p>
+                            <p className="text-zinc-500 text-xs">
+                              1% da dívida por jornada
+                            </p>
+                          </div>
+                          <div className="text-right">
+                            <p className="text-red-400 font-mono font-black text-base">
+                              -{formatCurrency(loanInterestPerWeek)}
+                              <span className="text-zinc-500 text-xs font-normal">
+                                {" "}
+                                /jornada
+                              </span>
+                            </p>
+                          </div>
+                        </div>
+                      </div>
+                    )}
+                  </div>
+                </div>
+
+                {/* ── DÍVIDA BANCÁRIA ───────────────────────────────────────────── */}
+                <div className="bg-zinc-900 rounded-3xl border border-zinc-800 shadow-sm overflow-hidden">
+                  <div className="px-6 py-4 border-b border-zinc-800 flex items-center gap-3">
+                    <span className="text-lg">🏦</span>
+                    <h2 className="text-xs font-black uppercase tracking-widest text-orange-400">
+                      Empréstimos
+                    </h2>
+                  </div>
+                  <div className="p-6 space-y-4">
+                    <div className="flex items-start justify-between">
+                      <div>
+                        <p className="text-white font-bold">Dívida Actual</p>
+                        <p className="text-zinc-500 text-xs">
+                          Taxa de juro: 1% / jornada
+                        </p>
+                      </div>
+                      <p
+                        className={`font-mono text-xl font-black ${loanAmount > 0 ? "text-red-400" : "text-emerald-400"}`}
+                      >
+                        {formatCurrency(loanAmount)}
+                      </p>
+                    </div>
+                    {/* Debt gauge */}
+                    <div>
+                      <div className="flex justify-between text-[10px] text-zinc-600 mb-1 font-bold">
+                        <span>0€</span>
+                        <span>Máximo: 2.000.000€</span>
+                      </div>
+                      <div className="w-full h-3 bg-zinc-800 rounded-full overflow-hidden">
+                        <div
+                          className={`h-full rounded-full transition-all ${loanAmount / 2000000 > 0.75 ? "bg-red-500" : loanAmount / 2000000 > 0.4 ? "bg-orange-500" : "bg-amber-400"}`}
+                          style={{
+                            width: `${Math.min(100, (loanAmount / 2000000) * 100)}%`,
+                          }}
+                        />
+                      </div>
+                      <p className="text-zinc-600 text-[10px] text-right mt-1">
+                        {((loanAmount / 2000000) * 100).toFixed(0)}% do limite
+                      </p>
+                    </div>
+
+                    <div className="grid grid-cols-2 gap-3 pt-2">
+                      <div className="bg-zinc-950 p-4 rounded-xl border border-red-900/30 flex flex-col gap-2">
+                        <p className="text-xs font-black text-red-400 uppercase tracking-widest">
+                          Pedir Empréstimo
+                        </p>
+                        <p className="text-zinc-500 text-[10px]">
+                          +500.000€ → {formatCurrency(loanAmount + 500000)}{" "}
+                          dívida
+                        </p>
+                        <button
+                          onClick={() => socket.emit("takeLoan")}
+                          disabled={loanAmount >= 2000000}
+                          className="w-full bg-red-900 hover:bg-red-800 disabled:opacity-40 disabled:cursor-not-allowed text-white font-black py-2.5 rounded-lg text-xs transition-all uppercase"
+                        >
+                          Pedir +500K
+                        </button>
+                      </div>
+                      <div className="bg-zinc-950 p-4 rounded-xl border border-emerald-900/30 flex flex-col gap-2">
+                        <p className="text-xs font-black text-emerald-400 uppercase tracking-widest">
+                          Pagar Dívida
+                        </p>
+                        <p className="text-zinc-500 text-[10px]">
+                          -500.000€ →{" "}
+                          {formatCurrency(Math.max(0, loanAmount - 500000))}{" "}
+                          dívida
+                        </p>
+                        <button
+                          onClick={() => socket.emit("payLoan")}
+                          disabled={
+                            loanAmount < 500000 || currentBudget < 500000
+                          }
+                          className="w-full bg-emerald-900 hover:bg-emerald-800 disabled:opacity-40 disabled:cursor-not-allowed text-white font-black py-2.5 rounded-lg text-xs transition-all uppercase"
+                        >
+                          Pagar -500K
+                        </button>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+
+                {/* ── ESTÁDIO ───────────────────────────────────────────────────── */}
+                <div className="bg-zinc-900 rounded-3xl border border-zinc-800 shadow-sm overflow-hidden">
+                  <div className="px-6 py-4 border-b border-zinc-800 flex items-center gap-3">
+                    <span className="text-lg">🏟️</span>
+                    <h2 className="text-xs font-black uppercase tracking-widest text-amber-400">
+                      Estádio
+                    </h2>
+                  </div>
+                  <div className="p-6 space-y-4">
+                    <div className="grid grid-cols-2 gap-4">
+                      <div className="bg-zinc-950 rounded-xl border border-zinc-800 p-4 flex flex-col gap-1">
+                        <span className="text-zinc-500 text-[10px] font-black uppercase tracking-wider">
+                          Capacidade Actual
+                        </span>
+                        <span className="text-white font-black text-2xl">
+                          {(teamInfo?.stadium_capacity || 5000).toLocaleString(
+                            "pt-PT",
+                          )}
+                        </span>
+                        <span className="text-zinc-600 text-[10px]">
+                          lugares
+                        </span>
+                      </div>
+                      <div className="bg-zinc-950 rounded-xl border border-zinc-800 p-4 flex flex-col gap-1">
+                        <span className="text-zinc-500 text-[10px] font-black uppercase tracking-wider">
+                          Receita/Jogo em Casa
+                        </span>
+                        <span className="text-emerald-400 font-mono font-black text-xl">
+                          {formatCurrency(capacityRevPerGame)}
+                        </span>
+                        <span className="text-zinc-600 text-[10px]">
+                          10€ × lotação (máx.)
+                        </span>
+                      </div>
+                    </div>
+
+                    <button
+                      onClick={() => socket.emit("buildStadium")}
+                      disabled={currentBudget < 150000}
+                      className="w-full bg-amber-600 hover:bg-amber-500 disabled:opacity-40 disabled:cursor-not-allowed text-zinc-950 font-black py-3 rounded-xl text-sm transition-all uppercase tracking-wide"
+                    >
+                      Expandir Estádio — 150.000€
+                    </button>
+                    {currentBudget < 150000 && (
+                      <p className="text-zinc-600 text-xs text-center">
+                        Saldo insuficiente. Precisa de mais{" "}
+                        {formatCurrency(150000 - currentBudget)}.
+                      </p>
+                    )}
                   </div>
                 </div>
               </div>
@@ -2596,32 +3000,32 @@ function App() {
                   <table className="w-full text-left text-sm font-normal">
                     <thead>
                       <tr className="bg-zinc-950/50 text-zinc-400 uppercase text-[11px] tracking-widest border-b border-zinc-800 font-normal">
-                        <th className="px-3 py-2 text-center w-10 font-normal">
+                        <th className="px-3 py-3 text-center w-10 font-normal">
                           ☑️
                         </th>
-                        <th className="px-3 py-2 text-center w-12 font-normal">
+                        <th className="px-3 py-3 text-center w-12 font-normal">
                           POS
                         </th>
-                        <th className="px-3 py-2 font-normal">NOME</th>
-                        <th className="px-3 py-2 text-center w-14 font-normal">
+                        <th className="px-3 py-3 font-normal">NOME</th>
+                        <th className="px-3 py-3 text-center w-14 font-normal">
                           QUAL
                         </th>
-                        <th className="px-3 py-2 text-center w-12 font-normal">
+                        <th className="px-3 py-3 text-center w-12 font-normal">
                           ⚽
                         </th>
-                        <th className="px-3 py-2 text-center w-12 font-normal">
+                        <th className="px-3 py-3 text-center w-12 font-normal">
                           🟥
                         </th>
-                        <th className="px-3 py-2 text-center w-12 font-normal">
+                        <th className="px-3 py-3 text-center w-12 font-normal">
                           🩹
                         </th>
-                        <th className="px-3 py-2 text-center w-12 font-normal">
+                        <th className="px-3 py-3 text-center w-12 font-normal">
                           NAC
                         </th>
-                        <th className="px-3 py-2 text-center w-24 font-normal">
+                        <th className="px-3 py-3 text-center w-24 font-normal">
                           ORDENADO
                         </th>
-                        <th className="px-3 py-2 text-center w-24 font-normal">
+                        <th className="px-3 py-3 text-center w-24 font-normal">
                           AÇÕES
                         </th>
                       </tr>
@@ -2633,7 +3037,7 @@ function App() {
                           className={`transition-colors group select-none ${ENABLE_ROW_BG ? POSITION_BG_CLASS[player.position] : ""} hover:bg-zinc-800/50 ${player.isUnavailable ? "opacity-50" : ""}`}
                         >
                           <td
-                            className="px-3 py-1.5 text-center text-lg leading-none relative"
+                            className="px-3 py-2 text-center text-lg leading-none relative"
                             onClick={(e) => {
                               e.stopPropagation();
                               setOpenStatusPickerId((prev) =>
@@ -2713,12 +3117,12 @@ function App() {
                               })()}
                           </td>
                           <td
-                            className={`px-3 py-1.5 text-center text-sm tracking-wider ${POSITION_TEXT_CLASS[player.position] || "text-zinc-300"}`}
+                            className={`px-3 py-2 text-center text-sm tracking-wider ${POSITION_TEXT_CLASS[player.position] || "text-zinc-300"}`}
                           >
                             {POSITION_SHORT_LABELS[player.position] ||
                               player.position}
                           </td>
-                          <td className="px-3 py-1.5 text-white text-sm md:text-base whitespace-nowrap">
+                          <td className="px-3 py-2 text-white text-sm md:text-base whitespace-nowrap">
                             {player.name}
                             {!!player.is_star &&
                               (player.position === "MID" ||
@@ -2739,15 +3143,15 @@ function App() {
                               </span>
                             )}
                           </td>
-                          <td className="px-3 py-1.5 text-center text-zinc-100 font-normal">
+                          <td className="px-3 py-2 text-center text-zinc-100 font-normal">
                             <span className="inline-flex items-center justify-center bg-zinc-950 text-white px-2 py-1 rounded text-sm border border-zinc-800 font-normal">
                               {player.skill}
                             </span>
                           </td>
-                          <td className="px-3 py-1.5 text-center text-emerald-400 font-normal">
+                          <td className="px-3 py-2 text-center text-emerald-400 font-normal">
                             {getPlayerStat(player, ["goals"])}
                           </td>
-                          <td className="px-3 py-1.5 text-center text-red-400 font-normal">
+                          <td className="px-3 py-2 text-center text-red-400 font-normal">
                             {getPlayerStat(player, [
                               "reds",
                               "red_cards",
@@ -2755,7 +3159,7 @@ function App() {
                               "expulsions",
                             ])}
                           </td>
-                          <td className="px-3 py-1.5 text-center text-orange-400 font-normal">
+                          <td className="px-3 py-2 text-center text-orange-400 font-normal">
                             {getPlayerStat(player, [
                               "injuries",
                               "injury_count",
@@ -2763,13 +3167,13 @@ function App() {
                               "lesions",
                             ])}
                           </td>
-                          <td className="px-3 py-1.5 text-center text-zinc-400 text-sm">
+                          <td className="px-3 py-2 text-center text-zinc-400 text-sm">
                             {player.nationality}
                           </td>
-                          <td className="px-3 py-1.5 text-center font-mono text-zinc-300 text-xs md:text-sm">
+                          <td className="px-3 py-2 text-center font-mono text-zinc-300 text-xs md:text-sm">
                             {formatCurrency(player.wage || 0)}
                           </td>
-                          <td className="px-3 py-1.5 text-center">
+                          <td className="px-3 py-2 text-center">
                             {player.status === "Titular" ||
                             player.status === "Suplente" ? (
                               <div className="flex flex-nowrap justify-center gap-1">
@@ -2790,7 +3194,11 @@ function App() {
                                     listPlayerAuction(player);
                                   }}
                                   disabled={isPlayingMatch || showHalftimePanel}
-                                  title={isPlayingMatch || showHalftimePanel ? "Disponível após as partidas" : "Vender em Leilão"}
+                                  title={
+                                    isPlayingMatch || showHalftimePanel
+                                      ? "Disponível após as partidas"
+                                      : "Vender em Leilão"
+                                  }
                                   aria-label="Vender em Leilão"
                                   className="px-2 py-1 rounded-lg bg-amber-600 hover:bg-amber-500 disabled:opacity-30 disabled:hover:bg-amber-600 text-zinc-950 text-[10px] font-normal uppercase leading-none"
                                 >
@@ -2998,16 +3406,6 @@ function App() {
                     ⚠️ Desligado — a reconectar...
                   </p>
                 )}
-                {!disconnected && awaitingCoaches.length > 0 && (
-                  <div className="w-full mb-3 bg-amber-950/60 border border-amber-700 rounded-2xl px-4 py-3 text-center">
-                    <p className="text-amber-400 text-xs font-black uppercase tracking-widest leading-tight">
-                      ⏸ Jogo pausado
-                    </p>
-                    <p className="text-amber-300 text-xs mt-1">
-                      A aguardar: {awaitingCoaches.join(", ")}
-                    </p>
-                  </div>
-                )}
                 {activeTab === "squad" && (
                   <div className="w-full mb-4 space-y-4">
                     <div className="p-4 rounded-2xl border border-zinc-800 bg-zinc-950/80">
@@ -3040,27 +3438,19 @@ function App() {
                               </p>
                             </div>
                           </div>
-                          <div className="flex items-center justify-between gap-3">
-                            <p className="text-zinc-500 text-[10px] uppercase tracking-widest font-black">
-                              Últimos 5
-                            </p>
-                            <div className="flex gap-1.5 font-black tracking-[0.35em] text-xs">
-                              {(nextMatchOpponent.last5 || "-----")
-                                .split("")
-                                .slice(0, 5)
-                                .map((result, index) => (
-                                  <span
-                                    key={`${result}-${index}`}
-                                    className={`w-7 h-7 rounded-full flex items-center justify-center border ${result === "V" ? "bg-emerald-500/15 text-emerald-400 border-emerald-500/30" : result === "E" ? "bg-amber-500/15 text-amber-400 border-amber-500/30" : result === "D" ? "bg-red-500/15 text-red-400 border-red-500/30" : "bg-zinc-900 text-zinc-600 border-zinc-800"}`}
-                                  >
-                                    {result}
-                                  </span>
-                                ))}
-                            </div>
+                          <div className="flex items-center justify-center gap-1.5 font-black tracking-[0.35em] text-xs">
+                            {(nextMatchOpponent.last5 || "-----")
+                              .split("")
+                              .slice(0, 5)
+                              .map((result, index) => (
+                                <span
+                                  key={`${result}-${index}`}
+                                  className={`w-7 h-7 rounded-full flex items-center justify-center border ${result === "V" ? "bg-emerald-500/15 text-emerald-400 border-emerald-500/30" : result === "E" ? "bg-amber-500/15 text-amber-400 border-amber-500/30" : result === "D" ? "bg-red-500/15 text-red-400 border-red-500/30" : "bg-zinc-900 text-zinc-600 border-zinc-800"}`}
+                                >
+                                  {result}
+                                </span>
+                              ))}
                           </div>
-                          <p className="text-xs text-zinc-500 font-bold">
-                            {nextMatchOpponent.last5 || "Sem histórico ainda."}
-                          </p>
                           <div className="pt-2 border-t border-zinc-800/80">
                             <p className="text-zinc-500 text-[10px] uppercase tracking-widest font-black mb-2">
                               Árbitro
@@ -3197,35 +3587,6 @@ function App() {
                   Se jogas com amigos, a jornada só avança quando TODOS
                   clicarem.
                 </p>
-              </div>
-
-              <div className="bg-zinc-900 p-5 rounded-3xl border border-zinc-800">
-                <h2 className="text-sm font-black mb-5 text-zinc-400 uppercase flex justify-between">
-                  <span>Liga Activa</span>
-                  <span className="text-amber-500">({players.length}/8)</span>
-                </h2>
-                <ul className="space-y-3">
-                  {players.map((p, i) => (
-                    <li
-                      key={i}
-                      className="flex justify-between items-center bg-zinc-950 border border-zinc-800/50 p-3 rounded-2xl"
-                    >
-                      <div className="min-w-0 pr-2">
-                        <p className="font-bold text-sm text-white truncate">
-                          {p.name}
-                        </p>
-                        <p className="text-xs font-bold uppercase text-zinc-500 truncate">
-                          {teams.find((t) => t.id == p.teamId)?.name}
-                        </p>
-                      </div>
-                      <div
-                        className={`px-3 py-1 rounded border text-[10px] font-black uppercase ${p.ready ? "bg-emerald-500/10 text-emerald-400 border-emerald-500/20" : "text-zinc-600 border-zinc-800"}`}
-                      >
-                        {p.ready ? "PRONTO" : "ESPERA"}
-                      </div>
-                    </li>
-                  ))}
-                </ul>
               </div>
             </div>
           )}
@@ -3422,29 +3783,47 @@ function App() {
                   </span>
                 </div>
                 <div className="flex gap-2">
-                  <span className="font-normal text-zinc-700">Nacionalidade</span>
-                  <span className="font-bold">{selectedAuctionPlayer.nationality || "—"}</span>
+                  <span className="font-normal text-zinc-700">
+                    Nacionalidade
+                  </span>
+                  <span className="font-bold">
+                    {selectedAuctionPlayer.nationality || "—"}
+                  </span>
                 </div>
                 <div className="flex gap-2">
                   <span className="font-normal text-zinc-700">Jogador</span>
-                  <span className="font-black text-lg leading-tight">{selectedAuctionPlayer.name}</span>
+                  <span className="font-black text-lg leading-tight">
+                    {selectedAuctionPlayer.name}
+                  </span>
                 </div>
                 <div></div>
                 <div className="flex gap-2">
                   <span className="font-normal text-zinc-700">Posição</span>
-                  <span className="font-bold">{selectedAuctionPlayer.position}</span>
+                  <span className="font-bold">
+                    {selectedAuctionPlayer.position}
+                  </span>
                 </div>
                 <div className="flex gap-2">
-                  <span className="font-normal text-zinc-700">Comportamento</span>
-                  <span className="font-bold">{selectedAuctionPlayer.aggressiveness || "Normal"}</span>
+                  <span className="font-normal text-zinc-700">
+                    Comportamento
+                  </span>
+                  <span className="font-bold">
+                    {selectedAuctionPlayer.aggressiveness || "Normal"}
+                  </span>
                 </div>
                 <div className="flex gap-2">
                   <span className="font-normal text-zinc-700">Força</span>
-                  <span className="font-black text-xl">{selectedAuctionPlayer.skill}</span>
+                  <span className="font-black text-xl">
+                    {selectedAuctionPlayer.skill}
+                  </span>
                 </div>
                 <div className="flex gap-2">
-                  <span className="font-normal text-zinc-700">Golos esta época</span>
-                  <span className="font-bold">{selectedAuctionPlayer.goals || 0}</span>
+                  <span className="font-normal text-zinc-700">
+                    Golos esta época
+                  </span>
+                  <span className="font-bold">
+                    {selectedAuctionPlayer.goals || 0}
+                  </span>
                 </div>
               </div>
 
@@ -3454,39 +3833,59 @@ function App() {
                 <div className="grid grid-cols-2 gap-x-6 gap-y-0.5">
                   <div className="flex justify-between">
                     <span>Jogos</span>
-                    <span className="font-bold">{selectedAuctionPlayer.games_played || 0}</span>
+                    <span className="font-bold">
+                      {selectedAuctionPlayer.games_played || 0}
+                    </span>
                   </div>
                   <div className="flex justify-between">
                     <span>Golos</span>
-                    <span className="font-bold">{selectedAuctionPlayer.goals || 0}</span>
+                    <span className="font-bold">
+                      {selectedAuctionPlayer.goals || 0}
+                    </span>
                   </div>
                   <div className="flex justify-between">
                     <span>Cartões vermelhos</span>
-                    <span className="font-bold">{selectedAuctionPlayer.red_cards || 0}</span>
+                    <span className="font-bold">
+                      {selectedAuctionPlayer.red_cards || 0}
+                    </span>
                   </div>
                   <div className="flex justify-between">
                     <span>Lesões</span>
-                    <span className="font-bold">{selectedAuctionPlayer.injuries || 0}</span>
+                    <span className="font-bold">
+                      {selectedAuctionPlayer.injuries || 0}
+                    </span>
                   </div>
                 </div>
               </div>
 
               <div className="grid grid-cols-2 gap-x-6 text-sm">
                 <div className="flex gap-2">
-                  <span className="font-normal text-zinc-700">Salário pretendido</span>
-                  <span className="font-bold">{formatCurrency(selectedAuctionPlayer.wage || 0)} /sem</span>
+                  <span className="font-normal text-zinc-700">
+                    Salário pretendido
+                  </span>
+                  <span className="font-bold">
+                    {formatCurrency(selectedAuctionPlayer.wage || 0)} /sem
+                  </span>
                 </div>
                 <div></div>
                 <div className="flex gap-2">
                   <span className="font-normal text-zinc-700">Preço base</span>
-                  <span className="font-black">{formatCurrency(selectedAuctionPlayer.startingPrice || selectedAuctionPlayer.transfer_price || 0)}</span>
+                  <span className="font-black">
+                    {formatCurrency(
+                      selectedAuctionPlayer.startingPrice ||
+                        selectedAuctionPlayer.transfer_price ||
+                        0,
+                    )}
+                  </span>
                 </div>
                 {selectedAuctionPlayer.is_star ? (
                   <div className="flex items-center gap-1">
                     <span className="text-amber-600 font-black">★</span>
                     <span className="font-bold text-amber-700">Craque</span>
                   </div>
-                ) : <div></div>}
+                ) : (
+                  <div></div>
+                )}
               </div>
             </div>
 
@@ -3496,21 +3895,33 @@ function App() {
               <div className="px-5 py-4 bg-linear-to-r from-amber-500 to-amber-400 border-t-2 border-amber-600 text-zinc-950">
                 {auctionResult.sold ? (
                   <p className="font-black text-lg">
-                    Vendido ao <span className="uppercase">{auctionResult.buyerTeamName}</span> por {formatCurrency(auctionResult.finalBid)}
+                    Vendido ao{" "}
+                    <span className="uppercase">
+                      {auctionResult.buyerTeamName}
+                    </span>{" "}
+                    por {formatCurrency(auctionResult.finalBid)}
                   </p>
                 ) : (
                   <p className="font-black text-lg">
                     Não recebeu lances e saiu do leilão.
                   </p>
                 )}
-                <p className="text-xs text-zinc-700 mt-1 font-medium">A fechar automaticamente...</p>
+                <p className="text-xs text-zinc-700 mt-1 font-medium">
+                  A fechar automaticamente...
+                </p>
               </div>
             ) : myAuctionBid != null ? (
               // Bid confirmed — waiting for result
               <div className="px-5 py-4 bg-linear-to-r from-emerald-600 to-emerald-500 border-t-2 border-emerald-700 text-white">
-                <p className="font-black text-sm uppercase tracking-widest mb-1">Lance registado</p>
-                <p className="font-black text-2xl font-mono">{formatCurrency(myAuctionBid)}</p>
-                <p className="text-xs text-emerald-200 mt-1 font-medium">A aguardar o resultado do leilão...</p>
+                <p className="font-black text-sm uppercase tracking-widest mb-1">
+                  Lance registado
+                </p>
+                <p className="font-black text-2xl font-mono">
+                  {formatCurrency(myAuctionBid)}
+                </p>
+                <p className="text-xs text-emerald-200 mt-1 font-medium">
+                  A aguardar o resultado do leilão...
+                </p>
               </div>
             ) : (
               // Bidding phase
@@ -3522,7 +3933,9 @@ function App() {
                     min="0"
                     value={auctionBid}
                     onChange={(e) => setAuctionBid(e.target.value)}
-                    placeholder={String(selectedAuctionPlayer.startingPrice || 0)}
+                    placeholder={String(
+                      selectedAuctionPlayer.startingPrice || 0,
+                    )}
                     className="flex-1 bg-white border-2 border-zinc-300 rounded-lg px-3 py-2 text-zinc-950 font-mono text-lg outline-none focus:border-amber-500"
                     autoFocus
                   />
@@ -3534,7 +3947,8 @@ function App() {
                   </button>
                 </div>
                 <p className="text-xs text-red-200 font-medium">
-                  Dinheiro em caixa: {formatCurrency(teamInfo?.budget || 0)} · Leilão fechado — o lance mais alto vence.
+                  Dinheiro em caixa: {formatCurrency(teamInfo?.budget || 0)} ·
+                  Leilão fechado — o lance mais alto vence.
                 </p>
               </div>
             )}
@@ -3850,6 +4264,41 @@ function App() {
                 </button>
               </div>
             )}
+          </div>
+        </div>
+      )}
+
+      {/* ── WELCOME / HIRED MODAL ─────────────────────────────────────────────── */}
+      {welcomeModal && me?.teamId && (
+        <div className="fixed inset-0 z-200 bg-zinc-950/90 backdrop-blur-sm flex items-center justify-center p-4">
+          <div className="w-full max-w-sm bg-zinc-900 border border-amber-500/40 rounded-3xl shadow-2xl overflow-hidden">
+            <div className="bg-linear-to-r from-amber-900/40 to-zinc-900 px-6 py-5 border-b border-amber-700/30 text-center">
+              <p className="text-xs text-amber-400 uppercase font-black tracking-widest mb-2">
+                Bem-vindo ao CashBall!
+              </p>
+              <h2 className="text-3xl font-black text-white">Parabéns! 🎉</h2>
+            </div>
+            <div className="p-6 text-center space-y-4">
+              <p className="text-zinc-300 font-bold text-lg leading-relaxed">
+                Foste contratado pelo{" "}
+                <span className="text-amber-400 font-black">
+                  {welcomeModal.teamName}
+                </span>
+                !
+              </p>
+              <p className="text-zinc-500 text-sm">
+                Começa a gerir o teu clube e leva-o até ao topo da tabela.
+              </p>
+              <button
+                onClick={() => {
+                  markWelcomeSeen(me.name, me.roomCode);
+                  setWelcomeModal(null);
+                }}
+                className="w-full bg-amber-500 hover:bg-amber-400 text-zinc-950 font-black py-4 rounded-2xl text-lg uppercase tracking-widest transition-all active:scale-95 border-b-4 border-amber-700 active:border-b-0"
+              >
+                Vamos lá!
+              </button>
+            </div>
           </div>
         </div>
       )}
