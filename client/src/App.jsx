@@ -175,7 +175,10 @@ function getMatchLastEventText(events = [], liveMinute = 90) {
   }
 
   if (latest.type === "red") {
-    const name = latest.playerName || latest.text?.match(/Vermelho!\s*(.*)$/i)?.[1] || "Jogador";
+    const name =
+      latest.playerName ||
+      latest.text?.match(/Vermelho!\s*(.*)$/i)?.[1] ||
+      "Jogador";
     return `${minuteText} 🟥 Vermelho! ${name}`;
   }
 
@@ -1230,7 +1233,10 @@ function App() {
       if (!prev) return prev;
       const amount = Number(auctionBid);
       if (!Number.isFinite(amount) || amount <= 0) return prev;
-      socket.emit("placeAuctionBid", { playerId: prev.playerId || prev.id, bidAmount: amount });
+      socket.emit("placeAuctionBid", {
+        playerId: prev.playerId || prev.id,
+        bidAmount: amount,
+      });
       return prev;
     });
   }, [auctionBid]); // eslint-disable-line react-hooks/exhaustive-deps
@@ -2129,13 +2135,19 @@ function App() {
                   )}
                 </h2>
 
-                <div className={isCupMatch ? "flex flex-col gap-2" : "grid grid-cols-1 lg:grid-cols-2 gap-6"}>
+                <div
+                  className={
+                    isCupMatch
+                      ? "flex flex-col gap-2"
+                      : "grid grid-cols-1 lg:grid-cols-2 gap-6"
+                  }
+                >
                   {(isCupMatch ? [null] : [1, 2, 3, 4]).map((div) => (
                     <div key={div ?? "cup"}>
                       {!isCupMatch && (
-                      <h3 className="text-zinc-500 font-black uppercase text-xs mb-2 border-b border-zinc-800/50">
-                        {DIVISION_NAMES[div] || `Div ${div}`}
-                      </h3>
+                        <h3 className="text-zinc-500 font-black uppercase text-xs mb-2 border-b border-zinc-800/50">
+                          {DIVISION_NAMES[div] || `Div ${div}`}
+                        </h3>
                       )}
                       <div className="space-y-1">
                         {matchResults.results
@@ -2790,7 +2802,11 @@ function App() {
                                     listPlayerAuction(player);
                                   }}
                                   disabled={isPlayingMatch || showHalftimePanel}
-                                  title={isPlayingMatch || showHalftimePanel ? "Disponível após as partidas" : "Vender em Leilão"}
+                                  title={
+                                    isPlayingMatch || showHalftimePanel
+                                      ? "Disponível após as partidas"
+                                      : "Vender em Leilão"
+                                  }
                                   aria-label="Vender em Leilão"
                                   className="px-2 py-1 rounded-lg bg-amber-600 hover:bg-amber-500 disabled:opacity-30 disabled:hover:bg-amber-600 text-zinc-950 text-[10px] font-normal uppercase leading-none"
                                 >
@@ -3040,27 +3056,19 @@ function App() {
                               </p>
                             </div>
                           </div>
-                          <div className="flex items-center justify-between gap-3">
-                            <p className="text-zinc-500 text-[10px] uppercase tracking-widest font-black">
-                              Últimos 5
-                            </p>
-                            <div className="flex gap-1.5 font-black tracking-[0.35em] text-xs">
-                              {(nextMatchOpponent.last5 || "-----")
-                                .split("")
-                                .slice(0, 5)
-                                .map((result, index) => (
-                                  <span
-                                    key={`${result}-${index}`}
-                                    className={`w-7 h-7 rounded-full flex items-center justify-center border ${result === "V" ? "bg-emerald-500/15 text-emerald-400 border-emerald-500/30" : result === "E" ? "bg-amber-500/15 text-amber-400 border-amber-500/30" : result === "D" ? "bg-red-500/15 text-red-400 border-red-500/30" : "bg-zinc-900 text-zinc-600 border-zinc-800"}`}
-                                  >
-                                    {result}
-                                  </span>
-                                ))}
-                            </div>
+                          <div className="flex items-center justify-center gap-1.5 font-black tracking-[0.35em] text-xs">
+                            {(nextMatchOpponent.last5 || "-----")
+                              .split("")
+                              .slice(0, 5)
+                              .map((result, index) => (
+                                <span
+                                  key={`${result}-${index}`}
+                                  className={`w-7 h-7 rounded-full flex items-center justify-center border ${result === "V" ? "bg-emerald-500/15 text-emerald-400 border-emerald-500/30" : result === "E" ? "bg-amber-500/15 text-amber-400 border-amber-500/30" : result === "D" ? "bg-red-500/15 text-red-400 border-red-500/30" : "bg-zinc-900 text-zinc-600 border-zinc-800"}`}
+                                >
+                                  {result}
+                                </span>
+                              ))}
                           </div>
-                          <p className="text-xs text-zinc-500 font-bold">
-                            {nextMatchOpponent.last5 || "Sem histórico ainda."}
-                          </p>
                           <div className="pt-2 border-t border-zinc-800/80">
                             <p className="text-zinc-500 text-[10px] uppercase tracking-widest font-black mb-2">
                               Árbitro
@@ -3422,29 +3430,47 @@ function App() {
                   </span>
                 </div>
                 <div className="flex gap-2">
-                  <span className="font-normal text-zinc-700">Nacionalidade</span>
-                  <span className="font-bold">{selectedAuctionPlayer.nationality || "—"}</span>
+                  <span className="font-normal text-zinc-700">
+                    Nacionalidade
+                  </span>
+                  <span className="font-bold">
+                    {selectedAuctionPlayer.nationality || "—"}
+                  </span>
                 </div>
                 <div className="flex gap-2">
                   <span className="font-normal text-zinc-700">Jogador</span>
-                  <span className="font-black text-lg leading-tight">{selectedAuctionPlayer.name}</span>
+                  <span className="font-black text-lg leading-tight">
+                    {selectedAuctionPlayer.name}
+                  </span>
                 </div>
                 <div></div>
                 <div className="flex gap-2">
                   <span className="font-normal text-zinc-700">Posição</span>
-                  <span className="font-bold">{selectedAuctionPlayer.position}</span>
+                  <span className="font-bold">
+                    {selectedAuctionPlayer.position}
+                  </span>
                 </div>
                 <div className="flex gap-2">
-                  <span className="font-normal text-zinc-700">Comportamento</span>
-                  <span className="font-bold">{selectedAuctionPlayer.aggressiveness || "Normal"}</span>
+                  <span className="font-normal text-zinc-700">
+                    Comportamento
+                  </span>
+                  <span className="font-bold">
+                    {selectedAuctionPlayer.aggressiveness || "Normal"}
+                  </span>
                 </div>
                 <div className="flex gap-2">
                   <span className="font-normal text-zinc-700">Força</span>
-                  <span className="font-black text-xl">{selectedAuctionPlayer.skill}</span>
+                  <span className="font-black text-xl">
+                    {selectedAuctionPlayer.skill}
+                  </span>
                 </div>
                 <div className="flex gap-2">
-                  <span className="font-normal text-zinc-700">Golos esta época</span>
-                  <span className="font-bold">{selectedAuctionPlayer.goals || 0}</span>
+                  <span className="font-normal text-zinc-700">
+                    Golos esta época
+                  </span>
+                  <span className="font-bold">
+                    {selectedAuctionPlayer.goals || 0}
+                  </span>
                 </div>
               </div>
 
@@ -3454,39 +3480,59 @@ function App() {
                 <div className="grid grid-cols-2 gap-x-6 gap-y-0.5">
                   <div className="flex justify-between">
                     <span>Jogos</span>
-                    <span className="font-bold">{selectedAuctionPlayer.games_played || 0}</span>
+                    <span className="font-bold">
+                      {selectedAuctionPlayer.games_played || 0}
+                    </span>
                   </div>
                   <div className="flex justify-between">
                     <span>Golos</span>
-                    <span className="font-bold">{selectedAuctionPlayer.goals || 0}</span>
+                    <span className="font-bold">
+                      {selectedAuctionPlayer.goals || 0}
+                    </span>
                   </div>
                   <div className="flex justify-between">
                     <span>Cartões vermelhos</span>
-                    <span className="font-bold">{selectedAuctionPlayer.red_cards || 0}</span>
+                    <span className="font-bold">
+                      {selectedAuctionPlayer.red_cards || 0}
+                    </span>
                   </div>
                   <div className="flex justify-between">
                     <span>Lesões</span>
-                    <span className="font-bold">{selectedAuctionPlayer.injuries || 0}</span>
+                    <span className="font-bold">
+                      {selectedAuctionPlayer.injuries || 0}
+                    </span>
                   </div>
                 </div>
               </div>
 
               <div className="grid grid-cols-2 gap-x-6 text-sm">
                 <div className="flex gap-2">
-                  <span className="font-normal text-zinc-700">Salário pretendido</span>
-                  <span className="font-bold">{formatCurrency(selectedAuctionPlayer.wage || 0)} /sem</span>
+                  <span className="font-normal text-zinc-700">
+                    Salário pretendido
+                  </span>
+                  <span className="font-bold">
+                    {formatCurrency(selectedAuctionPlayer.wage || 0)} /sem
+                  </span>
                 </div>
                 <div></div>
                 <div className="flex gap-2">
                   <span className="font-normal text-zinc-700">Preço base</span>
-                  <span className="font-black">{formatCurrency(selectedAuctionPlayer.startingPrice || selectedAuctionPlayer.transfer_price || 0)}</span>
+                  <span className="font-black">
+                    {formatCurrency(
+                      selectedAuctionPlayer.startingPrice ||
+                        selectedAuctionPlayer.transfer_price ||
+                        0,
+                    )}
+                  </span>
                 </div>
                 {selectedAuctionPlayer.is_star ? (
                   <div className="flex items-center gap-1">
                     <span className="text-amber-600 font-black">★</span>
                     <span className="font-bold text-amber-700">Craque</span>
                   </div>
-                ) : <div></div>}
+                ) : (
+                  <div></div>
+                )}
               </div>
             </div>
 
@@ -3496,21 +3542,33 @@ function App() {
               <div className="px-5 py-4 bg-linear-to-r from-amber-500 to-amber-400 border-t-2 border-amber-600 text-zinc-950">
                 {auctionResult.sold ? (
                   <p className="font-black text-lg">
-                    Vendido ao <span className="uppercase">{auctionResult.buyerTeamName}</span> por {formatCurrency(auctionResult.finalBid)}
+                    Vendido ao{" "}
+                    <span className="uppercase">
+                      {auctionResult.buyerTeamName}
+                    </span>{" "}
+                    por {formatCurrency(auctionResult.finalBid)}
                   </p>
                 ) : (
                   <p className="font-black text-lg">
                     Não recebeu lances e saiu do leilão.
                   </p>
                 )}
-                <p className="text-xs text-zinc-700 mt-1 font-medium">A fechar automaticamente...</p>
+                <p className="text-xs text-zinc-700 mt-1 font-medium">
+                  A fechar automaticamente...
+                </p>
               </div>
             ) : myAuctionBid != null ? (
               // Bid confirmed — waiting for result
               <div className="px-5 py-4 bg-linear-to-r from-emerald-600 to-emerald-500 border-t-2 border-emerald-700 text-white">
-                <p className="font-black text-sm uppercase tracking-widest mb-1">Lance registado</p>
-                <p className="font-black text-2xl font-mono">{formatCurrency(myAuctionBid)}</p>
-                <p className="text-xs text-emerald-200 mt-1 font-medium">A aguardar o resultado do leilão...</p>
+                <p className="font-black text-sm uppercase tracking-widest mb-1">
+                  Lance registado
+                </p>
+                <p className="font-black text-2xl font-mono">
+                  {formatCurrency(myAuctionBid)}
+                </p>
+                <p className="text-xs text-emerald-200 mt-1 font-medium">
+                  A aguardar o resultado do leilão...
+                </p>
               </div>
             ) : (
               // Bidding phase
@@ -3522,7 +3580,9 @@ function App() {
                     min="0"
                     value={auctionBid}
                     onChange={(e) => setAuctionBid(e.target.value)}
-                    placeholder={String(selectedAuctionPlayer.startingPrice || 0)}
+                    placeholder={String(
+                      selectedAuctionPlayer.startingPrice || 0,
+                    )}
                     className="flex-1 bg-white border-2 border-zinc-300 rounded-lg px-3 py-2 text-zinc-950 font-mono text-lg outline-none focus:border-amber-500"
                     autoFocus
                   />
@@ -3534,7 +3594,8 @@ function App() {
                   </button>
                 </div>
                 <p className="text-xs text-red-200 font-medium">
-                  Dinheiro em caixa: {formatCurrency(teamInfo?.budget || 0)} · Leilão fechado — o lance mais alto vence.
+                  Dinheiro em caixa: {formatCurrency(teamInfo?.budget || 0)} ·
+                  Leilão fechado — o lance mais alto vence.
                 </p>
               </div>
             )}
