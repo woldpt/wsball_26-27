@@ -2935,7 +2935,7 @@ function App() {
                           className={`transition-colors group select-none ${ENABLE_ROW_BG ? POSITION_BG_CLASS[player.position] : ""} hover:bg-zinc-800/50 ${player.isUnavailable ? "opacity-50" : ""}`}
                         >
                           <td
-                            className="px-3 py-2.5 text-center text-lg leading-none relative"
+                            className="px-3 py-2 text-center text-lg leading-none relative"
                             onClick={(e) => {
                               e.stopPropagation();
                               setOpenStatusPickerId((prev) =>
@@ -3015,12 +3015,12 @@ function App() {
                               })()}
                           </td>
                           <td
-                            className={`px-3 py-2.5 text-center text-sm tracking-wider ${POSITION_TEXT_CLASS[player.position] || "text-zinc-300"}`}
+                            className={`px-3 py-2 text-center text-sm tracking-wider ${POSITION_TEXT_CLASS[player.position] || "text-zinc-300"}`}
                           >
                             {POSITION_SHORT_LABELS[player.position] ||
                               player.position}
                           </td>
-                          <td className="px-3 py-2.5 text-white text-sm md:text-base whitespace-nowrap">
+                          <td className="px-3 py-2 text-white text-sm md:text-base whitespace-nowrap">
                             {player.name}
                             {!!player.is_star &&
                               (player.position === "MID" ||
@@ -3041,15 +3041,15 @@ function App() {
                               </span>
                             )}
                           </td>
-                          <td className="px-3 py-2.5 text-center text-zinc-100 font-normal">
+                          <td className="px-3 py-2 text-center text-zinc-100 font-normal">
                             <span className="inline-flex items-center justify-center bg-zinc-950 text-white px-2 py-1 rounded text-sm border border-zinc-800 font-normal">
                               {player.skill}
                             </span>
                           </td>
-                          <td className="px-3 py-2.5 text-center text-emerald-400 font-normal">
+                          <td className="px-3 py-2 text-center text-emerald-400 font-normal">
                             {getPlayerStat(player, ["goals"])}
                           </td>
-                          <td className="px-3 py-2.5 text-center text-red-400 font-normal">
+                          <td className="px-3 py-2 text-center text-red-400 font-normal">
                             {getPlayerStat(player, [
                               "reds",
                               "red_cards",
@@ -3057,7 +3057,7 @@ function App() {
                               "expulsions",
                             ])}
                           </td>
-                          <td className="px-3 py-2.5 text-center text-orange-400 font-normal">
+                          <td className="px-3 py-2 text-center text-orange-400 font-normal">
                             {getPlayerStat(player, [
                               "injuries",
                               "injury_count",
@@ -3065,13 +3065,13 @@ function App() {
                               "lesions",
                             ])}
                           </td>
-                          <td className="px-3 py-2.5 text-center text-zinc-400 text-sm">
+                          <td className="px-3 py-2 text-center text-zinc-400 text-sm">
                             {player.nationality}
                           </td>
-                          <td className="px-3 py-2.5 text-center font-mono text-zinc-300 text-xs md:text-sm">
+                          <td className="px-3 py-2 text-center font-mono text-zinc-300 text-xs md:text-sm">
                             {formatCurrency(player.wage || 0)}
                           </td>
-                          <td className="px-3 py-2.5 text-center">
+                          <td className="px-3 py-2 text-center">
                             {player.status === "Titular" ||
                             player.status === "Suplente" ? (
                               <div className="flex flex-nowrap justify-center gap-1">
