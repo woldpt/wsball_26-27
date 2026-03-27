@@ -464,6 +464,24 @@ function App() {
       setIsCupMatch(false);
       setCupExtraTimeBadge(false);
     });
+    socket.on("cupSecondHalfStart", (data) => {
+      // Identical to matchResults but marks this as a cup second half animation.
+      setMatchResults({ matchweek: data.season, results: data.results.map((r) => ({
+        homeTeamId: r.homeTeamId,
+        awayTeamId: r.awayTeamId,
+        finalHomeGoals: r.finalHomeGoals,
+        finalAwayGoals: r.finalAwayGoals,
+        events: r.events || [],
+        attendance: null,
+      })) });
+      setMatchweekCount(data.season);
+      setShowHalftimePanel(false);
+      setLiveMinute(45);
+      setIsPlayingMatch(true);
+      setIsCupMatch(true);
+      setCupMatchRoundName(data.roundName);
+      setActiveTab("live");
+    });
     socket.on("cupPenaltyShootout", (data) => {
       setCupPenaltyPopup(data);
       setCupPenaltyKickIdx(0);
@@ -588,6 +606,7 @@ function App() {
       socket.off("cupHalfTimeResults");
       socket.off("extraTimeHalfTime");
       socket.off("cupRoundResults");
+      socket.off("cupSecondHalfStart");
       socket.off("cupPenaltyShootout");
       socket.off("palmaresData");
       socket.off("matchResults");
@@ -685,12 +704,23 @@ function App() {
       } else if (liveMinute >= 90) {
         const timer = setTimeout(() => {
           setIsPlayingMatch(false);
-          setActiveTab("standings");
+          if (isCupMatch) {
+            // Signal server that the cup 2nd-half animation is done so it can
+            // proceed with ET/penalties and then emit cupRoundResults.
+            socket.emit("cupSecondHalfDone");
+            // Stay on live tab — ET/penalties will follow via extraTimeHalfTime
+            // and cupPenaltyShootout events; cupRoundResults shows the final popup.
+          } else {
+            // Signal server that the league animation is done — if there is a
+            // pending cup draw it will now be triggered.
+            socket.emit("leagueAnimDone");
+            setActiveTab("standings");
+          }
         }, 3000);
         return () => clearTimeout(timer);
       }
     }
-  }, [isPlayingMatch, liveMinute, matchResults, showHalftimePanel]);
+  }, [isPlayingMatch, liveMinute, matchResults, showHalftimePanel, isCupMatch]);
 
   // Detect per-minute events: flash goal score & play notification for human matches
   useEffect(() => {
