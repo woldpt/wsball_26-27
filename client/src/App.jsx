@@ -1872,12 +1872,41 @@ function App() {
                 </p>
               </div>
             )}
+            {players.length > 0 && (
+              <div className="hidden sm:flex flex-col items-end gap-0.5">
+                <div className="flex items-center gap-1">
+                  {players.map((p, i) => (
+                    <div
+                      key={i}
+                      title={`${p.name} · ${teams.find((t) => t.id == p.teamId)?.name || "?"} · ${p.ready ? "Pronto" : "A aguardar"}`}
+                      className={`w-2 h-2 rounded-full ${p.ready ? "bg-emerald-400" : "bg-zinc-600"}`}
+                    />
+                  ))}
+                  <span
+                    className="text-[10px] font-black uppercase tracking-widest ml-1 opacity-70"
+                    style={{ color: teamInfo?.color_secondary || "#ffffff" }}
+                  >
+                    {players.filter((p) => p.ready).length}/{players.length}
+                  </span>
+                </div>
+                {disconnected && (
+                  <span className="text-red-400 text-[10px] font-black uppercase tracking-widest">
+                    ⚠ Desligado
+                  </span>
+                )}
+                {!disconnected && awaitingCoaches.length > 0 && (
+                  <span className="text-amber-400 text-[10px] font-black uppercase tracking-widest">
+                    ⏸ {awaitingCoaches.join(", ")}
+                  </span>
+                )}
+              </div>
+            )}
             <button
               onClick={handleLogout}
               title="Terminar sessão"
               className="text-zinc-400 hover:text-white hover:bg-zinc-700 transition-colors rounded-lg px-3 py-2 text-xs font-black uppercase tracking-widest border border-zinc-700 hover:border-zinc-500"
             >
-              Sair
+              Sair do Jogo
             </button>
           </div>
         </div>
@@ -3375,16 +3404,6 @@ function App() {
                     ⚠️ Desligado — a reconectar...
                   </p>
                 )}
-                {!disconnected && awaitingCoaches.length > 0 && (
-                  <div className="w-full mb-3 bg-amber-950/60 border border-amber-700 rounded-2xl px-4 py-3 text-center">
-                    <p className="text-amber-400 text-xs font-black uppercase tracking-widest leading-tight">
-                      ⏸ Jogo pausado
-                    </p>
-                    <p className="text-amber-300 text-xs mt-1">
-                      A aguardar: {awaitingCoaches.join(", ")}
-                    </p>
-                  </div>
-                )}
                 {activeTab === "squad" && (
                   <div className="w-full mb-4 space-y-4">
                     <div className="p-4 rounded-2xl border border-zinc-800 bg-zinc-950/80">
@@ -3568,34 +3587,6 @@ function App() {
                 </p>
               </div>
 
-              <div className="bg-zinc-900 p-5 rounded-3xl border border-zinc-800">
-                <h2 className="text-sm font-black mb-5 text-zinc-400 uppercase flex justify-between">
-                  <span>Liga Activa</span>
-                  <span className="text-amber-500">({players.length}/8)</span>
-                </h2>
-                <ul className="space-y-3">
-                  {players.map((p, i) => (
-                    <li
-                      key={i}
-                      className="flex justify-between items-center bg-zinc-950 border border-zinc-800/50 p-3 rounded-2xl"
-                    >
-                      <div className="min-w-0 pr-2">
-                        <p className="font-bold text-sm text-white truncate">
-                          {p.name}
-                        </p>
-                        <p className="text-xs font-bold uppercase text-zinc-500 truncate">
-                          {teams.find((t) => t.id == p.teamId)?.name}
-                        </p>
-                      </div>
-                      <div
-                        className={`px-3 py-1 rounded border text-[10px] font-black uppercase ${p.ready ? "bg-emerald-500/10 text-emerald-400 border-emerald-500/20" : "text-zinc-600 border-zinc-800"}`}
-                      >
-                        {p.ready ? "PRONTO" : "ESPERA"}
-                      </div>
-                    </li>
-                  ))}
-                </ul>
-              </div>
             </div>
           )}
         </div>
