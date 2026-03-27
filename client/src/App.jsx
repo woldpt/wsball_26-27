@@ -175,13 +175,8 @@ function getMatchLastEventText(events = [], liveMinute = 90) {
   }
 
   if (latest.type === "red") {
-    const nameMatch = latest.text?.match(/VERMELHO!\s*(.*)$/i);
-    return `${minuteText} 🟥 ${nameMatch?.[1] || "Jogador"}`;
-  }
-
-  if (latest.type === "yellow") {
-    const nameMatch = latest.text?.match(/Amarelo para\s*(.*)$/i);
-    return `${minuteText} 🟨 ${nameMatch?.[1] || "Jogador"}`;
+    const name = latest.playerName || latest.text?.match(/Vermelho!\s*(.*)$/i)?.[1] || "Jogador";
+    return `${minuteText} 🟥 Vermelho! ${name}`;
   }
 
   return minuteText ? `${minuteText} ${latest.text || ""}` : latest.text || "";

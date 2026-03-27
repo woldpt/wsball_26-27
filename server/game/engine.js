@@ -488,8 +488,6 @@ async function simulateMatchSegment(
   const home = getPower(homeSquad, homeTactic ? homeTactic.style : "Balanced", homeMorale);
   const away = getPower(awaySquad, awayTactic ? awayTactic.style : "Balanced", awayMorale);
 
-  const yellowCounts = { home: {}, away: {} };
-
   for (let minute = startMin; minute <= endMin; minute++) {
     fixture._minute = minute;
 
@@ -560,35 +558,18 @@ async function simulateMatchSegment(
     }
 
     const cardChance = Math.random();
-    if (cardChance < 0.015) {
+    if (cardChance < 0.005) {
       const isHomeCard = Math.random() > 0.5;
       const squad = isHomeCard ? home.squad : away.squad;
       const side = isHomeCard ? "home" : "away";
       if (squad.length > 0) {
         const offender = squad[Math.floor(Math.random() * squad.length)];
-        const prevYellows = yellowCounts[side][offender.id] || 0;
-        let redProb = 0.05;
-        if (offender.aggressiveness === "High") redProb = 0.2;
-        if (offender.aggressiveness === "Low") redProb = 0.01;
+        let seriousProb = 0.15;
+        if (offender.aggressiveness === "High") seriousProb = 0.4;
+        if (offender.aggressiveness === "Low") seriousProb = 0.05;
 
-        if (prevYellows >= 1) {
-          db.run(
-            "UPDATE players SET red_cards = red_cards + 1, suspension_games = suspension_games + 1, suspension_until_matchweek = CASE WHEN suspension_until_matchweek > ? THEN suspension_until_matchweek ELSE ? END WHERE id = ?",
-            [currentMatchweek + 1, currentMatchweek + 1, offender.id],
-          );
-          fixture.events.push({
-            minute,
-            type: "red",
-            subType: "double_yellow",
-            team: side,
-            emoji: "🟥",
-            playerId: offender.id,
-            playerName: offender.name,
-            text: `[${minute}'] 🟥 Segundo amarelo = vermelho! ${offender.name}`,
-          });
-          const idx = squad.findIndex((p) => p.id === offender.id);
-          if (idx > -1) squad.splice(idx, 1);
-        } else if (Math.random() < redProb) {
+        if (Math.random() < seriousProb) {
+          // Expulsão grave — 3 jogos de suspensão
           db.run(
             "UPDATE players SET red_cards = red_cards + 1, suspension_games = suspension_games + 3, suspension_until_matchweek = CASE WHEN suspension_until_matchweek > ? THEN suspension_until_matchweek ELSE ? END WHERE id = ?",
             [currentMatchweek + 3, currentMatchweek + 3, offender.id],
@@ -596,26 +577,33 @@ async function simulateMatchSegment(
           fixture.events.push({
             minute,
             type: "red",
-            subType: "direct",
+            subType: "serious",
             team: side,
             emoji: "🟥",
             playerId: offender.id,
             playerName: offender.name,
-            text: `[${minute}'] 🟥 VERMELHO! ${offender.name}`,
+            text: `[${minute}'] 🟥 Vermelho! ${offender.name}`,
           });
           const idx = squad.findIndex((p) => p.id === offender.id);
           if (idx > -1) squad.splice(idx, 1);
         } else {
-          yellowCounts[side][offender.id] = prevYellows + 1;
+          // Expulsão simples — 1 jogo de suspensão
+          db.run(
+            "UPDATE players SET red_cards = red_cards + 1, suspension_games = suspension_games + 1, suspension_until_matchweek = CASE WHEN suspension_until_matchweek > ? THEN suspension_until_matchweek ELSE ? END WHERE id = ?",
+            [currentMatchweek + 1, currentMatchweek + 1, offender.id],
+          );
           fixture.events.push({
             minute,
-            type: "yellow",
+            type: "red",
+            subType: "simple",
             team: side,
-            emoji: "🟨",
+            emoji: "🟥",
             playerId: offender.id,
             playerName: offender.name,
-            text: `[${minute}'] 🟨 Amarelo para ${offender.name}`,
+            text: `[${minute}'] 🟥 Vermelho! ${offender.name}`,
           });
+          const idx = squad.findIndex((p) => p.id === offender.id);
+          if (idx > -1) squad.splice(idx, 1);
         }
       }
     }
