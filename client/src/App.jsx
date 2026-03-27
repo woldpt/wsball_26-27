@@ -2098,16 +2098,19 @@ function App() {
                   )}
                 </h2>
 
-                <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-                  {[1, 2, 3, 4].map((div) => (
-                    <div key={div}>
+                <div className={isCupMatch ? "flex flex-col gap-2" : "grid grid-cols-1 lg:grid-cols-2 gap-6"}>
+                  {(isCupMatch ? [null] : [1, 2, 3, 4]).map((div) => (
+                    <div key={div ?? "cup"}>
+                      {!isCupMatch && (
                       <h3 className="text-zinc-500 font-black uppercase text-xs mb-2 border-b border-zinc-800/50">
                         {DIVISION_NAMES[div] || `Div ${div}`}
                       </h3>
+                      )}
                       <div className="space-y-1">
                         {matchResults.results
                           .filter(
                             (m) =>
+                              isCupMatch ||
                               teams.find((t) => t.id === m.homeTeamId)
                                 ?.division === div,
                           )
