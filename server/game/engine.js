@@ -440,6 +440,18 @@ async function simulateMatchSegment(
     );
   });
 
+  // Snapshot the lineups for this segment so clients can display "who was on the pitch"
+  const lineupSnapshot = (squad) =>
+    squad.map((p) => ({
+      id: p.id,
+      name: p.name,
+      position: p.position,
+      is_star: p.is_star || 0,
+      skill: p.skill,
+    }));
+  fixture.homeLineup = lineupSnapshot(homeSquad);
+  fixture.awayLineup = lineupSnapshot(awaySquad);
+
   // Persistent lineup tracking across all minutes in this segment
   const homeLineupIds = new Set(homeSquad.map((p) => p.id));
   const awayLineupIds = new Set(awaySquad.map((p) => p.id));

@@ -1103,6 +1103,15 @@ async function simulateCupFirstHalf(game, round, expectedToken) {
         homeGoals: fx.finalHomeGoals,
         awayGoals: fx.finalAwayGoals,
         events: fx.events.slice(),
+        homeLineup: fx.homeLineup || [],
+        awayLineup: fx.awayLineup || [],
+        attendance: fx.attendance || null,
+        referee: pickRefereeSummary(
+          game.roomCode,
+          fx.homeTeamId,
+          fx.awayTeamId,
+          game.matchweek,
+        ),
       };
     }),
   );
@@ -1190,6 +1199,15 @@ async function simulateCupSecondHalf(game, round, expectedToken) {
         events: fx.events.slice(),
         homeTeam: home,
         awayTeam: away,
+        homeLineup: fx.homeLineup || [],
+        awayLineup: fx.awayLineup || [],
+        attendance: fx.attendance || null,
+        referee: pickRefereeSummary(
+          game.roomCode,
+          fx.homeTeamId,
+          fx.awayTeamId,
+          game.matchweek,
+        ),
       };
     }),
   );
@@ -2831,9 +2849,18 @@ async function processSegment(game, startMin, endMin, nextState) {
   if (nextState === "halftime") {
     game.matchState = nextState;
     const connectedPlayers = getPlayerList(game);
+    const halfTimeFixtures = game.fixtures.map((fx) => ({
+      ...fx,
+      referee: pickRefereeSummary(
+        game.roomCode,
+        fx.homeTeamId,
+        fx.awayTeamId,
+        game.matchweek,
+      ),
+    }));
     io.to(game.roomCode).emit("halfTimeResults", {
       matchweek: game.matchweek,
-      results: game.fixtures,
+      results: halfTimeFixtures,
     });
     connectedPlayers.forEach((p) => {
       p.ready = false;
@@ -2912,9 +2939,18 @@ async function processSegment(game, startMin, endMin, nextState) {
         game.matchState = nextState;
         const completedMatchweek = game.matchweek;
 
+        const fullTimeFixtures = game.fixtures.map((fx) => ({
+          ...fx,
+          referee: pickRefereeSummary(
+            game.roomCode,
+            fx.homeTeamId,
+            fx.awayTeamId,
+            completedMatchweek,
+          ),
+        }));
         io.to(game.roomCode).emit("matchResults", {
           matchweek: completedMatchweek,
-          results: game.fixtures,
+          results: fullTimeFixtures,
         });
 
         connectedPlayers.forEach((p) => {
