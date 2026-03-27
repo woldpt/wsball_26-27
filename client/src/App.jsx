@@ -432,6 +432,8 @@ function App() {
       setNextMatchSummaryLoading(false);
     });
     socket.on("cupDrawStart", (data) => {
+      // Never open the cup draw popup during an active match
+      if (isPlayingMatchRef.current) return;
       setCupDraw(data);
       setCupDrawRevealIdx(0);
       setShowCupDrawPopup(true);

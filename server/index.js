@@ -1142,6 +1142,32 @@ function finalizeAllRunningAuctions(game) {
   }
 }
 
+/**
+ * Cancel any pending cup draw that hasn't fired yet.
+ * Prevents the cup-draw popup from appearing mid-match when the safety
+ * timeout (_leagueAnimTimeout or _cupDrawTimeout) fires during simulation.
+ * The pending round is saved to game.deferredCupRound so it can be
+ * triggered after full-time instead of being lost.
+ * Called at both kick-offs.
+ */
+function cancelPendingCupDraw(game) {
+  if (game._leagueAnimTimeout) {
+    clearTimeout(game._leagueAnimTimeout);
+    game._leagueAnimTimeout = null;
+  }
+  if (game._cupDrawTimeout) {
+    clearTimeout(game._cupDrawTimeout);
+    game._cupDrawTimeout = null;
+  }
+  // Defer rather than discard — trigger after full-time
+  if (game.pendingCupRound != null) {
+    game.deferredCupRound = game.pendingCupRound;
+  }
+  game.pendingCupRound = null;
+  game.leagueAnimAcks = new Set();
+  game.cupDrawAcks = new Set();
+}
+
 function listPlayerOnMarket(game, playerId, mode, price, callback) {
   // Block auctions during matches — queue them for after full-time
   if (mode === "auction" && isMatchInProgress(game)) {
@@ -2558,6 +2584,8 @@ async function checkAllReady(game) {
 
     // Resolve all open auctions now — their timers must not fire mid-match.
     finalizeAllRunningAuctions(game);
+    // Cancel any pending cup draw — its safety timeout must not fire mid-match.
+    cancelPendingCupDraw(game);
 
     // Lock state immediately so no second call can enter here
     game.matchState = "running_first_half";
@@ -2598,8 +2626,19 @@ async function checkAllReady(game) {
     // Resolve any auctions that started during half-time so their timers
     // cannot interrupt second-half simulation.
     finalizeAllRunningAuctions(game);
+    // Also cancel any pending cup draw.
+    cancelPendingCupDraw(game);
     game.matchState = "playing_second_half";
     await processSegment(game, 46, 90, "idle");
+    // If a cup draw was deferred because coaches kicked off while it was pending,
+    // trigger it now that the match has fully ended.
+    if (game.deferredCupRound != null) {
+      const r = game.deferredCupRound;
+      game.deferredCupRound = null;
+      startCupRound(game, r).catch((e) =>
+        console.error(`[${game.roomCode}] Deferred cup draw error:`, e),
+      );
+    }
   }
 }
 
