@@ -200,7 +200,11 @@ function loadSavedSession() {
 
 function hasSeenWelcome(coachName, roomCode) {
   try {
-    return window.localStorage.getItem(`cashball_welcome:${coachName}:${roomCode}`) === "1";
+    return (
+      window.localStorage.getItem(
+        `cashball_welcome:${coachName}:${roomCode}`,
+      ) === "1"
+    );
   } catch {
     return false;
   }
@@ -208,7 +212,10 @@ function hasSeenWelcome(coachName, roomCode) {
 
 function markWelcomeSeen(coachName, roomCode) {
   try {
-    window.localStorage.setItem(`cashball_welcome:${coachName}:${roomCode}`, "1");
+    window.localStorage.setItem(
+      `cashball_welcome:${coachName}:${roomCode}`,
+      "1",
+    );
   } catch {
     // Ignore storage failures.
   }
@@ -550,7 +557,11 @@ function App() {
     socket.on("systemMessage", (msg) => addToast(msg));
     socket.on("teamAssigned", (data) => {
       const currentMe = meRef.current;
-      if (currentMe?.name && currentMe?.roomCode && !hasSeenWelcome(currentMe.name, currentMe.roomCode)) {
+      if (
+        currentMe?.name &&
+        currentMe?.roomCode &&
+        !hasSeenWelcome(currentMe.name, currentMe.roomCode)
+      ) {
         setWelcomeModal({ teamName: data.teamName });
       }
     });
@@ -1791,10 +1802,7 @@ function App() {
               className="text-xl md:text-3xl font-black tracking-tighter"
               style={{ color: teamInfo?.color_secondary || "#ffffff" }}
             >
-              CashBall{" "}
-              <span className="opacity-80">
-                {String(seasonYear).slice(2)}/{String(seasonYear + 1).slice(2)}
-              </span>
+              CashBall 26/27
             </h1>
             <p
               className="text-sm md:text-base font-bold uppercase"
@@ -3944,13 +3952,18 @@ function App() {
         <div className="fixed inset-0 z-200 bg-zinc-950/90 backdrop-blur-sm flex items-center justify-center p-4">
           <div className="w-full max-w-sm bg-zinc-900 border border-amber-500/40 rounded-3xl shadow-2xl overflow-hidden">
             <div className="bg-linear-to-r from-amber-900/40 to-zinc-900 px-6 py-5 border-b border-amber-700/30 text-center">
-              <p className="text-xs text-amber-400 uppercase font-black tracking-widest mb-2">Bem-vindo ao CashBall!</p>
+              <p className="text-xs text-amber-400 uppercase font-black tracking-widest mb-2">
+                Bem-vindo ao CashBall!
+              </p>
               <h2 className="text-3xl font-black text-white">Parabéns! 🎉</h2>
             </div>
             <div className="p-6 text-center space-y-4">
               <p className="text-zinc-300 font-bold text-lg leading-relaxed">
                 Foste contratado pelo{" "}
-                <span className="text-amber-400 font-black">{welcomeModal.teamName}</span>!
+                <span className="text-amber-400 font-black">
+                  {welcomeModal.teamName}
+                </span>
+                !
               </p>
               <p className="text-zinc-500 text-sm">
                 Começa a gerir o teu clube e leva-o até ao topo da tabela.
