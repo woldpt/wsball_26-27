@@ -545,7 +545,6 @@ function App() {
           attendance: null,
         })),
       });
-      setMatchweekCount(data.season);
       setShowHalftimePanel(false);
       setLiveMinute(45);
       setIsPlayingMatch(true);

@@ -112,10 +112,14 @@ db.serialize(() => {
   db.run("DELETE FROM teams");
   db.run("DELETE FROM managers");
   db.run("DELETE FROM game_state");
+  db.run("DELETE FROM cup_matches", () => {});
+  db.run("DELETE FROM palmares", () => {});
   // reset sqlite autoincrement sequences so inserted IDs start predictable at 1
   db.run("DELETE FROM sqlite_sequence WHERE name='players'");
   db.run("DELETE FROM sqlite_sequence WHERE name='teams'");
   db.run("DELETE FROM sqlite_sequence WHERE name='managers'");
+  db.run("DELETE FROM sqlite_sequence WHERE name='cup_matches'", () => {});
+  db.run("DELETE FROM sqlite_sequence WHERE name='palmares'", () => {});
 
   if (allTeamsData && allTeamsData.length > 0) {
     console.log(

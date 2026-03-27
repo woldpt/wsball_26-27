@@ -110,7 +110,16 @@ function getGame(roomCode, onReady) {
     cupRound: 0, // 0 = no cup in progress; 1-5 = current round
     cupState: "idle", // idle | draw | playing | done_round | done_cup
     cupTeamIds: [], // team IDs still alive in the cup this season
+    cupFixtures: [],
+    cupHumanInCup: false,
     cupDrawAcks: new Set(), // socket IDs that acknowledged the current draw
+    cupRuntime: {
+      phaseToken: "",
+      drawPayload: null,
+      halftimePayload: null,
+      secondHalfPayload: null,
+      fixtures: [],
+    },
     lockedCoaches: new Set(), // names of all human coaches ever in this room (lock is permanent once >= 2)
     globalMarket: [],
     fixtures: [],
@@ -197,36 +206,82 @@ function getGame(roomCode, onReady) {
                             if (row5) game.cupState = row5.value || "idle";
 
                             db.get(
-                              "SELECT value FROM game_state WHERE key = 'year'",
-                              (err6y, row6y) => {
-                                if (row6y) {
-                                  game.year =
-                                    parseInt(row6y.value) || 2025 + game.season;
-                                } else {
-                                  // Migrate: derive year from season for existing games
-                                  game.year = 2025 + game.season;
+                              "SELECT value FROM game_state WHERE key = 'cupRuntime'",
+                              (errCupRuntime, rowCupRuntime) => {
+                                if (rowCupRuntime && rowCupRuntime.value) {
+                                  try {
+                                    const parsed = JSON.parse(
+                                      rowCupRuntime.value,
+                                    );
+                                    if (parsed && typeof parsed === "object") {
+                                      game.cupRuntime = {
+                                        phaseToken: parsed.phaseToken || "",
+                                        drawPayload: parsed.drawPayload || null,
+                                        halftimePayload:
+                                          parsed.halftimePayload || null,
+                                        secondHalfPayload:
+                                          parsed.secondHalfPayload || null,
+                                        fixtures: Array.isArray(parsed.fixtures)
+                                          ? parsed.fixtures
+                                          : [],
+                                      };
+                                      game.cupFixtures =
+                                        game.cupRuntime.fixtures || [];
+                                    }
+                                  } catch (_) {}
+                                }
+
+                                if (game.cupState === "playing_first_half") {
+                                  game.cupState = game.cupRuntime
+                                    .halftimePayload
+                                    ? "halftime"
+                                    : "draw";
+                                }
+                                if (game.cupState === "playing_second_half") {
+                                  game.cupState = game.cupRuntime
+                                    .secondHalfPayload
+                                    ? "second_half_waiting"
+                                    : "halftime";
                                 }
 
                                 db.get(
-                                  "SELECT value FROM game_state WHERE key = 'lockedCoaches'",
-                                  (err8, row8) => {
-                                    if (row8 && row8.value) {
-                                      try {
-                                        const names = JSON.parse(row8.value);
-                                        if (Array.isArray(names)) {
-                                          game.lockedCoaches = new Set(names);
-                                        }
-                                      } catch (_) {}
+                                  "SELECT value FROM game_state WHERE key = 'year'",
+                                  (err6y, row6y) => {
+                                    if (row6y) {
+                                      game.year =
+                                        parseInt(row6y.value) ||
+                                        2025 + game.season;
+                                    } else {
+                                      // Migrate: derive year from season for existing games
+                                      game.year = 2025 + game.season;
                                     }
 
-                                    // Load free agents and transfer-listed players for market
-                                    db.all(
-                                      "SELECT * FROM players WHERE team_id IS NULL OR transfer_status != 'none' ORDER BY RANDOM() LIMIT 40",
-                                      (err7, rows) => {
-                                        if (!err7 && rows)
-                                          game.globalMarket = rows;
-                                        game.initialized = true;
-                                        if (onReady) onReady(game);
+                                    db.get(
+                                      "SELECT value FROM game_state WHERE key = 'lockedCoaches'",
+                                      (err8, row8) => {
+                                        if (row8 && row8.value) {
+                                          try {
+                                            const names = JSON.parse(
+                                              row8.value,
+                                            );
+                                            if (Array.isArray(names)) {
+                                              game.lockedCoaches = new Set(
+                                                names,
+                                              );
+                                            }
+                                          } catch (_) {}
+                                        }
+
+                                        // Load free agents and transfer-listed players for market
+                                        db.all(
+                                          "SELECT * FROM players WHERE team_id IS NULL OR transfer_status != 'none' ORDER BY RANDOM() LIMIT 40",
+                                          (err7, rows) => {
+                                            if (!err7 && rows)
+                                              game.globalMarket = rows;
+                                            game.initialized = true;
+                                            if (onReady) onReady(game);
+                                          },
+                                        );
                                       },
                                     );
                                   },
@@ -276,6 +331,20 @@ function saveGameState(game) {
   game.db.run(
     "INSERT OR REPLACE INTO game_state (key, value) VALUES ('cupState', ?)",
     [game.cupState || "idle"],
+  );
+  game.db.run(
+    "INSERT OR REPLACE INTO game_state (key, value) VALUES ('cupRuntime', ?)",
+    [
+      JSON.stringify({
+        phaseToken: game.cupRuntime?.phaseToken || "",
+        drawPayload: game.cupRuntime?.drawPayload || null,
+        halftimePayload: game.cupRuntime?.halftimePayload || null,
+        secondHalfPayload: game.cupRuntime?.secondHalfPayload || null,
+        fixtures: Array.isArray(game.cupFixtures)
+          ? game.cupFixtures
+          : game.cupRuntime?.fixtures || [],
+      }),
+    ],
   );
   game.db.run(
     "INSERT OR REPLACE INTO game_state (key, value) VALUES ('year', ?)",
