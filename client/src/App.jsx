@@ -273,6 +273,8 @@ function App() {
   const [disconnected, setDisconnected] = useState(false);
   const [joinError, setJoinError] = useState("");
   const [toasts, setToasts] = useState([]);
+  const [lockedCoaches, setLockedCoaches] = useState([]);
+  const [awaitingCoaches, setAwaitingCoaches] = useState([]);
   const joinTimerRef = React.useRef(null);
 
   const addToast = (msg) => {
@@ -410,14 +412,17 @@ function App() {
     socket.on("cupHalfTimeResults", (data) => {
       // Treat the cup halftime exactly like a league halftime:
       // reuse matchResults state so the live tab renders events and score.
-      setMatchResults({ matchweek: data.season, results: data.fixtures.map((fx) => ({
-        homeTeamId: fx.homeTeam?.id,
-        awayTeamId: fx.awayTeam?.id,
-        finalHomeGoals: fx.homeGoals,
-        finalAwayGoals: fx.awayGoals,
-        events: fx.events || [],
-        attendance: null,
-      })) });
+      setMatchResults({
+        matchweek: data.season,
+        results: data.fixtures.map((fx) => ({
+          homeTeamId: fx.homeTeam?.id,
+          awayTeamId: fx.awayTeam?.id,
+          finalHomeGoals: fx.homeGoals,
+          finalAwayGoals: fx.awayGoals,
+          events: fx.events || [],
+          attendance: null,
+        })),
+      });
       setLiveMinute(0);
       setSubsMade(0);
       setSubbedOut([]);
@@ -466,14 +471,17 @@ function App() {
     });
     socket.on("cupSecondHalfStart", (data) => {
       // Identical to matchResults but marks this as a cup second half animation.
-      setMatchResults({ matchweek: data.season, results: data.results.map((r) => ({
-        homeTeamId: r.homeTeamId,
-        awayTeamId: r.awayTeamId,
-        finalHomeGoals: r.finalHomeGoals,
-        finalAwayGoals: r.finalAwayGoals,
-        events: r.events || [],
-        attendance: null,
-      })) });
+      setMatchResults({
+        matchweek: data.season,
+        results: data.results.map((r) => ({
+          homeTeamId: r.homeTeamId,
+          awayTeamId: r.awayTeamId,
+          finalHomeGoals: r.finalHomeGoals,
+          finalAwayGoals: r.finalAwayGoals,
+          events: r.events || [],
+          attendance: null,
+        })),
+      });
       setMatchweekCount(data.season);
       setShowHalftimePanel(false);
       setLiveMinute(45);
@@ -512,6 +520,17 @@ function App() {
           positions: data.tactic.positions || prev.positions || {},
         }));
       }
+      if (Array.isArray(data.lockedCoaches)) {
+        setLockedCoaches(data.lockedCoaches);
+      }
+    });
+
+    socket.on("roomLocked", ({ coaches }) => {
+      setLockedCoaches(coaches || []);
+    });
+
+    socket.on("awaitingCoaches", (offline) => {
+      setAwaitingCoaches(offline || []);
     });
 
     socket.on("halfTimeResults", (data) => {
@@ -978,10 +997,7 @@ function App() {
     if (!cupPenaltyPopup) return;
     const total = (cupPenaltyPopup.kicks || []).length;
     if (cupPenaltyKickIdx >= total) return;
-    const timer = setTimeout(
-      () => setCupPenaltyKickIdx((i) => i + 1),
-      2000,
-    );
+    const timer = setTimeout(() => setCupPenaltyKickIdx((i) => i + 1), 2000);
     return () => clearTimeout(timer);
   }, [cupPenaltyPopup, cupPenaltyKickIdx]);
 
@@ -1818,11 +1834,12 @@ function App() {
                         ? `Jogador lesionado: ${matchAction.injuredPlayer?.name || "?"}`
                         : "Escolhe o jogador para marcar o penalty"}
                     </p>
-                    {matchAction.type === "injury" && injuryCountdown !== null && (
-                      <p className="text-center text-amber-400 font-black text-sm mb-4 tracking-wide">
-                        Auto-substituição em {injuryCountdown}s
-                      </p>
-                    )}
+                    {matchAction.type === "injury" &&
+                      injuryCountdown !== null && (
+                        <p className="text-center text-amber-400 font-black text-sm mb-4 tracking-wide">
+                          Auto-substituição em {injuryCountdown}s
+                        </p>
+                      )}
 
                     <div className="flex-1 overflow-y-auto bg-zinc-900/60 border border-zinc-800 rounded-2xl p-4 mb-5">
                       <div className="space-y-2">
@@ -2072,9 +2089,17 @@ function App() {
                 </div>
                 <h2 className="text-2xl font-black text-amber-500 mb-8 pb-4 border-b border-zinc-800">
                   {isCupMatch ? (
-                    <>🏆 Taça · {cupMatchRoundName}{cupExtraTimeBadge ? " — Prolongamento" : ""}</>
+                    <>
+                      🏆 Taça · {cupMatchRoundName}
+                      {cupExtraTimeBadge ? " — Prolongamento" : ""}
+                    </>
                   ) : (
-                    <>Jornada em Direto{" "}{liveMinute === 45 && !isPlayingMatch ? "(INTERVALO)" : ""}</>
+                    <>
+                      Jornada em Direto{" "}
+                      {liveMinute === 45 && !isPlayingMatch
+                        ? "(INTERVALO)"
+                        : ""}
+                    </>
                   )}
                 </h2>
 
@@ -2472,7 +2497,9 @@ function App() {
                         {formatCurrency(
                           (teamInfo?.stadium_capacity || 5000) * 10,
                         )}{" "}
-                        <span className="text-zinc-500 text-sm font-normal">(máx.)</span>
+                        <span className="text-zinc-500 text-sm font-normal">
+                          (máx.)
+                        </span>
                       </span>
                     </div>
 
@@ -2941,6 +2968,16 @@ function App() {
                     ⚠️ Desligado — a reconectar...
                   </p>
                 )}
+                {!disconnected && awaitingCoaches.length > 0 && (
+                  <div className="w-full mb-3 bg-amber-950/60 border border-amber-700 rounded-2xl px-4 py-3 text-center">
+                    <p className="text-amber-400 text-xs font-black uppercase tracking-widest leading-tight">
+                      ⏸ Jogo pausado
+                    </p>
+                    <p className="text-amber-300 text-xs mt-1">
+                      A aguardar: {awaitingCoaches.join(", ")}
+                    </p>
+                  </div>
+                )}
                 {activeTab === "squad" && (
                   <div className="w-full mb-4 space-y-4">
                     <div className="p-4 rounded-2xl border border-zinc-800 bg-zinc-950/80">
@@ -3077,9 +3114,15 @@ function App() {
                                     style={{ width: `${morale}%` }}
                                   />
                                 </div>
-                                <span className={`text-xs font-black tracking-wider w-10 text-right ${
-                                  morale > 75 ? "text-emerald-400" : morale >= 50 ? "text-amber-400" : "text-red-400"
-                                }`}>
+                                <span
+                                  className={`text-xs font-black tracking-wider w-10 text-right ${
+                                    morale > 75
+                                      ? "text-emerald-400"
+                                      : morale >= 50
+                                        ? "text-amber-400"
+                                        : "text-red-400"
+                                  }`}
+                                >
                                   {moraleLabel}
                                 </span>
                               </div>
@@ -3622,12 +3665,8 @@ function App() {
 
       {/* ── PENALTY SHOOTOUT POPUP ───────────────────────────────────────────── */}
       {cupPenaltyPopup && (
-        <div
-          className="fixed inset-0 z-150 bg-zinc-950/92 backdrop-blur-sm flex items-center justify-center p-4"
-        >
-          <div
-            className="w-full max-w-sm rounded-3xl border border-zinc-800 bg-zinc-900 shadow-2xl overflow-hidden"
-          >
+        <div className="fixed inset-0 z-150 bg-zinc-950/92 backdrop-blur-sm flex items-center justify-center p-4">
+          <div className="w-full max-w-sm rounded-3xl border border-zinc-800 bg-zinc-900 shadow-2xl overflow-hidden">
             <div className="bg-zinc-800/60 px-6 py-4 border-b border-zinc-800 text-center">
               <p className="text-xs text-zinc-400 uppercase font-black tracking-widest">
                 Taça de Portugal
@@ -3668,24 +3707,28 @@ function App() {
               </div>
             </div>
             <div className="p-4 max-h-72 overflow-y-auto space-y-1">
-              {(cupPenaltyPopup.kicks || []).slice(0, cupPenaltyKickIdx).map((kick, idx) => (
-                <div
-                  key={idx}
-                  className={`flex items-center gap-3 text-xs font-bold rounded-lg px-3 py-1.5 transition-all ${kick.team === "home" ? "bg-zinc-800/60" : "bg-zinc-950/60"}`}
-                >
-                  <span className="text-base">{kick.scored ? "⚽" : "❌"}</span>
-                  <span
-                    className={`${kick.team === "home" ? "text-right flex-1" : "text-left flex-1 order-last"}`}
+              {(cupPenaltyPopup.kicks || [])
+                .slice(0, cupPenaltyKickIdx)
+                .map((kick, idx) => (
+                  <div
+                    key={idx}
+                    className={`flex items-center gap-3 text-xs font-bold rounded-lg px-3 py-1.5 transition-all ${kick.team === "home" ? "bg-zinc-800/60" : "bg-zinc-950/60"}`}
                   >
-                    {kick.playerName}
-                  </span>
-                  {kick.suddenDeath && (
-                    <span className="text-amber-400 text-[10px] font-black shrink-0">
-                      SD
+                    <span className="text-base">
+                      {kick.scored ? "⚽" : "❌"}
                     </span>
-                  )}
-                </div>
-              ))}
+                    <span
+                      className={`${kick.team === "home" ? "text-right flex-1" : "text-left flex-1 order-last"}`}
+                    >
+                      {kick.playerName}
+                    </span>
+                    {kick.suddenDeath && (
+                      <span className="text-amber-400 text-[10px] font-black shrink-0">
+                        SD
+                      </span>
+                    )}
+                  </div>
+                ))}
               {cupPenaltyKickIdx < (cupPenaltyPopup.kicks || []).length && (
                 <div className="text-center py-2">
                   <span className="animate-pulse text-amber-400 text-xs font-black uppercase tracking-widest">
@@ -3697,7 +3740,10 @@ function App() {
             {cupPenaltyKickIdx >= (cupPenaltyPopup.kicks || []).length && (
               <div className="px-6 pb-6 pt-2">
                 <button
-                  onClick={() => { setCupPenaltyPopup(null); setCupPenaltyKickIdx(0); }}
+                  onClick={() => {
+                    setCupPenaltyPopup(null);
+                    setCupPenaltyKickIdx(0);
+                  }}
                   className="w-full rounded-2xl bg-amber-500 px-4 py-3 font-black uppercase tracking-widest text-zinc-950 hover:bg-amber-400"
                 >
                   Fechar

@@ -223,7 +223,7 @@ async function calculateMatchAttendance(db, homeTeamId) {
   }
 
   const maxFormScore = Math.max(recentMatches.length, 1) * 3;
-  const baseOccupancy = 0.35 + (formScore / Math.max(maxFormScore, 15)) * 0.50;
+  const baseOccupancy = 0.35 + (formScore / Math.max(maxFormScore, 15)) * 0.5;
   const noise = (Math.random() - 0.5) * 0.16;
   const occupancy = Math.max(0.15, Math.min(1.0, baseOccupancy + noise));
   return Math.floor(capacity * occupancy);
@@ -421,22 +421,22 @@ const SEASON_CALENDAR = [
   { type: "league", matchweek: 1 },
   { type: "league", matchweek: 2 },
   { type: "league", matchweek: 3 },
-  { type: "cup",    round: 1, roundName: "16 avos de final", teamsIn: 32 },
+  { type: "cup", round: 1, roundName: "16 avos de final", teamsIn: 32 },
   { type: "league", matchweek: 4 },
   { type: "league", matchweek: 5 },
   { type: "league", matchweek: 6 },
-  { type: "cup",    round: 2, roundName: "Oitavos de final",  teamsIn: 16 },
+  { type: "cup", round: 2, roundName: "Oitavos de final", teamsIn: 16 },
   { type: "league", matchweek: 7 },
   { type: "league", matchweek: 8 },
   { type: "league", matchweek: 9 },
-  { type: "cup",    round: 3, roundName: "Quartos de final",  teamsIn: 8 },
+  { type: "cup", round: 3, roundName: "Quartos de final", teamsIn: 8 },
   { type: "league", matchweek: 10 },
   { type: "league", matchweek: 11 },
-  { type: "cup",    round: 4, roundName: "Meias-finais",      teamsIn: 4 },
+  { type: "cup", round: 4, roundName: "Meias-finais", teamsIn: 4 },
   { type: "league", matchweek: 12 },
   { type: "league", matchweek: 13 },
   { type: "league", matchweek: 14 },
-  { type: "cup",    round: 5, roundName: "Final",             teamsIn: 2 },
+  { type: "cup", round: 5, roundName: "Final", teamsIn: 2 },
 ];
 
 // ─── SEASON END ───────────────────────────────────────────────────────────────
@@ -595,8 +595,14 @@ async function applySeasonEnd(game) {
   game.leagueAnimAcks = new Set();
   game.cupSecondHalfAcks = new Set();
   game.cupSecondHalfResolve = null;
-  if (game._leagueAnimTimeout) { clearTimeout(game._leagueAnimTimeout); game._leagueAnimTimeout = null; }
-  if (game._cupSecondHalfTimeout) { clearTimeout(game._cupSecondHalfTimeout); game._cupSecondHalfTimeout = null; }
+  if (game._leagueAnimTimeout) {
+    clearTimeout(game._leagueAnimTimeout);
+    game._leagueAnimTimeout = null;
+  }
+  if (game._cupSecondHalfTimeout) {
+    clearTimeout(game._cupSecondHalfTimeout);
+    game._cupSecondHalfTimeout = null;
+  }
   saveGameState(game);
 
   // Broadcast fresh teams data
@@ -757,7 +763,15 @@ async function simulateCupFirstHalf(game, round) {
     fixture._t2 = p2 ? p2.tactic : { formation: "4-4-2", style: "Balanced" };
 
     const ctx = { game, io, matchweek: game.matchweek };
-    await simulateMatchSegment(game.db, fixture, fixture._t1, fixture._t2, 1, 45, ctx);
+    await simulateMatchSegment(
+      game.db,
+      fixture,
+      fixture._t1,
+      fixture._t2,
+      1,
+      45,
+      ctx,
+    );
 
     fixtures.push(fixture);
   }
@@ -1712,11 +1726,24 @@ io.on("connection", (socket) => {
 
     game.cupDrawAcks.add(socket.id);
 
-    // Check if all connected humans have acknowledged
-    const connectedPlayers = getPlayerList(game);
-    const allAcked = connectedPlayers.every(
-      (p) => !p.socketId || game.cupDrawAcks.has(p.socketId),
-    );
+    // Check if all required humans have acknowledged
+    let allAcked;
+    if (game.lockedCoaches.size >= 2) {
+      // Multi-human room: every locked coach that is currently online must ack.
+      // If any locked coach is offline, do not proceed (they will rejoin and ack).
+      const anyOffline = [...game.lockedCoaches].some(
+        (name) => !game.playersByName[name]?.socketId,
+      );
+      if (anyOffline) return;
+      allAcked = [...game.lockedCoaches].every((name) =>
+        game.cupDrawAcks.has(game.playersByName[name]?.socketId),
+      );
+    } else {
+      const connectedPlayers = getPlayerList(game);
+      allAcked = connectedPlayers.every(
+        (p) => !p.socketId || game.cupDrawAcks.has(p.socketId),
+      );
+    }
     if (allAcked) {
       if (game._cupDrawTimeout) clearTimeout(game._cupDrawTimeout);
       simulateCupFirstHalf(game, game.cupRound);
@@ -1733,13 +1760,38 @@ io.on("connection", (socket) => {
 
     game.cupHalfTimeAcks.add(socket.id);
 
-    const connectedPlayers = getPlayerList(game);
-    const cupHumans = connectedPlayers.filter(
-      (p) => p.socketId && game.cupTeamIds.includes(p.teamId),
-    );
-    const allReady = cupHumans.every((p) =>
-      game.cupHalfTimeAcks.has(p.socketId),
-    );
+    let allReady;
+    if (game.lockedCoaches.size >= 2) {
+      // Multi-human room: every locked coach that is in the cup must be online AND have acked.
+      // If any locked coach is offline, do not proceed.
+      const cupLocked = [...game.lockedCoaches].filter(
+        (name) =>
+          game.playersByName[name] &&
+          game.cupTeamIds.includes(game.playersByName[name].teamId),
+      );
+      if (cupLocked.length === 0) {
+        // No locked coaches are in the cup — normal flow
+        const connectedPlayers = getPlayerList(game);
+        const cupHumans = connectedPlayers.filter(
+          (p) => p.socketId && game.cupTeamIds.includes(p.teamId),
+        );
+        allReady = cupHumans.every((p) => game.cupHalfTimeAcks.has(p.socketId));
+      } else {
+        const anyOffline = cupLocked.some(
+          (name) => !game.playersByName[name]?.socketId,
+        );
+        if (anyOffline) return;
+        allReady = cupLocked.every((name) =>
+          game.cupHalfTimeAcks.has(game.playersByName[name]?.socketId),
+        );
+      }
+    } else {
+      const connectedPlayers = getPlayerList(game);
+      const cupHumans = connectedPlayers.filter(
+        (p) => p.socketId && game.cupTeamIds.includes(p.teamId),
+      );
+      allReady = cupHumans.every((p) => game.cupHalfTimeAcks.has(p.socketId));
+    }
     if (allReady) {
       if (game._cupHalftimeTimeout) clearTimeout(game._cupHalftimeTimeout);
       simulateCupSecondHalf(game, game.cupRound);
@@ -1779,7 +1831,9 @@ io.on("connection", (socket) => {
     game.cupSecondHalfAcks.add(socket.id);
 
     const connected = getPlayerList(game).filter((p) => p.socketId);
-    const allDone = connected.every((p) => game.cupSecondHalfAcks.has(p.socketId));
+    const allDone = connected.every((p) =>
+      game.cupSecondHalfAcks.has(p.socketId),
+    );
     if (allDone) {
       if (game._cupSecondHalfTimeout) clearTimeout(game._cupSecondHalfTimeout);
       const resolve = game.cupSecondHalfResolve;
@@ -1884,6 +1938,17 @@ io.on("connection", (socket) => {
     }
     bindSocket(game, name, socket.id);
 
+    // ── MULTI-HUMAN LOCK ───────────────────────────────────────────────────
+    // Add this coach to the permanent lock set. Once the room has ever had >= 2
+    // human coaches they are all locked in and the game only progresses when
+    // every member of lockedCoaches is connected AND ready.
+    game.lockedCoaches.add(name);
+    if (game.lockedCoaches.size >= 2) {
+      saveGameState(game);
+      io.to(roomCode).emit("roomLocked", { coaches: [...game.lockedCoaches] });
+    }
+    // ── END MULTI-HUMAN LOCK ───────────────────────────────────────────────
+
     game.db.all("SELECT * FROM teams", (err, teams) =>
       socket.emit("teamsData", teams),
     );
@@ -1899,10 +1964,15 @@ io.on("connection", (socket) => {
       cupState: game.cupState,
       year: game.year,
       tactic: game.playersByName[name]?.tactic || null,
+      lockedCoaches: [...game.lockedCoaches],
     });
 
     // If a cup halftime is in progress, re-send the halftime data to the rejoining player
-    if (game.cupState === "halftime" && Array.isArray(game.cupFixtures) && game.cupFixtures.length) {
+    if (
+      game.cupState === "halftime" &&
+      Array.isArray(game.cupFixtures) &&
+      game.cupFixtures.length
+    ) {
       Promise.all(
         game.cupFixtures.map(async (fx) => {
           const home = await runGet(
@@ -1933,6 +2003,7 @@ io.on("connection", (socket) => {
       });
     }
     io.to(roomCode).emit("playerListUpdate", getPlayerList(game));
+    emitAwaitingCoaches(game);
 
     game.db.all(
       "SELECT p.id, p.name, p.position, p.goals, p.team_id, t.name as team_name, t.color_primary, t.color_secondary FROM players p LEFT JOIN teams t ON p.team_id = t.id WHERE p.goals > 0 ORDER BY p.goals DESC, p.skill DESC LIMIT 20",
@@ -2291,23 +2362,40 @@ io.on("connection", (socket) => {
     if (game) {
       unbindSocket(game, socket.id);
       io.to(game.roomCode).emit("playerListUpdate", getPlayerList(game));
+      emitAwaitingCoaches(game);
     }
   });
 });
 
 // ── MATCH FLOW ────────────────────────────────────────────────────────────────
 
+// Helper: broadcast which locked coaches are currently offline.
+function emitAwaitingCoaches(game) {
+  if (game.lockedCoaches.size < 2) return;
+  const offline = [...game.lockedCoaches].filter(
+    (name) => !game.playersByName[name]?.socketId,
+  );
+  io.to(game.roomCode).emit("awaitingCoaches", offline);
+}
+
 // Guard flag: prevents checkAllReady from starting the weekly loop a second
 // time if it fires while the previous loop's async DB work is still in flight.
 const weeklyLoopRunning = {};
 
 async function checkAllReady(game) {
-  // Only consider currently connected players
-  const connectedPlayers = getPlayerList(game);
-  if (connectedPlayers.length === 0) return;
-
-  const allReady = connectedPlayers.every((p) => p.ready);
-  if (!allReady) return;
+  if (game.lockedCoaches.size >= 2) {
+    // Multi-human room: every locked coach must be online AND ready.
+    const allReady = [...game.lockedCoaches].every(
+      (name) =>
+        game.playersByName[name]?.socketId && game.playersByName[name]?.ready,
+    );
+    if (!allReady) return;
+  } else {
+    // Single-human (or no humans): only consider currently connected players.
+    const connectedPlayers = getPlayerList(game);
+    if (connectedPlayers.length === 0) return;
+    if (!connectedPlayers.every((p) => p.ready)) return;
+  }
 
   console.log(
     `[${game.roomCode}] All players ready — matchweek=${game.matchweek} matchState=${game.matchState}`,
@@ -2454,10 +2542,10 @@ async function processSegment(game, startMin, endMin, nextState) {
         for (const match of game.fixtures) {
           const revenue = (match.attendance || 0) * 10;
           if (revenue > 0) {
-            game.db.run(
-              "UPDATE teams SET budget = budget + ? WHERE id = ?",
-              [revenue, match.homeTeamId],
-            );
+            game.db.run("UPDATE teams SET budget = budget + ? WHERE id = ?", [
+              revenue,
+              match.homeTeamId,
+            ]);
           }
         }
 
@@ -2491,7 +2579,8 @@ async function processSegment(game, startMin, endMin, nextState) {
                 // Safety timeout: 90 s in case a client never responds.
                 game.pendingCupRound = cupRound;
                 game.leagueAnimAcks = new Set();
-                if (game._leagueAnimTimeout) clearTimeout(game._leagueAnimTimeout);
+                if (game._leagueAnimTimeout)
+                  clearTimeout(game._leagueAnimTimeout);
                 game._leagueAnimTimeout = setTimeout(async () => {
                   if (game.pendingCupRound != null) {
                     const r = game.pendingCupRound;
@@ -2500,7 +2589,10 @@ async function processSegment(game, startMin, endMin, nextState) {
                     try {
                       await startCupRound(game, r);
                     } catch (cupErr) {
-                      console.error(`[${game.roomCode}] Cup round error (timeout fallback):`, cupErr);
+                      console.error(
+                        `[${game.roomCode}] Cup round error (timeout fallback):`,
+                        cupErr,
+                      );
                     }
                   }
                 }, 90000);

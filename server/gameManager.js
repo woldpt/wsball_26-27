@@ -110,6 +110,7 @@ function getGame(roomCode, onReady) {
     cupState: "idle", // idle | draw | playing | done_round | done_cup
     cupTeamIds: [], // team IDs still alive in the cup this season
     cupDrawAcks: new Set(), // socket IDs that acknowledged the current draw
+    lockedCoaches: new Set(), // names of all human coaches ever in this room (lock is permanent once >= 2)
     globalMarket: [],
     fixtures: [],
     auctions: {},
@@ -124,10 +125,16 @@ function getGame(roomCode, onReady) {
     () => {
       ensurePlayerSchema(db, () => {
         // Ensure morale column exists in teams (migration for existing DBs).
-        db.run("ALTER TABLE teams ADD COLUMN morale INTEGER DEFAULT 75", () => {});
+        db.run(
+          "ALTER TABLE teams ADD COLUMN morale INTEGER DEFAULT 75",
+          () => {},
+        );
         // Ensure attendance column exists in matches (migration for existing DBs).
         // Callback suppresses the "duplicate column" error on existing DBs.
-        db.run("ALTER TABLE matches ADD COLUMN attendance INTEGER DEFAULT 0", () => {});
+        db.run(
+          "ALTER TABLE matches ADD COLUMN attendance INTEGER DEFAULT 0",
+          () => {},
+        );
         // Ensure cup/palmares tables added after initial schema
         db.run(`CREATE TABLE IF NOT EXISTS cup_matches (
           id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -197,13 +204,28 @@ function getGame(roomCode, onReady) {
                                   game.year = 2025 + game.season;
                                 }
 
-                                // Load free agents and transfer-listed players for market
-                                db.all(
-                                  "SELECT * FROM players WHERE team_id IS NULL OR transfer_status != 'none' ORDER BY RANDOM() LIMIT 40",
-                                  (err7, rows) => {
-                                    if (!err7 && rows) game.globalMarket = rows;
-                                    game.initialized = true;
-                                    if (onReady) onReady(game);
+                                db.get(
+                                  "SELECT value FROM game_state WHERE key = 'lockedCoaches'",
+                                  (err8, row8) => {
+                                    if (row8 && row8.value) {
+                                      try {
+                                        const names = JSON.parse(row8.value);
+                                        if (Array.isArray(names)) {
+                                          game.lockedCoaches = new Set(names);
+                                        }
+                                      } catch (_) {}
+                                    }
+
+                                    // Load free agents and transfer-listed players for market
+                                    db.all(
+                                      "SELECT * FROM players WHERE team_id IS NULL OR transfer_status != 'none' ORDER BY RANDOM() LIMIT 40",
+                                      (err7, rows) => {
+                                        if (!err7 && rows)
+                                          game.globalMarket = rows;
+                                        game.initialized = true;
+                                        if (onReady) onReady(game);
+                                      },
+                                    );
                                   },
                                 );
                               },
@@ -255,6 +277,10 @@ function saveGameState(game) {
   game.db.run(
     "INSERT OR REPLACE INTO game_state (key, value) VALUES ('year', ?)",
     [String(game.year || 2026)],
+  );
+  game.db.run(
+    "INSERT OR REPLACE INTO game_state (key, value) VALUES ('lockedCoaches', ?)",
+    [JSON.stringify([...game.lockedCoaches])],
   );
 }
 
