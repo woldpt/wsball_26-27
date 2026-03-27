@@ -330,6 +330,7 @@ function App() {
   const [confirmedSubs, setConfirmedSubs] = useState([]); // [{out: id, in: id}]
   const [openStatusPickerId, setOpenStatusPickerId] = useState(null);
   const meRef = React.useRef(null);
+  const isPlayingMatchRef = React.useRef(false);
   const selectedTeamRef = React.useRef(null);
   const marketPairsRef = React.useRef([]);
   // goalFlashRef: { [key]: timestamp } – key = `${homeId}_${awayId}_home|away`
@@ -365,6 +366,17 @@ function App() {
     }
   }, [name, joinMode, adminSession]); // eslint-disable-line react-hooks/exhaustive-deps
 
+  // Keep isPlayingMatchRef in sync and force-close auction modal when a match starts.
+  useEffect(() => {
+    isPlayingMatchRef.current = isPlayingMatch;
+    if (isPlayingMatch) {
+      setSelectedAuctionPlayer(null);
+      setAuctionBid("");
+      setMyAuctionBid(null);
+      setAuctionResult(null);
+    }
+  }, [isPlayingMatch]);
+
   // BUG-07 FIX: All socket listeners in a single effect with [] dep so they're
   // registered exactly once and cleaned up correctly on unmount.
   useEffect(() => {
@@ -375,6 +387,8 @@ function App() {
     socket.on("mySquad", (data) => setMySquad(data));
     socket.on("marketUpdate", (data) => setMarketPairs(data));
     socket.on("auctionStarted", (auctionData) => {
+      // Never open auction modal during an active match
+      if (isPlayingMatchRef.current) return;
       // Auto-open auction modal for all coaches with full player card
       setSelectedAuctionPlayer(auctionData);
       setAuctionBid("");

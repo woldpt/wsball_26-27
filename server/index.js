@@ -1124,6 +1124,24 @@ function isMatchInProgress(game) {
     game.matchState === "playing_second_half";
 }
 
+/**
+ * Immediately resolve all running auctions before a match half starts.
+ * Kills every active timer so no auction socket event can fire during
+ * first-half or second-half simulation. Called at both kick-offs.
+ */
+function finalizeAllRunningAuctions(game) {
+  if (!game.auctions) return;
+  const playerIds = Object.keys(game.auctions);
+  if (playerIds.length === 0) return;
+  for (const playerId of playerIds) {
+    if (game.auctionTimers?.[playerId]) {
+      clearTimeout(game.auctionTimers[playerId]);
+      delete game.auctionTimers[playerId];
+    }
+    finalizeAuction(game, Number(playerId));
+  }
+}
+
 function listPlayerOnMarket(game, playerId, mode, price, callback) {
   // Block auctions during matches — queue them for after full-time
   if (mode === "auction" && isMatchInProgress(game)) {
@@ -2538,6 +2556,9 @@ async function checkAllReady(game) {
     if (weeklyLoopRunning[game.roomCode]) return;
     weeklyLoopRunning[game.roomCode] = true;
 
+    // Resolve all open auctions now — their timers must not fire mid-match.
+    finalizeAllRunningAuctions(game);
+
     // Lock state immediately so no second call can enter here
     game.matchState = "running_first_half";
 
@@ -2573,6 +2594,10 @@ async function checkAllReady(game) {
   } else if (game.matchState === "halftime") {
     // BUG-06 FIX: Prevent double execution if checkAllReady fires twice.
     // Immediately lock state to prevent re-entry.
+    //
+    // Resolve any auctions that started during half-time so their timers
+    // cannot interrupt second-half simulation.
+    finalizeAllRunningAuctions(game);
     game.matchState = "playing_second_half";
     await processSegment(game, 46, 90, "idle");
   }
