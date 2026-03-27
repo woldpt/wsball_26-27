@@ -1797,14 +1797,14 @@ function App() {
   const HOME_GAMES_PER_SEASON = 7;
   // Rough estimate of home games played so far (completedJornada / 2)
   const homeGamesPlayed = Math.round(completedJornada / 2);
-  const homeGamesRemaining = Math.max(0, HOME_GAMES_PER_SEASON - homeGamesPlayed);
+  const homeGamesRemaining = Math.max(
+    0,
+    HOME_GAMES_PER_SEASON - homeGamesPlayed,
+  );
   const matchweeksRemaining = Math.max(0, 14 - completedJornada);
   const capacityRevPerGame = (teamInfo?.stadium_capacity || 5000) * 10;
-  const projectedSeasonTickets = capacityRevPerGame * HOME_GAMES_PER_SEASON;
-  const projectedSeasonWages = totalWeeklyWage * 14;
   const loanAmount = teamInfo?.loan_amount || 0;
   const loanInterestPerWeek = Math.round(loanAmount * 0.01);
-  const projectedSeasonInterest = loanInterestPerWeek * 14;
   const currentBudget = teamInfo?.budget || 0;
   const projectedFinalBudget =
     currentBudget +
@@ -1985,168 +1985,156 @@ function App() {
 
                 {/* BUG-11 FIX: showHalftimePanel (not liveMinute===45) controls this overlay */}
                 {showHalftimePanel && !isPlayingMatch && (
-                  <div className="absolute inset-0 bg-zinc-950/97 z-50 p-3 flex flex-col backdrop-blur-sm overflow-y-auto">
-                    <h2 className="text-lg font-black text-amber-500 mb-1 tracking-widest text-center uppercase">
-                      INTERVALO
-                    </h2>
-                    <p className="text-center text-zinc-500 font-bold mb-3 text-xs">
-                      Substituições disponíveis: {MAX_MATCH_SUBS - subsMade}/
-                      {MAX_MATCH_SUBS}
-                    </p>
+                  <div className="absolute inset-0 bg-zinc-950 z-50 flex flex-col overflow-y-auto">
+                    {/* Header */}
+                    <div className="flex items-center justify-between px-4 py-2.5 border-b border-zinc-800">
+                      <span className="text-amber-500 font-black uppercase tracking-widest text-sm">
+                        INTERVALO
+                      </span>
+                      <span className="text-zinc-500 text-xs font-bold">
+                        Subs: {MAX_MATCH_SUBS - subsMade}/{MAX_MATCH_SUBS}
+                      </span>
+                    </div>
 
-                    {/* Player columns */}
-                    <div className="grid grid-cols-2 gap-2 mb-2">
-                      {/* Titulares */}
-                      <div>
-                        <p className="text-emerald-500 font-black uppercase tracking-widest text-center text-[10px] mb-1">
+                    {/* Two-column player list */}
+                    <div className="flex flex-1 divide-x divide-zinc-800 min-h-0">
+                      {/* Em Campo */}
+                      <div className="flex-1 flex flex-col min-w-0">
+                        <p className="text-[10px] font-black uppercase tracking-widest text-emerald-500 px-3 py-1.5 border-b border-zinc-800">
                           Em Campo
                         </p>
-                        <div className="space-y-0.5">
-                          {annotatedSquad
-                            .filter(
-                              (p) =>
-                                tactic.positions[p.id] === "Titular" &&
-                                !subbedOut.includes(p.id),
-                            )
-                            .map((p) => (
+                        {annotatedSquad
+                          .filter(
+                            (p) =>
+                              tactic.positions[p.id] === "Titular" &&
+                              !subbedOut.includes(p.id),
+                          )
+                          .map((p) => (
+                            <div
+                              key={p.id}
+                              onClick={() =>
+                                subsMade < MAX_MATCH_SUBS &&
+                                handleSelectOut(p.id)
+                              }
+                              className={`flex items-center gap-2 px-3 py-1.5 border-b border-zinc-800/50 text-xs font-bold select-none transition-colors ${
+                                swapSource === p.id
+                                  ? "bg-red-500/15 text-red-200"
+                                  : subsMade < MAX_MATCH_SUBS
+                                    ? "cursor-pointer hover:bg-zinc-800/60"
+                                    : "opacity-40 cursor-not-allowed"
+                              }`}
+                            >
+                              <span
+                                className={`w-4 shrink-0 font-black ${POSITION_TEXT_CLASS[p.position]}`}
+                              >
+                                {POSITION_SHORT_LABELS[p.position]}
+                              </span>
+                              <span className="flex-1 truncate">{p.name}</span>
+                              <span className="text-zinc-500 shrink-0">
+                                {p.skill}
+                              </span>
+                            </div>
+                          ))}
+                      </div>
+
+                      {/* Banco */}
+                      <div className="flex-1 flex flex-col min-w-0">
+                        <p className="text-[10px] font-black uppercase tracking-widest text-zinc-400 px-3 py-1.5 border-b border-zinc-800">
+                          Banco
+                        </p>
+                        {annotatedSquad
+                          .filter((p) => tactic.positions[p.id] === "Suplente")
+                          .map((p) => {
+                            const alreadyUsed = subbedOut.includes(p.id);
+                            const disabled =
+                              alreadyUsed ||
+                              !swapSource ||
+                              subsMade >= MAX_MATCH_SUBS;
+                            return (
                               <div
                                 key={p.id}
                                 onClick={() =>
-                                  subsMade < MAX_MATCH_SUBS &&
-                                  handleSelectOut(p.id)
+                                  !disabled && handleSelectIn(p.id)
                                 }
-                                className={`px-2 py-1 rounded-md border text-xs font-bold flex justify-between select-none transition-all ${
-                                  swapSource === p.id
-                                    ? "bg-red-500/20 border-red-400 text-red-200"
-                                    : subsMade < MAX_MATCH_SUBS
-                                      ? "bg-zinc-900 border-zinc-800 hover:border-red-500 cursor-pointer"
-                                      : "bg-zinc-900 border-zinc-800 opacity-50 cursor-not-allowed"
+                                className={`flex items-center gap-2 px-3 py-1.5 border-b border-zinc-800/50 text-xs font-bold select-none transition-colors ${
+                                  alreadyUsed
+                                    ? "opacity-25 cursor-not-allowed"
+                                    : swapTarget === p.id
+                                      ? "bg-emerald-500/15 text-emerald-200 cursor-pointer"
+                                      : disabled
+                                        ? "opacity-40 cursor-not-allowed"
+                                        : "cursor-pointer hover:bg-zinc-800/60"
                                 }`}
                               >
-                                <span className="truncate">{p.name}</span>
-                                <span className="opacity-50 ml-1 shrink-0">
-                                  {p.position} {p.skill}
+                                <span
+                                  className={`w-4 shrink-0 font-black ${alreadyUsed ? "text-zinc-600" : POSITION_TEXT_CLASS[p.position]}`}
+                                >
+                                  {POSITION_SHORT_LABELS[p.position]}
+                                </span>
+                                <span className="flex-1 truncate">
+                                  {p.name}
+                                </span>
+                                <span
+                                  className={`shrink-0 ${alreadyUsed ? "text-zinc-700" : "text-zinc-500"}`}
+                                >
+                                  {alreadyUsed ? "SAIU" : p.skill}
                                 </span>
                               </div>
-                            ))}
-                        </div>
-                      </div>
-
-                      {/* Suplentes (only the 5 bench players, not reservas) */}
-                      <div>
-                        <p className="text-zinc-400 font-black uppercase tracking-widest text-center text-[10px] mb-1">
-                          Banco (5 Suplentes)
-                        </p>
-                        <div className="space-y-0.5">
-                          {annotatedSquad
-                            .filter(
-                              (p) => tactic.positions[p.id] === "Suplente",
-                            )
-                            .map((p) => {
-                              const disabled =
-                                subbedOut.includes(p.id) ||
-                                !swapSource ||
-                                subsMade >= MAX_MATCH_SUBS;
-                              return (
-                                <div
-                                  key={p.id}
-                                  onClick={() =>
-                                    !disabled && handleSelectIn(p.id)
-                                  }
-                                  className={`px-2 py-1 rounded-md border text-xs font-bold flex justify-between select-none transition-all ${
-                                    subbedOut.includes(p.id)
-                                      ? "opacity-30 bg-zinc-900 border-zinc-800 cursor-not-allowed"
-                                      : swapTarget === p.id
-                                        ? "bg-emerald-500/20 border-emerald-400 text-emerald-200 cursor-pointer"
-                                        : disabled
-                                          ? "bg-zinc-900 border-zinc-800 opacity-50 cursor-not-allowed"
-                                          : "bg-zinc-900 border-zinc-800 hover:border-emerald-500 cursor-pointer"
-                                  }`}
-                                >
-                                  <span className="truncate">{p.name}</span>
-                                  <span
-                                    className={`ml-1 shrink-0 ${
-                                      subbedOut.includes(p.id)
-                                        ? "text-zinc-600"
-                                        : "text-zinc-400"
-                                    }`}
-                                  >
-                                    {subbedOut.includes(p.id)
-                                      ? "SAIU"
-                                      : `${p.position} ${p.skill}`}
-                                  </span>
-                                </div>
-                              );
-                            })}
-                        </div>
+                            );
+                          })}
                       </div>
                     </div>
 
-                    {/* Pending swap action area */}
-                    {(swapSource || swapTarget) && (
-                      <div className="mb-2 p-2 rounded-xl bg-zinc-900 border border-zinc-700">
-                        <p className="text-xs font-black text-zinc-400 uppercase tracking-widest mb-1.5 text-center">
-                          Substituição Pendente
-                        </p>
-                        <div className="flex items-center justify-center gap-2 text-xs font-bold mb-2">
-                          <span
-                            className={`px-2 py-1 rounded-md ${
-                              swapSource
-                                ? "bg-red-500/20 text-red-300 border border-red-500/40"
-                                : "bg-zinc-800 text-zinc-500 border border-zinc-700"
-                            }`}
-                          >
-                            {swapSource
-                              ? (annotatedSquad.find((p) => p.id === swapSource)
-                                  ?.name ?? "?")
-                              : "Selecionar saída"}
+                    {/* Inline action bar */}
+                    {swapSource && (
+                      <div className="flex items-center gap-2 px-3 py-2 border-t border-zinc-800 bg-zinc-900">
+                        <span className="flex-1 text-xs font-bold truncate">
+                          <span className="text-red-400">
+                            {annotatedSquad.find((p) => p.id === swapSource)
+                              ?.name ?? "?"}
                           </span>
-                          <span className="text-zinc-500">→</span>
-                          <span
-                            className={`px-2 py-1 rounded-md ${
-                              swapTarget
-                                ? "bg-emerald-500/20 text-emerald-300 border border-emerald-500/40"
-                                : "bg-zinc-800 text-zinc-500 border border-zinc-700"
-                            }`}
-                          >
-                            {swapTarget
-                              ? (annotatedSquad.find((p) => p.id === swapTarget)
-                                  ?.name ?? "?")
-                              : "Selecionar entrada"}
-                          </span>
-                        </div>
-                        <div className="flex gap-2">
-                          <button
-                            onClick={handleResetSub}
-                            className="flex-1 py-1.5 rounded-lg text-xs font-black uppercase border border-zinc-700 text-zinc-400 hover:bg-zinc-800 transition-colors"
-                          >
-                            Cancelar
-                          </button>
-                          <button
-                            onClick={handleConfirmSub}
-                            disabled={!swapSource || !swapTarget}
-                            className={`flex-1 py-1.5 rounded-lg text-xs font-black uppercase transition-colors ${
-                              swapSource && swapTarget
-                                ? "bg-emerald-600 hover:bg-emerald-500 text-white"
-                                : "bg-zinc-800 text-zinc-600 cursor-not-allowed"
-                            }`}
-                          >
-                            Confirmar Sub
-                          </button>
-                        </div>
+                          <span className="text-zinc-600 mx-1">→</span>
+                          {swapTarget ? (
+                            <span className="text-emerald-400">
+                              {annotatedSquad.find((p) => p.id === swapTarget)
+                                ?.name ?? "?"}
+                            </span>
+                          ) : (
+                            <span className="text-zinc-600">
+                              escolhe do banco
+                            </span>
+                          )}
+                        </span>
+                        <button
+                          onClick={handleResetSub}
+                          className="px-2 py-1 text-[10px] font-black text-zinc-500 hover:text-zinc-300 transition-colors"
+                        >
+                          ✕
+                        </button>
+                        <button
+                          onClick={handleConfirmSub}
+                          disabled={!swapTarget}
+                          className={`px-3 py-1 rounded text-[10px] font-black uppercase transition-colors ${
+                            swapTarget
+                              ? "bg-emerald-600 hover:bg-emerald-500 text-white"
+                              : "bg-zinc-800 text-zinc-600 cursor-not-allowed"
+                          }`}
+                        >
+                          Substituir
+                        </button>
                       </div>
                     )}
 
-                    {/* Confirmed subs list */}
+                    {/* Confirmed subs */}
                     {confirmedSubs.length > 0 && (
-                      <div className="mb-2 flex flex-col gap-0.5">
+                      <div className="px-3 py-1.5 border-t border-zinc-800 flex flex-col gap-0.5">
                         {confirmedSubs.map((sub, i) => {
                           const outP = mySquad.find((p) => p.id === sub.out);
                           const inP = mySquad.find((p) => p.id === sub.in);
                           return (
                             <p
                               key={i}
-                              className="text-[10px] font-bold text-zinc-500 text-center"
+                              className="text-[10px] font-bold text-zinc-500"
                             >
                               🔄{" "}
                               <span className="text-red-400">
@@ -2165,7 +2153,7 @@ function App() {
                     {/* BUG-06 FIX: Use handleHalftimeReady which always sends true */}
                     <button
                       onClick={handleHalftimeReady}
-                      className={`mt-auto w-full py-3 rounded-2xl text-sm font-black uppercase tracking-widest transition-all ${
+                      className={`w-full py-3 text-sm font-black uppercase tracking-widest transition-all ${
                         players.find((p) => p.name === me.name)?.ready
                           ? "bg-zinc-800 text-zinc-500"
                           : isCupMatch
@@ -2490,12 +2478,20 @@ function App() {
                 {/* Club identity card */}
                 <div
                   className="rounded-3xl border border-zinc-800 shadow-sm p-6 relative overflow-hidden"
-                  style={{ background: teamInfo?.color_primary ? `${teamInfo.color_primary}22` : undefined, borderColor: teamInfo?.color_primary || undefined }}
+                  style={{
+                    background: teamInfo?.color_primary
+                      ? `${teamInfo.color_primary}22`
+                      : undefined,
+                    borderColor: teamInfo?.color_primary || undefined,
+                  }}
                 >
                   <div className="flex flex-col md:flex-row md:items-center gap-4">
                     <div
                       className="w-16 h-16 rounded-2xl flex items-center justify-center text-3xl font-black shrink-0"
-                      style={{ background: teamInfo?.color_primary || "#18181b", color: teamInfo?.color_secondary || "#fff" }}
+                      style={{
+                        background: teamInfo?.color_primary || "#18181b",
+                        color: teamInfo?.color_secondary || "#fff",
+                      }}
                     >
                       {teamInfo?.name?.[0] || "?"}
                     </div>
@@ -2507,12 +2503,19 @@ function App() {
                         {teamInfo?.name || "—"}
                       </h1>
                       <p className="text-zinc-400 text-sm font-bold mt-0.5">
-                        {DIVISION_NAMES[teamInfo?.division] || `Divisão ${teamInfo?.division}`} · Época {seasonYear}/{seasonYear + 1}
+                        {DIVISION_NAMES[teamInfo?.division] ||
+                          `Divisão ${teamInfo?.division}`}{" "}
+                        · Época {seasonYear}/{seasonYear + 1}
                       </p>
-                      <p className="text-zinc-500 text-xs mt-1">Manager: <strong className="text-zinc-300">{me?.name}</strong></p>
+                      <p className="text-zinc-500 text-xs mt-1">
+                        Manager:{" "}
+                        <strong className="text-zinc-300">{me?.name}</strong>
+                      </p>
                     </div>
                     <div className="flex flex-col items-end gap-1 shrink-0">
-                      <span className="text-zinc-500 text-[10px] font-black uppercase tracking-widest">Moral</span>
+                      <span className="text-zinc-500 text-[10px] font-black uppercase tracking-widest">
+                        Moral
+                      </span>
                       <div className="flex items-center gap-2">
                         <div className="w-28 h-2 bg-zinc-800 rounded-full overflow-hidden">
                           <div
@@ -2520,7 +2523,9 @@ function App() {
                             style={{ width: `${teamInfo?.morale || 75}%` }}
                           />
                         </div>
-                        <span className={`font-black text-sm ${(teamInfo?.morale || 75) >= 70 ? "text-emerald-400" : (teamInfo?.morale || 75) >= 40 ? "text-amber-400" : "text-red-400"}`}>
+                        <span
+                          className={`font-black text-sm ${(teamInfo?.morale || 75) >= 70 ? "text-emerald-400" : (teamInfo?.morale || 75) >= 40 ? "text-amber-400" : "text-red-400"}`}
+                        >
                           {teamInfo?.morale || 75}
                         </span>
                       </div>
@@ -2620,19 +2625,28 @@ function App() {
                   </h2>
                   <div className="flex flex-col gap-3">
                     <div className="flex items-center justify-between">
-                      <span className="text-zinc-400 font-bold text-sm">Capacidade</span>
+                      <span className="text-zinc-400 font-bold text-sm">
+                        Capacidade
+                      </span>
                       <span className="font-mono text-white font-black text-lg">
-                        🏟️ {(teamInfo?.stadium_capacity || 5000).toLocaleString("pt-PT")} lugares
+                        🏟️{" "}
+                        {(teamInfo?.stadium_capacity || 5000).toLocaleString(
+                          "pt-PT",
+                        )}{" "}
+                        lugares
                       </span>
                     </div>
                     <div className="flex items-center justify-between border-t border-zinc-800 pt-3">
-                      <span className="text-zinc-400 font-bold text-sm">Receita Máx./Jogo em Casa</span>
+                      <span className="text-zinc-400 font-bold text-sm">
+                        Receita Máx./Jogo em Casa
+                      </span>
                       <span className="font-mono text-emerald-400 font-bold text-sm">
                         {formatCurrency(capacityRevPerGame)}
                       </span>
                     </div>
                     <p className="text-zinc-500 text-xs mt-1">
-                      Para expandir estádio ou gerir empréstimos, vê o separador <strong className="text-amber-400">Finanças</strong>.
+                      Para expandir estádio ou gerir empréstimos, vê o separador{" "}
+                      <strong className="text-amber-400">Finanças</strong>.
                     </p>
                   </div>
                 </div>
@@ -2645,16 +2659,29 @@ function App() {
                 <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
                   {/* Saldo Actual */}
                   <div className="bg-zinc-900 rounded-2xl border border-zinc-800 p-5 flex flex-col gap-1">
-                    <span className="text-zinc-500 font-black uppercase text-[10px] tracking-widest">Saldo Actual</span>
-                    <span className={`font-mono text-xl font-black ${currentBudget >= 0 ? "text-white" : "text-red-400"}`}>
+                    <span className="text-zinc-500 font-black uppercase text-[10px] tracking-widest">
+                      Saldo Actual
+                    </span>
+                    <span
+                      className={`font-mono text-xl font-black ${currentBudget >= 0 ? "text-white" : "text-red-400"}`}
+                    >
                       {formatCurrency(currentBudget)}
                     </span>
-                    <span className="text-zinc-600 text-[10px]">época {seasonYear}/{seasonYear + 1}</span>
+                    <span className="text-zinc-600 text-[10px]">
+                      época {seasonYear}/{seasonYear + 1}
+                    </span>
                   </div>
                   {/* Progresso do Ano Fiscal */}
                   <div className="bg-zinc-900 rounded-2xl border border-zinc-800 p-5 flex flex-col gap-2">
-                    <span className="text-zinc-500 font-black uppercase text-[10px] tracking-widest">Ano Fiscal</span>
-                    <span className="text-white font-black text-xl">{completedJornada} <span className="text-zinc-500 font-normal text-sm">/ 14 jornadas</span></span>
+                    <span className="text-zinc-500 font-black uppercase text-[10px] tracking-widest">
+                      Ano Fiscal
+                    </span>
+                    <span className="text-white font-black text-xl">
+                      {completedJornada}{" "}
+                      <span className="text-zinc-500 font-normal text-sm">
+                        / 14 jornadas
+                      </span>
+                    </span>
                     <div className="w-full h-1.5 bg-zinc-800 rounded-full overflow-hidden">
                       <div
                         className="h-full bg-amber-500 rounded-full transition-all"
@@ -2662,19 +2689,31 @@ function App() {
                       />
                     </div>
                   </div>
-                  {/* Receita Projetada */}
+                  {/* Receita por Jogo */}
                   <div className="bg-zinc-900 rounded-2xl border border-zinc-800 p-5 flex flex-col gap-1">
-                    <span className="text-zinc-500 font-black uppercase text-[10px] tracking-widest">Bilheteiras (Época)</span>
-                    <span className="font-mono text-emerald-400 text-xl font-black">+{formatCurrency(projectedSeasonTickets)}</span>
-                    <span className="text-zinc-600 text-[10px]">{HOME_GAMES_PER_SEASON} jogos em casa × {formatCurrency(capacityRevPerGame)}</span>
+                    <span className="text-zinc-500 font-black uppercase text-[10px] tracking-widest">
+                      Bilheteiras/Jogo em Casa
+                    </span>
+                    <span className="font-mono text-emerald-400 text-xl font-black">
+                      +{formatCurrency(capacityRevPerGame)}
+                    </span>
+                    <span className="text-zinc-600 text-[10px]">
+                      {(teamInfo?.stadium_capacity || 5000).toLocaleString("pt-PT")} lugares × 10€
+                    </span>
                   </div>
                   {/* Balanço Final Projetado */}
                   <div className="bg-zinc-900 rounded-2xl border border-zinc-800 p-5 flex flex-col gap-1">
-                    <span className="text-zinc-500 font-black uppercase text-[10px] tracking-widest">Balanço Proj. Final</span>
-                    <span className={`font-mono text-xl font-black ${projectedFinalBudget >= currentBudget ? "text-emerald-400" : "text-red-400"}`}>
+                    <span className="text-zinc-500 font-black uppercase text-[10px] tracking-widest">
+                      Balanço Proj. Final
+                    </span>
+                    <span
+                      className={`font-mono text-xl font-black ${projectedFinalBudget >= currentBudget ? "text-emerald-400" : "text-red-400"}`}
+                    >
                       {formatCurrency(projectedFinalBudget)}
                     </span>
-                    <span className="text-zinc-600 text-[10px]">{matchweeksRemaining} jornadas restantes</span>
+                    <span className="text-zinc-600 text-[10px]">
+                      {matchweeksRemaining} jornadas restantes
+                    </span>
                   </div>
                 </div>
 
@@ -2682,50 +2721,53 @@ function App() {
                 <div className="bg-zinc-900 rounded-3xl border border-zinc-800 shadow-sm overflow-hidden">
                   <div className="px-6 py-4 border-b border-zinc-800 flex items-center gap-3">
                     <span className="text-lg">💰</span>
-                    <h2 className="text-xs font-black uppercase tracking-widest text-emerald-400">Receitas</h2>
+                    <h2 className="text-xs font-black uppercase tracking-widest text-emerald-400">
+                      Receitas
+                    </h2>
                   </div>
                   <div className="p-6 space-y-5">
                     {/* Bilheteiras */}
                     <div>
                       <div className="flex items-start justify-between mb-2">
                         <div>
-                          <p className="text-white font-bold text-sm">Bilheteiras</p>
+                          <p className="text-white font-bold text-sm">
+                            Bilheteiras
+                          </p>
                           <p className="text-zinc-500 text-xs">
                             10€/lugar × lotação — jornadas em casa
                           </p>
                         </div>
                         <div className="text-right">
-                          <p className="text-emerald-400 font-mono font-black text-base">{formatCurrency(capacityRevPerGame)}<span className="text-zinc-500 text-xs font-normal"> /jogo</span></p>
-                          <p className="text-zinc-400 font-mono text-xs">{formatCurrency(projectedSeasonTickets)} proj. época</p>
+                          <p className="text-emerald-400 font-mono font-black text-base">
+                            {formatCurrency(capacityRevPerGame)}
+                            <span className="text-zinc-500 text-xs font-normal">
+                              {" "}
+                              /jogo
+                            </span>
+                          </p>
                         </div>
                       </div>
                       {/* Home-games progress bar */}
                       <div className="flex items-center gap-2 mt-3">
-                        <span className="text-zinc-600 text-[10px] w-20 shrink-0">Em casa</span>
+                        <span className="text-zinc-600 text-[10px] w-20 shrink-0">
+                          Em casa
+                        </span>
                         <div className="flex-1 flex gap-0.5">
-                          {Array.from({ length: HOME_GAMES_PER_SEASON }).map((_, i) => (
-                            <div
-                              key={i}
-                              className={`flex-1 h-2 rounded-sm ${i < homeGamesPlayed ? "bg-emerald-500" : i === homeGamesPlayed ? "bg-emerald-800 animate-pulse" : "bg-zinc-800"}`}
-                            />
-                          ))}
+                          {Array.from({ length: HOME_GAMES_PER_SEASON }).map(
+                            (_, i) => (
+                              <div
+                                key={i}
+                                className={`flex-1 h-2 rounded-sm ${i < homeGamesPlayed ? "bg-emerald-500" : i === homeGamesPlayed ? "bg-emerald-800 animate-pulse" : "bg-zinc-800"}`}
+                              />
+                            ),
+                          )}
                         </div>
-                        <span className="text-zinc-500 text-[10px] w-10 text-right">{homeGamesPlayed}/{HOME_GAMES_PER_SEASON}</span>
-                      </div>
-                    </div>
-
-                    {/* Prémios */}
-                    <div className="border-t border-zinc-800 pt-4">
-                      <div className="flex items-start justify-between">
-                        <div>
-                          <p className="text-white font-bold text-sm">Prémios</p>
-                          <p className="text-zinc-500 text-xs">Taça de Portugal — vencedor</p>
-                        </div>
-                        <span className="px-3 py-1 rounded-full bg-amber-900/30 border border-amber-700/30 text-amber-400 font-black text-xs">
-                          +500.000€
+                        <span className="text-zinc-500 text-[10px] w-10 text-right">
+                          {homeGamesPlayed}/{HOME_GAMES_PER_SEASON}
                         </span>
                       </div>
                     </div>
+
                   </div>
                 </div>
 
@@ -2733,51 +2775,29 @@ function App() {
                 <div className="bg-zinc-900 rounded-3xl border border-zinc-800 shadow-sm overflow-hidden">
                   <div className="px-6 py-4 border-b border-zinc-800 flex items-center gap-3">
                     <span className="text-lg">📤</span>
-                    <h2 className="text-xs font-black uppercase tracking-widest text-red-400">Despesas</h2>
+                    <h2 className="text-xs font-black uppercase tracking-widest text-red-400">
+                      Despesas
+                    </h2>
                   </div>
                   <div className="p-6 space-y-5">
                     {/* Folha Salarial */}
                     <div>
-                      <div className="flex items-start justify-between mb-3">
+                      <div className="flex items-start justify-between">
                         <div>
-                          <p className="text-white font-bold text-sm">Folha Salarial</p>
-                          <p className="text-zinc-500 text-xs">Pago por jornada</p>
+                          <p className="text-white font-bold text-sm">
+                            Folha Salarial
+                          </p>
+                          <p className="text-zinc-500 text-xs">
+                            Pago por jornada · {mySquad.length} atletas
+                          </p>
                         </div>
-                        <div className="text-right">
-                          <p className="text-red-400 font-mono font-black text-base">-{formatCurrency(totalWeeklyWage)}<span className="text-zinc-500 text-xs font-normal"> /jornada</span></p>
-                          <p className="text-zinc-400 font-mono text-xs">-{formatCurrency(projectedSeasonWages)} proj. época</p>
-                        </div>
-                      </div>
-                      {/* Salary breakdown by player */}
-                      <div className="bg-zinc-950 rounded-xl border border-zinc-800 overflow-hidden">
-                        <table className="w-full text-xs">
-                          <thead>
-                            <tr className="border-b border-zinc-800 text-zinc-500 uppercase text-[10px] tracking-wider">
-                              <th className="px-3 py-2 text-left font-black">Pos</th>
-                              <th className="px-3 py-2 text-left font-normal">Jogador</th>
-                              <th className="px-3 py-2 text-right font-normal">Ordenado/Jornada</th>
-                            </tr>
-                          </thead>
-                          <tbody className="divide-y divide-zinc-900">
-                            {[...mySquad]
-                              .sort((a, b) => (b.wage || 0) - (a.wage || 0))
-                              .map((p) => (
-                                <tr key={p.id} className="hover:bg-zinc-900/50 transition-colors">
-                                  <td className={`px-3 py-1.5 font-black text-center ${POSITION_TEXT_CLASS[p.position] || "text-zinc-300"}`}>
-                                    {POSITION_SHORT_LABELS[p.position] || p.position}
-                                  </td>
-                                  <td className="px-3 py-1.5 text-zinc-300">{p.name}</td>
-                                  <td className="px-3 py-1.5 text-right font-mono text-red-400">{formatCurrency(p.wage || 0)}</td>
-                                </tr>
-                              ))}
-                          </tbody>
-                          <tfoot>
-                            <tr className="border-t border-zinc-700 bg-zinc-900">
-                              <td colSpan={2} className="px-3 py-2 font-black text-zinc-400 uppercase text-[10px] tracking-wider">Total</td>
-                              <td className="px-3 py-2 text-right font-mono font-black text-red-400">{formatCurrency(totalWeeklyWage)}</td>
-                            </tr>
-                          </tfoot>
-                        </table>
+                        <p className="text-red-400 font-mono font-black text-base">
+                          -{formatCurrency(totalWeeklyWage)}
+                          <span className="text-zinc-500 text-xs font-normal">
+                            {" "}
+                            /jornada
+                          </span>
+                        </p>
                       </div>
                     </div>
 
@@ -2786,12 +2806,21 @@ function App() {
                       <div className="border-t border-zinc-800 pt-4">
                         <div className="flex items-start justify-between">
                           <div>
-                            <p className="text-white font-bold text-sm">Juros Bancários</p>
-                            <p className="text-zinc-500 text-xs">1% da dívida por jornada</p>
+                            <p className="text-white font-bold text-sm">
+                              Juros Bancários
+                            </p>
+                            <p className="text-zinc-500 text-xs">
+                              1% da dívida por jornada
+                            </p>
                           </div>
                           <div className="text-right">
-                            <p className="text-red-400 font-mono font-black text-base">-{formatCurrency(loanInterestPerWeek)}<span className="text-zinc-500 text-xs font-normal"> /jornada</span></p>
-                            <p className="text-zinc-400 font-mono text-xs">-{formatCurrency(projectedSeasonInterest)} proj. época</p>
+                            <p className="text-red-400 font-mono font-black text-base">
+                              -{formatCurrency(loanInterestPerWeek)}
+                              <span className="text-zinc-500 text-xs font-normal">
+                                {" "}
+                                /jornada
+                              </span>
+                            </p>
                           </div>
                         </div>
                       </div>
@@ -2803,15 +2832,21 @@ function App() {
                 <div className="bg-zinc-900 rounded-3xl border border-zinc-800 shadow-sm overflow-hidden">
                   <div className="px-6 py-4 border-b border-zinc-800 flex items-center gap-3">
                     <span className="text-lg">🏦</span>
-                    <h2 className="text-xs font-black uppercase tracking-widest text-orange-400">Empréstimos</h2>
+                    <h2 className="text-xs font-black uppercase tracking-widest text-orange-400">
+                      Empréstimos
+                    </h2>
                   </div>
                   <div className="p-6 space-y-4">
                     <div className="flex items-start justify-between">
                       <div>
                         <p className="text-white font-bold">Dívida Actual</p>
-                        <p className="text-zinc-500 text-xs">Taxa de juro: 1% / jornada</p>
+                        <p className="text-zinc-500 text-xs">
+                          Taxa de juro: 1% / jornada
+                        </p>
                       </div>
-                      <p className={`font-mono text-xl font-black ${loanAmount > 0 ? "text-red-400" : "text-emerald-400"}`}>
+                      <p
+                        className={`font-mono text-xl font-black ${loanAmount > 0 ? "text-red-400" : "text-emerald-400"}`}
+                      >
                         {formatCurrency(loanAmount)}
                       </p>
                     </div>
@@ -2824,16 +2859,25 @@ function App() {
                       <div className="w-full h-3 bg-zinc-800 rounded-full overflow-hidden">
                         <div
                           className={`h-full rounded-full transition-all ${loanAmount / 2000000 > 0.75 ? "bg-red-500" : loanAmount / 2000000 > 0.4 ? "bg-orange-500" : "bg-amber-400"}`}
-                          style={{ width: `${Math.min(100, (loanAmount / 2000000) * 100)}%` }}
+                          style={{
+                            width: `${Math.min(100, (loanAmount / 2000000) * 100)}%`,
+                          }}
                         />
                       </div>
-                      <p className="text-zinc-600 text-[10px] text-right mt-1">{((loanAmount / 2000000) * 100).toFixed(0)}% do limite</p>
+                      <p className="text-zinc-600 text-[10px] text-right mt-1">
+                        {((loanAmount / 2000000) * 100).toFixed(0)}% do limite
+                      </p>
                     </div>
 
                     <div className="grid grid-cols-2 gap-3 pt-2">
                       <div className="bg-zinc-950 p-4 rounded-xl border border-red-900/30 flex flex-col gap-2">
-                        <p className="text-xs font-black text-red-400 uppercase tracking-widest">Pedir Empréstimo</p>
-                        <p className="text-zinc-500 text-[10px]">+500.000€ → {formatCurrency(loanAmount + 500000)} dívida</p>
+                        <p className="text-xs font-black text-red-400 uppercase tracking-widest">
+                          Pedir Empréstimo
+                        </p>
+                        <p className="text-zinc-500 text-[10px]">
+                          +500.000€ → {formatCurrency(loanAmount + 500000)}{" "}
+                          dívida
+                        </p>
                         <button
                           onClick={() => socket.emit("takeLoan")}
                           disabled={loanAmount >= 2000000}
@@ -2843,11 +2887,19 @@ function App() {
                         </button>
                       </div>
                       <div className="bg-zinc-950 p-4 rounded-xl border border-emerald-900/30 flex flex-col gap-2">
-                        <p className="text-xs font-black text-emerald-400 uppercase tracking-widest">Pagar Dívida</p>
-                        <p className="text-zinc-500 text-[10px]">-500.000€ → {formatCurrency(Math.max(0, loanAmount - 500000))} dívida</p>
+                        <p className="text-xs font-black text-emerald-400 uppercase tracking-widest">
+                          Pagar Dívida
+                        </p>
+                        <p className="text-zinc-500 text-[10px]">
+                          -500.000€ →{" "}
+                          {formatCurrency(Math.max(0, loanAmount - 500000))}{" "}
+                          dívida
+                        </p>
                         <button
                           onClick={() => socket.emit("payLoan")}
-                          disabled={loanAmount < 500000 || currentBudget < 500000}
+                          disabled={
+                            loanAmount < 500000 || currentBudget < 500000
+                          }
                           className="w-full bg-emerald-900 hover:bg-emerald-800 disabled:opacity-40 disabled:cursor-not-allowed text-white font-black py-2.5 rounded-lg text-xs transition-all uppercase"
                         >
                           Pagar -500K
@@ -2861,30 +2913,36 @@ function App() {
                 <div className="bg-zinc-900 rounded-3xl border border-zinc-800 shadow-sm overflow-hidden">
                   <div className="px-6 py-4 border-b border-zinc-800 flex items-center gap-3">
                     <span className="text-lg">🏟️</span>
-                    <h2 className="text-xs font-black uppercase tracking-widest text-amber-400">Estádio</h2>
+                    <h2 className="text-xs font-black uppercase tracking-widest text-amber-400">
+                      Estádio
+                    </h2>
                   </div>
                   <div className="p-6 space-y-4">
                     <div className="grid grid-cols-2 gap-4">
                       <div className="bg-zinc-950 rounded-xl border border-zinc-800 p-4 flex flex-col gap-1">
-                        <span className="text-zinc-500 text-[10px] font-black uppercase tracking-wider">Capacidade Actual</span>
-                        <span className="text-white font-black text-2xl">{(teamInfo?.stadium_capacity || 5000).toLocaleString("pt-PT")}</span>
-                        <span className="text-zinc-600 text-[10px]">lugares</span>
+                        <span className="text-zinc-500 text-[10px] font-black uppercase tracking-wider">
+                          Capacidade Actual
+                        </span>
+                        <span className="text-white font-black text-2xl">
+                          {(teamInfo?.stadium_capacity || 5000).toLocaleString(
+                            "pt-PT",
+                          )}
+                        </span>
+                        <span className="text-zinc-600 text-[10px]">
+                          lugares
+                        </span>
                       </div>
                       <div className="bg-zinc-950 rounded-xl border border-zinc-800 p-4 flex flex-col gap-1">
-                        <span className="text-zinc-500 text-[10px] font-black uppercase tracking-wider">Receita/Jogo em Casa</span>
-                        <span className="text-emerald-400 font-mono font-black text-xl">{formatCurrency(capacityRevPerGame)}</span>
-                        <span className="text-zinc-600 text-[10px]">10€ × lotação (máx.)</span>
+                        <span className="text-zinc-500 text-[10px] font-black uppercase tracking-wider">
+                          Receita/Jogo em Casa
+                        </span>
+                        <span className="text-emerald-400 font-mono font-black text-xl">
+                          {formatCurrency(capacityRevPerGame)}
+                        </span>
+                        <span className="text-zinc-600 text-[10px]">
+                          10€ × lotação (máx.)
+                        </span>
                       </div>
-                    </div>
-
-                    {/* ROI pill */}
-                    <div className="bg-amber-950/20 border border-amber-800/20 rounded-xl p-4">
-                      <p className="text-amber-400 font-black text-xs uppercase tracking-widest mb-2">ROI — Expansão +5.000 Lugares</p>
-                      <ul className="text-zinc-400 text-xs space-y-1">
-                        <li>Custo: <strong className="text-white">150.000€</strong></li>
-                        <li>Ganho extra por jogo: <strong className="text-emerald-400">+{formatCurrency(5000 * 10)}</strong></li>
-                        <li>Recuperado em: <strong className="text-amber-400">3 jogos em casa</strong></li>
-                      </ul>
                     </div>
 
                     <button
@@ -2896,7 +2954,8 @@ function App() {
                     </button>
                     {currentBudget < 150000 && (
                       <p className="text-zinc-600 text-xs text-center">
-                        Saldo insuficiente. Precisa de mais {formatCurrency(150000 - currentBudget)}.
+                        Saldo insuficiente. Precisa de mais{" "}
+                        {formatCurrency(150000 - currentBudget)}.
                       </p>
                     )}
                   </div>
