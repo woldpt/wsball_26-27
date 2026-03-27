@@ -1091,11 +1091,9 @@ function refreshMarket(game, emitToRoom = true) {
             ? {
                 ...row,
                 auction_active: true,
-                auction_highest_bid: auction.highestBid,
-                auction_highest_bidder_team_id: auction.highestBidderTeamId,
                 auction_seller_team_id: auction.sellerTeamId,
                 auction_ends_at: auction.endsAt,
-                auction_min_increment: auction.minIncrement,
+                auction_starting_price: auction.startingPrice,
               }
             : row;
         });
@@ -1120,9 +1118,66 @@ function emitSquadForPlayer(game, teamId) {
   );
 }
 
+function isMatchInProgress(game) {
+  return game.matchState === "running_first_half" ||
+    game.matchState === "halftime" ||
+    game.matchState === "playing_second_half";
+}
+
+/**
+ * Immediately resolve all running auctions before a match half starts.
+ * Kills every active timer so no auction socket event can fire during
+ * first-half or second-half simulation. Called at both kick-offs.
+ */
+function finalizeAllRunningAuctions(game) {
+  if (!game.auctions) return;
+  const playerIds = Object.keys(game.auctions);
+  if (playerIds.length === 0) return;
+  for (const playerId of playerIds) {
+    if (game.auctionTimers?.[playerId]) {
+      clearTimeout(game.auctionTimers[playerId]);
+      delete game.auctionTimers[playerId];
+    }
+    finalizeAuction(game, Number(playerId));
+  }
+}
+
+/**
+ * Cancel any pending cup draw that hasn't fired yet.
+ * Prevents the cup-draw popup from appearing mid-match when the safety
+ * timeout (_leagueAnimTimeout or _cupDrawTimeout) fires during simulation.
+ * The pending round is saved to game.deferredCupRound so it can be
+ * triggered after full-time instead of being lost.
+ * Called at both kick-offs.
+ */
+function cancelPendingCupDraw(game) {
+  if (game._leagueAnimTimeout) {
+    clearTimeout(game._leagueAnimTimeout);
+    game._leagueAnimTimeout = null;
+  }
+  if (game._cupDrawTimeout) {
+    clearTimeout(game._cupDrawTimeout);
+    game._cupDrawTimeout = null;
+  }
+  // Defer rather than discard — trigger after full-time
+  if (game.pendingCupRound != null) {
+    game.deferredCupRound = game.pendingCupRound;
+  }
+  game.pendingCupRound = null;
+  game.leagueAnimAcks = new Set();
+  game.cupDrawAcks = new Set();
+}
+
 function listPlayerOnMarket(game, playerId, mode, price, callback) {
+  // Block auctions during matches — queue them for after full-time
+  if (mode === "auction" && isMatchInProgress(game)) {
+    if (!game.pendingAuctionQueue) game.pendingAuctionQueue = [];
+    game.pendingAuctionQueue.push({ playerId, mode, price, callback });
+    return;
+  }
+
   game.db.get(
-    "SELECT * FROM players WHERE id = ?",
+    "SELECT p.*, t.name as team_name FROM players p LEFT JOIN teams t ON p.team_id = t.id WHERE p.id = ?",
     [playerId],
     (err, player) => {
       if (err || !player) {
@@ -1157,7 +1212,6 @@ function listPlayerOnMarket(game, playerId, mode, price, callback) {
 
 function startAuction(game, player, startingPrice, callback) {
   const durationMs = 15000;
-  const minIncrement = Math.max(1000, Math.round(startingPrice * 0.05));
   const now = Date.now();
   const existingTimer = game.auctionTimers?.[player.id];
   if (existingTimer) clearTimeout(existingTimer);
@@ -1171,9 +1225,8 @@ function startAuction(game, player, startingPrice, callback) {
       game.auctions[player.id] = {
         playerId: player.id,
         sellerTeamId: player.team_id,
-        highestBid: startingPrice,
-        highestBidderTeamId: null,
-        minIncrement,
+        startingPrice,
+        bids: {},           // { teamId: bidAmount } — sealed, one bid per team
         endsAt: now + durationMs,
         status: "open",
       };
@@ -1183,8 +1236,27 @@ function startAuction(game, player, startingPrice, callback) {
       }, durationMs);
 
       refreshMarket(game);
-      io.to(game.roomCode).emit("auctionUpdate", game.auctions[player.id]);
-      // Trigger NPC bids for this auction
+      // Emit full player card to all coaches — no bid data revealed
+      io.to(game.roomCode).emit("auctionStarted", {
+        playerId: player.id,
+        name: player.name,
+        team_name: player.team_name || null,
+        sellerTeamId: player.team_id,
+        position: player.position,
+        skill: player.skill,
+        value: player.value,
+        wage: player.wage,
+        nationality: player.nationality,
+        goals: player.goals || 0,
+        red_cards: player.red_cards || 0,
+        injuries: player.injuries || 0,
+        games_played: player.games_played || 0,
+        aggressiveness: player.aggressiveness || "Normal",
+        is_star: player.is_star || 0,
+        startingPrice,
+        endsAt: now + durationMs,
+      });
+      // Trigger NPC sealed bids for this auction
       scheduleNpcAuctionBids(game, player.id);
       if (callback) callback(true, startingPrice, player);
     },
@@ -1197,8 +1269,19 @@ function finalizeAuction(game, playerId) {
   const timer = game.auctionTimers?.[playerId];
   if (timer) clearTimeout(timer);
 
+  // Find the highest sealed bid
+  const bidEntries = Object.entries(auction.bids || {});
+  let winnerTeamId = null;
+  let winnerBid = 0;
+  for (const [teamId, amount] of bidEntries) {
+    if (amount > winnerBid || (amount === winnerBid && Math.random() < 0.5)) {
+      winnerBid = amount;
+      winnerTeamId = parseInt(teamId, 10);
+    }
+  }
+
   game.db.get(
-    "SELECT * FROM players WHERE id = ?",
+    "SELECT p.*, t.name as team_name FROM players p LEFT JOIN teams t ON p.team_id = t.id WHERE p.id = ?",
     [playerId],
     (err, player) => {
       if (err || !player) {
@@ -1208,7 +1291,7 @@ function finalizeAuction(game, playerId) {
         return;
       }
 
-      if (!auction.highestBidderTeamId) {
+      if (!winnerTeamId) {
         game.db.run(
           "UPDATE players SET transfer_status = 'none', transfer_price = 0 WHERE id = ?",
           [playerId],
@@ -1227,6 +1310,7 @@ function finalizeAuction(game, playerId) {
             refreshMarket(game);
             io.to(game.roomCode).emit("auctionClosed", {
               playerId,
+              playerName: player.name,
               sold: false,
             });
           },
@@ -1234,83 +1318,99 @@ function finalizeAuction(game, playerId) {
         return;
       }
 
-      const buyerTeamId = auction.highestBidderTeamId;
-      const finalBid = auction.highestBid;
+      const buyerTeamId = winnerTeamId;
+      const finalBid = winnerBid;
 
-      game.db.run(
-        "UPDATE teams SET budget = budget + ? WHERE id = ?",
-        [finalBid, auction.sellerTeamId],
-        () => {
-          game.db.run(
-            "UPDATE teams SET budget = budget - ? WHERE id = ?",
-            [finalBid, buyerTeamId],
-            () => {
-              game.db.run(
-                "UPDATE players SET team_id = ?, wage = ?, contract_until_matchweek = ?, transfer_status = 'none', transfer_price = 0, contract_request_pending = 0, contract_requested_wage = 0 WHERE id = ?",
-                [
-                  buyerTeamId,
-                  Math.max(player.wage || 0, Math.round(finalBid * 0.06)),
-                  getSeasonEndMatchweek(game.matchweek),
-                  playerId,
-                ],
-                () => {
-                  const buyerCoach = Object.values(game.playersByName).find(
-                    (p) => p.teamId === buyerTeamId && p.socketId,
-                  );
-                  const sellerCoach = Object.values(game.playersByName).find(
-                    (p) => p.teamId === auction.sellerTeamId && p.socketId,
-                  );
-                  if (buyerCoach) {
-                    io.to(buyerCoach.socketId).emit(
-                      "systemMessage",
-                      `Ganhaste o leilão de ${player.name} por €${finalBid}!`,
+      game.db.get("SELECT name FROM teams WHERE id = ?", [buyerTeamId], (errT, buyerTeam) => {
+        const buyerTeamName = buyerTeam ? buyerTeam.name : "?";
+
+        game.db.run(
+          "UPDATE teams SET budget = budget + ? WHERE id = ?",
+          [finalBid, auction.sellerTeamId],
+          () => {
+            game.db.run(
+              "UPDATE teams SET budget = budget - ? WHERE id = ?",
+              [finalBid, buyerTeamId],
+              () => {
+                game.db.run(
+                  "UPDATE players SET team_id = ?, wage = ?, contract_until_matchweek = ?, transfer_status = 'none', transfer_price = 0, contract_request_pending = 0, contract_requested_wage = 0 WHERE id = ?",
+                  [
+                    buyerTeamId,
+                    Math.max(player.wage || 0, Math.round(finalBid * 0.06)),
+                    getSeasonEndMatchweek(game.matchweek),
+                    playerId,
+                  ],
+                  () => {
+                    const buyerCoach = Object.values(game.playersByName).find(
+                      (p) => p.teamId === buyerTeamId && p.socketId,
                     );
-                  }
-                  if (sellerCoach) {
-                    io.to(sellerCoach.socketId).emit(
-                      "systemMessage",
-                      `${player.name} foi vendido em leilão por €${finalBid}.`,
+                    const sellerCoach = Object.values(game.playersByName).find(
+                      (p) => p.teamId === auction.sellerTeamId && p.socketId,
                     );
-                  }
-                  delete game.auctions?.[playerId];
-                  delete game.auctionTimers?.[playerId];
-                  refreshMarket(game);
-                  game.db.all("SELECT * FROM teams", (errTeams, teams) => {
-                    if (!errTeams)
-                      io.to(game.roomCode).emit("teamsData", teams);
-                    emitSquadForPlayer(game, buyerTeamId);
-                    io.to(game.roomCode).emit("auctionClosed", {
-                      playerId,
-                      sold: true,
-                      buyerTeamId,
-                      finalBid,
+                    if (buyerCoach) {
+                      io.to(buyerCoach.socketId).emit(
+                        "systemMessage",
+                        `Ganhaste o leilão de ${player.name} por €${finalBid}!`,
+                      );
+                    }
+                    if (sellerCoach) {
+                      io.to(sellerCoach.socketId).emit(
+                        "systemMessage",
+                        `${player.name} foi vendido em leilão por €${finalBid}.`,
+                      );
+                    }
+                    delete game.auctions?.[playerId];
+                    delete game.auctionTimers?.[playerId];
+                    refreshMarket(game);
+                    game.db.all("SELECT * FROM teams", (errTeams, teams) => {
+                      if (!errTeams)
+                        io.to(game.roomCode).emit("teamsData", teams);
+                      emitSquadForPlayer(game, buyerTeamId);
+                      if (auction.sellerTeamId !== buyerTeamId) {
+                        emitSquadForPlayer(game, auction.sellerTeamId);
+                      }
+                      io.to(game.roomCode).emit("auctionClosed", {
+                        playerId,
+                        playerName: player.name,
+                        sold: true,
+                        buyerTeamId,
+                        buyerTeamName,
+                        finalBid,
+                      });
                     });
-                  });
-                },
-              );
-            },
-          );
-        },
-      );
+                  },
+                );
+              },
+            );
+          },
+        );
+      });
     },
   );
 }
 
 function placeAuctionBid(game, teamId, playerId, bidAmount, io) {
   if (!game.auctions || !game.auctions[playerId]) {
-    return { ok: false, error: "Leilão indisponível." };
+    return Promise.resolve({ ok: false, error: "Leilão indisponível." });
   }
   const auction = game.auctions[playerId];
+  if (auction.status !== "open") {
+    return Promise.resolve({ ok: false, error: "Leilão já encerrado." });
+  }
   if (auction.sellerTeamId === teamId) {
-    return { ok: false, error: "Não podes licitar no teu próprio jogador." };
+    return Promise.resolve({ ok: false, error: "Não podes licitar no teu próprio jogador." });
+  }
+  // Sealed-bid: only one bid per team
+  if (auction.bids[teamId] != null) {
+    return Promise.resolve({ ok: false, error: "Já licitaste neste leilão." });
   }
 
   const amount = Math.round(bidAmount || 0);
-  if (amount < auction.highestBid + auction.minIncrement) {
-    return {
+  if (amount < auction.startingPrice) {
+    return Promise.resolve({
       ok: false,
-      error: `Lance mínimo: €${auction.highestBid + auction.minIncrement}.`,
-    };
+      error: `Lance mínimo: €${auction.startingPrice}.`,
+    });
   }
 
   return new Promise((resolve) => {
@@ -1323,14 +1423,9 @@ function placeAuctionBid(game, teamId, playerId, bidAmount, io) {
           return;
         }
 
-        auction.highestBid = amount;
-        auction.highestBidderTeamId = teamId;
-        auction.lastBidAt = Date.now();
-        game.auctions[playerId] = auction;
-
-        refreshMarket(game);
-        io.to(game.roomCode).emit("auctionUpdate", auction);
-        resolve({ ok: true, auction });
+        // Store sealed bid — no data emitted to other coaches
+        auction.bids[teamId] = amount;
+        resolve({ ok: true, bidAmount: amount });
       },
     );
   });
@@ -1616,21 +1711,21 @@ async function processNpcTransferActivity(game) {
       });
     }
 
-    // Auctions are staggered after a delay so clients finish animating results
-    let auctionDelay = 8000;
+    // Auctions fire sequentially — matches are already finished at this point.
+    // Small stagger (500ms) between each to avoid simultaneous modal popups.
+    let auctionDelay = 500;
     for (const { candidate, price } of auctionListings) {
       setTimeout(() => {
         listPlayerOnMarket(game, candidate.id, "auction", price, null);
       }, auctionDelay);
-      auctionDelay += 2000 + Math.floor(Math.random() * 3000);
+      auctionDelay += 18000; // 15s auction + 3s buffer before next
     }
   }
 }
 
 // ─── NPC AUCTION BIDDING ───────────────────────────────────────────────────
-// Called when an auction starts. NPC teams may place bids after a delay.
-// Round 1 (2-8s): 50% participation, staggered first bids.
-// Round 2 (9-13s): 35% chance each NPC counter-bids if outbid.
+// Sealed-bid model: each NPC team places exactly one blind bid at a random
+// delay (2-12s). Bid amount is random between startingPrice and a cap.
 function scheduleNpcAuctionBids(game, playerId) {
   const auction = game.auctions?.[playerId];
   if (!auction) return;
@@ -1643,46 +1738,33 @@ function scheduleNpcAuctionBids(game, playerId) {
 
   game.db.all(
     "SELECT * FROM teams WHERE budget > ?",
-    [auction.highestBid + auction.minIncrement],
+    [auction.startingPrice],
     (err, teams) => {
       if (err || !teams) return;
       const npcTeams = teams.filter(
         (t) => !humanTeamIds.has(t.id) && t.id !== auction.sellerTeamId,
       );
 
-      // Round 1: staggered first bids between 2-8s
-      let bidDelay = 2000 + Math.floor(Math.random() * 3000);
       for (const npcTeam of npcTeams) {
-        if (Math.random() > 0.5) continue; // 50% chance each NPC bids in round 1
+        if (Math.random() > 0.5) continue; // 50% chance each NPC participates
 
+        const bidDelay = 2000 + Math.floor(Math.random() * 10000); // 2-12s
         setTimeout(() => {
           const currentAuction = game.auctions?.[playerId];
           if (!currentAuction || currentAuction.status !== "open") return;
-          const bidAmount =
-            currentAuction.highestBid + currentAuction.minIncrement;
-          if (bidAmount > npcTeam.budget * 0.4) return;
+          if (currentAuction.bids[npcTeam.id] != null) return; // already bid
+
+          const maxBid = Math.min(
+            Math.round(auction.startingPrice * 1.5),
+            Math.round(npcTeam.budget * 0.4),
+          );
+          if (maxBid < auction.startingPrice) return;
+
+          const bidAmount = auction.startingPrice +
+            Math.floor(Math.random() * (maxBid - auction.startingPrice + 1));
 
           placeAuctionBid(game, npcTeam.id, playerId, bidAmount, io);
         }, bidDelay);
-
-        bidDelay += 1000 + Math.floor(Math.random() * 2000);
-      }
-
-      // Round 2: counter-bids between 9-13s for NPCs that were outbid
-      for (const npcTeam of npcTeams) {
-        if (Math.random() > 0.35) continue; // 35% chance each NPC counter-bids
-
-        const counterDelay = 9000 + Math.floor(Math.random() * 4000);
-        setTimeout(() => {
-          const currentAuction = game.auctions?.[playerId];
-          if (!currentAuction || currentAuction.status !== "open") return;
-          if (currentAuction.highestBidderTeamId === npcTeam.id) return; // already winning
-          const bidAmount =
-            currentAuction.highestBid + currentAuction.minIncrement;
-          if (bidAmount > npcTeam.budget * 0.45) return;
-
-          placeAuctionBid(game, npcTeam.id, playerId, bidAmount, io);
-        }, counterDelay);
       }
     },
   );
@@ -2171,12 +2253,18 @@ io.on("connection", (socket) => {
     const playerState = getPlayerBySocket(game, socket.id);
     if (!playerState) return;
 
+    // Block auctions during matches
+    const finalMode = mode === "auction" ? "auction" : "fixed";
+    if (finalMode === "auction" && isMatchInProgress(game)) {
+      socket.emit("systemMessage", "Leilões só são permitidos após o final das partidas.");
+      return;
+    }
+
     game.db.get(
-      "SELECT * FROM players WHERE id = ? AND team_id = ?",
+      "SELECT p.*, t.name as team_name FROM players p LEFT JOIN teams t ON p.team_id = t.id WHERE p.id = ? AND p.team_id = ?",
       [playerId, playerState.teamId],
       (err, player) => {
         if (!player) return;
-        const finalMode = mode === "auction" ? "auction" : "fixed";
         const finalPrice = Math.max(
           0,
           Math.round(
@@ -2264,6 +2352,17 @@ io.on("connection", (socket) => {
               `${player.name} recusou e foi para leilão.`,
             );
           });
+          // If queued (mid-match), give immediate feedback
+          if (isMatchInProgress(game)) {
+            game.db.run(
+              "UPDATE players SET contract_request_pending = 0, contract_requested_wage = 0 WHERE id = ?",
+              [playerId],
+            );
+            socket.emit(
+              "systemMessage",
+              `${player.name} recusou. O leilão será lançado após o final das partidas.`,
+            );
+          }
         }
       },
     );
@@ -2280,10 +2379,11 @@ io.on("connection", (socket) => {
         if (!result.ok) {
           socket.emit("systemMessage", result.error);
         } else {
-          socket.emit(
-            "systemMessage",
-            `Lance submetido: €${Math.round(bidAmount)}.`,
-          );
+          // Sealed-bid: confirm only to this coach, no broadcast
+          socket.emit("auctionBidConfirmed", {
+            playerId,
+            bidAmount: result.bidAmount,
+          });
         }
       },
     );
@@ -2482,6 +2582,11 @@ async function checkAllReady(game) {
     if (weeklyLoopRunning[game.roomCode]) return;
     weeklyLoopRunning[game.roomCode] = true;
 
+    // Resolve all open auctions now — their timers must not fire mid-match.
+    finalizeAllRunningAuctions(game);
+    // Cancel any pending cup draw — its safety timeout must not fire mid-match.
+    cancelPendingCupDraw(game);
+
     // Lock state immediately so no second call can enter here
     game.matchState = "running_first_half";
 
@@ -2517,8 +2622,23 @@ async function checkAllReady(game) {
   } else if (game.matchState === "halftime") {
     // BUG-06 FIX: Prevent double execution if checkAllReady fires twice.
     // Immediately lock state to prevent re-entry.
+    //
+    // Resolve any auctions that started during half-time so their timers
+    // cannot interrupt second-half simulation.
+    finalizeAllRunningAuctions(game);
+    // Also cancel any pending cup draw.
+    cancelPendingCupDraw(game);
     game.matchState = "playing_second_half";
     await processSegment(game, 46, 90, "idle");
+    // If a cup draw was deferred because coaches kicked off while it was pending,
+    // trigger it now that the match has fully ended.
+    if (game.deferredCupRound != null) {
+      const r = game.deferredCupRound;
+      game.deferredCupRound = null;
+      startCupRound(game, r).catch((e) =>
+        console.error(`[${game.roomCode}] Deferred cup draw error:`, e),
+      );
+    }
   }
 }
 
@@ -2682,6 +2802,19 @@ async function processSegment(game, startMin, endMin, nextState) {
                   await applySeasonEnd(game);
                 } catch (seErr) {
                   console.error(`[${game.roomCode}] Season end error:`, seErr);
+                }
+              }
+
+              // ── FLUSH PENDING AUCTION QUEUE ────────────────────────────
+              // Auctions that were requested during the match are now fired.
+              if (game.pendingAuctionQueue && game.pendingAuctionQueue.length > 0) {
+                const queue = game.pendingAuctionQueue.splice(0);
+                let qDelay = 500;
+                for (const entry of queue) {
+                  setTimeout(() => {
+                    listPlayerOnMarket(game, entry.playerId, entry.mode, entry.price, entry.callback);
+                  }, qDelay);
+                  qDelay += 18000; // 15s auction + 3s buffer
                 }
               }
 

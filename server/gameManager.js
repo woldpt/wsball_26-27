@@ -114,6 +114,8 @@ function getGame(roomCode, onReady) {
     globalMarket: [],
     fixtures: [],
     auctions: {},
+    auctionTimers: {},
+    pendingAuctionQueue: [],
     initialized: false,
   };
 
