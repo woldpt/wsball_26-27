@@ -355,6 +355,7 @@ function App() {
   const [isCupMatch, setIsCupMatch] = useState(false);
   const [cupMatchRoundName, setCupMatchRoundName] = useState("");
   const [cupExtraTimeBadge, setCupExtraTimeBadge] = useState(false);
+  const [isCupExtraTime, setIsCupExtraTime] = useState(false);
   const [palmares, setPalmares] = useState({ trophies: [], allChampions: [] });
   const [palmaresTeamId, setPalmaresTeamId] = useState(null); // last requested team
   const [selectedTeam, setSelectedTeam] = useState(null);
@@ -518,6 +519,32 @@ function App() {
       setCupExtraTimeBadge(false);
       setActiveTab("live");
     });
+    socket.on("cupExtraTimeStart", (data) => {
+      // Cup match went to extra time — restart the live clock from 90
+      setIsCupExtraTime(true);
+      setCupExtraTimeBadge(true);
+      setLiveMinute(90);
+      setIsPlayingMatch(true);
+      setActiveTab("live");
+      if (data) {
+        setMatchResults((prev) => {
+          if (!prev) return prev;
+          return {
+            ...prev,
+            results: (prev.results || []).map((r) =>
+              r.homeTeamId === data.homeTeamId &&
+              r.awayTeamId === data.awayTeamId
+                ? {
+                    ...r,
+                    finalHomeGoals: data.homeGoals,
+                    finalAwayGoals: data.awayGoals,
+                  }
+                : r,
+            ),
+          };
+        });
+      }
+    });
     socket.on("extraTimeHalfTime", (data) => {
       // Indicate extra time half-time in the live tab — no ready gate needed
       setCupExtraTimeBadge(true);
@@ -545,11 +572,34 @@ function App() {
         });
       }
     });
+    socket.on("extraTimeSecondHalfStart", (data) => {
+      // Second period of extra time — update scores and keep clock running
+      if (data && data.fixture) {
+        setMatchResults((prev) => {
+          if (!prev) return prev;
+          return {
+            ...prev,
+            results: (prev.results || []).map((r) =>
+              r.homeTeamId === data.fixture.homeTeamId &&
+              r.awayTeamId === data.fixture.awayTeamId
+                ? {
+                    ...r,
+                    finalHomeGoals: data.fixture.homeGoals,
+                    finalAwayGoals: data.fixture.awayGoals,
+                  }
+                : r,
+            ),
+          };
+        });
+      }
+    });
     socket.on("cupRoundResults", (data) => {
       setCupRoundResults(data);
       setShowCupResults(true);
       setIsCupMatch(false);
+      setIsCupExtraTime(false);
       setCupExtraTimeBadge(false);
+      setIsPlayingMatch(false);
     });
     socket.on("cupSecondHalfStart", (data) => {
       setIsMatchActionPending(false);
@@ -766,6 +816,8 @@ function App() {
       socket.off("nextMatchSummary");
       socket.off("cupDrawStart");
       socket.off("cupHalfTimeResults");
+      socket.off("cupExtraTimeStart");
+      socket.off("extraTimeSecondHalfStart");
       socket.off("extraTimeHalfTime");
       socket.off("cupRoundResults");
       socket.off("cupSecondHalfStart");
@@ -864,7 +916,8 @@ function App() {
 
       if (
         liveMinute < 45 ||
-        (liveMinute >= 45 && liveMinute < 90 && isSecondHalfReplay)
+        (liveMinute >= 45 && liveMinute < 90 && isSecondHalfReplay) ||
+        (isCupExtraTime && liveMinute >= 90 && liveMinute < 120)
       ) {
         const timer = setTimeout(() => {
           setLiveMinute((m) => m + 1);
@@ -872,7 +925,15 @@ function App() {
         return () => clearTimeout(timer);
       } else if (liveMinute === 45 && !isSecondHalfReplay) {
         setIsPlayingMatch(false);
-      } else if (liveMinute >= 90) {
+      } else if (liveMinute >= 120 && isCupExtraTime) {
+        // Extra time animation finished — notify server
+        const timer = setTimeout(() => {
+          setIsPlayingMatch(false);
+          setIsCupExtraTime(false);
+          socket.emit("cupExtraTimeDone");
+        }, 2000);
+        return () => clearTimeout(timer);
+      } else if (liveMinute >= 90 && !isCupExtraTime) {
         const timer = setTimeout(() => {
           setIsPlayingMatch(false);
           if (isCupMatch) {
@@ -897,6 +958,7 @@ function App() {
     matchResults,
     showHalftimePanel,
     isCupMatch,
+    isCupExtraTime,
     isMatchActionPending,
   ]);
 
@@ -1936,7 +1998,7 @@ function App() {
                 className="text-2xl md:text-4xl font-black tracking-widest"
                 style={{ color: teamInfo?.color_secondary || "#ffffff" }}
               >
-                {Math.min(liveMinute, 90)}'
+                {Math.min(liveMinute, 120)}'
               </p>
             </div>
           )}
@@ -3259,7 +3321,8 @@ function App() {
                             {formatCurrency(player.wage || 0)}
                           </td>
                           <td className="px-3 py-2 text-center">
-                            {player.signed_season !== Math.ceil((matchweekCount + 1) / 14) ? (
+                            {player.signed_season !==
+                            Math.ceil((matchweekCount + 1) / 14) ? (
                               <div className="flex flex-nowrap justify-center gap-1">
                                 <button
                                   onClick={(e) => {

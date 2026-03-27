@@ -440,7 +440,11 @@ function armCupTimeout({ game, key, ms, phase, round, token, onElapsed }) {
   clearCupTimeout(game, key);
   game[key] = setTimeout(() => {
     const currentToken = game.cupRuntime?.phaseToken;
-    if (game.cupState !== phase || game.cupRound !== round || currentToken !== token) {
+    if (
+      game.cupState !== phase ||
+      game.cupRound !== round ||
+      currentToken !== token
+    ) {
       return;
     }
     onElapsed();
@@ -740,8 +744,37 @@ async function generateCupDraw(game, round) {
   return fixtures;
 }
 
+// ─── CUP EXTRA-TIME ANIMATION GATE ──────────────────────────────────────────
+// Returns a promise that resolves once every connected coach has emitted
+// "cupExtraTimeDone", or after `timeoutMs` milliseconds (whichever comes first).
+function cupETAnimGate(game, timeoutMs = 45000) {
+  return new Promise((resolve) => {
+    const acks = new Set();
+    const timeout = setTimeout(() => {
+      delete game._cupETAnimHandler;
+      resolve();
+    }, timeoutMs);
+
+    game._cupETAnimHandler = (socketId) => {
+      acks.add(socketId);
+      const connected = Object.values(game.playersByName).filter(
+        (p) => p.socketId,
+      );
+      if (
+        connected.length > 0 &&
+        connected.every((p) => acks.has(p.socketId))
+      ) {
+        clearTimeout(timeout);
+        delete game._cupETAnimHandler;
+        resolve();
+      }
+    };
+  });
+}
+
 async function finalizeCupRound(game, round, expectedToken) {
-  if (game.cupState !== "second_half_waiting" || game.cupRound !== round) return;
+  if (game.cupState !== "second_half_waiting" || game.cupRound !== round)
+    return;
   if ((game.cupRuntime?.phaseToken || "") !== expectedToken) return;
 
   setCupPhase(game, "finalizing_cup_round", round);
@@ -751,6 +784,7 @@ async function finalizeCupRound(game, round, expectedToken) {
   const fixtures = game.cupFixtures || [];
   const roundName = CUP_ROUND_NAMES[round] || `Ronda ${round}`;
   const results = [];
+  let hasAnyET = false;
 
   for (const fixture of fixtures) {
     const t1 = fixture._t1 || { formation: "4-4-2", style: "Balanced" };
@@ -764,6 +798,14 @@ async function finalizeCupRound(game, round, expectedToken) {
           ? fixture.homeTeamId
           : fixture.awayTeamId;
     } else {
+      // Notify clients that this fixture is going to extra time
+      hasAnyET = true;
+      io.to(game.roomCode).emit("cupExtraTimeStart", {
+        homeTeamId: fixture.homeTeamId,
+        awayTeamId: fixture.awayTeamId,
+        homeGoals: fixture.finalHomeGoals,
+        awayGoals: fixture.finalAwayGoals,
+      });
       await simulateExtraTime(game.db, fixture, t1, t2, ctx);
 
       if (fixture.finalHomeGoals !== fixture.finalAwayGoals) {
@@ -889,6 +931,12 @@ async function finalizeCupRound(game, round, expectedToken) {
         );
       }
     }
+  }
+
+  // If any fixture went to extra time AND there are humans in the cup,
+  // wait for all clients to finish the ET animation (up to 45 s).
+  if (hasAnyET && game.cupHumanInCup) {
+    await cupETAnimGate(game, 45000);
   }
 
   game.cupFixtures = [];
@@ -1073,7 +1121,10 @@ async function simulateCupFirstHalf(game, round, expectedToken) {
   game.cupRuntime.secondHalfPayload = null;
   saveGameState(game);
 
-  io.to(game.roomCode).emit("cupHalfTimeResults", game.cupRuntime.halftimePayload);
+  io.to(game.roomCode).emit(
+    "cupHalfTimeResults",
+    game.cupRuntime.halftimePayload,
+  );
 
   // Also update player list so the client knows to show "ready" state
   io.to(game.roomCode).emit("playerListUpdate", getPlayerList(game));
@@ -1294,9 +1345,11 @@ function emitSquadForPlayer(game, teamId) {
 }
 
 function isMatchInProgress(game) {
-  return game.matchState === "running_first_half" ||
+  return (
+    game.matchState === "running_first_half" ||
     game.matchState === "halftime" ||
-    game.matchState === "playing_second_half";
+    game.matchState === "playing_second_half"
+  );
 }
 
 /**
@@ -1401,7 +1454,7 @@ function startAuction(game, player, startingPrice, callback) {
         playerId: player.id,
         sellerTeamId: player.team_id,
         startingPrice,
-        bids: {},           // { teamId: bidAmount } — sealed, one bid per team
+        bids: {}, // { teamId: bidAmount } — sealed, one bid per team
         endsAt: now + durationMs,
         status: "open",
       };
@@ -1496,71 +1549,77 @@ function finalizeAuction(game, playerId) {
       const buyerTeamId = winnerTeamId;
       const finalBid = winnerBid;
 
-      game.db.get("SELECT name FROM teams WHERE id = ?", [buyerTeamId], (errT, buyerTeam) => {
-        const buyerTeamName = buyerTeam ? buyerTeam.name : "?";
+      game.db.get(
+        "SELECT name FROM teams WHERE id = ?",
+        [buyerTeamId],
+        (errT, buyerTeam) => {
+          const buyerTeamName = buyerTeam ? buyerTeam.name : "?";
 
-        game.db.run(
-          "UPDATE teams SET budget = budget + ? WHERE id = ?",
-          [finalBid, auction.sellerTeamId],
-          () => {
-            game.db.run(
-              "UPDATE teams SET budget = budget - ? WHERE id = ?",
-              [finalBid, buyerTeamId],
-              () => {
-                game.db.run(
-                  "UPDATE players SET team_id = ?, wage = ?, contract_until_matchweek = ?, signed_season = ?, transfer_status = 'none', transfer_price = 0, contract_request_pending = 0, contract_requested_wage = 0 WHERE id = ?",
-                  [
-                    buyerTeamId,
-                    Math.max(player.wage || 0, Math.round(finalBid * 0.06)),
-                    getSeasonEndMatchweek(game.matchweek),
-                    Math.ceil(Math.max(1, game.matchweek) / 14),
-                    playerId,
-                  ],
-                  () => {
-                    const buyerCoach = Object.values(game.playersByName).find(
-                      (p) => p.teamId === buyerTeamId && p.socketId,
-                    );
-                    const sellerCoach = Object.values(game.playersByName).find(
-                      (p) => p.teamId === auction.sellerTeamId && p.socketId,
-                    );
-                    if (buyerCoach) {
-                      io.to(buyerCoach.socketId).emit(
-                        "systemMessage",
-                        `Ganhaste o leilão de ${player.name} por €${finalBid}!`,
+          game.db.run(
+            "UPDATE teams SET budget = budget + ? WHERE id = ?",
+            [finalBid, auction.sellerTeamId],
+            () => {
+              game.db.run(
+                "UPDATE teams SET budget = budget - ? WHERE id = ?",
+                [finalBid, buyerTeamId],
+                () => {
+                  game.db.run(
+                    "UPDATE players SET team_id = ?, wage = ?, contract_until_matchweek = ?, signed_season = ?, transfer_status = 'none', transfer_price = 0, contract_request_pending = 0, contract_requested_wage = 0 WHERE id = ?",
+                    [
+                      buyerTeamId,
+                      Math.max(player.wage || 0, Math.round(finalBid * 0.06)),
+                      getSeasonEndMatchweek(game.matchweek),
+                      Math.ceil(Math.max(1, game.matchweek) / 14),
+                      playerId,
+                    ],
+                    () => {
+                      const buyerCoach = Object.values(game.playersByName).find(
+                        (p) => p.teamId === buyerTeamId && p.socketId,
                       );
-                    }
-                    if (sellerCoach) {
-                      io.to(sellerCoach.socketId).emit(
-                        "systemMessage",
-                        `${player.name} foi vendido em leilão por €${finalBid}.`,
+                      const sellerCoach = Object.values(
+                        game.playersByName,
+                      ).find(
+                        (p) => p.teamId === auction.sellerTeamId && p.socketId,
                       );
-                    }
-                    delete game.auctions?.[playerId];
-                    delete game.auctionTimers?.[playerId];
-                    refreshMarket(game);
-                    game.db.all("SELECT * FROM teams", (errTeams, teams) => {
-                      if (!errTeams)
-                        io.to(game.roomCode).emit("teamsData", teams);
-                      emitSquadForPlayer(game, buyerTeamId);
-                      if (auction.sellerTeamId !== buyerTeamId) {
-                        emitSquadForPlayer(game, auction.sellerTeamId);
+                      if (buyerCoach) {
+                        io.to(buyerCoach.socketId).emit(
+                          "systemMessage",
+                          `Ganhaste o leilão de ${player.name} por €${finalBid}!`,
+                        );
                       }
-                      io.to(game.roomCode).emit("auctionClosed", {
-                        playerId,
-                        playerName: player.name,
-                        sold: true,
-                        buyerTeamId,
-                        buyerTeamName,
-                        finalBid,
+                      if (sellerCoach) {
+                        io.to(sellerCoach.socketId).emit(
+                          "systemMessage",
+                          `${player.name} foi vendido em leilão por €${finalBid}.`,
+                        );
+                      }
+                      delete game.auctions?.[playerId];
+                      delete game.auctionTimers?.[playerId];
+                      refreshMarket(game);
+                      game.db.all("SELECT * FROM teams", (errTeams, teams) => {
+                        if (!errTeams)
+                          io.to(game.roomCode).emit("teamsData", teams);
+                        emitSquadForPlayer(game, buyerTeamId);
+                        if (auction.sellerTeamId !== buyerTeamId) {
+                          emitSquadForPlayer(game, auction.sellerTeamId);
+                        }
+                        io.to(game.roomCode).emit("auctionClosed", {
+                          playerId,
+                          playerName: player.name,
+                          sold: true,
+                          buyerTeamId,
+                          buyerTeamName,
+                          finalBid,
+                        });
                       });
-                    });
-                  },
-                );
-              },
-            );
-          },
-        );
-      });
+                    },
+                  );
+                },
+              );
+            },
+          );
+        },
+      );
     },
   );
 }
@@ -1574,7 +1633,10 @@ function placeAuctionBid(game, teamId, playerId, bidAmount, io) {
     return Promise.resolve({ ok: false, error: "Leilão já encerrado." });
   }
   if (auction.sellerTeamId === teamId) {
-    return Promise.resolve({ ok: false, error: "Não podes licitar no teu próprio jogador." });
+    return Promise.resolve({
+      ok: false,
+      error: "Não podes licitar no teu próprio jogador.",
+    });
   }
   // Sealed-bid: only one bid per team
   if (auction.bids[teamId] != null) {
@@ -1936,7 +1998,8 @@ function scheduleNpcAuctionBids(game, playerId) {
           );
           if (maxBid < auction.startingPrice) return;
 
-          const bidAmount = auction.startingPrice +
+          const bidAmount =
+            auction.startingPrice +
             Math.floor(Math.random() * (maxBid - auction.startingPrice + 1));
 
           placeAuctionBid(game, npcTeam.id, playerId, bidAmount, io);
@@ -2118,6 +2181,14 @@ io.on("connection", (socket) => {
       clearCupTimeout(game, "_cupSecondHalfTimeout");
       finalizeCupRound(game, game.cupRound, game.cupRuntime?.phaseToken);
     }
+  });
+
+  // ── CUP EXTRA-TIME ANIMATION DONE ────────────────────────────────────────
+  // Client emits this when the ET (90-120) animation finishes.
+  socket.on("cupExtraTimeDone", () => {
+    const game = getGameBySocket(socket.id);
+    if (!game || !game._cupETAnimHandler) return;
+    game._cupETAnimHandler(socket.id);
   });
 
   // ── REQUEST PALMARES ──────────────────────────────────────────────────────
@@ -2344,7 +2415,10 @@ io.on("connection", (socket) => {
     // Block auctions during matches
     const finalMode = mode === "auction" ? "auction" : "fixed";
     if (finalMode === "auction" && isMatchInProgress(game)) {
-      socket.emit("systemMessage", "Leilões só são permitidos após o final das partidas.");
+      socket.emit(
+        "systemMessage",
+        "Leilões só são permitidos após o final das partidas.",
+      );
       return;
     }
 
@@ -2895,12 +2969,21 @@ async function processSegment(game, startMin, endMin, nextState) {
 
               // ── FLUSH PENDING AUCTION QUEUE ────────────────────────────
               // Auctions that were requested during the match are now fired.
-              if (game.pendingAuctionQueue && game.pendingAuctionQueue.length > 0) {
+              if (
+                game.pendingAuctionQueue &&
+                game.pendingAuctionQueue.length > 0
+              ) {
                 const queue = game.pendingAuctionQueue.splice(0);
                 let qDelay = 500;
                 for (const entry of queue) {
                   setTimeout(() => {
-                    listPlayerOnMarket(game, entry.playerId, entry.mode, entry.price, entry.callback);
+                    listPlayerOnMarket(
+                      game,
+                      entry.playerId,
+                      entry.mode,
+                      entry.price,
+                      entry.callback,
+                    );
                   }, qDelay);
                   qDelay += 18000; // 15s auction + 3s buffer
                 }

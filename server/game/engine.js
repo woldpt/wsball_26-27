@@ -1,8 +1,6 @@
 function pickBestPlayer(players = []) {
   if (!players.length) return null;
-  return [...players].sort(
-    (a, b) => b.skill - a.skill,
-  )[0];
+  return [...players].sort((a, b) => b.skill - a.skill)[0];
 }
 
 /**
@@ -45,9 +43,7 @@ async function getTeamSquad(db, teamId, tactic, currentMatchweek = 1) {
       }
 
       // Auto-pick best 11 based on formation
-      const sorted = [...availableRows].sort(
-        (a, b) => b.skill - a.skill,
-      );
+      const sorted = [...availableRows].sort((a, b) => b.skill - a.skill);
       const lineup = [];
       const formationStr =
         tactic && tactic.formation ? tactic.formation : "4-4-2";
@@ -403,13 +399,17 @@ async function simulateMatchSegment(
   // Load team morale values
   const [homeMorale, awayMorale] = await Promise.all([
     new Promise((res) =>
-      db.get("SELECT morale FROM teams WHERE id = ?", [fixture.homeTeamId], (err, row) =>
-        res(row && row.morale != null ? row.morale : 75),
+      db.get(
+        "SELECT morale FROM teams WHERE id = ?",
+        [fixture.homeTeamId],
+        (err, row) => res(row && row.morale != null ? row.morale : 75),
       ),
     ),
     new Promise((res) =>
-      db.get("SELECT morale FROM teams WHERE id = ?", [fixture.awayTeamId], (err, row) =>
-        res(row && row.morale != null ? row.morale : 75),
+      db.get(
+        "SELECT morale FROM teams WHERE id = ?",
+        [fixture.awayTeamId],
+        (err, row) => res(row && row.morale != null ? row.morale : 75),
       ),
     ),
   ]);
@@ -485,8 +485,16 @@ async function simulateMatchSegment(
     return { attack, defense, midfield, gk, squad };
   };
 
-  const home = getPower(homeSquad, homeTactic ? homeTactic.style : "Balanced", homeMorale);
-  const away = getPower(awaySquad, awayTactic ? awayTactic.style : "Balanced", awayMorale);
+  const home = getPower(
+    homeSquad,
+    homeTactic ? homeTactic.style : "Balanced",
+    homeMorale,
+  );
+  const away = getPower(
+    awaySquad,
+    awayTactic ? awayTactic.style : "Balanced",
+    awayMorale,
+  );
 
   for (let minute = startMin; minute <= endMin; minute++) {
     fixture._minute = minute;
@@ -660,22 +668,33 @@ async function applyPostMatchQualityEvolution(db, fixtures, currentMatchweek) {
     const moraleUpdates = [];
     for (const [teamId, result] of teamResults.entries()) {
       let delta;
-      if (result === "W") delta = 8 + Math.floor(Math.random() * 5);   // +8..+12
-      else if (result === "L") delta = -(8 + Math.floor(Math.random() * 5)); // -8..-12
-      else delta = Math.floor(Math.random() * 5) - 2;                   // -2..+2
+      if (result === "W")
+        delta = 8 + Math.floor(Math.random() * 5); // +8..+12
+      else if (result === "L")
+        delta = -(8 + Math.floor(Math.random() * 5)); // -8..-12
+      else delta = Math.floor(Math.random() * 5) - 2; // -2..+2
       moraleUpdates.push({ teamId, delta });
     }
 
     if (moraleUpdates.length > 0) {
-      db.all("SELECT id, morale FROM teams WHERE id IN (" + moraleUpdates.map(() => "?").join(",") + ")",
+      db.all(
+        "SELECT id, morale FROM teams WHERE id IN (" +
+          moraleUpdates.map(() => "?").join(",") +
+          ")",
         moraleUpdates.map((u) => u.teamId),
         (err, rows) => {
           if (err || !rows) return;
           rows.forEach((row) => {
             const upd = moraleUpdates.find((u) => u.teamId === row.id);
             if (!upd) return;
-            const newMorale = Math.max(20, Math.min(100, (row.morale ?? 75) + upd.delta));
-            db.run("UPDATE teams SET morale = ? WHERE id = ?", [newMorale, row.id]);
+            const newMorale = Math.max(
+              20,
+              Math.min(100, (row.morale ?? 75) + upd.delta),
+            );
+            db.run("UPDATE teams SET morale = ? WHERE id = ?", [
+              newMorale,
+              row.id,
+            ]);
           });
         },
       );
@@ -804,6 +823,16 @@ async function simulateExtraTime(db, fixture, homeTactic, awayTactic, context) {
         awayGoals: fixture.finalAwayGoals,
       },
       events: et1Events,
+    });
+    // Give the client time to show the ET half-time state (3 s pause)
+    await new Promise((r) => setTimeout(r, 3000));
+    context.io.to(context.game.roomCode).emit("extraTimeSecondHalfStart", {
+      fixture: {
+        homeTeamId: fixture.homeTeamId,
+        awayTeamId: fixture.awayTeamId,
+        homeGoals: fixture.finalHomeGoals,
+        awayGoals: fixture.finalAwayGoals,
+      },
     });
   }
 
