@@ -1156,7 +1156,7 @@ function listPlayerOnMarket(game, playerId, mode, price, callback) {
 }
 
 function startAuction(game, player, startingPrice, callback) {
-  const durationMs = 45000;
+  const durationMs = 15000;
   const minIncrement = Math.max(1000, Math.round(startingPrice * 0.05));
   const now = Date.now();
   const existingTimer = game.auctionTimers?.[player.id];
@@ -1572,10 +1572,13 @@ async function processNpcTransferActivity(game) {
 
   // ── NPC PLAYER LISTING ──────────────────────────────────────────────────
   // NPC teams with large squads put surplus or weakest players on the market.
-  const allNpcTeams = (
-    await runAll(game.db, "SELECT * FROM teams")
-  ).filter((t) => !humanTeamIds.has(t.id));
+  // Auctions are delayed 8-12s so match-result animations finish on clients
+  // before auction popups appear. Max 3 auctions per matchweek.
+  const allNpcTeams = (await runAll(game.db, "SELECT * FROM teams")).filter(
+    (t) => !humanTeamIds.has(t.id),
+  );
 
+  const npcListings = [];
   for (const npcTeam of allNpcTeams) {
     const squad = await runAll(
       game.db,
@@ -1595,22 +1598,39 @@ async function processNpcTransferActivity(game) {
     );
     if (price <= 0) continue;
 
-    await new Promise((resolve) => {
-      listPlayerOnMarket(
-        game,
-        candidate.id,
-        useAuction ? "auction" : "fixed",
-        price,
-        resolve,
-      );
-    });
+    npcListings.push({ candidate, useAuction, price });
+  }
+
+  if (npcListings.length > 0) {
+    // Cap auctions at 3 per matchweek; fixed-price listings are uncapped
+    const auctionListings = npcListings
+      .filter((l) => l.useAuction)
+      .sort(() => Math.random() - 0.5)
+      .slice(0, 3);
+    const fixedListings = npcListings.filter((l) => !l.useAuction);
+
+    // Fixed-price listings can fire immediately
+    for (const { candidate, price } of fixedListings) {
+      await new Promise((resolve) => {
+        listPlayerOnMarket(game, candidate.id, "fixed", price, resolve);
+      });
+    }
+
+    // Auctions are staggered after a delay so clients finish animating results
+    let auctionDelay = 8000;
+    for (const { candidate, price } of auctionListings) {
+      setTimeout(() => {
+        listPlayerOnMarket(game, candidate.id, "auction", price, null);
+      }, auctionDelay);
+      auctionDelay += 2000 + Math.floor(Math.random() * 3000);
+    }
   }
 }
 
 // ─── NPC AUCTION BIDDING ───────────────────────────────────────────────────
 // Called when an auction starts. NPC teams may place bids after a delay.
-// Round 1 (3-15s): 50% participation, staggered first bids.
-// Round 2 (20-35s): 35% chance each NPC counter-bids if outbid.
+// Round 1 (2-8s): 50% participation, staggered first bids.
+// Round 2 (9-13s): 35% chance each NPC counter-bids if outbid.
 function scheduleNpcAuctionBids(game, playerId) {
   const auction = game.auctions?.[playerId];
   if (!auction) return;
@@ -1630,8 +1650,8 @@ function scheduleNpcAuctionBids(game, playerId) {
         (t) => !humanTeamIds.has(t.id) && t.id !== auction.sellerTeamId,
       );
 
-      // Round 1: staggered first bids between 3-15s
-      let bidDelay = 3000 + Math.floor(Math.random() * 5000);
+      // Round 1: staggered first bids between 2-8s
+      let bidDelay = 2000 + Math.floor(Math.random() * 3000);
       for (const npcTeam of npcTeams) {
         if (Math.random() > 0.5) continue; // 50% chance each NPC bids in round 1
 
@@ -1645,14 +1665,14 @@ function scheduleNpcAuctionBids(game, playerId) {
           placeAuctionBid(game, npcTeam.id, playerId, bidAmount, io);
         }, bidDelay);
 
-        bidDelay += 2000 + Math.floor(Math.random() * 5000);
+        bidDelay += 1000 + Math.floor(Math.random() * 2000);
       }
 
-      // Round 2: counter-bids between 20-35s for NPCs that were outbid
+      // Round 2: counter-bids between 9-13s for NPCs that were outbid
       for (const npcTeam of npcTeams) {
         if (Math.random() > 0.35) continue; // 35% chance each NPC counter-bids
 
-        const counterDelay = 20000 + Math.floor(Math.random() * 15000);
+        const counterDelay = 9000 + Math.floor(Math.random() * 4000);
         setTimeout(() => {
           const currentAuction = game.auctions?.[playerId];
           if (!currentAuction || currentAuction.status !== "open") return;
