@@ -242,9 +242,10 @@ function getEffectiveLineup(
   return { active, offPlayers, subPlayers };
 }
 
-function getMatchLastEventText(events = [], liveMinute = 90) {
+function getMatchLastEventText(events = [], liveMinute = 90, side = null) {
+  const filtered = side ? events.filter((e) => e.team === side) : events;
   let latest = null;
-  events.forEach((event, index) => {
+  filtered.forEach((event, index) => {
     if ((event.minute ?? -1) > liveMinute) return;
     if (
       !latest ||
@@ -2546,11 +2547,6 @@ function App() {
                                 e.type === "goal" &&
                                 e.team === "away",
                             );
-                            const lastEventText = getMatchLastEventText(
-                              matchEvents,
-                              liveMinute,
-                            );
-
                             const isMyMatch =
                               match.homeTeamId === me.teamId ||
                               match.awayTeamId === me.teamId;
@@ -2635,11 +2631,19 @@ function App() {
                                     {aInfo?.name}
                                   </div>
                                 </div>
-                                {/* Line 2: attendance + last event */}
-                                <div className="px-2 py-0.5 text-zinc-400 truncate text-center border-t border-zinc-800/60 min-h-5 text-xs">
-                                  {match.attendance
-                                    ? `Lotação: ${match.attendance.toLocaleString("pt-PT")}${lastEventText ? "  |  " + lastEventText : ""}`
-                                    : lastEventText}
+                                {/* Line 2: home event | attendance | away event */}
+                                <div className="grid grid-cols-3 border-t border-zinc-800/60 text-xs text-zinc-400 min-h-5">
+                                  <div className="px-2 py-0.5 text-center truncate">
+                                    {getMatchLastEventText(matchEvents, liveMinute, "home")}
+                                  </div>
+                                  <div className="px-2 py-0.5 text-center truncate font-bold text-zinc-500">
+                                    {match.attendance
+                                      ? match.attendance.toLocaleString("pt-PT")
+                                      : ""}
+                                  </div>
+                                  <div className="px-2 py-0.5 text-center truncate">
+                                    {getMatchLastEventText(matchEvents, liveMinute, "away")}
+                                  </div>
                                 </div>
                               </div>
                             );
