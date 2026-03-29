@@ -587,7 +587,10 @@ async function simulateMatchSegment(
       const side = isHomeCard ? "home" : "away";
       if (squad.length > 0) {
         const offender = squad[Math.floor(Math.random() * squad.length)];
-        const aggValue = typeof offender.aggressiveness === "number" ? offender.aggressiveness : 25;
+        const aggValue =
+          typeof offender.aggressiveness === "number"
+            ? offender.aggressiveness
+            : 25;
         let seriousProb = 0.05 + (aggValue / 50) * 0.35; // 0.05 (agg=0) to 0.40 (agg=50)
 
         if (Math.random() < seriousProb) {

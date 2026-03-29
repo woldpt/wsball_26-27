@@ -2177,7 +2177,11 @@ io.on("connection", (socket) => {
           console.log(
             `[${game.roomCode}] Cup pre-match timeout — auto-starting round ${game.cupRound}`,
           );
-          simulateCupFirstHalf(game, game.cupRound, game.cupRuntime?.phaseToken);
+          simulateCupFirstHalf(
+            game,
+            game.cupRound,
+            game.cupRuntime?.phaseToken,
+          );
         },
       });
     }

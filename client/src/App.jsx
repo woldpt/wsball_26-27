@@ -2284,13 +2284,18 @@ function App() {
                 {/* BUG-11 FIX: showHalftimePanel (not liveMinute===45) controls this overlay */}
                 {showHalftimePanel && !isPlayingMatch && (
                   <div className="absolute inset-0 bg-zinc-950 z-50 flex flex-col overflow-hidden">
-
                     {/* ── Header ── */}
                     <div className="shrink-0 flex items-center justify-between px-4 py-3 bg-zinc-900 border-b border-zinc-800">
                       <div className="flex items-center gap-2.5">
-                        <span className="text-amber-500 font-black text-lg tabular-nums leading-none">45'</span>
+                        <span className="text-amber-500 font-black text-lg tabular-nums leading-none">
+                          45'
+                        </span>
                         <span className="text-[9px] font-black uppercase tracking-widest text-zinc-500 bg-zinc-800 px-2 py-0.5 rounded-full">
-                          {cupPreMatch ? "Pré-Jogo" : isCupMatch ? "Intervalo · Taça" : "Intervalo"}
+                          {cupPreMatch
+                            ? "Pré-Jogo"
+                            : isCupMatch
+                              ? "Intervalo · Taça"
+                              : "Intervalo"}
                         </span>
                       </div>
                       <div className="flex items-center gap-1.5">
@@ -2313,11 +2318,20 @@ function App() {
                           const outP = mySquad.find((p) => p.id === sub.out);
                           const inP = mySquad.find((p) => p.id === sub.in);
                           return (
-                            <div key={i} className="flex items-center gap-1 bg-zinc-800 rounded-full pl-2 pr-2.5 py-0.5 text-[10px] font-bold">
+                            <div
+                              key={i}
+                              className="flex items-center gap-1 bg-zinc-800 rounded-full pl-2 pr-2.5 py-0.5 text-[10px] font-bold"
+                            >
                               <span className="text-zinc-600 shrink-0">🔄</span>
-                              <span className="text-red-400 truncate max-w-[5.5rem]">{outP?.name ?? "?"}</span>
-                              <span className="text-zinc-600 shrink-0 mx-0.5">→</span>
-                              <span className="text-emerald-400 truncate max-w-[5.5rem]">{inP?.name ?? "?"}</span>
+                              <span className="text-red-400 truncate max-w-[5.5rem]">
+                                {outP?.name ?? "?"}
+                              </span>
+                              <span className="text-zinc-600 shrink-0 mx-0.5">
+                                →
+                              </span>
+                              <span className="text-emerald-400 truncate max-w-[5.5rem]">
+                                {inP?.name ?? "?"}
+                              </span>
                             </div>
                           );
                         })}
@@ -2326,12 +2340,13 @@ function App() {
 
                     {/* ── Two-column player list ── */}
                     <div className="flex flex-1 min-h-0 overflow-hidden">
-
                       {/* Em Campo */}
                       <div className="flex-1 flex flex-col min-w-0 overflow-hidden border-r border-zinc-800">
                         <div className="shrink-0 flex items-center gap-1.5 px-3 py-1.5 bg-zinc-900/40 border-b border-zinc-800">
                           <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 shrink-0" />
-                          <span className="text-[9px] font-black uppercase tracking-widest text-emerald-500">Em Campo</span>
+                          <span className="text-[9px] font-black uppercase tracking-widest text-emerald-500">
+                            Em Campo
+                          </span>
                         </div>
                         <div className="flex-1 overflow-y-auto">
                           {annotatedSquad
@@ -2364,10 +2379,14 @@ function App() {
                                 >
                                   {POSITION_SHORT_LABELS[p.position]}
                                 </span>
-                                <span className={`flex-1 truncate text-[11px] font-bold ${swapSource === p.id ? "text-red-200" : "text-zinc-200"}`}>
+                                <span
+                                  className={`flex-1 truncate text-[11px] font-bold ${swapSource === p.id ? "text-red-200" : "text-zinc-200"}`}
+                                >
                                   {p.name}
                                 </span>
-                                <span className={`shrink-0 text-[10px] font-black tabular-nums ${swapSource === p.id ? "text-red-400" : "text-zinc-600"}`}>
+                                <span
+                                  className={`shrink-0 text-[10px] font-black tabular-nums ${swapSource === p.id ? "text-red-400" : "text-zinc-600"}`}
+                                >
                                   {p.skill}
                                 </span>
                               </div>
@@ -2379,7 +2398,9 @@ function App() {
                       <div className="flex-1 flex flex-col min-w-0 overflow-hidden">
                         <div className="shrink-0 flex items-center gap-1.5 px-3 py-1.5 bg-zinc-900/40 border-b border-zinc-800">
                           <span className="w-1.5 h-1.5 rounded-full bg-zinc-600 shrink-0" />
-                          <span className="text-[9px] font-black uppercase tracking-widest text-zinc-500">Banco</span>
+                          <span className="text-[9px] font-black uppercase tracking-widest text-zinc-500">
+                            Banco
+                          </span>
                         </div>
                         <div className="flex-1 overflow-y-auto">
                           {annotatedSquad
@@ -2453,15 +2474,21 @@ function App() {
                       <div className="shrink-0 flex items-center gap-2 px-3 py-2.5 border-t border-zinc-700 bg-zinc-900">
                         <div className="flex-1 flex items-center gap-2 min-w-0">
                           <span className="bg-red-950 text-red-300 border border-red-800/60 text-[10px] font-black px-2 py-0.5 rounded truncate max-w-[40%]">
-                            {annotatedSquad.find((p) => p.id === swapSource)?.name ?? "?"}
+                            {annotatedSquad.find((p) => p.id === swapSource)
+                              ?.name ?? "?"}
                           </span>
-                          <span className="text-zinc-500 shrink-0 font-black text-sm">→</span>
+                          <span className="text-zinc-500 shrink-0 font-black text-sm">
+                            →
+                          </span>
                           {swapTarget ? (
                             <span className="bg-emerald-950 text-emerald-300 border border-emerald-800/60 text-[10px] font-black px-2 py-0.5 rounded truncate max-w-[40%]">
-                              {annotatedSquad.find((p) => p.id === swapTarget)?.name ?? "?"}
+                              {annotatedSquad.find((p) => p.id === swapTarget)
+                                ?.name ?? "?"}
                             </span>
                           ) : (
-                            <span className="text-zinc-600 text-[10px] italic">escolhe do banco…</span>
+                            <span className="text-zinc-600 text-[10px] italic">
+                              escolhe do banco…
+                            </span>
                           )}
                         </div>
                         <button
@@ -2668,7 +2695,11 @@ function App() {
                                 {/* Line 2: home event | attendance | away event */}
                                 <div className="grid grid-cols-3 border-t border-zinc-800/60 text-xs text-zinc-400 min-h-5">
                                   <div className="px-2 py-0.5 text-center truncate">
-                                    {getMatchLastEventText(matchEvents, liveMinute, "home")}
+                                    {getMatchLastEventText(
+                                      matchEvents,
+                                      liveMinute,
+                                      "home",
+                                    )}
                                   </div>
                                   <div className="px-2 py-0.5 text-center truncate font-bold text-zinc-500">
                                     {match.attendance
@@ -2676,7 +2707,11 @@ function App() {
                                       : ""}
                                   </div>
                                   <div className="px-2 py-0.5 text-center truncate">
-                                    {getMatchLastEventText(matchEvents, liveMinute, "away")}
+                                    {getMatchLastEventText(
+                                      matchEvents,
+                                      liveMinute,
+                                      "away",
+                                    )}
                                   </div>
                                 </div>
                               </div>

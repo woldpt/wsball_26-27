@@ -295,7 +295,15 @@ db.serialize(() => {
       ];
 
       // Map fixture positions to spec positions (GK→GR, MID→MED, ATK→ATA)
-      const POSITION_MAP = { GK: "GR", MID: "MED", ATK: "ATA", DEF: "DEF", GR: "GR", MED: "MED", ATA: "ATA" };
+      const POSITION_MAP = {
+        GK: "GR",
+        MID: "MED",
+        ATK: "ATA",
+        DEF: "DEF",
+        GR: "GR",
+        MED: "MED",
+        ATA: "ATA",
+      };
 
       for (let i = 0; i < desiredPlayers; i++) {
         let p = providedPlayers[i];
@@ -321,7 +329,10 @@ db.serialize(() => {
           if (p.aggressiveness) {
             // Support legacy string values from fixtures
             const aggMap = { Low: 10, Medium: 25, High: 40 };
-            agg = typeof p.aggressiveness === "number" ? p.aggressiveness : (aggMap[p.aggressiveness] || 25);
+            agg =
+              typeof p.aggressiveness === "number"
+                ? p.aggressiveness
+                : aggMap[p.aggressiveness] || 25;
           }
           if (p.nationality) nat = p.nationality;
         }
