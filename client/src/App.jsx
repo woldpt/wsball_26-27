@@ -3601,6 +3601,12 @@ function App() {
                                   : "🩹"}
                               </span>
                             )}
+                            {player.transfer_status &&
+                              player.transfer_status !== "none" && (
+                                <span className="ml-2 text-[10px] font-black uppercase px-1.5 py-0.5 rounded bg-emerald-500/20 text-emerald-400 border border-emerald-500/30">
+                                  À venda
+                                </span>
+                              )}
                           </td>
                           <td className="px-3 py-2 text-center text-zinc-100 font-normal">
                             <span className="inline-flex items-center justify-center bg-zinc-950 text-white px-2 py-1 rounded text-sm border border-zinc-800 font-normal">
