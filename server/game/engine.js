@@ -587,10 +587,18 @@ async function simulateMatchSegment(
       const side = isHomeCard ? "home" : "away";
       if (squad.length > 0) {
         const offender = squad[Math.floor(Math.random() * squad.length)];
+        // Map aggressiveness tier (or legacy number) to numeric value 1-50
+        const AGG_TIER_VALUES = {
+          Cordeirinho: 5,
+          Cavalheiro: 15,
+          "Fair Play": 25,
+          Caneleiro: 37,
+          Caceteiro: 50,
+        };
         const aggValue =
           typeof offender.aggressiveness === "number"
             ? offender.aggressiveness
-            : 25;
+            : (AGG_TIER_VALUES[offender.aggressiveness] ?? 25);
         // redProb: probabilidade de cartão vermelho directo (expulsão + suspensão)
         // Resto é cartão amarelo (sem expulsão)
         const redProb = 0.04 + (aggValue / 50) * 0.18; // 0.04 (agg=0) a 0.22 (agg=50)

@@ -65,9 +65,18 @@ const lastB = [
   "Eterno",
 ];
 const nationalities = ["ZTR", "VNT", "BRR", "PNN", "MTR", "LST", "GNR", "FRR"];
-// Aggressiveness is a numeric value 1-50 (spec)
+// Aggressiveness tiers (less → more aggressive)
+const AGGRESSIVENESS_TIERS = [
+  "Cordeirinho",
+  "Cavalheiro",
+  "Fair Play",
+  "Caneleiro",
+  "Caceteiro",
+];
 function randomAggressiveness() {
-  return Math.floor(Math.random() * 50) + 1;
+  return AGGRESSIVENESS_TIERS[
+    Math.floor(Math.random() * AGGRESSIVENESS_TIERS.length)
+  ];
 }
 const skillRanges = {
   1: [40, 50],
@@ -327,12 +336,25 @@ db.serialize(() => {
           if (p.age) age = p.age;
           if (p.form) form = p.form;
           if (p.aggressiveness) {
-            // Support legacy string values from fixtures
-            const aggMap = { Low: 10, Medium: 25, High: 40 };
-            agg =
-              typeof p.aggressiveness === "number"
-                ? p.aggressiveness
-                : aggMap[p.aggressiveness] || 25;
+            // Support legacy numeric (1-50) and old string labels
+            const legacyMap = {
+              Low: "Cordeirinho",
+              Medium: "Fair Play",
+              High: "Caceteiro",
+            };
+            if (typeof p.aggressiveness === "number") {
+              const idx = Math.min(
+                4,
+                Math.floor(((p.aggressiveness - 1) / 50) * 5),
+              );
+              agg = AGGRESSIVENESS_TIERS[idx];
+            } else {
+              agg =
+                legacyMap[p.aggressiveness] ||
+                AGGRESSIVENESS_TIERS.includes(p.aggressiveness)
+                  ? legacyMap[p.aggressiveness] || p.aggressiveness
+                  : "Fair Play";
+            }
           }
           if (p.nationality) nat = p.nationality;
         }

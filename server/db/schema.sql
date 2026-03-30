@@ -31,7 +31,7 @@ CREATE TABLE IF NOT EXISTS players (
   skill INTEGER,
   age INTEGER,
   form INTEGER DEFAULT 100,
-  aggressiveness INTEGER DEFAULT 25,
+  aggressiveness TEXT DEFAULT 'Fair Play',
   nationality TEXT,
   value INTEGER,
   wage INTEGER,

@@ -360,6 +360,33 @@ const playNotification = () => {
   }
 };
 
+// ── AGGRESSIVENESS TIERS ──────────────────────────────────────────────────────
+const AGG_TIERS = {
+  Cordeirinho: { color: "text-emerald-400" },
+  Cavalheiro: { color: "text-sky-400" },
+  "Fair Play": { color: "text-zinc-400" },
+  Caneleiro: { color: "text-orange-400" },
+  Caceteiro: { color: "text-red-400" },
+};
+function aggLabel(value) {
+  if (typeof value === "number") {
+    const tiers = [
+      "Cordeirinho",
+      "Cavalheiro",
+      "Fair Play",
+      "Caneleiro",
+      "Caceteiro",
+    ];
+    return tiers[Math.min(4, Math.floor(((value - 1) / 50) * 5))];
+  }
+  return AGG_TIERS[value] ? value : "Fair Play";
+}
+function AggBadge({ value }) {
+  const key = aggLabel(value);
+  const cfg = AGG_TIERS[key] || AGG_TIERS["Fair Play"];
+  return <span className={`text-[10px] font-bold ${cfg.color}`}>{key}</span>;
+}
+
 function App() {
   const savedSessionRef = React.useRef(loadSavedSession());
   const savedSession = savedSessionRef.current;
@@ -3466,6 +3493,9 @@ function App() {
                         <th className="px-3 py-3 text-center w-14 font-normal">
                           QUAL
                         </th>
+                        <th className="px-3 py-3 text-center font-normal">
+                          AGR
+                        </th>
                         <th className="px-3 py-3 text-center w-12 font-normal">
                           ⚽
                         </th>
@@ -3612,6 +3642,9 @@ function App() {
                             <span className="inline-flex items-center justify-center bg-zinc-950 text-white px-2 py-1 rounded text-sm border border-zinc-800 font-normal">
                               {player.skill}
                             </span>
+                          </td>
+                          <td className="px-3 py-2 text-center font-normal">
+                            <AggBadge value={player.aggressiveness} />
                           </td>
                           <td className="px-3 py-2 text-center text-emerald-400 font-normal">
                             {getPlayerStat(player, ["goals"])}
@@ -3762,6 +3795,9 @@ function App() {
                       <th className="px-4 py-2.5 font-black text-center">
                         Qual
                       </th>
+                      <th className="px-4 py-2.5 font-black text-center">
+                        Agr.
+                      </th>
                       <th className="px-4 py-2.5 font-black text-right">
                         Preço
                       </th>
@@ -3832,6 +3868,9 @@ function App() {
                             <span className="bg-emerald-950 text-emerald-400 font-black px-2 py-1 rounded text-sm">
                               {player.skill}
                             </span>
+                          </td>
+                          <td className="px-4 py-2 text-center">
+                            <AggBadge value={player.aggressiveness} />
                           </td>
                           <td className="px-4 py-2 text-right font-mono text-zinc-300 text-sm md:text-base">
                             {formatCurrency(price)}
@@ -4174,6 +4213,7 @@ function App() {
                       <th className="px-4 py-3 font-black">Pos</th>
                       <th className="px-4 py-3 font-black">Nome</th>
                       <th className="px-4 py-3 font-black text-center">Qual</th>
+                      <th className="px-4 py-3 font-black text-center">Agr.</th>
                       <th className="px-4 py-3 font-black text-center">
                         Golos
                       </th>
@@ -4192,7 +4232,7 @@ function App() {
                     {selectedTeamSquad.length === 0 ? (
                       <tr>
                         <td
-                          colSpan="7"
+                          colSpan="8"
                           className="px-4 py-8 text-center text-zinc-500 font-bold"
                         >
                           Sem jogadores encontrados.
@@ -4226,6 +4266,9 @@ function App() {
                             <span className="bg-zinc-950 text-white font-black px-2 py-1.5 rounded text-sm border border-zinc-800">
                               {player.skill}
                             </span>
+                          </td>
+                          <td className="px-4 py-2.5 text-center">
+                            <AggBadge value={player.aggressiveness} />
                           </td>
                           <td className="px-4 py-2.5 text-center font-black text-emerald-400">
                             {getPlayerStat(player, ["goals"])}
@@ -4309,7 +4352,7 @@ function App() {
                     Agressividade
                   </span>
                   <span className="font-bold">
-                    {selectedAuctionPlayer.aggressiveness ?? 25}
+                    <AggBadge value={selectedAuctionPlayer.aggressiveness} />
                   </span>
                 </div>
                 <div className="flex gap-2">
