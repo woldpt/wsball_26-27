@@ -2032,7 +2032,7 @@ function App() {
       };
     })
     .sort((a, b) => {
-      const posOrder = { GK: 1, DEF: 2, MID: 3, ATK: 4 };
+      const posOrder = { GR: 1, DEF: 2, MED: 3, ATA: 4 };
       const aPos = posOrder[a.position] || 5;
       const bPos = posOrder[b.position] || 5;
       if (aPos !== bPos) return aPos - bPos;
@@ -2283,261 +2283,267 @@ function App() {
 
                 {/* BUG-11 FIX: showHalftimePanel (not liveMinute===45) controls this overlay */}
                 {showHalftimePanel && !isPlayingMatch && (
-                  <div className="absolute inset-0 bg-zinc-950 z-50 flex flex-col overflow-hidden">
-                    {/* ── Header ── */}
-                    <div className="shrink-0 flex items-center justify-between px-4 py-3 bg-zinc-900 border-b border-zinc-800">
-                      <div className="flex items-center gap-2.5">
-                        <span className="text-amber-500 font-black text-lg tabular-nums leading-none">
-                          45'
-                        </span>
-                        <span className="text-[9px] font-black uppercase tracking-widest text-zinc-500 bg-zinc-800 px-2 py-0.5 rounded-full">
-                          {cupPreMatch
-                            ? "Pré-Jogo"
-                            : isCupMatch
-                              ? "Intervalo · Taça"
-                              : "Intervalo"}
-                        </span>
-                      </div>
-                      <div className="flex items-center gap-1.5">
-                        {Array.from({ length: MAX_MATCH_SUBS }).map((_, i) => (
-                          <span
-                            key={i}
-                            className={`w-2 h-2 rounded-full transition-colors ${i < subsMade ? "bg-amber-500" : "bg-zinc-700"}`}
-                          />
-                        ))}
-                        <span className="ml-1 text-[10px] font-bold text-zinc-500 tabular-nums">
-                          {MAX_MATCH_SUBS - subsMade}/{MAX_MATCH_SUBS}
-                        </span>
-                      </div>
-                    </div>
-
-                    {/* ── Confirmed subs strip ── */}
-                    {confirmedSubs.length > 0 && (
-                      <div className="shrink-0 px-3 py-2 bg-zinc-900/60 border-b border-zinc-800 flex flex-wrap gap-1.5">
-                        {confirmedSubs.map((sub, i) => {
-                          const outP = mySquad.find((p) => p.id === sub.out);
-                          const inP = mySquad.find((p) => p.id === sub.in);
-                          return (
-                            <div
-                              key={i}
-                              className="flex items-center gap-1 bg-zinc-800 rounded-full pl-2 pr-2.5 py-0.5 text-[10px] font-bold"
-                            >
-                              <span className="text-zinc-600 shrink-0">🔄</span>
-                              <span className="text-red-400 truncate max-w-[5.5rem]">
-                                {outP?.name ?? "?"}
-                              </span>
-                              <span className="text-zinc-600 shrink-0 mx-0.5">
-                                →
-                              </span>
-                              <span className="text-emerald-400 truncate max-w-[5.5rem]">
-                                {inP?.name ?? "?"}
-                              </span>
-                            </div>
-                          );
-                        })}
-                      </div>
-                    )}
-
-                    {/* ── Two-column player list ── */}
-                    <div className="flex flex-1 min-h-0 overflow-hidden">
-                      {/* Em Campo */}
-                      <div className="flex-1 flex flex-col min-w-0 overflow-hidden border-r border-zinc-800">
-                        <div className="shrink-0 flex items-center gap-1.5 px-3 py-1.5 bg-zinc-900/40 border-b border-zinc-800">
-                          <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 shrink-0" />
-                          <span className="text-[9px] font-black uppercase tracking-widest text-emerald-500">
-                            Em Campo
+                  <div className="absolute inset-0 bg-zinc-950/90 backdrop-blur-sm z-50 flex items-center justify-center p-2">
+                    <div className="w-full max-w-sm max-h-[78vh] flex flex-col overflow-hidden bg-zinc-950 rounded-2xl border border-zinc-700 shadow-2xl">
+                      {/* ── Header ── */}
+                      <div className="shrink-0 flex items-center justify-between px-3 py-2 bg-zinc-900 border-b border-zinc-800">
+                        <div className="flex items-center gap-2.5">
+                          <span className="text-amber-500 font-black text-lg tabular-nums leading-none">
+                            45'
+                          </span>
+                          <span className="text-[9px] font-black uppercase tracking-widest text-zinc-500 bg-zinc-800 px-2 py-0.5 rounded-full">
+                            {cupPreMatch
+                              ? "Pré-Jogo"
+                              : isCupMatch
+                                ? "Intervalo · Taça"
+                                : "Intervalo"}
                           </span>
                         </div>
-                        <div className="flex-1 overflow-y-auto">
-                          {annotatedSquad
-                            .filter(
-                              (p) =>
-                                tactic.positions[p.id] === "Titular" &&
-                                !subbedOut.includes(p.id),
-                            )
-                            .map((p) => (
+                        <div className="flex items-center gap-1.5">
+                          {Array.from({ length: MAX_MATCH_SUBS }).map(
+                            (_, i) => (
+                              <span
+                                key={i}
+                                className={`w-2 h-2 rounded-full transition-colors ${i < subsMade ? "bg-amber-500" : "bg-zinc-700"}`}
+                              />
+                            ),
+                          )}
+                          <span className="ml-1 text-[10px] font-bold text-zinc-500 tabular-nums">
+                            {MAX_MATCH_SUBS - subsMade}/{MAX_MATCH_SUBS}
+                          </span>
+                        </div>
+                      </div>
+
+                      {/* ── Confirmed subs strip ── */}
+                      {confirmedSubs.length > 0 && (
+                        <div className="shrink-0 px-3 py-2 bg-zinc-900/60 border-b border-zinc-800 flex flex-wrap gap-1.5">
+                          {confirmedSubs.map((sub, i) => {
+                            const outP = mySquad.find((p) => p.id === sub.out);
+                            const inP = mySquad.find((p) => p.id === sub.in);
+                            return (
                               <div
-                                key={p.id}
-                                onClick={() =>
-                                  subsMade < MAX_MATCH_SUBS &&
-                                  handleSelectOut(p.id)
-                                }
-                                className={`flex items-center gap-2 px-2 py-1.5 border-b border-zinc-800/40 select-none transition-all border-l-2 ${
-                                  swapSource === p.id
-                                    ? "bg-red-500/15 border-l-red-500"
-                                    : subsMade < MAX_MATCH_SUBS
-                                      ? "cursor-pointer hover:bg-zinc-800/50 border-l-transparent"
-                                      : "opacity-40 cursor-not-allowed border-l-transparent"
-                                }`}
+                                key={i}
+                                className="flex items-center gap-1 bg-zinc-800 rounded-full pl-2 pr-2.5 py-0.5 text-[10px] font-bold"
                               >
-                                <span
-                                  className={`w-4 h-4 rounded-sm shrink-0 flex items-center justify-center text-[8px] font-black ${
-                                    swapSource === p.id
-                                      ? "bg-red-500/25 text-red-300"
-                                      : `bg-zinc-800 ${POSITION_TEXT_CLASS[p.position]}`
-                                  }`}
-                                >
-                                  {POSITION_SHORT_LABELS[p.position]}
+                                <span className="text-zinc-600 shrink-0">
+                                  🔄
                                 </span>
-                                <span
-                                  className={`flex-1 truncate text-[11px] font-bold ${swapSource === p.id ? "text-red-200" : "text-zinc-200"}`}
-                                >
-                                  {p.name}
+                                <span className="text-red-400 truncate max-w-[5.5rem]">
+                                  {outP?.name ?? "?"}
                                 </span>
-                                <span
-                                  className={`shrink-0 text-[10px] font-black tabular-nums ${swapSource === p.id ? "text-red-400" : "text-zinc-600"}`}
-                                >
-                                  {p.skill}
+                                <span className="text-zinc-600 shrink-0 mx-0.5">
+                                  →
+                                </span>
+                                <span className="text-emerald-400 truncate max-w-[5.5rem]">
+                                  {inP?.name ?? "?"}
                                 </span>
                               </div>
-                            ))}
+                            );
+                          })}
                         </div>
-                      </div>
+                      )}
 
-                      {/* Banco */}
-                      <div className="flex-1 flex flex-col min-w-0 overflow-hidden">
-                        <div className="shrink-0 flex items-center gap-1.5 px-3 py-1.5 bg-zinc-900/40 border-b border-zinc-800">
-                          <span className="w-1.5 h-1.5 rounded-full bg-zinc-600 shrink-0" />
-                          <span className="text-[9px] font-black uppercase tracking-widest text-zinc-500">
-                            Banco
-                          </span>
-                        </div>
-                        <div className="flex-1 overflow-y-auto">
-                          {annotatedSquad
-                            .filter(
-                              (p) => tactic.positions[p.id] === "Suplente",
-                            )
-                            .map((p) => {
-                              const alreadyUsed = subbedOut.includes(p.id);
-                              const disabled =
-                                alreadyUsed ||
-                                !swapSource ||
-                                subsMade >= MAX_MATCH_SUBS;
-                              return (
+                      {/* ── Two-column player list ── */}
+                      <div className="flex flex-1 min-h-0 overflow-hidden">
+                        {/* Em Campo */}
+                        <div className="flex-1 flex flex-col min-w-0 overflow-hidden border-r border-zinc-800">
+                          <div className="shrink-0 flex items-center gap-1.5 px-3 py-1.5 bg-zinc-900/40 border-b border-zinc-800">
+                            <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 shrink-0" />
+                            <span className="text-[9px] font-black uppercase tracking-widest text-emerald-500">
+                              Em Campo
+                            </span>
+                          </div>
+                          <div className="flex-1 overflow-y-auto">
+                            {annotatedSquad
+                              .filter(
+                                (p) =>
+                                  tactic.positions[p.id] === "Titular" &&
+                                  !subbedOut.includes(p.id),
+                              )
+                              .map((p) => (
                                 <div
                                   key={p.id}
                                   onClick={() =>
-                                    !disabled && handleSelectIn(p.id)
+                                    subsMade < MAX_MATCH_SUBS &&
+                                    handleSelectOut(p.id)
                                   }
                                   className={`flex items-center gap-2 px-2 py-1.5 border-b border-zinc-800/40 select-none transition-all border-l-2 ${
-                                    alreadyUsed
-                                      ? "opacity-20 cursor-not-allowed border-l-transparent"
-                                      : swapTarget === p.id
-                                        ? "bg-emerald-500/15 border-l-emerald-500 cursor-pointer"
-                                        : disabled
-                                          ? "opacity-40 cursor-not-allowed border-l-transparent"
-                                          : "cursor-pointer hover:bg-zinc-800/50 border-l-transparent"
+                                    swapSource === p.id
+                                      ? "bg-red-500/15 border-l-red-500"
+                                      : subsMade < MAX_MATCH_SUBS
+                                        ? "cursor-pointer hover:bg-zinc-800/50 border-l-transparent"
+                                        : "opacity-40 cursor-not-allowed border-l-transparent"
                                   }`}
                                 >
                                   <span
                                     className={`w-4 h-4 rounded-sm shrink-0 flex items-center justify-center text-[8px] font-black ${
-                                      alreadyUsed
-                                        ? "bg-zinc-800/50 text-zinc-700"
-                                        : swapTarget === p.id
-                                          ? "bg-emerald-500/25 text-emerald-300"
-                                          : `bg-zinc-800 ${POSITION_TEXT_CLASS[p.position]}`
+                                      swapSource === p.id
+                                        ? "bg-red-500/25 text-red-300"
+                                        : `bg-zinc-800 ${POSITION_TEXT_CLASS[p.position]}`
                                     }`}
                                   >
                                     {POSITION_SHORT_LABELS[p.position]}
                                   </span>
                                   <span
-                                    className={`flex-1 truncate text-[11px] font-bold ${
-                                      alreadyUsed
-                                        ? "text-zinc-700 line-through"
-                                        : swapTarget === p.id
-                                          ? "text-emerald-200"
-                                          : "text-zinc-200"
-                                    }`}
+                                    className={`flex-1 truncate text-[11px] font-bold ${swapSource === p.id ? "text-red-200" : "text-zinc-200"}`}
                                   >
                                     {p.name}
                                   </span>
                                   <span
-                                    className={`shrink-0 text-[10px] font-black tabular-nums ${
-                                      alreadyUsed
-                                        ? "text-zinc-700"
-                                        : swapTarget === p.id
-                                          ? "text-emerald-400"
-                                          : "text-zinc-600"
-                                    }`}
+                                    className={`shrink-0 text-[10px] font-black tabular-nums ${swapSource === p.id ? "text-red-400" : "text-zinc-600"}`}
                                   >
-                                    {alreadyUsed ? "—" : p.skill}
+                                    {p.skill}
                                   </span>
                                 </div>
-                              );
-                            })}
+                              ))}
+                          </div>
+                        </div>
+
+                        {/* Banco */}
+                        <div className="flex-1 flex flex-col min-w-0 overflow-hidden">
+                          <div className="shrink-0 flex items-center gap-1.5 px-3 py-1.5 bg-zinc-900/40 border-b border-zinc-800">
+                            <span className="w-1.5 h-1.5 rounded-full bg-zinc-600 shrink-0" />
+                            <span className="text-[9px] font-black uppercase tracking-widest text-zinc-500">
+                              Banco
+                            </span>
+                          </div>
+                          <div className="flex-1 overflow-y-auto">
+                            {annotatedSquad
+                              .filter(
+                                (p) => tactic.positions[p.id] === "Suplente",
+                              )
+                              .map((p) => {
+                                const alreadyUsed = subbedOut.includes(p.id);
+                                const disabled =
+                                  alreadyUsed ||
+                                  !swapSource ||
+                                  subsMade >= MAX_MATCH_SUBS;
+                                return (
+                                  <div
+                                    key={p.id}
+                                    onClick={() =>
+                                      !disabled && handleSelectIn(p.id)
+                                    }
+                                    className={`flex items-center gap-2 px-2 py-1.5 border-b border-zinc-800/40 select-none transition-all border-l-2 ${
+                                      alreadyUsed
+                                        ? "opacity-20 cursor-not-allowed border-l-transparent"
+                                        : swapTarget === p.id
+                                          ? "bg-emerald-500/15 border-l-emerald-500 cursor-pointer"
+                                          : disabled
+                                            ? "opacity-40 cursor-not-allowed border-l-transparent"
+                                            : "cursor-pointer hover:bg-zinc-800/50 border-l-transparent"
+                                    }`}
+                                  >
+                                    <span
+                                      className={`w-4 h-4 rounded-sm shrink-0 flex items-center justify-center text-[8px] font-black ${
+                                        alreadyUsed
+                                          ? "bg-zinc-800/50 text-zinc-700"
+                                          : swapTarget === p.id
+                                            ? "bg-emerald-500/25 text-emerald-300"
+                                            : `bg-zinc-800 ${POSITION_TEXT_CLASS[p.position]}`
+                                      }`}
+                                    >
+                                      {POSITION_SHORT_LABELS[p.position]}
+                                    </span>
+                                    <span
+                                      className={`flex-1 truncate text-[11px] font-bold ${
+                                        alreadyUsed
+                                          ? "text-zinc-700 line-through"
+                                          : swapTarget === p.id
+                                            ? "text-emerald-200"
+                                            : "text-zinc-200"
+                                      }`}
+                                    >
+                                      {p.name}
+                                    </span>
+                                    <span
+                                      className={`shrink-0 text-[10px] font-black tabular-nums ${
+                                        alreadyUsed
+                                          ? "text-zinc-700"
+                                          : swapTarget === p.id
+                                            ? "text-emerald-400"
+                                            : "text-zinc-600"
+                                      }`}
+                                    >
+                                      {alreadyUsed ? "—" : p.skill}
+                                    </span>
+                                  </div>
+                                );
+                              })}
+                          </div>
                         </div>
                       </div>
-                    </div>
 
-                    {/* ── Swap action bar ── */}
-                    {swapSource ? (
-                      <div className="shrink-0 flex items-center gap-2 px-3 py-2.5 border-t border-zinc-700 bg-zinc-900">
-                        <div className="flex-1 flex items-center gap-2 min-w-0">
-                          <span className="bg-red-950 text-red-300 border border-red-800/60 text-[10px] font-black px-2 py-0.5 rounded truncate max-w-[40%]">
-                            {annotatedSquad.find((p) => p.id === swapSource)
-                              ?.name ?? "?"}
-                          </span>
-                          <span className="text-zinc-500 shrink-0 font-black text-sm">
-                            →
-                          </span>
-                          {swapTarget ? (
-                            <span className="bg-emerald-950 text-emerald-300 border border-emerald-800/60 text-[10px] font-black px-2 py-0.5 rounded truncate max-w-[40%]">
-                              {annotatedSquad.find((p) => p.id === swapTarget)
+                      {/* ── Swap action bar ── */}
+                      {swapSource ? (
+                        <div className="shrink-0 flex items-center gap-2 px-3 py-2.5 border-t border-zinc-700 bg-zinc-900">
+                          <div className="flex-1 flex items-center gap-2 min-w-0">
+                            <span className="bg-red-950 text-red-300 border border-red-800/60 text-[10px] font-black px-2 py-0.5 rounded truncate max-w-[40%]">
+                              {annotatedSquad.find((p) => p.id === swapSource)
                                 ?.name ?? "?"}
                             </span>
-                          ) : (
-                            <span className="text-zinc-600 text-[10px] italic">
-                              escolhe do banco…
+                            <span className="text-zinc-500 shrink-0 font-black text-sm">
+                              →
                             </span>
-                          )}
+                            {swapTarget ? (
+                              <span className="bg-emerald-950 text-emerald-300 border border-emerald-800/60 text-[10px] font-black px-2 py-0.5 rounded truncate max-w-[40%]">
+                                {annotatedSquad.find((p) => p.id === swapTarget)
+                                  ?.name ?? "?"}
+                              </span>
+                            ) : (
+                              <span className="text-zinc-600 text-[10px] italic">
+                                escolhe do banco…
+                              </span>
+                            )}
+                          </div>
+                          <button
+                            onClick={handleResetSub}
+                            className="shrink-0 w-6 h-6 rounded-full bg-zinc-800 hover:bg-zinc-700 text-zinc-500 hover:text-white text-[10px] flex items-center justify-center transition-colors"
+                          >
+                            ✕
+                          </button>
+                          <button
+                            onClick={handleConfirmSub}
+                            disabled={!swapTarget}
+                            className={`shrink-0 px-3 py-1.5 rounded text-[10px] font-black uppercase tracking-wide transition-colors ${
+                              swapTarget
+                                ? "bg-emerald-600 hover:bg-emerald-500 text-white"
+                                : "bg-zinc-800 text-zinc-600 cursor-not-allowed"
+                            }`}
+                          >
+                            Substituir
+                          </button>
                         </div>
-                        <button
-                          onClick={handleResetSub}
-                          className="shrink-0 w-6 h-6 rounded-full bg-zinc-800 hover:bg-zinc-700 text-zinc-500 hover:text-white text-[10px] flex items-center justify-center transition-colors"
-                        >
-                          ✕
-                        </button>
-                        <button
-                          onClick={handleConfirmSub}
-                          disabled={!swapTarget}
-                          className={`shrink-0 px-3 py-1.5 rounded text-[10px] font-black uppercase tracking-wide transition-colors ${
-                            swapTarget
-                              ? "bg-emerald-600 hover:bg-emerald-500 text-white"
-                              : "bg-zinc-800 text-zinc-600 cursor-not-allowed"
-                          }`}
-                        >
-                          Substituir
-                        </button>
-                      </div>
-                    ) : subsMade < MAX_MATCH_SUBS ? (
-                      <div className="shrink-0 border-t border-zinc-800/60 px-4 py-1.5 text-center">
-                        <span className="text-[9px] text-zinc-700 font-bold uppercase tracking-wide">
-                          Toca num jogador em campo para substituir
-                        </span>
-                      </div>
-                    ) : null}
+                      ) : subsMade < MAX_MATCH_SUBS ? (
+                        <div className="shrink-0 border-t border-zinc-800/60 px-4 py-1.5 text-center">
+                          <span className="text-[9px] text-zinc-700 font-bold uppercase tracking-wide">
+                            Toca num jogador em campo para substituir
+                          </span>
+                        </div>
+                      ) : null}
 
-                    {/* BUG-06 FIX: Use handleHalftimeReady which always sends true */}
-                    <button
-                      onClick={handleHalftimeReady}
-                      className={`shrink-0 w-full py-3.5 text-sm font-black uppercase tracking-widest transition-all ${
-                        players.find((p) => p.name === me.name)?.ready
-                          ? "bg-zinc-800 text-zinc-500"
+                      {/* BUG-06 FIX: Use handleHalftimeReady which always sends true */}
+                      <button
+                        onClick={handleHalftimeReady}
+                        className={`shrink-0 w-full py-3.5 text-sm font-black uppercase tracking-widest transition-all ${
+                          players.find((p) => p.name === me.name)?.ready
+                            ? "bg-zinc-800 text-zinc-500"
+                            : cupPreMatch
+                              ? "bg-green-600 hover:bg-green-500 text-zinc-950"
+                              : isCupMatch
+                                ? "bg-amber-500 hover:bg-amber-400 text-zinc-950"
+                                : "bg-amber-600 hover:bg-amber-500 text-zinc-950"
+                        }`}
+                      >
+                        {players.find((p) => p.name === me.name)?.ready
+                          ? "⏳ A AGUARDAR..."
                           : cupPreMatch
-                            ? "bg-green-600 hover:bg-green-500 text-zinc-950"
+                            ? "▶ INICIAR JOGO — TAÇA"
                             : isCupMatch
-                              ? "bg-amber-500 hover:bg-amber-400 text-zinc-950"
-                              : "bg-amber-600 hover:bg-amber-500 text-zinc-950"
-                      }`}
-                    >
-                      {players.find((p) => p.name === me.name)?.ready
-                        ? "⏳ A AGUARDAR..."
-                        : cupPreMatch
-                          ? "▶ INICIAR JOGO — TAÇA"
-                          : isCupMatch
-                            ? "▶ 2ª PARTE — TAÇA"
-                            : "▶ INICIAR 2ª PARTE"}
-                    </button>
+                              ? "▶ 2ª PARTE — TAÇA"
+                              : "▶ INICIAR 2ª PARTE"}
+                      </button>
+                    </div>
                   </div>
                 )}
 
@@ -4680,7 +4686,7 @@ function App() {
           const ref = fx.referee;
           const refBalance = ref?.balance ?? 50;
 
-          const posOrder = { GK: 0, DEF: 1, MID: 2, ATK: 3 };
+          const posOrder = { GR: 0, DEF: 1, MED: 2, ATA: 3 };
           const sortLineup = (arr) =>
             [...arr].sort(
               (a, b) =>
@@ -4712,7 +4718,18 @@ function App() {
                   className={`flex-1 truncate text-xs font-bold ${isOff ? "text-zinc-600 line-through" : "text-zinc-200"}`}
                 >
                   {p.name}
+                  {!!p.is_star &&
+                    (p.position === "MED" || p.position === "ATA") && (
+                      <span className="ml-0.5 text-amber-400 font-black">
+                        *
+                      </span>
+                    )}
                 </span>
+                {!isOff && p.skill != null && (
+                  <span className="text-[10px] font-black tabular-nums text-zinc-500 shrink-0">
+                    {p.skill}
+                  </span>
+                )}
                 {label ? (
                   <span className="text-[10px] shrink-0">{label}</span>
                 ) : null}

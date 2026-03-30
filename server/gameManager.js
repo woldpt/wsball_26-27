@@ -52,7 +52,29 @@ function ensurePlayerSchema(db, onDone) {
             remaining -= 1;
             if (remaining === 0) {
               finished = true;
-              if (onDone) onDone(null);
+              // Backfill is_star if it was just added: assign ~7% of MED/ATA players as craques
+              if (missing.some(([n]) => n === "is_star")) {
+                db.run(
+                  `UPDATE players SET is_star = 1 WHERE id IN (
+                    SELECT id FROM players
+                    WHERE (position = 'MED' OR position = 'ATA')
+                    ORDER BY RANDOM()
+                    LIMIT MAX(1, CAST(
+                      (SELECT COUNT(*) FROM players WHERE position = 'MED' OR position = 'ATA') * 0.07
+                    AS INTEGER))
+                  )`,
+                  (backfillErr) => {
+                    if (backfillErr)
+                      console.warn(
+                        "[gameManager] is_star backfill failed:",
+                        backfillErr.message,
+                      );
+                    if (onDone) onDone(null);
+                  },
+                );
+              } else {
+                if (onDone) onDone(null);
+              }
             }
           },
         );
