@@ -736,6 +736,7 @@ function App() {
       setIsCupExtraTime(false);
       setCupExtraTimeBadge(false);
       setIsPlayingMatch(false);
+      setMatchResults(null);
     });
     socket.on("cupSecondHalfStart", (data) => {
       setIsMatchActionPending(false);
@@ -821,6 +822,7 @@ function App() {
       setSwapTarget(null);
       setShowHalftimePanel(true);
       setIsPlayingMatch(true);
+      setActiveTab("live");
     });
 
     socket.on("matchActionRequired", (data) => {
@@ -929,6 +931,7 @@ function App() {
       setIsPlayingMatch(true);
       setIsCupMatch(false);
       setCupExtraTimeBadge(false);
+      setActiveTab("live");
       // Após jogo: todos os jogadores vão a "Não convocado"
       setTactic((prev) => {
         const allExcluded = Object.fromEntries(
