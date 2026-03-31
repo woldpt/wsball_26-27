@@ -431,6 +431,8 @@ function App() {
   const [toasts, setToasts] = useState([]);
   const [lockedCoaches, setLockedCoaches] = useState([]);
   const [awaitingCoaches, setAwaitingCoaches] = useState([]);
+  const [showCoachPanel, setShowCoachPanel] = useState(false);
+  const coachPanelRef = React.useRef(null);
   const joinTimerRef = React.useRef(null);
 
   const addToast = (msg) => {
@@ -2256,31 +2258,132 @@ function App() {
               </div>
             )}
             {players.length > 0 && (
-              <div className="hidden sm:flex flex-col items-end gap-0.5">
-                <div className="flex items-center gap-1">
-                  {players.map((p, i) => (
-                    <div
-                      key={i}
-                      title={`${p.name} · ${teams.find((t) => t.id == p.teamId)?.name || "?"} · ${p.ready ? "Pronto" : "A aguardar"}`}
-                      className={`w-2 h-2 rounded-full ${p.ready ? "bg-emerald-400" : "bg-zinc-600"}`}
-                    />
-                  ))}
-                  <span
-                    className="text-[10px] font-black uppercase tracking-widest ml-1 opacity-70"
-                    style={{ color: teamInfo?.color_secondary || "#ffffff" }}
-                  >
-                    {players.filter((p) => p.ready).length}/{players.length}
-                  </span>
-                </div>
-                {disconnected && (
-                  <span className="text-red-400 text-[10px] font-black uppercase tracking-widest">
-                    ⚠ Desligado
-                  </span>
-                )}
-                {!disconnected && awaitingCoaches.length > 0 && (
-                  <span className="text-amber-400 text-[10px] font-black uppercase tracking-widest">
-                    ⏸ {awaitingCoaches.join(", ")}
-                  </span>
+              <div className="relative hidden sm:block" ref={coachPanelRef}>
+                <button
+                  onClick={() => setShowCoachPanel((v) => !v)}
+                  className="flex flex-col items-end gap-0.5 focus:outline-none"
+                  title="Ver estado dos treinadores"
+                >
+                  <div className="flex items-center gap-1">
+                    {players.map((p, i) => (
+                      <div
+                        key={i}
+                        className={`w-2 h-2 rounded-full ${
+                          lockedCoaches.includes(p.name) || p.ready
+                            ? "bg-emerald-400"
+                            : "bg-zinc-500"
+                        }`}
+                      />
+                    ))}
+                    {awaitingCoaches
+                      .filter((n) => !players.some((p) => p.name === n))
+                      .map((_, i) => (
+                        <div
+                          key={`off-${i}`}
+                          className="w-2 h-2 rounded-full bg-zinc-700"
+                        />
+                      ))}
+                    <span
+                      className="text-[10px] font-black uppercase tracking-widest ml-1 opacity-70"
+                      style={{ color: teamInfo?.color_secondary || "#ffffff" }}
+                    >
+                      {
+                        players.filter(
+                          (p) => lockedCoaches.includes(p.name) || p.ready,
+                        ).length
+                      }
+                      /
+                      {players.length +
+                        awaitingCoaches.filter(
+                          (n) => !players.some((p) => p.name === n),
+                        ).length}
+                    </span>
+                  </div>
+                  {disconnected && (
+                    <span className="text-red-400 text-[10px] font-black uppercase tracking-widest">
+                      ⚠ Desligado
+                    </span>
+                  )}
+                </button>
+
+                {showCoachPanel && (
+                  <div className="absolute right-0 top-full mt-2 z-50 w-72 bg-zinc-900 border border-zinc-700 rounded-2xl shadow-2xl overflow-hidden">
+                    <div className="px-4 py-2.5 border-b border-zinc-800 flex items-center justify-between">
+                      <span className="text-[10px] font-black uppercase tracking-widest text-zinc-500">
+                        Sala {me.roomCode}
+                      </span>
+                      <span className="text-[10px] font-black uppercase tracking-widest text-zinc-500">
+                        {players.length} online
+                      </span>
+                    </div>
+                    <div className="divide-y divide-zinc-800/60">
+                      {[
+                        ...players.map((p) => ({
+                          name: p.name,
+                          teamId: p.teamId,
+                          online: true,
+                          submitted: lockedCoaches.includes(p.name) || p.ready,
+                        })),
+                        ...awaitingCoaches
+                          .filter((n) => !players.some((p) => p.name === n))
+                          .map((n) => ({
+                            name: n,
+                            teamId: null,
+                            online: false,
+                            submitted: true,
+                          })),
+                      ].map((coach, i) => {
+                        const coachTeam = coach.teamId
+                          ? teams.find((t) => t.id == coach.teamId)
+                          : null;
+                        return (
+                          <div
+                            key={i}
+                            className="flex items-center gap-3 px-4 py-2.5"
+                          >
+                            <span
+                              className={`w-2 h-2 rounded-full shrink-0 ${
+                                coach.online ? "bg-emerald-400" : "bg-zinc-600"
+                              }`}
+                            />
+                            <div className="flex-1 min-w-0">
+                              <p
+                                className={`text-xs font-black truncate ${
+                                  coach.online ? "text-white" : "text-zinc-500"
+                                }`}
+                              >
+                                {coach.name}
+                                {coach.name === me.name && (
+                                  <span className="ml-1.5 text-[9px] font-bold uppercase text-zinc-600">
+                                    (tu)
+                                  </span>
+                                )}
+                              </p>
+                              {coachTeam && (
+                                <p
+                                  className="text-[10px] truncate"
+                                  style={{
+                                    color: coachTeam.color_primary || "#71717a",
+                                  }}
+                                >
+                                  {coachTeam.name}
+                                </p>
+                              )}
+                            </div>
+                            {coach.submitted ? (
+                              <span className="shrink-0 text-[10px] font-black text-emerald-400 uppercase tracking-wide">
+                                ✓ Ordens
+                              </span>
+                            ) : (
+                              <span className="shrink-0 text-[10px] font-black text-amber-500 uppercase tracking-wide">
+                                ⏳ Pendente
+                              </span>
+                            )}
+                          </div>
+                        );
+                      })}
+                    </div>
+                  </div>
                 )}
               </div>
             )}
