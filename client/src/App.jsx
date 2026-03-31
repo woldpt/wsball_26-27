@@ -732,7 +732,8 @@ function App() {
     });
     socket.on("cupRoundResults", (data) => {
       setCupRoundResults(data);
-      setShowCupResults(true);
+      setShowCupResults(false);
+      setActiveTab("cup");
       setIsCupMatch(false);
       setCupPreMatch(false);
       setIsCupExtraTime(false);
@@ -2403,23 +2404,27 @@ function App() {
           className={`flex gap-3 mb-5 border-b border-zinc-800 pb-px overflow-x-auto justify-between${isMatchInProgress ? " hidden" : ""}`}
         >
           <div className="flex gap-3 overflow-x-auto">
-            {["club", "finances", "standings", "market", "squad"].map((tab) => (
-              <button
-                key={tab}
-                onClick={() => setActiveTab(tab)}
-                className={`px-4 py-2.5 font-bold text-sm md:text-base uppercase transition-colors border-b-4 whitespace-nowrap ${activeTab === tab ? "border-amber-500 text-white" : "border-transparent text-zinc-500 hover:text-zinc-300"}`}
-              >
-                {tab === "club"
-                  ? "Clube"
-                  : tab === "finances"
-                    ? "Finanças"
-                    : tab === "standings"
-                      ? "Classificações"
-                      : tab === "market"
-                        ? "Mercado"
-                        : "Plantel"}
-              </button>
-            ))}
+            {["club", "finances", "standings", "cup", "market", "squad"].map(
+              (tab) => (
+                <button
+                  key={tab}
+                  onClick={() => setActiveTab(tab)}
+                  className={`px-4 py-2.5 font-bold text-sm md:text-base uppercase transition-colors border-b-4 whitespace-nowrap ${activeTab === tab ? "border-amber-500 text-white" : "border-transparent text-zinc-500 hover:text-zinc-300"}`}
+                >
+                  {tab === "club"
+                    ? "Clube"
+                    : tab === "finances"
+                      ? "Finanças"
+                      : tab === "standings"
+                        ? "Classificações"
+                        : tab === "cup"
+                          ? "Taça"
+                          : tab === "market"
+                            ? "Mercado"
+                            : "Plantel"}
+                </button>
+              ),
+            )}
           </div>
           <button
             onClick={() => setActiveTab("live")}
@@ -2959,73 +2964,6 @@ function App() {
                     </div>
                   ))}
                 </div>
-
-                {/* Taça de Portugal last results */}
-                {cupRoundResults && (
-                  <div className="mt-6 bg-zinc-900/60 border border-amber-800/30 rounded-2xl overflow-hidden">
-                    <div className="bg-amber-900/20 px-4 py-2 border-b border-amber-800/30 flex items-center justify-between">
-                      <h3 className="font-black text-amber-400 uppercase text-xs tracking-widest">
-                        🏆 Taça de Portugal — {cupRoundResults.roundName}
-                      </h3>
-                      <button
-                        onClick={() => setShowCupResults(true)}
-                        className="text-xs text-amber-400 font-bold hover:text-amber-300 underline"
-                      >
-                        Ver detalhes
-                      </button>
-                    </div>
-                    <div className="p-3 space-y-1">
-                      {(cupRoundResults.results || []).map((r, idx) => {
-                        const hInfo = teams.find((t) => t.id === r.homeTeamId);
-                        const aInfo = teams.find((t) => t.id === r.awayTeamId);
-                        const isMyMatch =
-                          r.homeTeamId === me.teamId ||
-                          r.awayTeamId === me.teamId;
-                        const winnerInfo = teams.find(
-                          (t) => t.id === r.winnerId,
-                        );
-                        return (
-                          <div
-                            key={idx}
-                            className={`flex items-center gap-2 text-[11px] font-bold rounded border px-2 py-1 ${isMyMatch ? "border-amber-500 bg-amber-500/10" : "border-zinc-800 bg-zinc-950"}`}
-                          >
-                            <span
-                              className="w-28 md:w-36 truncate text-right font-black"
-                              style={{ color: hInfo?.color_primary || "#fff" }}
-                            >
-                              {hInfo?.name || r.homeTeamId}
-                            </span>
-                            <span className="px-2 py-0.5 bg-zinc-900 border border-zinc-800 rounded font-black text-white min-w-12 text-center">
-                              {r.homeGoals} - {r.awayGoals}
-                              {r.decidedByPenalties && (
-                                <span className="ml-1 text-[9px] text-amber-400">
-                                  ({r.penaltyHomeGoals}-{r.penaltyAwayGoals}
-                                  g.p.)
-                                </span>
-                              )}
-                              {r.wentToET && !r.decidedByPenalties && (
-                                <span className="ml-1 text-[9px] text-zinc-500">
-                                  p.e.
-                                </span>
-                              )}
-                            </span>
-                            <span
-                              className="w-28 md:w-36 truncate text-left font-black"
-                              style={{ color: aInfo?.color_primary || "#fff" }}
-                            >
-                              {aInfo?.name || r.awayTeamId}
-                            </span>
-                            {winnerInfo && (
-                              <span className="ml-auto text-amber-400 text-[10px] font-black shrink-0">
-                                ✓ {winnerInfo.name}
-                              </span>
-                            )}
-                          </div>
-                        );
-                      })}
-                    </div>
-                  </div>
-                )}
               </div>
             )}
 
@@ -3112,6 +3050,145 @@ function App() {
                     </div>
                   ))}
                 </div>
+              </div>
+            )}
+
+            {activeTab === "cup" && (
+              <div className="space-y-6">
+                {/* ── TAÇA DE PORTUGAL PAGE ─────────────────────────────── */}
+                {!cupRoundResults && !cupDraw && (
+                  <div className="bg-zinc-900 rounded-3xl border border-zinc-800 p-10 text-center">
+                    <p className="text-4xl mb-3">🏆</p>
+                    <p className="text-zinc-500 font-bold">
+                      Sem dados de Taça disponíveis neste momento.
+                    </p>
+                  </div>
+                )}
+
+                {cupRoundResults && (
+                  <div className="bg-zinc-900 rounded-3xl border border-zinc-800 overflow-hidden">
+                    <div className="bg-amber-900/20 px-6 py-4 border-b border-amber-800/30">
+                      <p className="text-xs text-amber-400 uppercase font-black tracking-widest">
+                        Taça de Portugal · Temporada {cupRoundResults.season}
+                      </p>
+                      <h2 className="text-xl font-black text-white mt-0.5">
+                        {cupRoundResults.roundName}
+                      </h2>
+                    </div>
+                    <div className="p-4 space-y-2">
+                      {(cupRoundResults.results || []).map((r, idx) => {
+                        const hInfo = teams.find((t) => t.id === r.homeTeamId);
+                        const aInfo = teams.find((t) => t.id === r.awayTeamId);
+                        const winnerInfo = teams.find(
+                          (t) => t.id === r.winnerId,
+                        );
+                        const isMyMatch =
+                          r.homeTeamId === me.teamId ||
+                          r.awayTeamId === me.teamId;
+                        return (
+                          <div
+                            key={idx}
+                            className={`rounded-xl border px-4 py-3 ${isMyMatch ? "border-amber-500 bg-amber-500/10" : "border-zinc-800 bg-zinc-950"}`}
+                          >
+                            <div className="flex items-center gap-3">
+                              <span
+                                className="flex-1 text-right font-black text-sm truncate"
+                                style={{
+                                  color: hInfo?.color_primary || "#fff",
+                                }}
+                              >
+                                {hInfo?.name || r.homeTeamId}
+                              </span>
+                              <span className="px-3 py-1 bg-zinc-900 border border-zinc-800 rounded-lg font-black text-white text-sm">
+                                {r.homeGoals} – {r.awayGoals}
+                                {r.wentToET && !r.decidedByPenalties && (
+                                  <span className="ml-1 text-[10px] text-zinc-500 font-semibold">
+                                    (p.e.)
+                                  </span>
+                                )}
+                                {r.decidedByPenalties && (
+                                  <span className="ml-1 text-[10px] text-amber-400 font-semibold">
+                                    ({r.penaltyHomeGoals}–{r.penaltyAwayGoals}{" "}
+                                    g.p.)
+                                  </span>
+                                )}
+                              </span>
+                              <span
+                                className="flex-1 text-left font-black text-sm truncate"
+                                style={{
+                                  color: aInfo?.color_primary || "#fff",
+                                }}
+                              >
+                                {aInfo?.name || r.awayTeamId}
+                              </span>
+                            </div>
+                            {winnerInfo && (
+                              <p className="text-center text-amber-400 text-xs font-black mt-1">
+                                ✓ Apura-se {winnerInfo.name}
+                                {cupRoundResults.isFinal
+                                  ? " 🏆 Vencedor da Taça!"
+                                  : ""}
+                              </p>
+                            )}
+                          </div>
+                        );
+                      })}
+                    </div>
+                  </div>
+                )}
+
+                {cupDraw && (
+                  <div className="bg-zinc-900 rounded-3xl border border-zinc-800 overflow-hidden">
+                    <div className="bg-zinc-800/40 px-6 py-4 border-b border-zinc-800">
+                      <p className="text-xs text-zinc-400 uppercase font-black tracking-widest">
+                        Taça de Portugal · Temporada {cupDraw.season}
+                      </p>
+                      <h2 className="text-xl font-black text-white mt-0.5">
+                        Sorteio — {cupDraw.roundName}
+                      </h2>
+                    </div>
+                    <div className="p-4 space-y-2">
+                      {(cupDraw.fixtures || []).map((fixture, idx) => {
+                        const hInfo = teams.find(
+                          (t) =>
+                            t.id === fixture.homeTeamId || t.id === fixture[0],
+                        );
+                        const aInfo = teams.find(
+                          (t) =>
+                            t.id === fixture.awayTeamId || t.id === fixture[1],
+                        );
+                        const homeId = fixture.homeTeamId ?? fixture[0];
+                        const awayId = fixture.awayTeamId ?? fixture[1];
+                        const hName = hInfo?.name || homeId;
+                        const aName = aInfo?.name || awayId;
+                        const isMine =
+                          homeId === me.teamId || awayId === me.teamId;
+                        return (
+                          <div
+                            key={idx}
+                            className={`rounded-xl border px-4 py-3 flex items-center gap-3 ${isMine ? "border-amber-500 bg-amber-500/10" : "border-zinc-800 bg-zinc-950"}`}
+                          >
+                            <span
+                              className="flex-1 text-right font-black text-sm truncate"
+                              style={{ color: hInfo?.color_primary || "#fff" }}
+                            >
+                              {hName}
+                            </span>
+                            <span className="px-3 py-1 bg-zinc-900 border border-zinc-800 rounded-lg font-black text-zinc-400 text-sm">
+                              vs
+                            </span>
+                            <span
+                              className="flex-1 text-left font-black text-sm truncate"
+                              style={{ color: aInfo?.color_primary || "#fff" }}
+                            >
+                              {aName}
+                            </span>
+                          </div>
+                        );
+                      })}
+                    </div>
+                  </div>
+                )}
               </div>
             )}
 
@@ -4837,93 +4914,6 @@ function App() {
                   </button>
                 </div>
               )}
-          </div>
-        </div>
-      )}
-
-      {/* ── CUP ROUND RESULTS DETAIL POPUP ─────────────────────────────────── */}
-      {showCupResults && cupRoundResults && (
-        <div
-          className="fixed inset-0 z-140 bg-zinc-950/85 backdrop-blur-sm flex items-center justify-center p-4"
-          onClick={() => setShowCupResults(false)}
-        >
-          <div
-            className="w-full max-w-md rounded-3xl border border-zinc-800 bg-zinc-900 shadow-2xl overflow-hidden"
-            onClick={(e) => e.stopPropagation()}
-          >
-            <div className="bg-zinc-800/50 px-6 py-4 border-b border-zinc-800 flex justify-between items-center">
-              <div>
-                <p className="text-xs text-amber-400 uppercase font-black tracking-widest">
-                  Taça de Portugal · Temporada {cupRoundResults.season}
-                </p>
-                <h2 className="text-xl font-black text-white">
-                  {cupRoundResults.roundName}
-                </h2>
-              </div>
-              <button
-                onClick={() => setShowCupResults(false)}
-                className="text-zinc-500 hover:text-white font-black text-lg"
-              >
-                ✕
-              </button>
-            </div>
-            <div className="p-4 space-y-2 max-h-[60vh] overflow-y-auto">
-              {(cupRoundResults.results || []).map((r, idx) => {
-                const hInfo = teams.find((t) => t.id === r.homeTeamId);
-                const aInfo = teams.find((t) => t.id === r.awayTeamId);
-                const winnerInfo = teams.find((t) => t.id === r.winnerId);
-                const isMyMatch =
-                  r.homeTeamId === me.teamId || r.awayTeamId === me.teamId;
-                return (
-                  <div
-                    key={idx}
-                    className={`rounded-xl border px-4 py-3 ${isMyMatch ? "border-amber-500 bg-amber-500/10" : "border-zinc-800 bg-zinc-950"}`}
-                  >
-                    <div className="flex items-center gap-3">
-                      <span
-                        className="flex-1 text-right font-black text-sm truncate"
-                        style={{ color: hInfo?.color_primary || "#fff" }}
-                      >
-                        {hInfo?.name}
-                      </span>
-                      <span className="px-3 py-1 bg-zinc-900 border border-zinc-800 rounded-lg font-black text-white text-sm">
-                        {r.homeGoals} – {r.awayGoals}
-                        {r.wentToET && !r.decidedByPenalties && (
-                          <span className="ml-1 text-[10px] text-zinc-500 font-semibold">
-                            (p.e.)
-                          </span>
-                        )}
-                        {r.decidedByPenalties && (
-                          <span className="ml-1 text-[10px] text-amber-400 font-semibold">
-                            ({r.penaltyHomeGoals}–{r.penaltyAwayGoals} g.p.)
-                          </span>
-                        )}
-                      </span>
-                      <span
-                        className="flex-1 text-left font-black text-sm truncate"
-                        style={{ color: aInfo?.color_primary || "#fff" }}
-                      >
-                        {aInfo?.name}
-                      </span>
-                    </div>
-                    {winnerInfo && (
-                      <p className="text-center text-amber-400 text-xs font-black mt-1">
-                        ✓ Apura-se {winnerInfo.name}
-                        {cupRoundResults.isFinal ? " 🏆 Vencedor da Taça!" : ""}
-                      </p>
-                    )}
-                  </div>
-                );
-              })}
-            </div>
-            <div className="px-6 pb-6 pt-2">
-              <button
-                onClick={() => setShowCupResults(false)}
-                className="w-full rounded-2xl bg-zinc-800 px-4 py-2.5 font-black uppercase tracking-widest text-white hover:bg-zinc-700 text-sm"
-              >
-                Fechar
-              </button>
-            </div>
           </div>
         </div>
       )}
