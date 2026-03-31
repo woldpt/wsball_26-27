@@ -138,6 +138,7 @@ function buildAutoPositions(
   const usedByPosition = { GR: 0, DEF: 0, MED: 0, ATA: 0 };
   const lineup = [];
 
+  // Passe 1: preencher cada slot com jogadores da posição nativa (melhor primeiro)
   for (const player of sortedPlayers) {
     const playerPosition = player.position;
     if (usedByPosition[playerPosition] < requiredByPosition[playerPosition]) {
@@ -146,11 +147,21 @@ function buildAutoPositions(
     }
   }
 
+  // Passe 2: se alguma posição obrigatória ficou sem jogadores (ex: todos os GRs
+  // suspensos/lesionados), preencher com os melhores restantes de qualquer posição
+  for (const pos of ["GR", "DEF", "MED", "ATA"]) {
+    while (usedByPosition[pos] < requiredByPosition[pos]) {
+      const best = sortedPlayers.find((p) => !lineup.includes(p));
+      if (!best) break;
+      lineup.push(best);
+      usedByPosition[pos] += 1;
+    }
+  }
+
+  // Passe 3: completar até 11 jogadores com os restantes disponíveis
   if (lineup.length < 11) {
     for (const player of sortedPlayers) {
       if (lineup.includes(player)) continue;
-      // Never add a 2nd GR to fill spots — that causes the 2-GR bug
-      if (player.position === "GR") continue;
       lineup.push(player);
       if (lineup.length === 11) break;
     }
@@ -643,7 +654,6 @@ function App() {
       setCupPreMatch(false);
       setCupMatchRoundName(data.roundName);
       setCupExtraTimeBadge(false);
-      setActiveTab("live");
     });
     socket.on("cupExtraTimeStart", (data) => {
       // Cup match went to extra time — restart the live clock from 90
@@ -651,7 +661,6 @@ function App() {
       setCupExtraTimeBadge(true);
       setLiveMinute(90);
       setIsPlayingMatch(true);
-      setActiveTab("live");
       if (data) {
         setMatchResults((prev) => {
           if (!prev) return prev;
@@ -747,7 +756,6 @@ function App() {
       setIsPlayingMatch(true);
       setIsCupMatch(true);
       setCupMatchRoundName(data.roundName);
-      setActiveTab("live");
     });
     socket.on("cupPenaltyShootout", (data) => {
       setCupPenaltyPopup(data);
@@ -813,7 +821,6 @@ function App() {
       setSwapTarget(null);
       setShowHalftimePanel(true);
       setIsPlayingMatch(true);
-      setActiveTab("live");
     });
 
     socket.on("matchActionRequired", (data) => {
@@ -922,7 +929,6 @@ function App() {
       setIsPlayingMatch(true);
       setIsCupMatch(false);
       setCupExtraTimeBadge(false);
-      setActiveTab("live");
       // Após jogo: todos os jogadores vão a "Não convocado"
       setTactic((prev) => {
         const allExcluded = Object.fromEntries(
@@ -1563,6 +1569,11 @@ function App() {
       mode: "fixed",
       price: fixedPrice,
     });
+  }, []);
+
+  const removeFromTransferList = useCallback((player) => {
+    if (!confirm(`Retirar ${player.name} da lista de transferências?`)) return;
+    socket.emit("removeFromTransferList", player.id);
   }, []);
 
   // ── AUCTION BID ───────────────────────────────────────────────────────────
@@ -3647,7 +3658,10 @@ function App() {
                             <AggBadge value={player.aggressiveness} />
                           </td>
                           <td className="px-3 py-2 text-center text-emerald-400 font-normal">
-                            {getPlayerStat(player, ["goals"])}
+                            {getPlayerStat(player, ["goals"])}{" "}
+                            <span className="text-zinc-500 text-xs">
+                              ({getPlayerStat(player, ["career_goals"])})
+                            </span>
                           </td>
                           <td className="px-3 py-2 text-center text-red-400 font-normal">
                             {getPlayerStat(player, [
@@ -3655,7 +3669,10 @@ function App() {
                               "red_cards",
                               "reds_count",
                               "expulsions",
-                            ])}
+                            ])}{" "}
+                            <span className="text-zinc-500 text-xs">
+                              ({getPlayerStat(player, ["career_reds"])})
+                            </span>
                           </td>
                           <td className="px-3 py-2 text-center text-orange-400 font-normal">
                             {getPlayerStat(player, [
@@ -3663,7 +3680,10 @@ function App() {
                               "injury_count",
                               "lesoes",
                               "lesions",
-                            ])}
+                            ])}{" "}
+                            <span className="text-zinc-500 text-xs">
+                              ({getPlayerStat(player, ["career_injuries"])})
+                            </span>
                           </td>
                           <td className="px-3 py-2 text-center text-zinc-400 text-sm">
                             {player.nationality}
@@ -3702,17 +3722,31 @@ function App() {
                                 >
                                   V
                                 </button>
-                                <button
-                                  onClick={(e) => {
-                                    e.stopPropagation();
-                                    listPlayerFixed(player);
-                                  }}
-                                  title="Listar no Mercado"
-                                  aria-label="Listar no Mercado"
-                                  className="px-2 py-1 rounded-lg bg-zinc-700 hover:bg-zinc-600 text-white text-[10px] font-normal uppercase leading-none"
-                                >
-                                  L
-                                </button>
+                                {player.transfer_status === "fixed" ? (
+                                  <button
+                                    onClick={(e) => {
+                                      e.stopPropagation();
+                                      removeFromTransferList(player);
+                                    }}
+                                    title="Retirar da lista de transferências"
+                                    aria-label="Retirar da lista"
+                                    className="px-2 py-1 rounded-lg bg-red-700 hover:bg-red-600 text-white text-[10px] font-normal uppercase leading-none"
+                                  >
+                                    ✕
+                                  </button>
+                                ) : (
+                                  <button
+                                    onClick={(e) => {
+                                      e.stopPropagation();
+                                      listPlayerFixed(player);
+                                    }}
+                                    title="Listar no Mercado"
+                                    aria-label="Listar no Mercado"
+                                    className="px-2 py-1 rounded-lg bg-zinc-700 hover:bg-zinc-600 text-white text-[10px] font-normal uppercase leading-none"
+                                  >
+                                    L
+                                  </button>
+                                )}
                               </div>
                             ) : (
                               <span className="text-xs text-zinc-600 font-normal uppercase">
@@ -3856,13 +3890,22 @@ function App() {
                             )}
                           </td>
                           <td className="px-4 py-2 text-center font-black text-emerald-400">
-                            {getPlayerStat(player, ["goals"])}
+                            {getPlayerStat(player, ["goals"])}{" "}
+                            <span className="text-zinc-500 text-xs font-normal">
+                              ({getPlayerStat(player, ["career_goals"])})
+                            </span>
                           </td>
                           <td className="px-4 py-2 text-center font-black text-red-400">
-                            {getPlayerStat(player, ["red_cards"])}
+                            {getPlayerStat(player, ["red_cards"])}{" "}
+                            <span className="text-zinc-500 text-xs font-normal">
+                              ({getPlayerStat(player, ["career_reds"])})
+                            </span>
                           </td>
                           <td className="px-4 py-2 text-center font-black text-orange-400">
-                            {getPlayerStat(player, ["injuries"])}
+                            {getPlayerStat(player, ["injuries"])}{" "}
+                            <span className="text-zinc-500 text-xs font-normal">
+                              ({getPlayerStat(player, ["career_injuries"])})
+                            </span>
                           </td>
                           <td className="px-4 py-2 text-center">
                             <span className="bg-emerald-950 text-emerald-400 font-black px-2 py-1 rounded text-sm">
@@ -4271,13 +4314,22 @@ function App() {
                             <AggBadge value={player.aggressiveness} />
                           </td>
                           <td className="px-4 py-2.5 text-center font-black text-emerald-400">
-                            {getPlayerStat(player, ["goals"])}
+                            {getPlayerStat(player, ["goals"])}{" "}
+                            <span className="text-zinc-500 text-xs font-normal">
+                              ({getPlayerStat(player, ["career_goals"])})
+                            </span>
                           </td>
                           <td className="px-4 py-2.5 text-center font-black text-red-400">
-                            {getPlayerStat(player, ["red_cards"])}
+                            {getPlayerStat(player, ["red_cards"])}{" "}
+                            <span className="text-zinc-500 text-xs font-normal">
+                              ({getPlayerStat(player, ["career_reds"])})
+                            </span>
                           </td>
                           <td className="px-4 py-2.5 text-center font-black text-orange-400">
-                            {getPlayerStat(player, ["injuries"])}
+                            {getPlayerStat(player, ["injuries"])}{" "}
+                            <span className="text-zinc-500 text-xs font-normal">
+                              ({getPlayerStat(player, ["career_injuries"])})
+                            </span>
                           </td>
                           <td className="px-4 py-2.5 text-center font-black text-amber-400">
                             {getPlayerStat(player, ["suspension_games"])}
@@ -4524,8 +4576,18 @@ function App() {
               </div>
               <div className="relative h-4 rounded-full bg-zinc-950 border border-zinc-800 overflow-hidden">
                 <div
-                  className="absolute inset-y-0 left-0 bg-emerald-500/80"
-                  style={{ width: `${refereePopup.balance}%` }}
+                  className="absolute inset-y-0 left-0 opacity-85"
+                  style={{
+                    width: `${refereePopup.balance}%`,
+                    background: teamInfo?.color_primary || "#16a34a",
+                  }}
+                ></div>
+                <div
+                  className="absolute inset-y-0 right-0 opacity-85"
+                  style={{
+                    width: `${100 - refereePopup.balance}%`,
+                    background: nextMatchOpponent?.color_primary || "#dc2626",
+                  }}
                 ></div>
                 <div className="absolute left-1/2 top-0 bottom-0 w-px bg-white/40"></div>
                 <div
@@ -4534,7 +4596,14 @@ function App() {
                 ></div>
               </div>
               <div className="flex items-center justify-between text-sm font-black">
-                <span className="text-emerald-400">
+                <span
+                  style={{
+                    color:
+                      refereePopup.balance >= 50
+                        ? teamInfo?.color_primary || "#16a34a"
+                        : nextMatchOpponent?.color_primary || "#dc2626",
+                  }}
+                >
                   {refereePopup.balance >= 50
                     ? `${teamInfo?.name || "Equipa A"} ganha vantagem`
                     : `${nextMatchOpponent?.name || "Equipa B"} ganha vantagem`}

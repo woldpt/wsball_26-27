@@ -226,7 +226,7 @@ async function applyInjuryEvent({
   const qualityLoss =
     injuryLabel === "grave" ? 2 + Math.floor(Math.random() * 4) : 0;
   db.run(
-    "UPDATE players SET injuries = injuries + 1, skill = MAX(0, skill - ?), injury_until_matchweek = CASE WHEN injury_until_matchweek > ? THEN injury_until_matchweek ELSE ? END WHERE id = ?",
+    "UPDATE players SET injuries = injuries + 1, career_injuries = career_injuries + 1, skill = MAX(0, skill - ?), injury_until_matchweek = CASE WHEN injury_until_matchweek > ? THEN injury_until_matchweek ELSE ? END WHERE id = ?",
     [qualityLoss, injuryUntil, injuryUntil, injuredPlayer.id],
   );
 
@@ -350,7 +350,10 @@ async function applyPenaltyEvent({
   if (scored) {
     if (teamSide === "home") fixture.finalHomeGoals++;
     else fixture.finalAwayGoals++;
-    db.run("UPDATE players SET goals = goals + 1 WHERE id = ?", [taker.id]);
+    db.run(
+      "UPDATE players SET goals = goals + 1, career_goals = career_goals + 1 WHERE id = ?",
+      [taker.id],
+    );
     fixture.events.push({
       minute: fixture._minute,
       type: "penalty_goal",
@@ -574,9 +577,10 @@ async function simulateMatchSegment(
           text: `[${minute}'] ⚽ GOLO! ${scorer ? scorer.name : "Jogador"}`,
         });
         if (scorer)
-          db.run("UPDATE players SET goals = goals + 1 WHERE id = ?", [
-            scorer.id,
-          ]);
+          db.run(
+            "UPDATE players SET goals = goals + 1, career_goals = career_goals + 1 WHERE id = ?",
+            [scorer.id],
+          );
       }
     }
 
@@ -606,7 +610,7 @@ async function simulateMatchSegment(
         if (Math.random() < redProb) {
           // Cartão vermelho — 2 jogos de suspensão
           db.run(
-            "UPDATE players SET red_cards = red_cards + 1, suspension_games = suspension_games + 2, suspension_until_matchweek = CASE WHEN suspension_until_matchweek > ? THEN suspension_until_matchweek ELSE ? END WHERE id = ?",
+            "UPDATE players SET red_cards = red_cards + 1, career_reds = career_reds + 1, suspension_games = suspension_games + 2, suspension_until_matchweek = CASE WHEN suspension_until_matchweek > ? THEN suspension_until_matchweek ELSE ? END WHERE id = ?",
             [currentMatchweek + 2, currentMatchweek + 2, offender.id],
           );
           fixture.events.push({

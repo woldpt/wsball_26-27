@@ -661,6 +661,14 @@ async function applySeasonEnd(game) {
     );
   });
 
+  // ── ACUMULAR STATS DE CARREIRA ANTES DO RESET DE ÉPOCA ──────────────────
+  await new Promise((resolve) => {
+    game.db.run(
+      "UPDATE players SET career_goals = career_goals + goals, career_reds = career_reds + red_cards, career_injuries = career_injuries + injuries",
+      resolve,
+    );
+  });
+
   // ── RESET GOAL STATS FOR NEW SEASON ─────────────────────────────────────
   await new Promise((resolve) => {
     game.db.run(
@@ -2604,6 +2612,28 @@ io.on("connection", (socket) => {
                 `${player.name} colocado na lista por €${finalPrice}.`,
               );
             },
+          );
+        }
+      },
+    );
+  });
+
+  // ── RETIRAR DA LISTA DE TRANSFERÊNCIAS ───────────────────────────────────
+  socket.on("removeFromTransferList", (playerId) => {
+    const game = getGameBySocket(socket.id);
+    if (!game) return;
+    const playerState = getPlayerBySocket(game, socket.id);
+    if (!playerState) return;
+
+    game.db.run(
+      "UPDATE players SET transfer_status = 'none', transfer_price = 0 WHERE id = ? AND team_id = ? AND transfer_status = 'fixed'",
+      [playerId, playerState.teamId],
+      function () {
+        if (this.changes > 0) {
+          refreshMarket(game);
+          socket.emit(
+            "systemMessage",
+            "Jogador retirado da lista de transferências.",
           );
         }
       },

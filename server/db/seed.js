@@ -79,11 +79,11 @@ function randomAggressiveness() {
   ];
 }
 const skillRanges = {
-  1: [40, 50],
-  2: [30, 40],
-  3: [20, 30],
-  4: [5, 20],
-  5: [1, 10],
+  1: [42, 50],
+  2: [32, 42],
+  3: [20, 32],
+  4: [8, 20],
+  5: [1, 7],
 };
 
 function randomSkill(min, max) {
@@ -335,32 +335,12 @@ db.serialize(() => {
           if (p.skill) skill = p.skill;
           if (p.age) age = p.age;
           if (p.form) form = p.form;
-          if (p.aggressiveness) {
-            // Support legacy numeric (1-50) and old string labels
-            const legacyMap = {
-              Low: "Cordeirinho",
-              Medium: "Fair Play",
-              High: "Caceteiro",
-            };
-            if (typeof p.aggressiveness === "number") {
-              const idx = Math.min(
-                4,
-                Math.floor(((p.aggressiveness - 1) / 50) * 5),
-              );
-              agg = AGGRESSIVENESS_TIERS[idx];
-            } else {
-              agg =
-                legacyMap[p.aggressiveness] ||
-                AGGRESSIVENESS_TIERS.includes(p.aggressiveness)
-                  ? legacyMap[p.aggressiveness] || p.aggressiveness
-                  : "Fair Play";
-            }
-          }
+          // agressividade é sempre gerada aleatoriamente (não é lida de fixtures)
           if (p.nationality) nat = p.nationality;
         }
 
-        const value = skill * 5000;
-        const wage = skill * 50;
+        const value = skill * 20000;
+        const wage = skill * 200;
         const isStar =
           (pos === "MED" || pos === "ATA") && Math.random() < 0.15 ? 1 : 0;
         insertPlayer.run(
@@ -466,8 +446,8 @@ db.serialize(() => {
           let agg = randomAggressiveness();
           let nat =
             nationalities[Math.floor(Math.random() * nationalities.length)];
-          const value = skill * 5000;
-          const wage = skill * 50;
+          const value = skill * 20000;
+          const wage = skill * 200;
           const isStar =
             (pos === "MED" || pos === "ATA") && Math.random() < 0.15 ? 1 : 0;
           insertPlayer.run(
@@ -501,8 +481,8 @@ db.serialize(() => {
     const form = Math.floor(Math.random() * 20) + 80;
     const agg = randomAggressiveness();
     const nat = nationalities[Math.floor(Math.random() * nationalities.length)];
-    const value = skill * 5000;
-    const wage = skill * 50;
+    const value = skill * 20000;
+    const wage = skill * 200;
     const isStar =
       (pos === "MED" || pos === "ATA") && Math.random() < 0.07 ? 1 : 0;
     insertPlayer.run(
