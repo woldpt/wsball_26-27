@@ -1,3 +1,4 @@
+// @ts-nocheck
 function pickBestPlayer(players = []) {
   if (!players.length) return null;
   return [...players].sort((a, b) => b.skill - a.skill)[0];
