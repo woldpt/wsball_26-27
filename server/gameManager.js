@@ -63,7 +63,7 @@ function ensurePlayerSchema(db, onDone) {
                     WHERE (position = 'MED' OR position = 'ATA')
                     ORDER BY RANDOM()
                     LIMIT MAX(1, CAST(
-                      (SELECT COUNT(*) FROM players WHERE position = 'MED' OR position = 'ATA') * 0.07
+                      (SELECT COUNT(*) FROM players WHERE position = 'MED' OR position = 'ATA') * 0.10
                     AS INTEGER))
                   )`,
                   (backfillErr) => {
@@ -163,7 +163,7 @@ function getGame(roomCode, onReady) {
       ensurePlayerSchema(db, () => {
         // Ensure morale column exists in teams (migration for existing DBs).
         db.run(
-          "ALTER TABLE teams ADD COLUMN morale INTEGER DEFAULT 75",
+          "ALTER TABLE teams ADD COLUMN morale INTEGER DEFAULT 50",
           () => {},
         );
         // Ensure attendance column exists in matches (migration for existing DBs).

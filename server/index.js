@@ -601,7 +601,7 @@ async function applySeasonEnd(game) {
     }
   }
 
-  // Promotion / relegation between divs 1-4, with Distritais (div 5) as reserve pool
+  // Promotion / relegation between divisions 1-4
   // Each boundary: bottom 2 of higher div drop, top 2 of lower div rise
   const promotions = []; // { teamId, fromDiv, toDiv }
 
@@ -609,34 +609,13 @@ async function applySeasonEnd(game) {
     [1, 2],
     [2, 3],
     [3, 4],
-    [4, 5],
   ]) {
     const upper = byDiv[upperDiv] || [];
     const lower = byDiv[lowerDiv] || [];
     if (!upper.length || !lower.length) continue;
 
     const relegated = upper.slice(-2).map((t) => t.id);
-    // For Distritais: pick the 2 with highest average squad skill rather than just standings
-    let promoted;
-    if (lowerDiv === 5) {
-      const teamsWithSkill = await Promise.all(
-        lower.map(async (t) => {
-          const players = await runAll(
-            game.db,
-            "SELECT skill FROM players WHERE team_id = ?",
-            [t.id],
-          );
-          const avgSkill = players.length
-            ? players.reduce((s, p) => s + p.skill, 0) / players.length
-            : 0;
-          return { id: t.id, avgSkill };
-        }),
-      );
-      teamsWithSkill.sort((a, b) => b.avgSkill - a.avgSkill);
-      promoted = teamsWithSkill.slice(0, 2).map((t) => t.id);
-    } else {
-      promoted = lower.slice(0, 2).map((t) => t.id);
-    }
+    const promoted = lower.slice(0, 2).map((t) => t.id);
 
     relegated.forEach((id) => promotions.push({ teamId: id, toDiv: lowerDiv }));
     promoted.forEach((id) => promotions.push({ teamId: id, toDiv: upperDiv }));
@@ -653,7 +632,7 @@ async function applySeasonEnd(game) {
     });
   }
 
-  // Reset standings for all divisions (including Distritais)
+  // Reset standings for all divisions
   await new Promise((resolve) => {
     game.db.run(
       "UPDATE teams SET points=0, wins=0, draws=0, losses=0, goals_for=0, goals_against=0",
@@ -2742,7 +2721,7 @@ io.on("connection", (socket) => {
       "SELECT budget, stadium_capacity FROM teams WHERE id = ?",
       [playerState.teamId],
       (err, team) => {
-        const cost = 150000;
+        const cost = 300000;
         if (team && team.budget >= cost) {
           game.db.run(
             "UPDATE teams SET budget = budget - ?, stadium_capacity = stadium_capacity + 5000 WHERE id = ?",
@@ -2755,7 +2734,7 @@ io.on("connection", (socket) => {
             },
           );
         } else {
-          socket.emit("systemMessage", "Sem dinheiro (Custo: 150.000€)!");
+          socket.emit("systemMessage", "Sem dinheiro (Custo: 300.000€)!");
         }
       },
     );
@@ -2788,7 +2767,7 @@ io.on("connection", (socket) => {
             );
             socket.emit(
               "systemMessage",
-              "Empréstimo de 500.000€ aprovado (Juro 1%/Semana).",
+                "Empréstimo de 500.000€ aprovado (Juro 5%/Semana).",
             );
           },
         );
@@ -2939,7 +2918,7 @@ async function checkAllReady(game) {
       `
       UPDATE teams 
       SET budget = budget 
-        - CAST((loan_amount * 0.01) AS INTEGER) 
+        - CAST((loan_amount * 0.05) AS INTEGER) 
         - (SELECT COALESCE(SUM(wage), 0) FROM players WHERE players.team_id = teams.id)
     `,
       async (err) => {
@@ -2956,8 +2935,7 @@ async function checkAllReady(game) {
         const f2 = await generateFixturesForDivision(game.db, 2, mw);
         const f3 = await generateFixturesForDivision(game.db, 3, mw);
         const f4 = await generateFixturesForDivision(game.db, 4, mw);
-        const f5 = await generateFixturesForDivision(game.db, 5, mw);
-        game.fixtures = [...f1, ...f2, ...f3, ...f4, ...f5];
+        game.fixtures = [...f1, ...f2, ...f3, ...f4];
 
         await processSegment(game, 1, 45, "halftime");
         weeklyLoopRunning[game.roomCode] = false;
