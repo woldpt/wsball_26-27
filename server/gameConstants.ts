@@ -1,6 +1,6 @@
 export const DIVISION_NAMES: Record<number, string> = {
-  1: "Primeira Liga",
-  2: "Segunda Liga",
+  1: "I Liga",
+  2: "II Liga",
   3: "Liga 3",
   4: "Campeonato de Portugal",
   5: "Distritais",

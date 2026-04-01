@@ -69,76 +69,6 @@ export function createContractHelpers(deps: ContractDeps) {
     );
   };
 
-  const finalizeContractDecision = (
-    game: ActiveGame,
-    playerId: number,
-    decision: string,
-    teamId: number,
-    currentMatchweek: number,
-    listPlayerOnMarket: (
-      game: ActiveGame,
-      playerId: number,
-      mode: string,
-      price: number,
-      callback?: (...args: any[]) => void,
-    ) => void,
-    emitSquadForPlayer: (game: ActiveGame, teamId: number) => void,
-  ) => {
-    game.db.get(
-      "SELECT * FROM players WHERE id = ?",
-      [playerId],
-      (err: any, player: any) => {
-        if (err || !player) return;
-
-        if (decision === "accept") {
-          const seasonEnd = getSeasonEndMatchweek(currentMatchweek);
-          const newWage = player.contract_requested_wage || player.wage || 0;
-          game.db.run(
-            "UPDATE players SET wage = ?, contract_until_matchweek = ?, contract_request_pending = 0, contract_requested_wage = 0 WHERE id = ?",
-            [newWage, seasonEnd, playerId],
-            () => {
-              const coach = (
-                Object.values(game.playersByName) as PlayerSession[]
-              ).find((p) => p.teamId === teamId && p.socketId);
-              if (coach) {
-                io.to(coach.socketId as string).emit(
-                  "systemMessage",
-                  `${player.name} renovou contrato por €${newWage}/sem.`,
-                );
-              }
-              emitSquadForPlayer(game, teamId);
-            },
-          );
-        } else {
-          listPlayerOnMarket(
-            game,
-            playerId,
-            "auction",
-            Math.max(
-              player.value * 0.65,
-              (player.contract_requested_wage || player.wage || 0) * 12,
-            ),
-            () => {
-              game.db.run(
-                "UPDATE players SET contract_request_pending = 0, contract_requested_wage = 0 WHERE id = ?",
-                [playerId],
-              );
-              const coach = (
-                Object.values(game.playersByName) as PlayerSession[]
-              ).find((p) => p.teamId === teamId && p.socketId);
-              if (coach) {
-                io.to(coach.socketId as string).emit(
-                  "systemMessage",
-                  `${player.name} foi colocado em leilão.`,
-                );
-              }
-            },
-          );
-        }
-      },
-    );
-  };
-
   const processContractExpiries = async (game: ActiveGame) => {
     const currentMw = game.matchweek;
 
@@ -194,7 +124,6 @@ export function createContractHelpers(deps: ContractDeps) {
   };
 
   return {
-    finalizeContractDecision,
     maybeTriggerContractRequest,
     processContractExpiries,
   };
