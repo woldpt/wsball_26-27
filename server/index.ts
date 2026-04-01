@@ -279,6 +279,24 @@ const { registerFinanceSocketHandlers } =
       },
     ) => void;
   };
+const { registerGameplaySocketHandlers } =
+  require("./socketGameplayHandlers") as {
+    registerGameplaySocketHandlers: (
+      socket: any,
+      deps: {
+        io: any;
+        getGameBySocket: (socketId: string) => ActiveGame | null;
+        getPlayerBySocket: (
+          game: ActiveGame,
+          socketId: string,
+        ) => PlayerSession | null;
+        getPlayerList: (game: ActiveGame) => PlayerSession[];
+        unbindSocket: (game: ActiveGame, socketId: string) => void;
+        checkAllReady: (game: ActiveGame) => void | Promise<void>;
+        emitAwaitingCoaches: (game: ActiveGame) => void;
+      },
+    ) => void;
+  };
 const adminRoutes = require("./adminRoutes");
 
 const app = express();
@@ -1834,73 +1852,14 @@ io.on("connection", (socket) => {
     getPlayerBySocket,
   });
 
-  // ── SET TACTIC ────────────────────────────────────────────────────────────
-  socket.on("setTactic", (tactic) => {
-    const game = getGameBySocket(socket.id);
-    const playerState = getPlayerBySocket(game, socket.id);
-    if (game && playerState) {
-      playerState.tactic = tactic;
-    }
-  });
-
-  // ── SET READY ─────────────────────────────────────────────────────────────
-  // BUG-06 FIX: setReady now accepts an explicit boolean from the client.
-  // The halftime "CONFIRMAR" button always sends true to avoid toggle-race.
-  socket.on("setReady", (ready) => {
-    const game = getGameBySocket(socket.id);
-    if (!game) return;
-    const playerState = getPlayerBySocket(game, socket.id);
-    if (!playerState) return;
-    playerState.ready = ready;
-    io.to(game.roomCode).emit("playerListUpdate", getPlayerList(game));
-    checkAllReady(game);
-  });
-
-  // ── REQUEST TEAM SQUAD ───────────────────────────────────────────────────
-  socket.on("requestTeamSquad", (teamId) => {
-    const game = getGameBySocket(socket.id);
-    if (!game) return;
-
-    game.db.all(
-      "SELECT * FROM players WHERE team_id = ? ORDER BY CASE position WHEN 'GR' THEN 1 WHEN 'DEF' THEN 2 WHEN 'MED' THEN 3 WHEN 'ATA' THEN 4 ELSE 5 END, skill DESC, name",
-      [teamId],
-      (err, squad) => {
-        socket.emit("teamSquadData", {
-          teamId,
-          squad: err ? [] : squad || [],
-        });
-      },
-    );
-  });
-
-  // ── RESOLVE LIVE MATCH ACTION ────────────────────────────────────────────
-  socket.on("resolveMatchAction", ({ actionId, teamId, playerId }) => {
-    const game = getGameBySocket(socket.id);
-    if (!game || !game.pendingMatchAction) return;
-    const pendingAction: any = game.pendingMatchAction;
-    if (pendingAction.actionId !== actionId) return;
-    if (pendingAction.teamId !== teamId) return;
-
-    const pending: any = pendingAction;
-    clearTimeout(pending.timer);
-    game.pendingMatchAction = null;
-    if (playerId === null || playerId === undefined) {
-      pending.finalize(pending.fallback ? pending.fallback() : null, "auto");
-    } else {
-      pending.finalize(playerId, "human");
-    }
-  });
-
-  // ── DISCONNECT ────────────────────────────────────────────────────────────
-  // BUG-01 FIX: On disconnect, keep the player entry so they can reconnect.
-  // We only remove the socket binding.
-  socket.on("disconnect", () => {
-    const game = getGameBySocket(socket.id);
-    if (game) {
-      unbindSocket(game, socket.id);
-      io.to(game.roomCode).emit("playerListUpdate", getPlayerList(game));
-      emitAwaitingCoaches(game);
-    }
+  registerGameplaySocketHandlers(socket, {
+    io,
+    getGameBySocket,
+    getPlayerBySocket,
+    getPlayerList,
+    unbindSocket,
+    checkAllReady,
+    emitAwaitingCoaches,
   });
 });
 
