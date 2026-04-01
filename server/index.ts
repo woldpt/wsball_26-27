@@ -147,6 +147,102 @@ const { isMatchInProgress, finalizeAllRunningAuctions, cancelPendingCupDraw } =
     ) => void;
     cancelPendingCupDraw: (game: ActiveGame) => void;
   };
+const { createAuctionHelpers } = require("./auctionHelpers") as {
+  createAuctionHelpers: (deps: {
+    io: any;
+    isMatchInProgress: (game: ActiveGame) => boolean;
+    getSeasonEndMatchweek: (matchweek: number) => number;
+    scheduleNpcAuctionBids: (game: ActiveGame, playerId: number) => void;
+  }) => {
+    refreshMarket: (game: ActiveGame, emitToRoom?: boolean) => void;
+    emitSquadForPlayer: (game: ActiveGame, teamId: number) => void;
+    listPlayerOnMarket: (
+      game: ActiveGame,
+      playerId: number,
+      mode: string,
+      price: number,
+      callback?: (...args: any[]) => void,
+    ) => void;
+    startAuction: (
+      game: ActiveGame,
+      player: any,
+      startingPrice: number,
+      callback?: (...args: any[]) => void,
+    ) => void;
+    finalizeAuction: (game: ActiveGame, playerId: number) => void;
+    placeAuctionBid: (
+      game: ActiveGame,
+      teamId: number,
+      playerId: number,
+      bidAmount: number,
+    ) => Promise<any>;
+  };
+};
+const { createContractHelpers } = require("./contractHelpers") as {
+  createContractHelpers: (deps: {
+    io: any;
+    getSeasonEndMatchweek: (matchweek: number) => number;
+    runAll: <T extends AnyRow = AnyRow>(
+      db: Db,
+      sql: string,
+      params?: any[],
+    ) => Promise<T[]>;
+    runGet: <T extends AnyRow = AnyRow>(
+      db: Db,
+      sql: string,
+      params?: any[],
+    ) => Promise<T | null>;
+  }) => {
+    finalizeContractDecision: (
+      game: ActiveGame,
+      playerId: number,
+      decision: string,
+      teamId: number,
+      currentMatchweek: number,
+      listPlayerOnMarket: (
+        game: ActiveGame,
+        playerId: number,
+        mode: string,
+        price: number,
+        callback?: (...args: any[]) => void,
+      ) => void,
+      emitSquadForPlayer: (game: ActiveGame, teamId: number) => void,
+    ) => void;
+    maybeTriggerContractRequest: (game: ActiveGame, player: any) => void;
+    processContractExpiries: (game: ActiveGame) => Promise<void>;
+  };
+};
+const { createNpcTransferHelpers } = require("./npcTransferHelpers") as {
+  createNpcTransferHelpers: (deps: {
+    runAll: <T extends AnyRow = AnyRow>(
+      db: Db,
+      sql: string,
+      params?: any[],
+    ) => Promise<T[]>;
+    getSeasonEndMatchweek: (matchweek: number) => number;
+  }) => {
+    processNpcTransferActivity: (
+      game: ActiveGame,
+      listPlayerOnMarket: (
+        game: ActiveGame,
+        playerId: number,
+        mode: string,
+        price: number,
+        callback?: (...args: any[]) => void,
+      ) => void,
+    ) => Promise<void>;
+    scheduleNpcAuctionBids: (
+      game: ActiveGame,
+      playerId: number,
+      placeAuctionBid: (
+        game: ActiveGame,
+        teamId: number,
+        playerId: number,
+        bidAmount: number,
+      ) => Promise<any>,
+    ) => void;
+  };
+};
 const adminRoutes = require("./adminRoutes");
 
 const app = express();
@@ -254,6 +350,25 @@ const server = http.createServer(app);
 
 const io = new Server(server, {
   cors: { origin: "*", methods: ["GET", "POST"] },
+});
+
+const auctionHelpers = createAuctionHelpers({
+  io,
+  isMatchInProgress,
+  getSeasonEndMatchweek,
+  scheduleNpcAuctionBids,
+});
+
+const contractHelpers = createContractHelpers({
+  io,
+  getSeasonEndMatchweek,
+  runAll,
+  runGet,
+});
+
+const npcTransferHelpers = createNpcTransferHelpers({
+  runAll,
+  getSeasonEndMatchweek,
 });
 
 async function getTeamRecentResults(
@@ -1303,45 +1418,11 @@ function ensureCupPhaseTimeout(game: ActiveGame) {
 }
 
 function refreshMarket(game: ActiveGame, emitToRoom = true) {
-  game.db.all(
-    `SELECT p.*, t.name as team_name, t.color_primary, t.color_secondary
-     FROM players p
-     LEFT JOIN teams t ON p.team_id = t.id
-     WHERE p.team_id IS NULL OR p.transfer_status != 'none'
-     ORDER BY CASE WHEN p.transfer_status = 'auction' THEN 0 ELSE 1 END, p.transfer_price ASC, p.value ASC, p.skill DESC`,
-    (err, rows) => {
-      if (!err && rows) {
-        const decorated = rows.map((row) => {
-          const auction = game.auctions?.[row.id];
-          return auction
-            ? {
-                ...row,
-                auction_active: true,
-                auction_seller_team_id: auction.sellerTeamId,
-                auction_ends_at: auction.endsAt,
-                auction_starting_price: auction.startingPrice,
-              }
-            : row;
-        });
-        game.globalMarket = decorated;
-        if (emitToRoom) io.to(game.roomCode).emit("marketUpdate", decorated);
-      }
-    },
-  );
+  return auctionHelpers.refreshMarket(game, emitToRoom);
 }
 
 function emitSquadForPlayer(game: ActiveGame, teamId: number) {
-  const player = (Object.values(game.playersByName) as PlayerSession[]).find(
-    (p) => p.teamId === teamId && p.socketId,
-  );
-  if (!player) return;
-  game.db.all(
-    "SELECT * FROM players WHERE team_id = ?",
-    [teamId],
-    (err, squad) => {
-      if (!err) io.to(player.socketId).emit("mySquad", squad || []);
-    },
-  );
+  return auctionHelpers.emitSquadForPlayer(game, teamId);
 }
 
 function listPlayerOnMarket(
@@ -1351,44 +1432,12 @@ function listPlayerOnMarket(
   price: number,
   callback?: (...args: any[]) => void,
 ) {
-  // Block auctions during matches — queue them for after full-time
-  if (mode === "auction" && isMatchInProgress(game)) {
-    if (!game.pendingAuctionQueue) game.pendingAuctionQueue = [];
-    game.pendingAuctionQueue.push({ playerId, mode, price, callback });
-    return;
-  }
-
-  game.db.get(
-    "SELECT p.*, t.name as team_name FROM players p LEFT JOIN teams t ON p.team_id = t.id WHERE p.id = ?",
-    [playerId],
-    (err, player) => {
-      if (err || !player) {
-        if (callback) callback(false, "Jogador inválido.");
-        return;
-      }
-      if (!player.team_id) {
-        if (callback) callback(false, "Jogador já está sem contrato.");
-        return;
-      }
-      const finalPrice = Math.max(
-        0,
-        Math.round(price || player.value * (mode === "auction" ? 0.75 : 1.0)),
-      );
-      if (mode === "auction") {
-        startAuction(game, player, finalPrice, () => {
-          if (callback) callback(true, finalPrice, player);
-        });
-      } else {
-        game.db.run(
-          "UPDATE players SET transfer_status = ?, transfer_price = ? WHERE id = ?",
-          [mode, finalPrice, playerId],
-          () => {
-            refreshMarket(game);
-            if (callback) callback(true, finalPrice, player);
-          },
-        );
-      }
-    },
+  return auctionHelpers.listPlayerOnMarket(
+    game,
+    playerId,
+    mode,
+    price,
+    callback,
   );
 }
 
@@ -1398,189 +1447,11 @@ function startAuction(
   startingPrice: number,
   callback?: (...args: any[]) => void,
 ) {
-  const durationMs = 15000;
-  const now = Date.now();
-  const existingTimer = game.auctionTimers?.[player.id];
-  if (existingTimer) clearTimeout(existingTimer);
-
-  game.db.run(
-    "UPDATE players SET transfer_status = 'auction', transfer_price = ? WHERE id = ?",
-    [startingPrice, player.id],
-    () => {
-      if (!game.auctions) game.auctions = {};
-      if (!game.auctionTimers) game.auctionTimers = {};
-      game.auctions[player.id] = {
-        playerId: player.id,
-        sellerTeamId: player.team_id,
-        startingPrice,
-        bids: {}, // { teamId: bidAmount } — sealed, one bid per team
-        endsAt: now + durationMs,
-        status: "open",
-      };
-
-      game.auctionTimers[player.id] = setTimeout(() => {
-        finalizeAuction(game, player.id);
-      }, durationMs);
-
-      refreshMarket(game);
-      // Emit full player card to all coaches — no bid data revealed
-      io.to(game.roomCode).emit("auctionStarted", {
-        playerId: player.id,
-        name: player.name,
-        team_name: player.team_name || null,
-        sellerTeamId: player.team_id,
-        position: player.position,
-        skill: player.skill,
-        value: player.value,
-        wage: player.wage,
-        nationality: player.nationality,
-        goals: player.goals || 0,
-        red_cards: player.red_cards || 0,
-        injuries: player.injuries || 0,
-        games_played: player.games_played || 0,
-        aggressiveness: player.aggressiveness ?? 25,
-        is_star: player.is_star || 0,
-        startingPrice,
-        endsAt: now + durationMs,
-      });
-      // Trigger NPC sealed bids for this auction
-      scheduleNpcAuctionBids(game, player.id);
-      if (callback) callback(true, startingPrice, player);
-    },
-  );
+  return auctionHelpers.startAuction(game, player, startingPrice, callback);
 }
 
 function finalizeAuction(game: ActiveGame, playerId: number) {
-  if (!game.auctions || !game.auctions[playerId]) return;
-  const auction = game.auctions[playerId];
-  const timer = game.auctionTimers?.[playerId];
-  if (timer) clearTimeout(timer);
-
-  // Find the highest sealed bid
-  const bidEntries = Object.entries(auction.bids || {});
-  let winnerTeamId = null;
-  let winnerBid = 0;
-  for (const [teamId, amount] of bidEntries) {
-    if (amount > winnerBid || (amount === winnerBid && Math.random() < 0.5)) {
-      winnerBid = amount;
-      winnerTeamId = parseInt(teamId, 10);
-    }
-  }
-
-  game.db.get(
-    "SELECT p.*, t.name as team_name FROM players p LEFT JOIN teams t ON p.team_id = t.id WHERE p.id = ?",
-    [playerId],
-    (err, player) => {
-      if (err || !player) {
-        delete game.auctions[playerId];
-        delete game.auctionTimers?.[playerId];
-        refreshMarket(game);
-        return;
-      }
-
-      if (!winnerTeamId) {
-        game.db.run(
-          "UPDATE players SET transfer_status = 'none', transfer_price = 0 WHERE id = ?",
-          [playerId],
-          () => {
-            const seller = (
-              Object.values(game.playersByName) as PlayerSession[]
-            ).find((p) => p.teamId === auction.sellerTeamId && p.socketId);
-            if (seller) {
-              io.to(seller.socketId).emit(
-                "systemMessage",
-                `${player.name} não recebeu lances e saiu do leilão.`,
-              );
-            }
-            delete game.auctions[playerId];
-            delete game.auctionTimers?.[playerId];
-            refreshMarket(game);
-            io.to(game.roomCode).emit("auctionClosed", {
-              playerId,
-              playerName: player.name,
-              sold: false,
-            });
-          },
-        );
-        return;
-      }
-
-      const buyerTeamId = winnerTeamId;
-      const finalBid = winnerBid;
-
-      game.db.get(
-        "SELECT name FROM teams WHERE id = ?",
-        [buyerTeamId],
-        (errT, buyerTeam) => {
-          const buyerTeamName = buyerTeam ? buyerTeam.name : "?";
-
-          game.db.run(
-            "UPDATE teams SET budget = budget + ? WHERE id = ?",
-            [finalBid, auction.sellerTeamId],
-            () => {
-              game.db.run(
-                "UPDATE teams SET budget = budget - ? WHERE id = ?",
-                [finalBid, buyerTeamId],
-                () => {
-                  game.db.run(
-                    "UPDATE players SET team_id = ?, wage = ?, contract_until_matchweek = ?, signed_season = ?, transfer_status = 'none', transfer_price = 0, contract_request_pending = 0, contract_requested_wage = 0 WHERE id = ?",
-                    [
-                      buyerTeamId,
-                      Math.max(player.wage || 0, Math.round(finalBid * 0.06)),
-                      getSeasonEndMatchweek(game.matchweek),
-                      Math.ceil(Math.max(1, game.matchweek) / 14),
-                      playerId,
-                    ],
-                    () => {
-                      const buyerCoach = (
-                        Object.values(game.playersByName) as PlayerSession[]
-                      ).find((p) => p.teamId === buyerTeamId && p.socketId);
-                      const sellerCoach = (
-                        Object.values(game.playersByName) as PlayerSession[]
-                      ).find(
-                        (p) => p.teamId === auction.sellerTeamId && p.socketId,
-                      );
-                      if (buyerCoach) {
-                        io.to(buyerCoach.socketId).emit(
-                          "systemMessage",
-                          `Ganhaste o leilão de ${player.name} por €${finalBid}!`,
-                        );
-                      }
-                      if (sellerCoach) {
-                        io.to(sellerCoach.socketId).emit(
-                          "systemMessage",
-                          `${player.name} foi vendido em leilão por €${finalBid}.`,
-                        );
-                      }
-                      delete game.auctions?.[playerId];
-                      delete game.auctionTimers?.[playerId];
-                      refreshMarket(game);
-                      game.db.all("SELECT * FROM teams", (errTeams, teams) => {
-                        if (!errTeams)
-                          io.to(game.roomCode).emit("teamsData", teams);
-                        emitSquadForPlayer(game, buyerTeamId);
-                        if (auction.sellerTeamId !== buyerTeamId) {
-                          emitSquadForPlayer(game, auction.sellerTeamId);
-                        }
-                        io.to(game.roomCode).emit("auctionClosed", {
-                          playerId,
-                          playerName: player.name,
-                          sold: true,
-                          buyerTeamId,
-                          buyerTeamName,
-                          finalBid,
-                        });
-                      });
-                    },
-                  );
-                },
-              );
-            },
-          );
-        },
-      );
-    },
-  );
+  return auctionHelpers.finalizeAuction(game, playerId);
 }
 
 function placeAuctionBid(
@@ -1588,50 +1459,8 @@ function placeAuctionBid(
   teamId: number,
   playerId: number,
   bidAmount: number,
-  io: any,
 ): Promise<any> {
-  if (!game.auctions || !game.auctions[playerId]) {
-    return Promise.resolve({ ok: false, error: "Leilão indisponível." });
-  }
-  const auction = game.auctions[playerId];
-  if (auction.status !== "open") {
-    return Promise.resolve({ ok: false, error: "Leilão já encerrado." });
-  }
-  if (auction.sellerTeamId === teamId) {
-    return Promise.resolve({
-      ok: false,
-      error: "Não podes licitar no teu próprio jogador.",
-    });
-  }
-  // Sealed-bid: only one bid per team
-  if (auction.bids[teamId] != null) {
-    return Promise.resolve({ ok: false, error: "Já licitaste neste leilão." });
-  }
-
-  const amount = Math.round(bidAmount || 0);
-  if (amount < auction.startingPrice) {
-    return Promise.resolve({
-      ok: false,
-      error: `Lance mínimo: €${auction.startingPrice}.`,
-    });
-  }
-
-  return new Promise((resolve) => {
-    game.db.get(
-      "SELECT budget FROM teams WHERE id = ?",
-      [teamId],
-      (err, team) => {
-        if (err || !team || team.budget < amount) {
-          resolve({ ok: false, error: "Não tens orçamento suficiente." });
-          return;
-        }
-
-        // Store sealed bid — no data emitted to other coaches
-        auction.bids[teamId] = amount;
-        resolve({ ok: true, bidAmount: amount });
-      },
-    );
-  });
+  return auctionHelpers.placeAuctionBid(game, teamId, playerId, bidAmount);
 }
 
 function finalizeContractDecision(
@@ -1641,336 +1470,45 @@ function finalizeContractDecision(
   teamId,
   currentMatchweek,
 ) {
-  game.db.get(
-    "SELECT * FROM players WHERE id = ?",
-    [playerId],
-    (err, player) => {
-      if (err || !player) return;
-
-      if (decision === "accept") {
-        const seasonEnd = getSeasonEndMatchweek(currentMatchweek);
-        const newWage = player.contract_requested_wage || player.wage || 0;
-        game.db.run(
-          "UPDATE players SET wage = ?, contract_until_matchweek = ?, contract_request_pending = 0, contract_requested_wage = 0 WHERE id = ?",
-          [newWage, seasonEnd, playerId],
-          () => {
-            const coach = Object.values(game.playersByName).find(
-              (p) => p.teamId === teamId && p.socketId,
-            );
-            if (coach)
-              io.to(coach.socketId).emit(
-                "systemMessage",
-                `${player.name} renovou contrato por €${newWage}/sem.`,
-              );
-            emitSquadForPlayer(game, teamId);
-          },
-        );
-      } else {
-        listPlayerOnMarket(
-          game,
-          playerId,
-          "auction",
-          Math.max(
-            player.value * 0.65,
-            (player.contract_requested_wage || player.wage || 0) * 12,
-          ),
-          () => {
-            game.db.run(
-              "UPDATE players SET contract_request_pending = 0, contract_requested_wage = 0 WHERE id = ?",
-              [playerId],
-            );
-            const coach = Object.values(game.playersByName).find(
-              (p) => p.teamId === teamId && p.socketId,
-            );
-            if (coach)
-              io.to(coach.socketId).emit(
-                "systemMessage",
-                `${player.name} foi colocado em leilão.`,
-              );
-          },
-        );
-      }
-    },
+  return contractHelpers.finalizeContractDecision(
+    game,
+    playerId,
+    decision,
+    teamId,
+    currentMatchweek,
+    listPlayerOnMarket,
+    emitSquadForPlayer,
   );
 }
 
-function maybeTriggerContractRequest(game, io, player) {
-  if (!player || !player.team_id) return;
-  if (player.transfer_status && player.transfer_status !== "none") return;
-  if (player.contract_request_pending) return;
-
-  const wage = player.wage || 0;
-  const demandBase = Math.max(Math.round((player.skill || 0) * 70), wage + 200);
-  if (wage >= demandBase * 0.85 && Math.random() > 0.08) return;
-
-  const requestedWage = Math.round(demandBase * (1.05 + Math.random() * 0.2));
-  game.db.run(
-    "UPDATE players SET contract_request_pending = 1, contract_requested_wage = ? WHERE id = ?",
-    [requestedWage, player.id],
-    () => {
-      const coach = Object.values(game.playersByName).find(
-        (p) => p.teamId === player.team_id && p.socketId,
-      );
-      if (!coach) {
-        game.db.run(
-          "UPDATE players SET contract_request_pending = 0 WHERE id = ?",
-          [player.id],
-        );
-        return;
-      }
-
-      io.to(coach.socketId).emit("matchActionRequired", {
-        actionId: `contract-${player.id}-${Date.now()}`,
-        type: "contract",
-        teamId: player.team_id,
-        player: {
-          id: player.id,
-          name: player.name,
-          position: player.position,
-          skill: player.skill,
-          wage,
-          requestedWage,
-        },
-      });
-    },
-  );
+function maybeTriggerContractRequest(game, player) {
+  return contractHelpers.maybeTriggerContractRequest(game, player);
 }
 
 // ─── CONTRACT EXPIRY CHECK ─────────────────────────────────────────────────
 // Called after each matchweek. Releases players whose contracts expired and
 // triggers renewal requests for players approaching contract end.
 async function processContractExpiries(game) {
-  const currentMw = game.matchweek;
-
-  // Release players whose contracts have expired
-  const expired = await runAll(
-    game.db,
-    "SELECT * FROM players WHERE team_id IS NOT NULL AND contract_until_matchweek > 0 AND contract_until_matchweek <= ?",
-    [currentMw],
-  );
-  for (const p of expired) {
-    // Only auto-release NPC-managed players; human players get warnings
-    const coach = Object.values(game.playersByName).find(
-      (pl) => pl.teamId === p.team_id && pl.socketId,
-    );
-    if (!coach) {
-      // NPC team — auto-renew if affordable, otherwise release
-      const team = await runGet(
-        game.db,
-        "SELECT budget FROM teams WHERE id = ?",
-        [p.team_id],
-      );
-      const newWage = Math.max(Math.round((p.skill || 0) * 55), p.wage || 0);
-      if (team && team.budget > newWage * 14) {
-        await new Promise((resolve) => {
-          game.db.run(
-            "UPDATE players SET wage = ?, contract_until_matchweek = ?, contract_request_pending = 0 WHERE id = ?",
-            [newWage, getSeasonEndMatchweek(currentMw), p.id],
-            resolve,
-          );
-        });
-      } else {
-        await new Promise((resolve) => {
-          game.db.run(
-            "UPDATE players SET team_id = NULL, transfer_status = 'none', transfer_price = 0, contract_request_pending = 0 WHERE id = ?",
-            [p.id],
-            resolve,
-          );
-        });
-      }
-    }
-    // Human-managed teams: leave as-is, they should have been warned via contract requests
-  }
-
-  // Trigger renewal requests for players expiring within 3 matchweeks
-  const soonExpiring = await runAll(
-    game.db,
-    "SELECT * FROM players WHERE team_id IS NOT NULL AND contract_until_matchweek > 0 AND contract_until_matchweek <= ? AND contract_until_matchweek > ? AND contract_request_pending = 0",
-    [currentMw + 3, currentMw],
-  );
-  for (const p of soonExpiring) {
-    maybeTriggerContractRequest(game, io, p);
-  }
+  return contractHelpers.processContractExpiries(game);
 }
 
 // ─── NPC TRANSFER ACTIVITY ─────────────────────────────────────────────────
 // Called after each matchweek. NPC teams buy players they need.
 async function processNpcTransferActivity(game) {
-  const humanTeamIds = new Set(
-    Object.values(game.playersByName)
-      .map((p) => p.teamId)
-      .filter(Boolean),
+  return npcTransferHelpers.processNpcTransferActivity(
+    game,
+    listPlayerOnMarket,
   );
-
-  // Get all teams
-  const allTeams = await runAll(
-    game.db,
-    "SELECT * FROM teams WHERE budget > 20000",
-  );
-  const npcTeams = allTeams.filter((t) => !humanTeamIds.has(t.id));
-
-  if (npcTeams.length === 0) return;
-
-  // Get listed players (fixed price) and free agents
-  const marketPlayers = await runAll(
-    game.db,
-    "SELECT * FROM players WHERE (team_id IS NULL OR transfer_status = 'fixed') AND transfer_status != 'auction' ORDER BY skill DESC, value ASC",
-  );
-
-  for (const npcTeam of npcTeams) {
-    // Check squad size
-    const squadRows = await runAll(
-      game.db,
-      "SELECT id FROM players WHERE team_id = ?",
-      [npcTeam.id],
-    );
-    if (squadRows.length >= 22) continue; // full squad
-    if (Math.random() > 0.25) continue; // 25% chance per matchweek to attempt a purchase
-
-    for (const player of marketPlayers) {
-      if (player.team_id === npcTeam.id) continue; // own player
-      const price =
-        player.transfer_status === "fixed" && player.transfer_price > 0
-          ? player.transfer_price
-          : Math.round((player.value || 0) * 1.2);
-      if (price <= 0) continue;
-      if (price > npcTeam.budget * 0.35) continue; // won't overspend
-
-      // NPC prefers players with skill near their division level
-      if (Math.random() > 0.4) continue;
-
-      // Buy the player
-      await new Promise((resolve) => {
-        game.db.run(
-          "UPDATE teams SET budget = budget - ? WHERE id = ?",
-          [price, npcTeam.id],
-          resolve,
-        );
-      });
-      if (player.team_id) {
-        await new Promise((resolve) => {
-          game.db.run(
-            "UPDATE teams SET budget = budget + ? WHERE id = ?",
-            [price, player.team_id],
-            resolve,
-          );
-        });
-      }
-      await new Promise((resolve) => {
-        game.db.run(
-          "UPDATE players SET team_id = ?, transfer_status = 'none', transfer_price = 0, contract_until_matchweek = ?, contract_request_pending = 0, contract_requested_wage = 0 WHERE id = ?",
-          [npcTeam.id, getSeasonEndMatchweek(game.matchweek), player.id],
-          resolve,
-        );
-      });
-      npcTeam.budget -= price;
-      break; // one purchase per matchweek per NPC
-    }
-  }
-
-  // ── NPC PLAYER LISTING ──────────────────────────────────────────────────
-  // NPC teams with large squads put surplus or weakest players on the market.
-  // Auctions are delayed 8-12s so match-result animations finish on clients
-  // before auction popups appear. Max 3 auctions per matchweek.
-  const allNpcTeams = (await runAll(game.db, "SELECT * FROM teams")).filter(
-    (t) => !humanTeamIds.has(t.id),
-  );
-
-  const npcListings = [];
-  for (const npcTeam of allNpcTeams) {
-    const squad = await runAll(
-      game.db,
-      "SELECT * FROM players WHERE team_id = ? AND transfer_status = 'none' AND contract_request_pending = 0 ORDER BY skill ASC",
-      [npcTeam.id],
-    );
-
-    const listChance = squad.length > 16 ? 0.4 : squad.length > 12 ? 0.15 : 0;
-    if (listChance === 0 || Math.random() > listChance) continue;
-
-    const candidate = squad[0]; // weakest eligible player
-    if (!candidate) continue;
-
-    const useAuction = Math.random() < 0.4;
-    const price = Math.round(
-      (candidate.value || 0) * (useAuction ? 0.75 : 1.0),
-    );
-    if (price <= 0) continue;
-
-    npcListings.push({ candidate, useAuction, price });
-  }
-
-  if (npcListings.length > 0) {
-    // Cap auctions at 3 per matchweek; fixed-price listings are uncapped
-    const auctionListings = npcListings
-      .filter((l) => l.useAuction)
-      .sort(() => Math.random() - 0.5)
-      .slice(0, 3);
-    const fixedListings = npcListings.filter((l) => !l.useAuction);
-
-    // Fixed-price listings can fire immediately
-    for (const { candidate, price } of fixedListings) {
-      await new Promise((resolve) => {
-        listPlayerOnMarket(game, candidate.id, "fixed", price, resolve);
-      });
-    }
-
-    // Auctions fire sequentially — matches are already finished at this point.
-    // Small stagger (500ms) between each to avoid simultaneous modal popups.
-    let auctionDelay = 500;
-    for (const { candidate, price } of auctionListings) {
-      setTimeout(() => {
-        listPlayerOnMarket(game, candidate.id, "auction", price, null);
-      }, auctionDelay);
-      auctionDelay += 18000; // 15s auction + 3s buffer before next
-    }
-  }
 }
 
 // ─── NPC AUCTION BIDDING ───────────────────────────────────────────────────
 // Sealed-bid model: each NPC team places exactly one blind bid at a random
 // delay (2-12s). Bid amount is random between startingPrice and a cap.
 function scheduleNpcAuctionBids(game, playerId) {
-  const auction = game.auctions?.[playerId];
-  if (!auction) return;
-
-  const humanTeamIds = new Set(
-    Object.values(game.playersByName)
-      .map((p) => p.teamId)
-      .filter(Boolean),
-  );
-
-  game.db.all(
-    "SELECT * FROM teams WHERE budget > ?",
-    [auction.startingPrice],
-    (err, teams) => {
-      if (err || !teams) return;
-      const npcTeams = teams.filter(
-        (t) => !humanTeamIds.has(t.id) && t.id !== auction.sellerTeamId,
-      );
-
-      for (const npcTeam of npcTeams) {
-        if (Math.random() > 0.5) continue; // 50% chance each NPC participates
-
-        const bidDelay = 2000 + Math.floor(Math.random() * 10000); // 2-12s
-        setTimeout(() => {
-          const currentAuction = game.auctions?.[playerId];
-          if (!currentAuction || currentAuction.status !== "open") return;
-          if (currentAuction.bids[npcTeam.id] != null) return; // already bid
-
-          const maxBid = Math.min(
-            Math.round(auction.startingPrice * 1.5),
-            Math.round(npcTeam.budget * 0.4),
-          );
-          if (maxBid < auction.startingPrice) return;
-
-          const bidAmount =
-            auction.startingPrice +
-            Math.floor(Math.random() * (maxBid - auction.startingPrice + 1));
-
-          placeAuctionBid(game, npcTeam.id, playerId, bidAmount, io);
-        }, bidDelay);
-      }
-    },
+  return npcTransferHelpers.scheduleNpcAuctionBids(
+    game,
+    playerId,
+    placeAuctionBid,
   );
 }
 
@@ -2581,7 +2119,7 @@ io.on("connection", (socket) => {
     const playerState = getPlayerBySocket(game, socket.id);
     if (!playerState) return;
 
-    placeAuctionBid(game, playerState.teamId, playerId, bidAmount, io).then(
+    placeAuctionBid(game, playerState.teamId, playerId, bidAmount).then(
       (result) => {
         const bidResult: any = result;
         if (!bidResult.ok) {
