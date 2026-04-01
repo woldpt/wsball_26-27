@@ -96,11 +96,11 @@ Antes de submeter a táctica para a próxima jornada, o treinador pode:
 
 Cada jogador tem os seguintes atributos:
 
-`posição` - Posição em campo (G, D, M, A);
-└── G - Guarda-Redes
-└── D - Defesa
-└── M - Médio
-└── A - Avançado
+`posição` - Posição em campo (GR, DEF, MED, ATA);
+└── GR - Guarda-Redes
+└── DEF - Defesa
+└── MED - Médio
+└── ATA - Avançado
 
 `qualidade` - Qualidade geral (Valor de 1 a 50);
 
@@ -162,10 +162,10 @@ Aproximadamente **10% dos jogadores das posições Médios e Avançados** são c
 ### Posições dos Jogadores
 
 ```
-G — Guarda-Redes
-D — Defesas
-M — Médios
-A — Avançados
+GR — Guarda-Redes
+DEF — Defesas
+MED — Médios
+ATA — Avançados
 ```
 
 ### Árbitros
@@ -239,7 +239,7 @@ Isto significa que:
 Submeter uma táctica significa o treinador confirmar, para o próximo jogo pendente:
 
 1. **Formação** (ex: 4-3-3)
-2. **Onze titular** e **suplentes** (incluindo 3 suplentes predefinidos para potenciais substituições)
+2. **Onze titular** e **suplentes** (incluindo 5 suplentes, dos quais pode trocar até 3 no(s) intervalo(s))
 3. **Instruções de equipa** (estilo: defensivo/equilibrado/ofensivo)
 
 Após submeter, o treinador pode **alterar a táctica** enquanto a jornada ainda não tiver sido simulada (ou seja, enquanto houver pelo menos outro treinador que ainda não submeteu). Assim que o último treinador submete, as tácticas ficam bloqueadas e a simulação corre.
@@ -320,6 +320,8 @@ O primeiro jogador humano a criar uma sala de jogo torna-se o seu **fundador** e
 
 ### Mercado de Transferências
 
+**O mercado está aberto ao longo de toda a época**, sem restrições de tempo a não ser que exista um jogo em simulação (nesse período é bloqueado).
+
 Há duas formas de vender jogadores:
 
 #### A) Lista de Transferências
@@ -375,7 +377,7 @@ A receita da bilheteira de cada jogo varia consoante a fase boa ou má da equipa
 Os clubes podem solicitar **empréstimos bancários** para cobrir despesas ou financiar contratações.
 
 - O empréstimo é creditado imediatamente no saldo do clube;
-- São cobrados **5% de juros por semana** sobre o valor em dívida — taxa deliberadamente elevada para penalizar dependência crónica de crédito;
+- São cobrados **2.5% de juros por semana** sobre o valor em dívida;
 - O clube pode amortizar o empréstimo parcial ou totalmente a qualquer momento;
 - Clube com saldo negativo prolongado entra em **modo de crise** — o treinador tem elevada probabilidade de ser despedido.
 
@@ -409,7 +411,7 @@ O Campeonato é a competição principal, organizado em **quatro divisões jogá
 - Em caso de igualdade de pontos, os critérios de desempate são (por ordem):
   1.  Diferença de golos
   2.  Golos marcados
-  3.  Diferença de golos marcados - golos sofridos
+  3.  Confronto directo
 
 #### Calendarização
 
@@ -438,7 +440,8 @@ Campeonato de Portugal (8 clubes — nível 4)
 
 - Novos jogadores entram sempre no **Campeonato de Portugal**. Equipa a treinar é sorteada aleatoriamente;
 - Subidas e descidas acontecem no **final de cada época**, após o fim do campeonato e da Taça de Portugal.
-- No final da época, 2 clubes são **sorteados aleatoriamente** de entre todos os 32 (incluindo os que desceram) para serem promovidos e regressarem à competição activa na época seguinte, substituindo os 2 que desceram do Campeonato de Portugal;
+- No final da época, 2 clubes são **sorteados aleatoriamente** de entre os clubes elegíveis (excluindo os que desceram na época anterior e que ainda estão em período de espera de 1 época) para serem promovidos e regressarem à competição activa na época seguinte, substituindo os 2 que desceram do Campeonato de Portugal;
+- **Clubes que desceram têm de esperar 1 época completa** antes de entrarem novamente no sorteio de promoção para o Campeonato de Portugal;
 
 #### Prémios do Campeonato
 
@@ -487,7 +490,7 @@ Final (Jamor) — 2 equipas → 1 jogo → 1 vencedor
 
 #### Submissão de Tácticas na Taça
 
-Os jogos de Taça seguem exactamente o mesmo modelo de submissão do campeonato: **a eliminatória só é simulada quando ambos os treinadores submetem a táctica**. Se o jogo de Taça coincide com uma jornada de campeonato, o treinador submete primeiro a táctica do campeonato; após a simulação do jogo de campeonato, escolhe a táctica para o jogo da Taça (em ciclo de submissão independente).
+Os jogos de Taça seguem exactamente o mesmo modelo de submissão do campeonato: **a eliminatória só é simulada quando ambos os treinadores submetem a táctica**. Se o jogo de Taça coincide com uma jornada de campeonato, o treinador submete primeiro a táctica do campeonato; após a simulação do jogo de campeonato, **apenas os treinadores cuja equipa ainda está em competição** (não foram eliminados) escolhem a táctica para o jogo da Taça (em ciclo de submissão independente). Os treinadores cujas equipas foram eliminadas apenas observam.
 
 #### Local da Final — Estádio do Jamor
 
@@ -518,8 +521,8 @@ Os jogos de Taça seguem exactamente o mesmo modelo de submissão do campeonato:
 - O elenco de jogadores é **fixo e permanente** — não há jogadores novos criados pelo jogo, nem jogadores que se reformem ou envelheçam;
 - Os mesmos jogadores existem desde o início e mantêm-se indefinidamente no universo do jogo;
 - A `qualidade` de um jogador pode flutuar ao longo do tempo, com os limites **mínimo 1 e máximo 50**:
-  - Qualidade aumenta **+1** se o jogador jogou em **5+ jornadas consecutivas** ao lado de jogadores com qualidade acima da sua qualidade média;
-  - Jogadores perdem qualidade se houver muitos maus resultados seguidos;
+  - Qualidade aumenta **+1** se o jogador jogou em **5+ jornadas consecutivas** na mesma equipa, ao lado de jogadores com qualidade acima da sua qualidade média;
+  - Jogadores perdem qualidade se houver **3 empates ou derrotas seguidos**;
 - A flag `craque` é **permanente** — não muda independentemente da evolução da `qualidade`;
 - Moral da equipa flutua com resultados em **ambas as competições**.
 
@@ -555,14 +558,14 @@ Os jogos de Taça seguem exactamente o mesmo modelo de submissão do campeonato:
 - O jogo arranca com **32 clubes** (8 por divisão, nas 4 divisões jogáveis);
 - O script `db/seed.js` popula a base de dados inicial;
 - O elenco de jogadores é gerado **uma única vez** no seed e nunca é alterado pelo sistema — não há criação de novos jogadores nem remoção de jogadores existentes:
-  - Plantel inicial de cada clube gerado a partir de ficheiro JSON (`/db/players.json`) com base em:
+  - Plantel inicial de cada clube gerado a partir de ficheiros JSON (`/server/db/fixtures/players.json`, `/server/db/fixtures/all_teams.json`, `/server/db/fixtures/managers.json`, `/server/db/fixtures/referees.json`, `/server/db/fixtures/stadiums.json`) com base em:
     - Divisão de entrada (clubes de divisões superiores têm plantel mais forte)
     - Variância aleatória (para diferenciação entre clubes da mesma divisão)
     - ~10% dos Médios e Avançados gerados com flag `craque = true`
-    - Nomes de jogadores lidos de ficheiro JSON (`/db/players.json`)
+    - Nomes de jogadores lidos de ficheiro JSON (`/server/db/fixtures/players.json`)
 
 - A inclinação do árbitro é gerada aleatoriamente no momento de cada jogo — não há pool de árbitros no seed;
-- O ficheiro `/db/players.json` contém nomes de jogadores em formato array e será criado durante a inicialização do projecto.
+- Os ficheiros de fixtures estão em `/server/db/fixtures/` e serão utilizados durante a inicialização do projecto.
 
 ---
 
@@ -811,7 +814,7 @@ Os convites são avaliados **no final de cada jornada** (após simulação e atu
 **Convites de Clubes Mais Fortes** (promoção):
 - Treinador no topo da sua divisão (dentro dos top 3)
 - Sequência de 3+ vitórias consecutivas (em qualquer competição)
-- Mora de equipa > 70
+- Moral de equipa > 70
 
 **Convites de Clubes em Crise** (fundo/ascensão):
 - Treinador em modo observador (sem clube)
@@ -1510,7 +1513,7 @@ interface Team {
 interface Player {
   id: string;
   name: string;
-  position: "G" | "D" | "M" | "A";
+  position: "GR" | "DEF" | "MED" | "ATA";
   quality: number; // 1-50
   salary: number; // euros por semana
   aggressiveness: 1 | 2 | 3 | 4 | 5; // 1=calm, 5=aggressive
@@ -2246,10 +2249,10 @@ function calculateOffensiveForce(
 ): number {
   // 1. Qualidade base (por posição)
   const midfieldersInField = team.players.filter(
-    (p) => p.position === "M" && submission.startingXI.includes(p.id),
+    (p) => p.position === "MED" && submission.startingXI.includes(p.id),
   );
   const forwardsInField = team.players.filter(
-    (p) => p.position === "A" && submission.startingXI.includes(p.id),
+    (p) => p.position === "ATA" && submission.startingXI.includes(p.id),
   );
 
   const avgMidfielderQuality = average(
@@ -2297,10 +2300,10 @@ function calculateOffensiveForce(
 function calculateDefensiveForce(team: Team, submission: Submission): number {
   // 1. Qualidade base (por posição)
   const defendersInField = team.players.filter(
-    (p) => p.position === "D" && submission.startingXI.includes(p.id),
+    (p) => p.position === "DEF" && submission.startingXI.includes(p.id),
   );
   const keepersInField = team.players.filter(
-    (p) => p.position === "G" && submission.startingXI.includes(p.id),
+    (p) => p.position === "GR" && submission.startingXI.includes(p.id),
   );
 
   const avgDefenderQuality = average(defendersInField.map((p) => p.quality));
