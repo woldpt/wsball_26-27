@@ -11,6 +11,36 @@ type SqliteDb = any;
 type DbRow = { [key: string]: any } | null;
 type OnReady = (game: ActiveGame | null, error?: Error) => void;
 
+function dbDirCandidates() {
+  return [
+    path.join(__dirname, "db"),
+    path.join(__dirname, "..", "db"),
+    path.join(process.cwd(), "db"),
+  ];
+}
+
+function resolveDbPaths(roomCode: string) {
+  const candidates = dbDirCandidates();
+  const existingBasePath = candidates
+    .map((dir) => path.join(dir, "base.db"))
+    .find((candidatePath) => fs.existsSync(candidatePath));
+
+  const targetDbDir = existingBasePath
+    ? path.dirname(existingBasePath)
+    : candidates.find((dir) => fs.existsSync(dir)) ||
+      path.join(process.cwd(), "db");
+
+  if (!fs.existsSync(targetDbDir)) {
+    fs.mkdirSync(targetDbDir, { recursive: true });
+  }
+
+  return {
+    dbPath: path.join(targetDbDir, `game_${roomCode}.db`),
+    basePath: existingBasePath || path.join(targetDbDir, "base.db"),
+    targetDbDir,
+  };
+}
+
 function ensurePlayerSchema(
   db: SqliteDb,
   onDone?: (error: Error | null) => void,
@@ -104,12 +134,13 @@ function getGame(roomCode: string, onReady?: OnReady): ActiveGame | null {
     return activeGames[roomCode];
   }
 
-  const dbPath = path.join(__dirname, "db", `game_${roomCode}.db`);
-  const basePath = path.join(__dirname, "db", "base.db");
+  const { dbPath, basePath, targetDbDir } = resolveDbPaths(roomCode);
 
   if (!fs.existsSync(dbPath)) {
     if (!fs.existsSync(basePath)) {
-      console.error("[gameManager] base.db not found — run: npm run seed:real");
+      console.error(
+        `[gameManager] base.db not found in ${targetDbDir} — run: npm run seed:real`,
+      );
       if (onReady)
         onReady(
           null,

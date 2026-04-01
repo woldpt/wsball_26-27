@@ -87,6 +87,15 @@ const { createMatchSummaryHelpers } =
   require("./matchSummaryHelpers") as typeof import("./matchSummaryHelpers");
 const adminRoutes = require("./adminRoutes");
 
+function resolveDbDir() {
+  const candidates = [
+    path.join(__dirname, "db"),
+    path.join(__dirname, "..", "db"),
+    path.join(process.cwd(), "db"),
+  ];
+  return candidates.find((dir) => fs.existsSync(dir)) || candidates[0];
+}
+
 const app = express();
 app.set("trust proxy", 1);
 app.use(cors());
@@ -115,7 +124,7 @@ app.get("/health", (req, res) => {
 // ?name=<coach> filters to that coach's rooms; omitting it returns all saves.
 app.get("/saves", apiLimiter, async (req, res) => {
   try {
-    const files = fs.readdirSync(path.join(__dirname, "db"));
+    const files = fs.readdirSync(resolveDbDir());
     const allSaves = files
       .filter((f) => f.startsWith("game_") && f.endsWith(".db"))
       .map((f) => f.replace("game_", "").replace(".db", ""));
