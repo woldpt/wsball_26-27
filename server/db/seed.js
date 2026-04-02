@@ -65,18 +65,8 @@ const lastB = [
   "Eterno",
 ];
 const nationalities = ["ZTR", "VNT", "BRR", "PNN", "MTR", "LST", "GNR", "FRR"];
-// Aggressiveness tiers (less → more aggressive)
-const AGGRESSIVENESS_TIERS = [
-  "Cordeirinho",
-  "Cavalheiro",
-  "Fair Play",
-  "Caneleiro",
-  "Caceteiro",
-];
 function randomAggressiveness() {
-  return AGGRESSIVENESS_TIERS[
-    Math.floor(Math.random() * AGGRESSIVENESS_TIERS.length)
-  ];
+  return 1 + Math.floor(Math.random() * 5);
 }
 const skillRanges = {
   1: [42, 50],
@@ -139,7 +129,7 @@ db.serialize(() => {
     );
   } else {
     console.log(
-      "Seeding 40 fictitious teams and 640 players across 5 divisions (inc. Distritais) (Base DB)...",
+      "Seeding 32 fictitious teams and 512 players across 4 divisions (Base DB)...",
     );
   }
 
@@ -215,20 +205,6 @@ db.serialize(() => {
       budget: 1500000,
       stadiumCapacity: 6000,
     },
-    5: {
-      teams: [
-        "Amadores de Viseu",
-        "Rio Maior FC",
-        "Desportivo da Aldeia",
-        "Recreativo Serrano",
-        "União de Bairro",
-        "Sporting da Aldeia",
-        "Coruchense FC",
-        "Lousã Desportiva",
-      ],
-      budget: 500000,
-      stadiumCapacity: 2000,
-    },
   };
 
   // Use allTeamsData if available, otherwise fallback to generated teams
@@ -270,7 +246,7 @@ db.serialize(() => {
       insertTeam.run(
         teamData.name,
         managerId,
-        teamData.division || 5,
+        teamData.division || 4,
         stadiumCapacity,
         budget,
         primaryColor,
@@ -318,7 +294,7 @@ db.serialize(() => {
         let p = providedPlayers[i];
         let pos = positionsDefault[i % positionsDefault.length];
         let name = getRandomName();
-        let division = teamData.division || 5;
+        let division = teamData.division || 4;
         let skill = randomSkill(
           (skillRanges[division] || [5, 20])[0],
           (skillRanges[division] || [5, 20])[1],
@@ -342,7 +318,7 @@ db.serialize(() => {
         const value = skill * 20000;
         const wage = skill * 200;
         const isStar =
-          (pos === "MED" || pos === "ATA") && Math.random() < 0.15 ? 1 : 0;
+          (pos === "MED" || pos === "ATA") && Math.random() < 0.1 ? 1 : 0;
         insertPlayer.run(
           name,
           pos,
@@ -363,7 +339,7 @@ db.serialize(() => {
     });
   } else {
     // Fallback: seed from divisionsData (generated teams)
-    for (let div = 1; div <= 5; div++) {
+    for (let div = 1; div <= 4; div++) {
       const data = divisionsData[div];
       if (!data) continue;
       data.teams.forEach((teamName) => {
@@ -449,7 +425,7 @@ db.serialize(() => {
           const value = skill * 20000;
           const wage = skill * 200;
           const isStar =
-            (pos === "MED" || pos === "ATA") && Math.random() < 0.15 ? 1 : 0;
+            (pos === "MED" || pos === "ATA") && Math.random() < 0.1 ? 1 : 0;
           insertPlayer.run(
             name,
             pos,
@@ -476,7 +452,7 @@ db.serialize(() => {
   for (let i = 0; i < 30; i++) {
     const name = getRandomName();
     const pos = freePositions[Math.floor(Math.random() * freePositions.length)];
-    let skill = randomSkill(0, 15); // Distrital-level free agents
+    let skill = randomSkill(0, 15);
     const age = Math.floor(Math.random() * 16) + 18;
     const form = Math.floor(Math.random() * 20) + 80;
     const agg = randomAggressiveness();

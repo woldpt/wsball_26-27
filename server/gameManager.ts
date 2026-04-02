@@ -1,17 +1,59 @@
-const sqlite3 = require("sqlite3").verbose();
-const fs = require("fs");
-const path = require("path");
+import fs from "fs";
+import path from "path";
+import sqlite3 from "sqlite3";
+import type { ActiveGame, PlayerSession } from "./types";
 
-const activeGames = {}; // { roomCode: { db, playersByName: {}, socketToName: {}, matchweek, matchState, globalMarket, fixtures } }
+const sqlite = sqlite3.verbose();
 
-function ensurePlayerSchema(db, onDone) {
+const activeGames: Record<string, ActiveGame> = {}; // { roomCode: { db, playersByName: {}, socketToName: {}, matchweek, matchState, globalMarket, fixtures } }
+
+type SqliteDb = any;
+type DbRow = { [key: string]: any } | null;
+type OnReady = (game: ActiveGame | null, error?: Error) => void;
+
+function dbDirCandidates() {
+  return [
+    path.join(__dirname, "db"),
+    path.join(__dirname, "..", "db"),
+    path.join(process.cwd(), "db"),
+  ];
+}
+
+function resolveDbPaths(roomCode: string) {
+  const candidates = dbDirCandidates();
+  const existingBasePath = candidates
+    .map((dir) => path.join(dir, "base.db"))
+    .find((candidatePath) => fs.existsSync(candidatePath));
+
+  const targetDbDir = existingBasePath
+    ? path.dirname(existingBasePath)
+    : candidates.find((dir) => fs.existsSync(dir)) ||
+      path.join(process.cwd(), "db");
+
+  if (!fs.existsSync(targetDbDir)) {
+    fs.mkdirSync(targetDbDir, { recursive: true });
+  }
+
+  return {
+    dbPath: path.join(targetDbDir, `game_${roomCode}.db`),
+    basePath: existingBasePath || path.join(targetDbDir, "base.db"),
+    targetDbDir,
+  };
+}
+
+function ensurePlayerSchema(
+  db: SqliteDb,
+  onDone?: (error: Error | null) => void,
+) {
   db.all("PRAGMA table_info(players)", (err, columns) => {
     if (err) {
       if (onDone) onDone(err);
       return;
     }
 
-    const existing = new Set((columns || []).map((c) => c.name));
+    const existing = new Set(
+      (columns || []).map((c: { name: string }) => c.name),
+    );
     const required = [
       ["red_cards", "INTEGER DEFAULT 0"],
       ["injuries", "INTEGER DEFAULT 0"],
@@ -56,14 +98,14 @@ function ensurePlayerSchema(db, onDone) {
             if (remaining === 0) {
               finished = true;
               // Backfill is_star if it was just added: assign ~7% of MED/ATA players as craques
-              if (missing.some(([n]) => n === "is_star")) {
+              if (missing.some(([n]: [string, string]) => n === "is_star")) {
                 db.run(
                   `UPDATE players SET is_star = 1 WHERE id IN (
                     SELECT id FROM players
                     WHERE (position = 'MED' OR position = 'ATA')
                     ORDER BY RANDOM()
                     LIMIT MAX(1, CAST(
-                      (SELECT COUNT(*) FROM players WHERE position = 'MED' OR position = 'ATA') * 0.07
+                      (SELECT COUNT(*) FROM players WHERE position = 'MED' OR position = 'ATA') * 0.10
                     AS INTEGER))
                   )`,
                   (backfillErr) => {
@@ -86,18 +128,19 @@ function ensurePlayerSchema(db, onDone) {
   });
 }
 
-function getGame(roomCode, onReady) {
+function getGame(roomCode: string, onReady?: OnReady): ActiveGame | null {
   if (activeGames[roomCode]) {
     if (onReady) onReady(activeGames[roomCode]);
     return activeGames[roomCode];
   }
 
-  const dbPath = path.join(__dirname, "db", `game_${roomCode}.db`);
-  const basePath = path.join(__dirname, "db", "base.db");
+  const { dbPath, basePath, targetDbDir } = resolveDbPaths(roomCode);
 
   if (!fs.existsSync(dbPath)) {
     if (!fs.existsSync(basePath)) {
-      console.error("[gameManager] base.db not found — run: npm run seed:real");
+      console.error(
+        `[gameManager] base.db not found in ${targetDbDir} — run: npm run seed:real`,
+      );
       if (onReady)
         onReady(
           null,
@@ -121,13 +164,13 @@ function getGame(roomCode, onReady) {
     fs.copyFileSync(basePath, dbPath);
   }
 
-  const db = new sqlite3.Database(dbPath);
+  const db = new sqlite.Database(dbPath);
 
-  const game = {
+  const game: ActiveGame = {
     roomCode,
     db,
-    playersByName: {}, // name -> { name, teamId, roomCode, ready, tactic, socketId }
-    socketToName: {}, // socketId -> name
+    playersByName: {} as Record<string, PlayerSession>, // name -> { name, teamId, roomCode, ready, tactic, socketId }
+    socketToName: {} as Record<string, string>, // socketId -> name
     matchweek: 1,
     matchState: "idle",
     season: 1,
@@ -137,7 +180,7 @@ function getGame(roomCode, onReady) {
     cupTeamIds: [], // team IDs still alive in the cup this season
     cupFixtures: [],
     cupHumanInCup: false,
-    cupDrawAcks: new Set(), // socket IDs that acknowledged the current draw
+    cupDrawAcks: new Set<string>(), // socket IDs that acknowledged the current draw
     cupRuntime: {
       phaseToken: "",
       drawPayload: null,
@@ -145,11 +188,11 @@ function getGame(roomCode, onReady) {
       secondHalfPayload: null,
       fixtures: [],
     },
-    lockedCoaches: new Set(), // names of all human coaches ever in this room (lock is permanent once >= 2)
+    lockedCoaches: new Set<string>(), // names of all human coaches ever in this room (lock is permanent once >= 2)
     globalMarket: [],
     fixtures: [],
-    auctions: {},
-    auctionTimers: {},
+    auctions: {} as Record<string, unknown>,
+    auctionTimers: {} as Record<string, unknown>,
     pendingAuctionQueue: [],
     initialized: false,
   };
@@ -163,7 +206,7 @@ function getGame(roomCode, onReady) {
       ensurePlayerSchema(db, () => {
         // Ensure morale column exists in teams (migration for existing DBs).
         db.run(
-          "ALTER TABLE teams ADD COLUMN morale INTEGER DEFAULT 75",
+          "ALTER TABLE teams ADD COLUMN morale INTEGER DEFAULT 50",
           () => {},
         );
         // Ensure attendance column exists in matches (migration for existing DBs).
@@ -196,12 +239,12 @@ function getGame(roomCode, onReady) {
         )`);
         db.get(
           "SELECT value FROM game_state WHERE key = 'matchweek'",
-          (err, row) => {
+          (err: Error | null, row: DbRow) => {
             if (row) game.matchweek = parseInt(row.value) || 1;
 
             db.get(
               "SELECT value FROM game_state WHERE key = 'matchState'",
-              (err2, row2) => {
+              (err2: Error | null, row2: DbRow) => {
                 if (row2) game.matchState = row2.value || "idle";
                 // Recovery: if matchState is stuck in a transient state, reset to idle
                 const stuckStates = [
@@ -217,22 +260,25 @@ function getGame(roomCode, onReady) {
 
                 db.get(
                   "SELECT value FROM game_state WHERE key = 'season'",
-                  (err3, row3) => {
+                  (err3: Error | null, row3: DbRow) => {
                     if (row3) game.season = parseInt(row3.value) || 1;
 
                     db.get(
                       "SELECT value FROM game_state WHERE key = 'cupRound'",
-                      (err4, row4) => {
+                      (err4: Error | null, row4: DbRow) => {
                         if (row4) game.cupRound = parseInt(row4.value) || 0;
 
                         db.get(
                           "SELECT value FROM game_state WHERE key = 'cupState'",
-                          (err5, row5) => {
+                          (err5: Error | null, row5: DbRow) => {
                             if (row5) game.cupState = row5.value || "idle";
 
                             db.get(
                               "SELECT value FROM game_state WHERE key = 'cupRuntime'",
-                              (errCupRuntime, rowCupRuntime) => {
+                              (
+                                errCupRuntime: Error | null,
+                                rowCupRuntime: DbRow,
+                              ) => {
                                 if (rowCupRuntime && rowCupRuntime.value) {
                                   try {
                                     const parsed = JSON.parse(
@@ -271,7 +317,7 @@ function getGame(roomCode, onReady) {
 
                                 db.get(
                                   "SELECT value FROM game_state WHERE key = 'year'",
-                                  (err6y, row6y) => {
+                                  (err6y: Error | null, row6y: DbRow) => {
                                     if (row6y) {
                                       game.year =
                                         parseInt(row6y.value) ||
@@ -283,7 +329,7 @@ function getGame(roomCode, onReady) {
 
                                     db.get(
                                       "SELECT value FROM game_state WHERE key = 'lockedCoaches'",
-                                      (err8, row8) => {
+                                      (err8: Error | null, row8: DbRow) => {
                                         if (row8 && row8.value) {
                                           try {
                                             const names = JSON.parse(
@@ -330,7 +376,7 @@ function getGame(roomCode, onReady) {
   return game;
 }
 
-function saveGameState(game) {
+function saveGameState(game: ActiveGame): void {
   game.db.run(
     "INSERT OR REPLACE INTO game_state (key, value) VALUES ('matchweek', ?)",
     [String(game.matchweek)],
@@ -382,13 +428,16 @@ function saveGameState(game) {
 }
 
 // Look up a player entry by socket ID
-function getPlayerBySocket(game, socketId) {
+function getPlayerBySocket(
+  game: ActiveGame,
+  socketId: string,
+): PlayerSession | null {
   const name = game.socketToName[socketId];
   return name ? game.playersByName[name] : null;
 }
 
 // Register / update a player's socket ID binding
-function bindSocket(game, name, socketId) {
+function bindSocket(game: ActiveGame, name: string, socketId: string): void {
   // Remove any old socket binding for this name
   const existing = game.playersByName[name];
   if (existing && existing.socketId && existing.socketId !== socketId) {
@@ -401,7 +450,7 @@ function bindSocket(game, name, socketId) {
 }
 
 // Remove a player socket binding on disconnect (keep the player entry so they can reconnect)
-function unbindSocket(game, socketId) {
+function unbindSocket(game: ActiveGame, socketId: string): void {
   const name = game.socketToName[socketId];
   if (name && game.playersByName[name]) {
     game.playersByName[name].socketId = null;
@@ -409,7 +458,7 @@ function unbindSocket(game, socketId) {
   delete game.socketToName[socketId];
 }
 
-function getGameBySocket(socketId) {
+function getGameBySocket(socketId: string): ActiveGame | null {
   for (const roomCode in activeGames) {
     if (activeGames[roomCode].socketToName[socketId]) {
       return activeGames[roomCode];
@@ -419,7 +468,7 @@ function getGameBySocket(socketId) {
 }
 
 // Return a snapshot of all connected players (for socket broadcasts)
-function getPlayerList(game) {
+function getPlayerList(game: ActiveGame): PlayerSession[] {
   return Object.values(game.playersByName).filter((p) => p.socketId !== null);
 }
 

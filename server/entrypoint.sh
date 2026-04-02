@@ -12,4 +12,5 @@ else
   echo "[entrypoint] base.db already exists ($(wc -c < "$DB_PATH") bytes) — skipping seed."
 fi
 
-exec node index.js
+npm run build
+exec node dist/index.js

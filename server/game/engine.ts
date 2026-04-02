@@ -1,4 +1,10 @@
-function pickBestPlayer(players = []) {
+import type { ActiveGame, Tactic } from "../types";
+
+type Db = any;
+type PlayerRow = any;
+type MatchFixture = any;
+
+function pickBestPlayer(players: PlayerRow[] = []) {
   if (!players.length) return null;
   return [...players].sort((a, b) => b.skill - a.skill)[0];
 }
@@ -7,7 +13,7 @@ function pickBestPlayer(players = []) {
  * Weighted random pick for goal scorer.
  * Stars (MED/ATA with is_star=1) get a 3× weight so they score more often.
  */
-function weightedPickScorer(players = []) {
+function weightedPickScorer(players: PlayerRow[] = []) {
   if (!players.length) return null;
   const weights = players.map((p) => (p.is_star ? 3 : 1));
   const total = weights.reduce((s, w) => s + w, 0);
@@ -19,14 +25,19 @@ function weightedPickScorer(players = []) {
   return players[players.length - 1];
 }
 
-function isPlayerAvailable(player, currentMatchweek = 1) {
+function isPlayerAvailable(player: PlayerRow, currentMatchweek = 1) {
   const suspensionUntil = player.suspension_until_matchweek || 0;
   const injuryUntil = player.injury_until_matchweek || 0;
   return currentMatchweek > suspensionUntil && currentMatchweek > injuryUntil;
 }
 
-async function getTeamSquad(db, teamId, tactic, currentMatchweek = 1) {
-  return new Promise((resolve, reject) => {
+async function getTeamSquad(
+  db: Db,
+  teamId: number,
+  tactic: Tactic | null,
+  currentMatchweek = 1,
+): Promise<PlayerRow[]> {
+  return new Promise<PlayerRow[]>((resolve, reject) => {
     db.all("SELECT * FROM players WHERE team_id = ?", [teamId], (err, rows) => {
       if (err) return reject(err);
 
@@ -77,8 +88,12 @@ async function getTeamSquad(db, teamId, tactic, currentMatchweek = 1) {
   });
 }
 
-async function generateFixturesForDivision(db, division, matchweek) {
-  return new Promise((resolve) => {
+async function generateFixturesForDivision(
+  db: Db,
+  division: number,
+  matchweek: number,
+): Promise<MatchFixture[]> {
+  return new Promise<MatchFixture[]>((resolve) => {
     db.all(
       "SELECT id FROM teams WHERE division = ? ORDER BY id",
       [division],
@@ -123,7 +138,7 @@ async function generateFixturesForDivision(db, division, matchweek) {
   });
 }
 
-function getCurrentPlayerState(game, teamId) {
+function getCurrentPlayerState(game: ActiveGame, teamId: number) {
   return Object.values(game.playersByName).find(
     (p) => p.teamId === teamId && p.socketId,
   );
@@ -137,20 +152,26 @@ function waitForMatchAction({
   payload,
   timeoutMs,
   fallback,
-}) {
+}: {
+  game: ActiveGame;
+  io: any;
+  type: string;
+  teamId: number;
+  payload: Record<string, unknown>;
+  timeoutMs: number;
+  fallback: () => any;
+}): Promise<{ choice: any; source: string }> {
   const humanCoach = getCurrentPlayerState(game, teamId);
   if (!humanCoach) {
     return Promise.resolve({ choice: fallback(), source: "auto" });
   }
 
-  return new Promise((resolve) => {
+  return new Promise<{ choice: any; source: string }>((resolve) => {
     const actionId = `${Date.now()}-${Math.random().toString(36).slice(2, 8)}`;
     const finalize = (choice, source = "auto") => {
-      if (
-        game.pendingMatchAction &&
-        game.pendingMatchAction.actionId === actionId
-      ) {
-        clearTimeout(game.pendingMatchAction.timer);
+      const pendingAction: any = game.pendingMatchAction;
+      if (pendingAction && pendingAction.actionId === actionId) {
+        clearTimeout(pendingAction.timer);
         game.pendingMatchAction = null;
       }
       io.to(game.roomCode).emit("matchActionResolved", {
@@ -183,16 +204,46 @@ function waitForMatchAction({
   });
 }
 
-function getAvailableBench(teamSquad, lineupIds) {
+function getAvailableBench(teamSquad: PlayerRow[], lineupIds: Set<number>) {
   return teamSquad.filter((p) => !lineupIds.has(p.id));
 }
 
-function selectPenaltyTaker(squad = []) {
+function selectPenaltyTaker(squad: PlayerRow[] = []) {
   return pickBestPlayer(squad) || null;
 }
 
-function clampSkill(value) {
+function clampSkill(value: number) {
   return Math.max(0, Math.min(50, Math.round(value)));
+}
+
+function normaliseStyle(style: unknown) {
+  const raw = String(style || "Balanced")
+    .trim()
+    .toUpperCase();
+  if (raw === "DEFENSIVO" || raw === "DEFENSIVE") return "DEFENSIVO";
+  if (raw === "OFENSIVO" || raw === "OFFENSIVE") return "OFENSIVO";
+  return "EQUILIBRADO";
+}
+
+function getAggressivenessValue(player: PlayerRow) {
+  if (typeof player?.aggressiveness === "number") {
+    return Math.max(1, Math.min(5, Math.round(player.aggressiveness)));
+  }
+
+  const AGG_TIER_VALUES = {
+    Cordeirinho: 1,
+    Cavalheiro: 2,
+    "Fair Play": 3,
+    Caneleiro: 4,
+    Caceteiro: 5,
+  };
+
+  return AGG_TIER_VALUES[player?.aggressiveness] ?? 3;
+}
+
+function average(values: number[] = []) {
+  if (!values.length) return 0;
+  return values.reduce((sum, value) => sum + value, 0) / values.length;
 }
 
 async function applyInjuryEvent({
@@ -205,6 +256,16 @@ async function applyInjuryEvent({
   currentMatchweek,
   io,
   game,
+}: {
+  db: Db;
+  fixture: MatchFixture;
+  teamSide: "home" | "away";
+  squad: PlayerRow[];
+  fullRoster: PlayerRow[];
+  lineupIds: Set<number>;
+  currentMatchweek: number;
+  io: any;
+  game: ActiveGame;
 }) {
   if (!squad.length) return { replaced: false, injuredPlayer: null };
 
@@ -305,6 +366,14 @@ async function applyPenaltyEvent({
   currentMatchweek,
   io,
   game,
+}: {
+  db: Db;
+  fixture: MatchFixture;
+  teamSide: "home" | "away";
+  squad: PlayerRow[];
+  currentMatchweek: number;
+  io: any;
+  game: ActiveGame;
 }) {
   const teamId = teamSide === "home" ? fixture.homeTeamId : fixture.awayTeamId;
   const takerCandidates = squad.filter((p) =>
@@ -377,13 +446,13 @@ async function applyPenaltyEvent({
 }
 
 async function simulateMatchSegment(
-  db,
-  fixture,
-  homeTactic,
-  awayTactic,
-  startMin,
-  endMin,
-  context = {},
+  db: Db,
+  fixture: MatchFixture,
+  homeTactic: Tactic | null,
+  awayTactic: Tactic | null,
+  startMin: number,
+  endMin: number,
+  context: any = {},
 ) {
   const currentMatchweek = context.matchweek || 1;
   const io = context.io;
@@ -404,24 +473,24 @@ async function simulateMatchSegment(
 
   // Load team morale values
   const [homeMorale, awayMorale] = await Promise.all([
-    new Promise((res) =>
+    new Promise<number>((res) =>
       db.get(
         "SELECT morale FROM teams WHERE id = ?",
         [fixture.homeTeamId],
-        (err, row) => res(row && row.morale != null ? row.morale : 75),
+        (err, row) => res(row && row.morale != null ? row.morale : 50),
       ),
     ),
-    new Promise((res) =>
+    new Promise<number>((res) =>
       db.get(
         "SELECT morale FROM teams WHERE id = ?",
         [fixture.awayTeamId],
-        (err, row) => res(row && row.morale != null ? row.morale : 75),
+        (err, row) => res(row && row.morale != null ? row.morale : 50),
       ),
     ),
   ]);
 
   // Load full rosters for bench availability during injuries
-  const homeFullRoster = await new Promise((resolve, reject) => {
+  const homeFullRoster = await new Promise<PlayerRow[]>((resolve, reject) => {
     db.all(
       "SELECT * FROM players WHERE team_id = ?",
       [fixture.homeTeamId],
@@ -433,7 +502,7 @@ async function simulateMatchSegment(
       },
     );
   });
-  const awayFullRoster = await new Promise((resolve, reject) => {
+  const awayFullRoster = await new Promise<PlayerRow[]>((resolve, reject) => {
     db.all(
       "SELECT * FROM players WHERE team_id = ?",
       [fixture.awayTeamId],
@@ -462,152 +531,165 @@ async function simulateMatchSegment(
   const homeLineupIds = new Set(homeSquad.map((p) => p.id));
   const awayLineupIds = new Set(awaySquad.map((p) => p.id));
 
-  const getPower = (squad, style, morale = 75) => {
-    let attack = 0,
-      defense = 0,
-      midfield = 0,
-      gk = 0;
-    squad.forEach((p) => {
-      const starMult =
-        p.is_star && (p.position === "MED" || p.position === "ATA")
-          ? 1.35
-          : 1.0;
-      const effSkill = p.skill * (morale / 100) * starMult;
-      if (p.position === "GR") gk += effSkill;
-      if (p.position === "DEF") defense += effSkill;
-      if (p.position === "MED") midfield += effSkill;
-      if (p.position === "ATA") attack += effSkill;
-    });
+  const getPower = (squad, tactic, morale = 50) => {
+    const formation = String(tactic?.formation || "4-4-2");
+    const style = normaliseStyle(tactic?.style);
 
-    // Ego / chemistry penalty: too many star players in the same team
-    // causes dressing-room friction — offensive power degrades beyond 2 stars.
-    const starCount = squad.filter(
-      (p) => p.is_star && (p.position === "MED" || p.position === "ATA"),
-    ).length;
-    if (starCount >= 3) {
-      const excessStars = starCount - 2; // every star beyond 2 adds friction
-      const egoPenalty = Math.min(0.3, excessStars * 0.08); // up to -30%
-      attack *= 1 - egoPenalty;
-      midfield *= 1 - egoPenalty * 0.6; // midfield hit is softer
-    }
+    const midfielders = squad.filter((p) => p.position === "MED");
+    const forwards = squad.filter((p) => p.position === "ATA");
+    const defenders = squad.filter((p) => p.position === "DEF");
+    const keepers = squad.filter((p) => p.position === "GR");
 
-    if (style === "Offensive") {
-      attack *= 1.15;
-      defense *= 0.85;
-    }
-    if (style === "Defensive") {
-      defense *= 1.2;
-      attack *= 0.8;
-    }
+    const avgMidfielderQuality = average(midfielders.map((p) => p.skill || 0));
+    const avgForwardQuality = average(forwards.map((p) => p.skill || 0));
+    const avgDefenderQuality = average(defenders.map((p) => p.skill || 0));
+    const avgKeeperQuality = average(keepers.map((p) => p.skill || 0));
 
-    return { attack, defense, midfield, gk, squad };
+    const formationOffensiveFactors = {
+      "4-2-4": 1.15,
+      "3-4-3": 1.12,
+      "4-3-3": 1.08,
+      "4-4-2": 1.0,
+      "3-5-2": 0.95,
+      "4-5-1": 0.9,
+      "5-3-2": 0.85,
+      "5-4-1": 0.8,
+    };
+
+    const formationDefensiveFactors = {
+      "5-4-1": 1.25,
+      "5-3-2": 1.2,
+      "4-5-1": 1.1,
+      "4-4-2": 1.0,
+      "3-5-2": 0.95,
+      "4-3-3": 0.9,
+      "3-4-3": 0.85,
+      "4-2-4": 0.75,
+    };
+
+    const styleOffensiveFactor = {
+      DEFENSIVO: 0.85,
+      EQUILIBRADO: 1.0,
+      OFENSIVO: 1.15,
+    };
+
+    const styleDefensiveFactor = {
+      DEFENSIVO: 1.15,
+      EQUILIBRADO: 1.0,
+      OFENSIVO: 0.85,
+    };
+
+    const formationAttack = formationOffensiveFactors[formation] ?? 1.0;
+    const formationDefense = formationDefensiveFactors[formation] ?? 1.0;
+
+    const moraleFactor = 1 + (morale - 50) * 0.01;
+
+    const attackBase = avgMidfielderQuality * 0.4 + avgForwardQuality * 0.6;
+    const defenseBase = avgDefenderQuality * 0.6 + avgKeeperQuality * 0.4;
+
+    return {
+      attack:
+        attackBase *
+        formationAttack *
+        Math.max(0.5, Math.min(1.5, moraleFactor)) *
+        styleOffensiveFactor[style],
+      defense: defenseBase * formationDefense * styleDefensiveFactor[style],
+      style,
+      squad,
+    };
   };
 
-  const home = getPower(
-    homeSquad,
-    homeTactic ? homeTactic.style : "Balanced",
-    homeMorale,
-  );
-  const away = getPower(
-    awaySquad,
-    awayTactic ? awayTactic.style : "Balanced",
-    awayMorale,
-  );
+  const home = getPower(homeSquad, homeTactic, homeMorale);
+  const away = getPower(awaySquad, awayTactic, awayMorale);
 
   for (let minute = startMin; minute <= endMin; minute++) {
     fixture._minute = minute;
 
-    const currentHome = getPower(
-      home.squad,
-      homeTactic ? homeTactic.style : "Balanced",
-      homeMorale,
-    );
-    const currentAway = getPower(
-      away.squad,
-      awayTactic ? awayTactic.style : "Balanced",
-      awayMorale,
-    );
-    const currentHStrength =
-      ((currentHome.attack || 10) * 1.5 +
-        (currentHome.midfield || 10) * 1.0 +
-        (currentHome.defense || 10) * 0.5) *
-      1.1;
-    const currentAStrength =
-      (currentAway.attack || 10) * 1.5 +
-      (currentAway.midfield || 10) * 1.0 +
-      (currentAway.defense || 10) * 0.5;
+    const currentHome = getPower(home.squad, homeTactic, homeMorale);
+    const currentAway = getPower(away.squad, awayTactic, awayMorale);
 
-    const chance = Math.random();
-    if (chance < 0.025) {
-      const penaltyChance = 0.008;
-      const isPenalty = Math.random() < penaltyChance;
-      const attackingSide =
-        Math.random() * (currentHStrength + currentAStrength) < currentHStrength
-          ? "home"
-          : "away";
-      const attackingSquad = attackingSide === "home" ? home.squad : away.squad;
+    const maybeOpenPlayGoal = (attackingSide) => {
+      const attacking = attackingSide === "home" ? currentHome : currentAway;
+      const defending = attackingSide === "home" ? currentAway : currentHome;
+      const isHome = attackingSide === "home";
 
-      if (isPenalty) {
-        await applyPenaltyEvent({
-          db,
-          fixture,
-          teamSide: attackingSide,
-          squad: attackingSquad,
-          currentMatchweek,
-          io,
-          game,
-        });
-      } else {
-        const scoringSquad = attackingSide === "home" ? home.squad : away.squad;
-        const scoringTeam = attackingSide;
-        const scorers = scoringSquad.filter(
-          (p) => p.position === "ATA" || p.position === "MED",
+      const ratio =
+        (attacking.attack || 1) /
+        ((attacking.attack || 1) + (defending.defense || 1) * 2);
+      let probGoal = ratio * 0.01;
+      probGoal *= isHome ? 1.05 : 0.95;
+
+      if (defending.style === "DEFENSIVO") probGoal *= 0.85;
+      else if (defending.style === "OFENSIVO") probGoal *= 1.1;
+
+      if (Math.random() >= probGoal) return;
+
+      const scoringSquad = isHome ? home.squad : away.squad;
+      const scorers = scoringSquad.filter(
+        (p) => p.position === "ATA" || p.position === "MED",
+      );
+      const scorer =
+        scorers.length > 0 ? weightedPickScorer(scorers) : scoringSquad[0];
+
+      if (isHome) fixture.finalHomeGoals++;
+      else fixture.finalAwayGoals++;
+
+      const craqueCount = scoringSquad.filter(
+        (p) => p.is_star && (p.position === "MED" || p.position === "ATA"),
+      ).length;
+      const decisiveChance = Math.min(0.6, craqueCount * 0.2);
+      const isDecisive = Math.random() < decisiveChance;
+
+      fixture.events.push({
+        minute,
+        type: "goal",
+        team: attackingSide,
+        emoji: "⚽",
+        playerId: scorer ? scorer.id : null,
+        playerName: scorer ? scorer.name : "Jogador",
+        text: `[${minute}'] ⚽ GOLO! ${scorer ? scorer.name : "Jogador"}`,
+        isDecisive,
+      });
+
+      if (scorer) {
+        db.run(
+          "UPDATE players SET goals = goals + 1, career_goals = career_goals + 1 WHERE id = ?",
+          [scorer.id],
         );
-        const scorer =
-          scorers.length > 0 ? weightedPickScorer(scorers) : scoringSquad[0];
-        if (attackingSide === "home") fixture.finalHomeGoals++;
-        else fixture.finalAwayGoals++;
-        fixture.events.push({
-          minute,
-          type: "goal",
-          team: scoringTeam,
-          emoji: "⚽",
-          playerId: scorer ? scorer.id : null,
-          playerName: scorer ? scorer.name : "Jogador",
-          text: `[${minute}'] ⚽ GOLO! ${scorer ? scorer.name : "Jogador"}`,
-        });
-        if (scorer)
-          db.run(
-            "UPDATE players SET goals = goals + 1, career_goals = career_goals + 1 WHERE id = ?",
-            [scorer.id],
-          );
       }
+    };
+
+    const penaltyChance = 0.002;
+    if (Math.random() < penaltyChance) {
+      const attackingSide = Math.random() < 0.5 ? "home" : "away";
+      const attackingSquad = attackingSide === "home" ? home.squad : away.squad;
+      await applyPenaltyEvent({
+        db,
+        fixture,
+        teamSide: attackingSide,
+        squad: attackingSquad,
+        currentMatchweek,
+        io,
+        game,
+      });
     }
 
-    const cardChance = Math.random();
-    if (cardChance < 0.005) {
-      const isHomeCard = Math.random() > 0.5;
+    maybeOpenPlayGoal("home");
+    maybeOpenPlayGoal("away");
+
+    const homeAggAvg = average(
+      home.squad.map((p) => getAggressivenessValue(p)),
+    );
+    const awayAggAvg = average(
+      away.squad.map((p) => getAggressivenessValue(p)),
+    );
+
+    const emitCard = (isHomeCard) => {
       const squad = isHomeCard ? home.squad : away.squad;
       const side = isHomeCard ? "home" : "away";
       if (squad.length > 0) {
         const offender = squad[Math.floor(Math.random() * squad.length)];
-        // Map aggressiveness tier (or legacy number) to numeric value 1-50
-        const AGG_TIER_VALUES = {
-          Cordeirinho: 5,
-          Cavalheiro: 15,
-          "Fair Play": 25,
-          Caneleiro: 37,
-          Caceteiro: 50,
-        };
-        const aggValue =
-          typeof offender.aggressiveness === "number"
-            ? offender.aggressiveness
-            : (AGG_TIER_VALUES[offender.aggressiveness] ?? 25);
-        // redProb: probabilidade de cartão vermelho directo (expulsão + suspensão)
-        // Resto é cartão amarelo (sem expulsão)
-        const redProb = 0.04 + (aggValue / 50) * 0.18; // 0.04 (agg=0) a 0.22 (agg=50)
-
-        if (Math.random() < redProb) {
+        if (Math.random() < 0.15) {
           // Cartão vermelho — 2 jogos de suspensão
           db.run(
             "UPDATE players SET red_cards = red_cards + 1, career_reds = career_reds + 1, suspension_games = suspension_games + 2, suspension_until_matchweek = CASE WHEN suspension_until_matchweek > ? THEN suspension_until_matchweek ELSE ? END WHERE id = ?",
@@ -637,7 +719,12 @@ async function simulateMatchSegment(
           });
         }
       }
-    }
+    };
+
+    const homeCardProb = 0.02 * (1 + (homeAggAvg - 3) * 0.1);
+    const awayCardProb = 0.02 * (1 + (awayAggAvg - 3) * 0.1);
+    if (Math.random() < homeCardProb) emitCard(true);
+    if (Math.random() < awayCardProb) emitCard(false);
 
     const injuryChance = Math.random();
     if (injuryChance < 0.003) {
@@ -667,8 +754,12 @@ async function simulateMatchSegment(
   delete fixture._minute;
 }
 
-async function applyPostMatchQualityEvolution(db, fixtures, currentMatchweek) {
-  return new Promise((resolve) => {
+async function applyPostMatchQualityEvolution(
+  db: Db,
+  fixtures: MatchFixture[],
+  currentMatchweek: number,
+) {
+  return new Promise<void>((resolve) => {
     const teamResults = new Map();
     for (const match of fixtures || []) {
       const homeResult =
@@ -691,11 +782,9 @@ async function applyPostMatchQualityEvolution(db, fixtures, currentMatchweek) {
     const moraleUpdates = [];
     for (const [teamId, result] of teamResults.entries()) {
       let delta;
-      if (result === "W")
-        delta = 8 + Math.floor(Math.random() * 5); // +8..+12
-      else if (result === "L")
-        delta = -(8 + Math.floor(Math.random() * 5)); // -8..-12
-      else delta = Math.floor(Math.random() * 5) - 2; // -2..+2
+      if (result === "W") delta = 10;
+      else if (result === "L") delta = -15;
+      else delta = 0;
       moraleUpdates.push({ teamId, delta });
     }
 
@@ -711,8 +800,8 @@ async function applyPostMatchQualityEvolution(db, fixtures, currentMatchweek) {
             const upd = moraleUpdates.find((u) => u.teamId === row.id);
             if (!upd) return;
             const newMorale = Math.max(
-              20,
-              Math.min(100, (row.morale ?? 75) + upd.delta),
+              0,
+              Math.min(100, (row.morale ?? 50) + upd.delta),
             );
             db.run("UPDATE teams SET morale = ? WHERE id = ?", [
               newMorale,
@@ -831,7 +920,13 @@ module.exports = {
 // ─── EXTRA TIME ──────────────────────────────────────────────────────────────
 // Simulates two 15-minute extra-time periods (91-105 and 106-120).
 // Returns { firstHalfEvents, secondHalfEvents } after updating fixture goals.
-async function simulateExtraTime(db, fixture, homeTactic, awayTactic, context) {
+async function simulateExtraTime(
+  db: Db,
+  fixture: MatchFixture,
+  homeTactic: Tactic | null,
+  awayTactic: Tactic | null,
+  context: any,
+) {
   await simulateMatchSegment(
     db,
     fixture,
@@ -884,7 +979,10 @@ async function simulateExtraTime(db, fixture, homeTactic, awayTactic, context) {
 // ─── PENALTY SHOOTOUT ─────────────────────────────────────────────────────────
 // Simulates a penalty shootout between two squads.
 // Returns { homeGoals, awayGoals, kicks: [{team, playerName, scored}] }
-function simulatePenaltyShootout(homeSquad, awaySquad) {
+function simulatePenaltyShootout(
+  homeSquad: PlayerRow[],
+  awaySquad: PlayerRow[],
+) {
   const kicks = [];
   let homeGoals = 0;
   let awayGoals = 0;

@@ -20,7 +20,7 @@ CREATE TABLE IF NOT EXISTS teams (
   loan_amount INTEGER DEFAULT 0,
   color_primary TEXT,
   color_secondary TEXT,
-  morale INTEGER DEFAULT 75,
+  morale INTEGER DEFAULT 50,
   FOREIGN KEY(manager_id) REFERENCES managers(id)
 );
 
@@ -31,7 +31,7 @@ CREATE TABLE IF NOT EXISTS players (
   skill INTEGER,
   age INTEGER,
   form INTEGER DEFAULT 100,
-  aggressiveness TEXT DEFAULT 'Fair Play',
+  aggressiveness INTEGER DEFAULT 3,
   nationality TEXT,
   value INTEGER,
   wage INTEGER,
