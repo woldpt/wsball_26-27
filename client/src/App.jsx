@@ -4011,195 +4011,198 @@ function App() {
               )}
 
               {activeTab === "tactic" && (
-                <div className="space-y-4">
+                <div className="flex flex-col lg:flex-row lg:items-start gap-4">
                   {/* ── 2D PITCH ─────────────────────────────────────── */}
-                  {(() => {
-                    const titulares = annotatedSquad.filter(
-                      (p) => p.status === "Titular",
-                    );
-                    const grPlayers = titulares.filter(
-                      (p) => p.position === "GR",
-                    );
-                    const defPlayers = titulares.filter(
-                      (p) => p.position === "DEF",
-                    );
-                    const medPlayers = titulares.filter(
-                      (p) => p.position === "MED",
-                    );
-                    const ataPlayers = titulares.filter(
-                      (p) => p.position === "ATA",
-                    );
-                    const rows = [
-                      ataPlayers,
-                      medPlayers,
-                      defPlayers,
-                      grPlayers,
-                    ];
-                    const rowYs = ["10%", "33%", "59%", "82%"];
-                    const posColors = {
-                      GR: "bg-amber-500 text-zinc-900",
-                      DEF: "bg-sky-500 text-zinc-900",
-                      MED: "bg-primary text-on-primary",
-                      ATA: "bg-red-500 text-white",
-                    };
-                    return (
-                      <div
-                        className="relative w-full rounded-xl overflow-hidden border border-zinc-800/60"
-                        style={{
-                          aspectRatio: "3/4",
-                          background:
-                            "linear-gradient(180deg, #05430e 0%, #0b5e1a 50%, #05430e 100%)",
-                        }}
-                      >
-                        <svg
-                          className="absolute inset-0 w-full h-full"
-                          viewBox="0 0 300 400"
-                          preserveAspectRatio="none"
-                          aria-hidden="true"
+                  <div className="w-full lg:w-52 lg:shrink-0">
+                    {(() => {
+                      const titulares = annotatedSquad.filter(
+                        (p) => p.status === "Titular",
+                      );
+                      const grPlayers = titulares.filter(
+                        (p) => p.position === "GR",
+                      );
+                      const defPlayers = titulares.filter(
+                        (p) => p.position === "DEF",
+                      );
+                      const medPlayers = titulares.filter(
+                        (p) => p.position === "MED",
+                      );
+                      const ataPlayers = titulares.filter(
+                        (p) => p.position === "ATA",
+                      );
+                      const rows = [
+                        ataPlayers,
+                        medPlayers,
+                        defPlayers,
+                        grPlayers,
+                      ];
+                      const rowYs = ["10%", "33%", "59%", "82%"];
+                      const posColors = {
+                        GR: "bg-amber-500 text-zinc-900",
+                        DEF: "bg-sky-500 text-zinc-900",
+                        MED: "bg-primary text-on-primary",
+                        ATA: "bg-red-500 text-white",
+                      };
+                      return (
+                        <div
+                          className="relative w-full rounded-xl overflow-hidden border border-zinc-800/60"
+                          style={{
+                            aspectRatio: "3/4",
+                            background:
+                              "linear-gradient(180deg, #05430e 0%, #0b5e1a 50%, #05430e 100%)",
+                          }}
                         >
-                          <rect
-                            x="12"
-                            y="12"
-                            width="276"
-                            height="376"
-                            fill="none"
-                            stroke="rgba(255,255,255,0.18)"
-                            strokeWidth="1.5"
-                            rx="2"
-                          />
-                          <line
-                            x1="12"
-                            y1="200"
-                            x2="288"
-                            y2="200"
-                            stroke="rgba(255,255,255,0.15)"
-                            strokeWidth="1"
-                          />
-                          <circle
-                            cx="150"
-                            cy="200"
-                            r="44"
-                            fill="none"
-                            stroke="rgba(255,255,255,0.12)"
-                            strokeWidth="1"
-                          />
-                          <circle
-                            cx="150"
-                            cy="200"
-                            r="3"
-                            fill="rgba(255,255,255,0.18)"
-                          />
-                          <rect
-                            x="90"
-                            y="12"
-                            width="120"
-                            height="56"
-                            fill="none"
-                            stroke="rgba(255,255,255,0.12)"
-                            strokeWidth="1"
-                          />
-                          <rect
-                            x="120"
-                            y="12"
-                            width="60"
-                            height="22"
-                            fill="none"
-                            stroke="rgba(255,255,255,0.1)"
-                            strokeWidth="1"
-                          />
-                          <rect
-                            x="90"
-                            y="332"
-                            width="120"
-                            height="56"
-                            fill="none"
-                            stroke="rgba(255,255,255,0.12)"
-                            strokeWidth="1"
-                          />
-                          <rect
-                            x="120"
-                            y="366"
-                            width="60"
-                            height="22"
-                            fill="none"
-                            stroke="rgba(255,255,255,0.1)"
-                            strokeWidth="1"
-                          />
-                        </svg>
-                        {rows.map((rowPlayers, ri) =>
-                          rowPlayers.length > 0 ? (
-                            <div
-                              key={ri}
-                              className="absolute w-full flex justify-evenly items-start px-2"
-                              style={{ top: rowYs[ri] }}
-                            >
-                              {rowPlayers.map((player) => (
-                                <div
-                                  key={player.id}
-                                  className="flex flex-col items-center gap-0.5"
-                                  style={{ maxWidth: "64px" }}
-                                >
+                          <svg
+                            className="absolute inset-0 w-full h-full"
+                            viewBox="0 0 300 400"
+                            preserveAspectRatio="none"
+                            aria-hidden="true"
+                          >
+                            <rect
+                              x="12"
+                              y="12"
+                              width="276"
+                              height="376"
+                              fill="none"
+                              stroke="rgba(255,255,255,0.18)"
+                              strokeWidth="1.5"
+                              rx="2"
+                            />
+                            <line
+                              x1="12"
+                              y1="200"
+                              x2="288"
+                              y2="200"
+                              stroke="rgba(255,255,255,0.15)"
+                              strokeWidth="1"
+                            />
+                            <circle
+                              cx="150"
+                              cy="200"
+                              r="44"
+                              fill="none"
+                              stroke="rgba(255,255,255,0.12)"
+                              strokeWidth="1"
+                            />
+                            <circle
+                              cx="150"
+                              cy="200"
+                              r="3"
+                              fill="rgba(255,255,255,0.18)"
+                            />
+                            <rect
+                              x="90"
+                              y="12"
+                              width="120"
+                              height="56"
+                              fill="none"
+                              stroke="rgba(255,255,255,0.12)"
+                              strokeWidth="1"
+                            />
+                            <rect
+                              x="120"
+                              y="12"
+                              width="60"
+                              height="22"
+                              fill="none"
+                              stroke="rgba(255,255,255,0.1)"
+                              strokeWidth="1"
+                            />
+                            <rect
+                              x="90"
+                              y="332"
+                              width="120"
+                              height="56"
+                              fill="none"
+                              stroke="rgba(255,255,255,0.12)"
+                              strokeWidth="1"
+                            />
+                            <rect
+                              x="120"
+                              y="366"
+                              width="60"
+                              height="22"
+                              fill="none"
+                              stroke="rgba(255,255,255,0.1)"
+                              strokeWidth="1"
+                            />
+                          </svg>
+                          {rows.map((rowPlayers, ri) =>
+                            rowPlayers.length > 0 ? (
+                              <div
+                                key={ri}
+                                className="absolute w-full flex justify-evenly items-start px-2"
+                                style={{ top: rowYs[ri] }}
+                              >
+                                {rowPlayers.map((player) => (
                                   <div
-                                    className={`w-9 h-9 rounded-full flex items-center justify-center font-black text-xs border-2 border-white/20 shrink-0 relative ${posColors[player.position] || "bg-zinc-500 text-white"} ${player.isUnavailable ? "opacity-50 ring-2 ring-red-500" : ""}`}
+                                    key={player.id}
+                                    className="flex flex-col items-center gap-0.5"
+                                    style={{ maxWidth: "64px" }}
                                   >
-                                    {POSITION_SHORT_LABELS[player.position] ||
-                                      "?"}
-                                    {player.isUnavailable && (
-                                      <span className="absolute -top-1 -right-1 text-[9px] leading-none">
-                                        {(player.suspension_until_matchweek ||
-                                          0) > matchweekCount
-                                          ? "🟥"
-                                          : "🩹"}
-                                      </span>
-                                    )}
+                                    <div
+                                      className={`w-9 h-9 rounded-full flex items-center justify-center font-black text-xs border-2 border-white/20 shrink-0 relative ${posColors[player.position] || "bg-zinc-500 text-white"} ${player.isUnavailable ? "opacity-50 ring-2 ring-red-500" : ""}`}
+                                    >
+                                      {POSITION_SHORT_LABELS[player.position] ||
+                                        "?"}
+                                      {player.isUnavailable && (
+                                        <span className="absolute -top-1 -right-1 text-[9px] leading-none">
+                                          {(player.suspension_until_matchweek ||
+                                            0) > matchweekCount
+                                            ? "🟥"
+                                            : "🩹"}
+                                        </span>
+                                      )}
+                                    </div>
+                                    <span
+                                      className="text-white text-[9px] font-bold text-center leading-tight"
+                                      style={{
+                                        textShadow:
+                                          "0 1px 4px rgba(0,0,0,0.95), 0 0 8px rgba(0,0,0,0.8)",
+                                        maxWidth: "56px",
+                                        display: "block",
+                                        whiteSpace: "nowrap",
+                                        overflow: "hidden",
+                                        textOverflow: "ellipsis",
+                                      }}
+                                    >
+                                      {player.name.split(" ").pop()}
+                                    </span>
+                                    <span
+                                      className="text-[9px] font-black leading-none"
+                                      style={{
+                                        color: "var(--color-primary)",
+                                        textShadow:
+                                          "0 1px 4px rgba(0,0,0,0.95)",
+                                      }}
+                                    >
+                                      {player.skill}
+                                    </span>
                                   </div>
-                                  <span
-                                    className="text-white text-[9px] font-bold text-center leading-tight"
-                                    style={{
-                                      textShadow:
-                                        "0 1px 4px rgba(0,0,0,0.95), 0 0 8px rgba(0,0,0,0.8)",
-                                      maxWidth: "56px",
-                                      display: "block",
-                                      whiteSpace: "nowrap",
-                                      overflow: "hidden",
-                                      textOverflow: "ellipsis",
-                                    }}
-                                  >
-                                    {player.name.split(" ").pop()}
-                                  </span>
-                                  <span
-                                    className="text-[9px] font-black leading-none"
-                                    style={{
-                                      color: "var(--color-primary)",
-                                      textShadow: "0 1px 4px rgba(0,0,0,0.95)",
-                                    }}
-                                  >
-                                    {player.skill}
-                                  </span>
-                                </div>
-                              ))}
+                                ))}
+                              </div>
+                            ) : null,
+                          )}
+                          {!tactic.formation && (
+                            <div className="absolute inset-0 flex items-center justify-center">
+                              <p
+                                className="text-zinc-400 text-sm font-bold text-center px-8 leading-relaxed"
+                                style={{
+                                  textShadow: "0 1px 4px rgba(0,0,0,0.9)",
+                                }}
+                              >
+                                Escolhe uma formação no painel lateral para ver
+                                os jogadores em campo
+                              </p>
                             </div>
-                          ) : null,
-                        )}
-                        {!tactic.formation && (
-                          <div className="absolute inset-0 flex items-center justify-center">
-                            <p
-                              className="text-zinc-400 text-sm font-bold text-center px-8 leading-relaxed"
-                              style={{
-                                textShadow: "0 1px 4px rgba(0,0,0,0.9)",
-                              }}
-                            >
-                              Escolhe uma formação no painel lateral para ver os
-                              jogadores em campo
-                            </p>
-                          </div>
-                        )}
-                      </div>
-                    );
-                  })()}
+                          )}
+                        </div>
+                      );
+                    })()}
+                  </div>
 
                   {/* ── COMPACT PLAYER LIST ──────────────────────────── */}
-                  <div className="bg-surface-container rounded-lg overflow-hidden">
+                  <div className="flex-1 bg-surface-container rounded-lg overflow-hidden">
                     <div className="px-4 py-3 border-b border-outline-variant/20 bg-surface/40 flex items-center justify-between">
                       <p className="text-[10px] uppercase tracking-widest text-zinc-500 font-black">
                         Plantel
