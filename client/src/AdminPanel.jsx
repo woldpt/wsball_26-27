@@ -1,4 +1,5 @@
 import React, { useEffect, useMemo, useState } from "react";
+import { COUNTRY_FLAGS } from "./countryFlags";
 
 const API_HEADERS = (token) => ({
   Authorization: `Bearer ${token}`,
@@ -6,7 +7,7 @@ const API_HEADERS = (token) => ({
 });
 
 const POSITION_OPTIONS = ["GR", "DEF", "MED", "ATA"];
-const DEFAULT_PLAYER = { name: "", position: "MED", country: "POR" };
+const DEFAULT_PLAYER = { name: "", position: "MED", country: "🇵🇹" };
 
 function createEmptyTeam() {
   return {
@@ -16,18 +17,18 @@ function createEmptyTeam() {
     stadium: { name: "Novo Estádio", capacity: 2500 },
     manager: { name: "Novo Treinador" },
     players: [
-      { name: "Guarda-Redes", position: "GR", country: "POR" },
-      { name: "Defesa 1", position: "DEF", country: "POR" },
-      { name: "Defesa 2", position: "DEF", country: "POR" },
-      { name: "Defesa 3", position: "DEF", country: "POR" },
-      { name: "Defesa 4", position: "DEF", country: "POR" },
-      { name: "Médio 1", position: "MED", country: "POR" },
-      { name: "Médio 2", position: "MED", country: "POR" },
-      { name: "Médio 3", position: "MED", country: "POR" },
-      { name: "Médio 4", position: "MED", country: "POR" },
-      { name: "Médio 5", position: "MED", country: "POR" },
-      { name: "Avançado 1", position: "ATA", country: "POR" },
-      { name: "Avançado 2", position: "ATA", country: "POR" },
+      { name: "Guarda-Redes", position: "GR", country: "🇵🇹" },
+      { name: "Defesa 1", position: "DEF", country: "🇵🇹" },
+      { name: "Defesa 2", position: "DEF", country: "🇵🇹" },
+      { name: "Defesa 3", position: "DEF", country: "🇵🇹" },
+      { name: "Defesa 4", position: "DEF", country: "🇵🇹" },
+      { name: "Médio 1", position: "MED", country: "🇵🇹" },
+      { name: "Médio 2", position: "MED", country: "🇵🇹" },
+      { name: "Médio 3", position: "MED", country: "🇵🇹" },
+      { name: "Médio 4", position: "MED", country: "🇵🇹" },
+      { name: "Médio 5", position: "MED", country: "🇵🇹" },
+      { name: "Avançado 1", position: "ATA", country: "🇵🇹" },
+      { name: "Avançado 2", position: "ATA", country: "🇵🇹" },
     ],
   };
 }
@@ -705,7 +706,7 @@ function AdminPanel({ token, username, onLogout }) {
                             </select>
                           </td>
                           <td className="px-4 py-3">
-                            <input
+                            <select
                               value={player.country}
                               onChange={(e) =>
                                 updateTeamPlayer(index, {
@@ -713,7 +714,13 @@ function AdminPanel({ token, username, onLogout }) {
                                 })
                               }
                               className="w-full rounded-xl border border-white/10 bg-slate-950/80 px-3 py-2 text-white outline-none focus:border-cyan-400/60"
-                            />
+                            >
+                              {COUNTRY_FLAGS.map((c) => (
+                                <option key={c.flag} value={c.flag}>
+                                  {c.label}
+                                </option>
+                              ))}
+                            </select>
                           </td>
                           <td className="px-4 py-3 text-right">
                             <button
