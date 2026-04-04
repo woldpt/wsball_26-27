@@ -93,7 +93,14 @@ function resolveDbDir() {
     path.join(__dirname, "..", "db"),
     path.join(process.cwd(), "db"),
   ];
-  return candidates.find((dir) => fs.existsSync(dir)) || candidates[0];
+  // Prefer the directory that actually contains base.db (the seeded SQLite
+  // database). This prevents the compiled dist/db/ directory — which only
+  // holds transpiled JS files — from being mistakenly returned in production.
+  return (
+    candidates.find((dir) => fs.existsSync(path.join(dir, "base.db"))) ??
+    candidates.find((dir) => fs.existsSync(dir)) ??
+    candidates[0]
+  );
 }
 
 const app = express();

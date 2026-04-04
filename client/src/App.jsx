@@ -429,10 +429,10 @@ function App() {
   const [me, setMe] = useState(
     savedSession
       ? {
-        name: savedSession.name,
-        password: savedSession.password,
-        roomCode: savedSession.roomCode,
-      }
+          name: savedSession.name,
+          password: savedSession.password,
+          roomCode: savedSession.roomCode,
+        }
       : null,
   );
 
@@ -546,7 +546,7 @@ function App() {
             setAvailableSaves(data);
             if (data.length > 0 && !roomCode) setRoomCode(data[0]);
           })
-          .catch(() => { });
+          .catch(() => {});
       }, 400);
       return () => clearTimeout(timeout);
     } else if (joinMode === "saved-game" && !name) {
@@ -557,7 +557,7 @@ function App() {
           setAvailableSaves(data);
           if (data.length > 0 && !roomCode) setRoomCode(data[0]);
         })
-        .catch(() => { });
+        .catch(() => {});
     }
   }, [name, joinMode, adminSession]); // eslint-disable-line react-hooks/exhaustive-deps
 
@@ -691,12 +691,12 @@ function App() {
             ...prev,
             results: (prev.results || []).map((r) =>
               r.homeTeamId === data.homeTeamId &&
-                r.awayTeamId === data.awayTeamId
+              r.awayTeamId === data.awayTeamId
                 ? {
-                  ...r,
-                  finalHomeGoals: data.homeGoals,
-                  finalAwayGoals: data.awayGoals,
-                }
+                    ...r,
+                    finalHomeGoals: data.homeGoals,
+                    finalAwayGoals: data.awayGoals,
+                  }
                 : r,
             ),
           };
@@ -739,12 +739,12 @@ function App() {
             ...prev,
             results: (prev.results || []).map((r) =>
               r.homeTeamId === data.fixture.homeTeamId &&
-                r.awayTeamId === data.fixture.awayTeamId
+              r.awayTeamId === data.fixture.awayTeamId
                 ? {
-                  ...r,
-                  finalHomeGoals: data.fixture.homeGoals,
-                  finalAwayGoals: data.fixture.awayGoals,
-                }
+                    ...r,
+                    finalHomeGoals: data.fixture.homeGoals,
+                    finalAwayGoals: data.fixture.awayGoals,
+                  }
                 : r,
             ),
           };
@@ -825,6 +825,12 @@ function App() {
       if (Array.isArray(data.lockedCoaches)) {
         setLockedCoaches(data.lockedCoaches);
       }
+      // Reset match-in-progress flags on (re)join so the sidebar is never
+      // stuck hidden after a disconnect/reconnect between matches.
+      setIsPlayingMatch(false);
+      setShowHalftimePanel(false);
+      setMatchAction(null);
+      setIsMatchActionPending(false);
     });
 
     socket.on("roomLocked", ({ coaches }) => {
@@ -2018,10 +2024,11 @@ function App() {
                           <div
                             key={save}
                             onClick={() => setRoomCode(save)}
-                            className={`flex items-center justify-between gap-3 px-4 py-3 rounded-xl border cursor-pointer transition-all ${roomCode === save
-                              ? "border-cyan-500 bg-cyan-500/15 text-white"
-                              : "border-zinc-800 bg-zinc-950 text-zinc-400 hover:border-zinc-600 hover:text-white"
-                              }`}
+                            className={`flex items-center justify-between gap-3 px-4 py-3 rounded-xl border cursor-pointer transition-all ${
+                              roomCode === save
+                                ? "border-cyan-500 bg-cyan-500/15 text-white"
+                                : "border-zinc-800 bg-zinc-950 text-zinc-400 hover:border-zinc-600 hover:text-white"
+                            }`}
                           >
                             <span className="font-black text-sm uppercase tracking-widest">
                               {save}
@@ -2150,8 +2157,8 @@ function App() {
   const headerStyle =
     teamInfo?.color_primary || teamInfo?.color_secondary
       ? {
-        background: teamInfo?.color_primary || "#18181b",
-      }
+          background: teamInfo?.color_primary || "#18181b",
+        }
       : undefined;
 
   const annotatedSquad = mySquad
@@ -2287,10 +2294,11 @@ function App() {
                     {players.map((p, i) => (
                       <div
                         key={i}
-                        className={`w-2 h-2 rounded-full ${lockedCoaches.includes(p.name) || p.ready
-                          ? "bg-primary"
-                          : "bg-surface-bright"
-                          }`}
+                        className={`w-2 h-2 rounded-full ${
+                          lockedCoaches.includes(p.name) || p.ready
+                            ? "bg-primary"
+                            : "bg-surface-bright"
+                        }`}
                       />
                     ))}
                     {awaitingCoaches
@@ -2360,17 +2368,19 @@ function App() {
                             className="flex items-center gap-3 px-4 py-2.5"
                           >
                             <span
-                              className={`w-2 h-2 rounded-full shrink-0 ${coach.online
-                                ? "bg-primary"
-                                : "bg-surface-bright"
-                                }`}
+                              className={`w-2 h-2 rounded-full shrink-0 ${
+                                coach.online
+                                  ? "bg-primary"
+                                  : "bg-surface-bright"
+                              }`}
                             />
                             <div className="flex-1 min-w-0">
                               <p
-                                className={`text-xs font-black truncate ${coach.online
-                                  ? "text-on-surface"
-                                  : "text-on-surface-variant"
-                                  }`}
+                                className={`text-xs font-black truncate ${
+                                  coach.online
+                                    ? "text-on-surface"
+                                    : "text-on-surface-variant"
+                                }`}
                               >
                                 {coach.name}
                                 {coach.name === me.name && (
@@ -2438,10 +2448,11 @@ function App() {
               <button
                 key={key}
                 onClick={() => setActiveTab(key)}
-                className={`w-full flex items-center gap-3 px-4 py-3 text-sm font-bold transition-all text-left ${activeTab === key
-                  ? "bg-primary-container/20 text-primary border-r-4 border-primary"
-                  : "text-on-surface-variant hover:bg-surface-bright hover:text-on-surface"
-                  }`}
+                className={`w-full flex items-center gap-3 px-4 py-3 text-sm font-bold transition-all text-left ${
+                  activeTab === key
+                    ? "bg-primary-container/20 text-primary border-r-4 border-primary"
+                    : "text-on-surface-variant hover:bg-surface-bright hover:text-on-surface"
+                }`}
               >
                 <span className="material-symbols-outlined text-[20px] shrink-0 leading-none">
                   {icon}
@@ -2453,10 +2464,11 @@ function App() {
           <div className="px-3 pb-4 border-t border-outline-variant/20 pt-4">
             <button
               onClick={() => setActiveTab("live")}
-              className={`w-full flex items-center gap-3 px-4 py-3 text-sm font-bold transition-all ${activeTab === "live"
-                ? "bg-primary text-on-primary"
-                : "bg-surface-container text-primary border border-primary/30 hover:bg-primary-container/20"
-                }`}
+              className={`w-full flex items-center gap-3 px-4 py-3 text-sm font-bold transition-all ${
+                activeTab === "live"
+                  ? "bg-primary text-on-primary"
+                  : "bg-surface-container text-primary border border-primary/30 hover:bg-primary-container/20"
+              }`}
             >
               <span className="material-symbols-outlined text-[20px] shrink-0 leading-none">
                 sports_soccer
@@ -2480,8 +2492,9 @@ function App() {
             <button
               key={key}
               onClick={() => setActiveTab(key)}
-              className={`flex-1 flex flex-col items-center justify-center gap-0.5 text-[10px] font-bold uppercase tracking-wider transition-colors ${activeTab === key ? "text-primary" : "text-on-surface-variant"
-                }`}
+              className={`flex-1 flex flex-col items-center justify-center gap-0.5 text-[10px] font-bold uppercase tracking-wider transition-colors ${
+                activeTab === key ? "text-primary" : "text-on-surface-variant"
+              }`}
             >
               <span className="material-symbols-outlined text-[22px] leading-none">
                 {icon}
@@ -2554,11 +2567,11 @@ function App() {
                             (matchAction.type === "penalty" &&
                               (!matchAction.takerCandidates ||
                                 matchAction.takerCandidates.length === 0))) && (
-                              <p className="text-center text-zinc-500 font-bold text-sm py-8">
-                                Sem opções disponíveis. O sistema escolherá
-                                automaticamente.
-                              </p>
-                            )}
+                            <p className="text-center text-zinc-500 font-bold text-sm py-8">
+                              Sem opções disponíveis. O sistema escolherá
+                              automaticamente.
+                            </p>
+                          )}
                         </div>
                       </div>
 
@@ -2660,18 +2673,20 @@ function App() {
                                       subsMade < MAX_MATCH_SUBS &&
                                       handleSelectOut(p.id)
                                     }
-                                    className={`flex items-center gap-2 px-2 py-1.5 border-b border-zinc-800/40 select-none transition-all border-l-2 ${swapSource === p.id
-                                      ? "bg-red-500/15 border-l-red-500"
-                                      : subsMade < MAX_MATCH_SUBS
-                                        ? "cursor-pointer hover:bg-zinc-800/50 border-l-transparent"
-                                        : "opacity-40 cursor-not-allowed border-l-transparent"
-                                      }`}
+                                    className={`flex items-center gap-2 px-2 py-1.5 border-b border-zinc-800/40 select-none transition-all border-l-2 ${
+                                      swapSource === p.id
+                                        ? "bg-red-500/15 border-l-red-500"
+                                        : subsMade < MAX_MATCH_SUBS
+                                          ? "cursor-pointer hover:bg-zinc-800/50 border-l-transparent"
+                                          : "opacity-40 cursor-not-allowed border-l-transparent"
+                                    }`}
                                   >
                                     <span
-                                      className={`w-4 h-4 rounded-sm shrink-0 flex items-center justify-center text-[8px] font-black ${swapSource === p.id
-                                        ? "bg-red-500/25 text-red-300"
-                                        : `bg-zinc-800 ${POSITION_TEXT_CLASS[p.position]}`
-                                        }`}
+                                      className={`w-4 h-4 rounded-sm shrink-0 flex items-center justify-center text-[8px] font-black ${
+                                        swapSource === p.id
+                                          ? "bg-red-500/25 text-red-300"
+                                          : `bg-zinc-800 ${POSITION_TEXT_CLASS[p.position]}`
+                                      }`}
                                     >
                                       {POSITION_SHORT_LABELS[p.position]}
                                     </span>
@@ -2715,42 +2730,46 @@ function App() {
                                       onClick={() =>
                                         !disabled && handleSelectIn(p.id)
                                       }
-                                      className={`flex items-center gap-2 px-2 py-1.5 border-b border-zinc-800/40 select-none transition-all border-l-2 ${alreadyUsed
-                                        ? "opacity-20 cursor-not-allowed border-l-transparent"
-                                        : swapTarget === p.id
-                                          ? "bg-emerald-500/15 border-l-emerald-500 cursor-pointer"
-                                          : disabled
-                                            ? "opacity-40 cursor-not-allowed border-l-transparent"
-                                            : "cursor-pointer hover:bg-zinc-800/50 border-l-transparent"
-                                        }`}
+                                      className={`flex items-center gap-2 px-2 py-1.5 border-b border-zinc-800/40 select-none transition-all border-l-2 ${
+                                        alreadyUsed
+                                          ? "opacity-20 cursor-not-allowed border-l-transparent"
+                                          : swapTarget === p.id
+                                            ? "bg-emerald-500/15 border-l-emerald-500 cursor-pointer"
+                                            : disabled
+                                              ? "opacity-40 cursor-not-allowed border-l-transparent"
+                                              : "cursor-pointer hover:bg-zinc-800/50 border-l-transparent"
+                                      }`}
                                     >
                                       <span
-                                        className={`w-4 h-4 rounded-sm shrink-0 flex items-center justify-center text-[8px] font-black ${alreadyUsed
-                                          ? "bg-zinc-800/50 text-zinc-700"
-                                          : swapTarget === p.id
-                                            ? "bg-emerald-500/25 text-emerald-300"
-                                            : `bg-zinc-800 ${POSITION_TEXT_CLASS[p.position]}`
-                                          }`}
+                                        className={`w-4 h-4 rounded-sm shrink-0 flex items-center justify-center text-[8px] font-black ${
+                                          alreadyUsed
+                                            ? "bg-zinc-800/50 text-zinc-700"
+                                            : swapTarget === p.id
+                                              ? "bg-emerald-500/25 text-emerald-300"
+                                              : `bg-zinc-800 ${POSITION_TEXT_CLASS[p.position]}`
+                                        }`}
                                       >
                                         {POSITION_SHORT_LABELS[p.position]}
                                       </span>
                                       <span
-                                        className={`flex-1 truncate text-[11px] font-bold ${alreadyUsed
-                                          ? "text-zinc-700 line-through"
-                                          : swapTarget === p.id
-                                            ? "text-emerald-200"
-                                            : "text-zinc-200"
-                                          }`}
+                                        className={`flex-1 truncate text-[11px] font-bold ${
+                                          alreadyUsed
+                                            ? "text-zinc-700 line-through"
+                                            : swapTarget === p.id
+                                              ? "text-emerald-200"
+                                              : "text-zinc-200"
+                                        }`}
                                       >
                                         {p.name}
                                       </span>
                                       <span
-                                        className={`shrink-0 text-[10px] font-black tabular-nums ${alreadyUsed
-                                          ? "text-zinc-700"
-                                          : swapTarget === p.id
-                                            ? "text-emerald-400"
-                                            : "text-zinc-600"
-                                          }`}
+                                        className={`shrink-0 text-[10px] font-black tabular-nums ${
+                                          alreadyUsed
+                                            ? "text-zinc-700"
+                                            : swapTarget === p.id
+                                              ? "text-emerald-400"
+                                              : "text-zinc-600"
+                                        }`}
                                       >
                                         {alreadyUsed ? "—" : p.skill}
                                       </span>
@@ -2793,10 +2812,11 @@ function App() {
                             <button
                               onClick={handleConfirmSub}
                               disabled={!swapTarget}
-                              className={`shrink-0 px-3 py-1.5 rounded text-[10px] font-black uppercase tracking-wide transition-colors ${swapTarget
-                                ? "bg-emerald-600 hover:bg-emerald-500 text-white"
-                                : "bg-zinc-800 text-zinc-600 cursor-not-allowed"
-                                }`}
+                              className={`shrink-0 px-3 py-1.5 rounded text-[10px] font-black uppercase tracking-wide transition-colors ${
+                                swapTarget
+                                  ? "bg-emerald-600 hover:bg-emerald-500 text-white"
+                                  : "bg-zinc-800 text-zinc-600 cursor-not-allowed"
+                              }`}
                             >
                               Substituir
                             </button>
@@ -2823,14 +2843,15 @@ function App() {
                                 canContinue ? handleHalftimeReady : undefined
                               }
                               disabled={!canContinue || isReady}
-                              className={`shrink-0 w-full py-3.5 text-sm font-black uppercase tracking-widest transition-all ${!canContinue
-                                ? "bg-zinc-800 text-zinc-500 cursor-not-allowed"
-                                : isReady
-                                  ? "bg-zinc-800 text-zinc-500"
-                                  : cupPreMatch
-                                    ? "bg-green-600 hover:bg-green-500 text-zinc-950"
-                                    : "bg-primary hover:brightness-110 text-on-primary"
-                                }`}
+                              className={`shrink-0 w-full py-3.5 text-sm font-black uppercase tracking-widest transition-all ${
+                                !canContinue
+                                  ? "bg-zinc-800 text-zinc-500 cursor-not-allowed"
+                                  : isReady
+                                    ? "bg-zinc-800 text-zinc-500"
+                                    : cupPreMatch
+                                      ? "bg-green-600 hover:bg-green-500 text-zinc-950"
+                                      : "bg-primary hover:brightness-110 text-on-primary"
+                              }`}
                             >
                               {!canContinue
                                 ? "⏳ A AGUARDAR JOGO DA TAÇA..."
@@ -2926,11 +2947,11 @@ function App() {
 
                               const flashHome =
                                 goalFlashRef.current[
-                                `${match.homeTeamId}_${match.awayTeamId}_home`
+                                  `${match.homeTeamId}_${match.awayTeamId}_home`
                                 ];
                               const flashAway =
                                 goalFlashRef.current[
-                                `${match.homeTeamId}_${match.awayTeamId}_away`
+                                  `${match.homeTeamId}_${match.awayTeamId}_away`
                                 ];
                               const now = Date.now();
                               const homeFlashing =
@@ -3016,8 +3037,8 @@ function App() {
                                     <div className="px-2 py-0.5 text-center truncate font-bold text-zinc-500">
                                       {match.attendance
                                         ? match.attendance.toLocaleString(
-                                          "pt-PT",
-                                        )
+                                            "pt-PT",
+                                          )
                                         : ""}
                                     </div>
                                     <div className="px-2 py-0.5 text-center truncate">
@@ -3058,8 +3079,8 @@ function App() {
                           (a, b) =>
                             (b.points || 0) - (a.points || 0) ||
                             (b.goals_for || 0) -
-                            (b.goals_against || 0) -
-                            ((a.goals_for || 0) - (a.goals_against || 0)),
+                              (b.goals_against || 0) -
+                              ((a.goals_for || 0) - (a.goals_against || 0)),
                         );
                       return (
                         <div
@@ -3376,7 +3397,7 @@ function App() {
                       🏆 Palmarés de {teamInfo?.name}
                     </h2>
                     {palmaresTeamId === me?.teamId &&
-                      palmares.trophies?.length > 0 ? (
+                    palmares.trophies?.length > 0 ? (
                       <div className="flex flex-wrap gap-3">
                         {palmares.trophies.map((trophy, idx) => (
                           <div
@@ -3435,7 +3456,7 @@ function App() {
                                         className={
                                           c.achievement ===
                                             "Campeão Nacional" ||
-                                            c.achievement ===
+                                          c.achievement ===
                                             "Vencedor da Taça de Portugal"
                                             ? "text-amber-400"
                                             : "text-white"
@@ -3870,7 +3891,7 @@ function App() {
                                   title={`Indisponível até jornada ${Math.max(player.injury_until_matchweek || 0, player.suspension_until_matchweek || 0) + 1}`}
                                 >
                                   {(player.suspension_until_matchweek || 0) >
-                                    matchweekCount
+                                  matchweekCount
                                     ? "🟥"
                                     : "🩹"}
                                 </span>
@@ -3926,7 +3947,7 @@ function App() {
                             </td>
                             <td className="px-3 py-2 text-center">
                               {player.signed_season !==
-                                Math.ceil((matchweekCount + 1) / 14) ? (
+                              Math.ceil((matchweekCount + 1) / 14) ? (
                                 <div className="flex flex-nowrap justify-center gap-1">
                                   <button
                                     onClick={(e) => {
@@ -4254,7 +4275,7 @@ function App() {
                             {player.isUnavailable && (
                               <span className="ml-1.5 text-xs font-bold text-red-400">
                                 {(player.suspension_until_matchweek || 0) >
-                                  matchweekCount
+                                matchweekCount
                                   ? "🟥"
                                   : "🩹"}
                               </span>
@@ -4308,12 +4329,13 @@ function App() {
                                               ? "Máximo de 5 suplentes atingido"
                                               : undefined
                                         }
-                                        className={`px-3 py-2 rounded-lg text-xs font-bold flex items-center gap-2 text-left ${disabled
-                                          ? "opacity-40 cursor-not-allowed text-zinc-500"
-                                          : player.status === status
-                                            ? "bg-zinc-700 text-white"
-                                            : "hover:bg-zinc-700 text-zinc-300"
-                                          }`}
+                                        className={`px-3 py-2 rounded-lg text-xs font-bold flex items-center gap-2 text-left ${
+                                          disabled
+                                            ? "opacity-40 cursor-not-allowed text-zinc-500"
+                                            : player.status === status
+                                              ? "bg-zinc-700 text-white"
+                                              : "hover:bg-zinc-700 text-zinc-300"
+                                        }`}
                                       >
                                         {emoji} {label}
                                       </button>
@@ -4481,8 +4503,8 @@ function App() {
                             <td className="px-4 py-2 text-right font-mono text-zinc-300 text-xs md:text-sm">
                               {formatCurrency(
                                 player.contract_requested_wage ||
-                                player.wage ||
-                                0,
+                                  player.wage ||
+                                  0,
                               )}
                             </td>
                             <td className="px-4 py-2 text-right">
@@ -4554,10 +4576,11 @@ function App() {
                                 Campo
                               </p>
                               <p
-                                className={`font-black text-base ${nextMatchSummary?.venue === "Casa"
-                                  ? "text-emerald-400"
-                                  : "text-sky-400"
-                                  }`}
+                                className={`font-black text-base ${
+                                  nextMatchSummary?.venue === "Casa"
+                                    ? "text-emerald-400"
+                                    : "text-sky-400"
+                                }`}
                               >
                                 {nextMatchSummary?.venue ?? "-"}
                               </p>
@@ -4699,12 +4722,13 @@ function App() {
                                   />
                                 </div>
                                 <span
-                                  className={`text-xs font-black tracking-wider w-10 text-right ${morale > 75
-                                    ? "text-emerald-400"
-                                    : morale >= 50
-                                      ? "text-amber-400"
-                                      : "text-red-400"
-                                    }`}
+                                  className={`text-xs font-black tracking-wider w-10 text-right ${
+                                    morale > 75
+                                      ? "text-emerald-400"
+                                      : morale >= 50
+                                        ? "text-amber-400"
+                                        : "text-red-400"
+                                  }`}
                                 >
                                   {moraleLabel}
                                 </span>
@@ -5051,8 +5075,8 @@ function App() {
                   <span className="font-black">
                     {formatCurrency(
                       selectedAuctionPlayer.startingPrice ||
-                      selectedAuctionPlayer.transfer_price ||
-                      0,
+                        selectedAuctionPlayer.transfer_price ||
+                        0,
                     )}
                   </span>
                 </div>

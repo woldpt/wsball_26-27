@@ -32,8 +32,12 @@ function resolveAccountsDbPath() {
     return existingFile;
   }
 
+  // Prefer the directory that contains base.db so that accounts.db lands in
+  // the same volume-mounted folder as the game databases, not in dist/db/.
   const targetDir =
-    candidates.find((dir) => fs.existsSync(dir)) || candidates[0];
+    candidates.find((dir) => fs.existsSync(path.join(dir, "base.db"))) ||
+    candidates.find((dir) => fs.existsSync(dir)) ||
+    candidates[0];
   if (!fs.existsSync(targetDir)) {
     fs.mkdirSync(targetDir, { recursive: true });
   }
