@@ -7,7 +7,12 @@ import React, {
 } from "react";
 import { socket } from "./socket";
 import AdminPanel from "./AdminPanel.jsx";
+import { COUNTRY_FLAGS } from "./countryFlags.js";
 
+const FLAG_TO_COUNTRY = {};
+COUNTRY_FLAGS.forEach(({ flag, label }) => {
+  FLAG_TO_COUNTRY[flag] = label.replace(/^\S+\s/, "");
+});
 const DIVISION_NAMES = {
   1: "I Liga",
   2: "II Liga",
@@ -424,6 +429,7 @@ function App() {
   const [adminSession, setAdminSession] = useState(() => loadAdminSession());
 
   const [teams, setTeams] = useState([]);
+  const [teamForms, setTeamForms] = useState({});
   const [players, setPlayers] = useState([]);
   const [mySquad, setMySquad] = useState([]);
   const [me, setMe] = useState(
@@ -576,6 +582,7 @@ function App() {
   // registered exactly once and cleaned up correctly on unmount.
   useEffect(() => {
     socket.on("teamsData", (data) => setTeams(data));
+    socket.on("teamForms", (data) => setTeamForms(data || {}));
     socket.on("playerListUpdate", (data) => {
       setPlayers(data);
     });
@@ -825,12 +832,23 @@ function App() {
       if (Array.isArray(data.lockedCoaches)) {
         setLockedCoaches(data.lockedCoaches);
       }
-      // Reset match-in-progress flags on (re)join so the sidebar is never
-      // stuck hidden after a disconnect/reconnect between matches.
-      setIsPlayingMatch(false);
-      setShowHalftimePanel(false);
-      setMatchAction(null);
-      setIsMatchActionPending(false);
+      // Restore match-in-progress state on reconnect
+      if (data.matchState === "halftime" && data.lastHalfTimePayload) {
+        setMatchResults(data.lastHalfTimePayload);
+        setIsPlayingMatch(true);
+        setShowHalftimePanel(true);
+        setActiveTab("live");
+      } else if (data.matchState === "running_first_half" || data.matchState === "playing_second_half") {
+        setIsPlayingMatch(true);
+        setShowHalftimePanel(false);
+      } else {
+        // Reset match-in-progress flags on (re)join so the sidebar is never
+        // stuck hidden after a disconnect/reconnect between matches.
+        setIsPlayingMatch(false);
+        setShowHalftimePanel(false);
+        setMatchAction(null);
+        setIsMatchActionPending(false);
+      }
     });
 
     socket.on("roomLocked", ({ coaches }) => {
@@ -999,6 +1017,7 @@ function App() {
 
     return () => {
       socket.off("teamsData");
+      socket.off("teamForms");
       socket.off("playerListUpdate");
       socket.off("mySquad");
       socket.off("marketUpdate");
@@ -2980,47 +2999,180 @@ function App() {
                     </div>
                   )}
 
-                  <div className="absolute top-6 right-6 flex items-center gap-3">
-                    {isPlayingMatch && (
-                      <>
-                        <span className="text-sm font-black text-white tabular-nums">
-                          {liveMinute}'
+                  {/* ── V2 TOP BAR ─────────────────────── */}
+                  <div className="flex items-center justify-between mb-4">
+                    <div className="flex items-center gap-3">
+                      <h2 className="text-lg font-headline font-black text-on-surface tracking-tight">
+                        {isCupMatch ? (
+                          <>
+                            🏆 Taça · {cupMatchRoundName}
+                            {cupPreMatch
+                              ? " — Pré-Jogo"
+                              : cupExtraTimeBadge
+                                ? " — Prolongamento"
+                                : ""}
+                          </>
+                        ) : (
+                          <>Multiview Jornada {matchResults?.matchweek || ""}</>
+                        )}
+                      </h2>
+                      {isPlayingMatch && (
+                        <span className="flex items-center gap-1.5 bg-primary/15 px-2 py-0.5 rounded-sm">
+                          <span className="w-2 h-2 rounded-full bg-primary animate-pulse" />
+                          <span className="text-xs font-headline font-black text-primary tabular-nums">{liveMinute}'</span>
                         </span>
-                        <div className="w-4 h-4 rounded-full bg-red-600 animate-pulse"></div>
-                      </>
-                    )}
+                      )}
+                      {liveMinute === 45 && !isPlayingMatch && !isCupMatch && (
+                        <span className="text-xs font-bold text-tertiary uppercase tracking-wide">Intervalo</span>
+                      )}
+                    </div>
                   </div>
-                  <h2 className="text-2xl font-black text-amber-500 mb-8 pb-4 border-b border-zinc-800">
-                    {isCupMatch ? (
-                      <>
-                        🏆 Taça · {cupMatchRoundName}
-                        {cupPreMatch
-                          ? " — Pré-Jogo"
-                          : cupExtraTimeBadge
-                            ? " — Prolongamento"
-                            : ""}
-                      </>
-                    ) : (
-                      <>
-                        Jornada em Direto{" "}
-                        {liveMinute === 45 && !isPlayingMatch
-                          ? "(INTERVALO)"
-                          : ""}
-                      </>
-                    )}
-                  </h2>
 
+                  {/* ── HERO: MY MATCH ─────────────────────── */}
+                  {matchResults && (() => {
+                    const myMatch = matchResults.results.find(
+                      (m) => m.homeTeamId === me.teamId || m.awayTeamId === me.teamId,
+                    );
+                    if (!myMatch) return null;
+                    const hInfo = teams.find((t) => t.id === myMatch.homeTeamId);
+                    const aInfo = teams.find((t) => t.id === myMatch.awayTeamId);
+                    const matchEvents = myMatch.events || [];
+                    const homeGoals = matchEvents.filter((e) => e.minute <= liveMinute && e.type === "goal" && e.team === "home");
+                    const awayGoals = matchEvents.filter((e) => e.minute <= liveMinute && e.type === "goal" && e.team === "away");
+                    const homeCards = matchEvents.filter((e) => e.minute <= liveMinute && (e.type === "yellow_card" || e.type === "red_card") && e.team === "home");
+                    const awayCards = matchEvents.filter((e) => e.minute <= liveMinute && (e.type === "yellow_card" || e.type === "red_card") && e.team === "away");
+                    const progress = Math.min(100, (liveMinute / 90) * 100);
+                    const referee = myMatch.referee;
+
+                    return (
+                      <div className="bg-surface-container rounded-md overflow-hidden mb-4 relative">
+                        {/* Stadium glow gradient */}
+                        <div className="absolute inset-0 pointer-events-none" style={{
+                          background: `radial-gradient(ellipse 80% 40% at 50% 0%, ${hInfo?.color_primary || "#333"}22 0%, transparent 70%)`
+                        }} />
+
+                        {/* Matchday label bar */}
+                        <div className="relative flex items-center justify-between px-4 py-2 text-[10px] uppercase tracking-widest text-on-surface-variant/50 font-bold">
+                          <span>{isCupMatch ? `Taça · ${cupMatchRoundName}` : `${DIVISION_NAMES[hInfo?.division] || ""} · Jornada ${matchResults.matchweek}`}</span>
+                          {referee && (
+                            <span className="flex items-center gap-1">
+                              ⚖️ {referee.name}
+                              {referee.favorsTeamA !== undefined && (
+                                <span className={`ml-1 text-[9px] ${referee.favorsTeamA ? "text-primary/60" : "text-error/60"}`}>
+                                  ({referee.balance > 0 ? "+" : ""}{referee.balance})
+                                </span>
+                              )}
+                            </span>
+                          )}
+                        </div>
+
+                        {/* Teams + Score */}
+                        <div className="relative flex items-stretch justify-between px-6 py-5">
+                          {/* Home */}
+                          <div className="flex-1 flex flex-col items-center gap-1">
+                            <span className="w-10 h-10 rounded-md flex items-center justify-center text-sm font-black"
+                              style={{ backgroundColor: hInfo?.color_primary || "#333", color: hInfo?.color_secondary || "#fff" }}>
+                              {(hInfo?.name || "").substring(0, 3).toUpperCase()}
+                            </span>
+                            <span className="text-xs font-bold text-on-surface truncate max-w-[120px]">{hInfo?.name}</span>
+                            <div className="mt-1 space-y-0.5">
+                              {homeGoals.map((g, i) => (
+                                <span key={i} className="block text-[10px] text-primary/70 font-bold">⚽ {g.player || "?"} {g.minute}'</span>
+                              ))}
+                            </div>
+                          </div>
+
+                          {/* Score center */}
+                          <div className="flex flex-col items-center justify-center gap-1 min-w-[100px]">
+                            <button
+                              onClick={() => { setMatchDetailFixture(myMatch); setShowMatchDetail(true); }}
+                              className="flex items-baseline gap-2 cursor-pointer group"
+                            >
+                              <span className="text-5xl font-headline font-black text-on-surface tracking-tighter group-hover:text-primary transition-colors">
+                                {homeGoals.length}
+                              </span>
+                              <span className="text-2xl text-on-surface-variant/30 font-headline">-</span>
+                              <span className="text-5xl font-headline font-black text-on-surface tracking-tighter group-hover:text-primary transition-colors">
+                                {awayGoals.length}
+                              </span>
+                            </button>
+                            {isPlayingMatch && (
+                              <span className="flex items-center gap-1">
+                                <span className="w-1.5 h-1.5 rounded-full bg-primary animate-pulse" />
+                                <span className="text-[10px] font-bold text-primary">{liveMinute > 45 ? "2ª Parte" : "1ª Parte"}</span>
+                              </span>
+                            )}
+                            {/* Progress bar */}
+                            <div className="w-20 h-0.5 bg-outline-variant/20 rounded-full overflow-hidden mt-1">
+                              <div className="h-full bg-primary transition-all duration-1000" style={{ width: `${progress}%` }} />
+                            </div>
+                          </div>
+
+                          {/* Away */}
+                          <div className="flex-1 flex flex-col items-center gap-1">
+                            <span className="w-10 h-10 rounded-md flex items-center justify-center text-sm font-black"
+                              style={{ backgroundColor: aInfo?.color_primary || "#333", color: aInfo?.color_secondary || "#fff" }}>
+                              {(aInfo?.name || "").substring(0, 3).toUpperCase()}
+                            </span>
+                            <span className="text-xs font-bold text-on-surface truncate max-w-[120px]">{aInfo?.name}</span>
+                            <div className="mt-1 space-y-0.5">
+                              {awayGoals.map((g, i) => (
+                                <span key={i} className="block text-[10px] text-primary/70 font-bold">⚽ {g.player || "?"} {g.minute}'</span>
+                              ))}
+                            </div>
+                          </div>
+                        </div>
+
+                        {/* Stats bar */}
+                        <div className="relative grid grid-cols-3 gap-px bg-outline-variant/10 px-4 py-2 text-[10px]">
+                          <div className="text-center">
+                            <span className="text-on-surface-variant/40 uppercase tracking-wider">Cartões</span>
+                            <div className="flex items-center justify-center gap-2 mt-0.5">
+                              <span className="font-bold text-on-surface">{homeCards.filter(c => c.type === "yellow_card").length}🟨 {homeCards.filter(c => c.type === "red_card").length}🟥</span>
+                              <span className="text-on-surface-variant/30">|</span>
+                              <span className="font-bold text-on-surface">{awayCards.filter(c => c.type === "yellow_card").length}🟨 {awayCards.filter(c => c.type === "red_card").length}🟥</span>
+                            </div>
+                          </div>
+                          <div className="text-center">
+                            <span className="text-on-surface-variant/40 uppercase tracking-wider">Público</span>
+                            <div className="font-bold text-on-surface mt-0.5">{myMatch.attendance ? myMatch.attendance.toLocaleString("pt-PT") : "—"}</div>
+                          </div>
+                          <div className="text-center">
+                            <span className="text-on-surface-variant/40 uppercase tracking-wider">Golos</span>
+                            <div className="font-bold text-on-surface mt-0.5">{homeGoals.length + awayGoals.length}</div>
+                          </div>
+                        </div>
+
+                        {/* Events timeline */}
+                        {matchEvents.filter((e) => e.minute <= liveMinute && (e.type === "goal" || e.type === "yellow_card" || e.type === "red_card")).length > 0 && (
+                          <div className="relative h-6 mx-4 mb-3">
+                            <div className="absolute inset-x-0 top-1/2 h-px bg-outline-variant/20" />
+                            <div className="absolute left-0 top-1/2 -translate-y-1/2 text-[8px] text-on-surface-variant/30">0'</div>
+                            <div className="absolute right-0 top-1/2 -translate-y-1/2 text-[8px] text-on-surface-variant/30">90'</div>
+                            {matchEvents.filter((e) => e.minute <= liveMinute && (e.type === "goal" || e.type === "yellow_card" || e.type === "red_card")).map((e, i) => (
+                              <span key={i} className="absolute top-1/2 -translate-y-1/2 -translate-x-1/2" style={{ left: `${Math.min(98, Math.max(2, (e.minute / 90) * 100))}%` }}
+                                title={`${e.minute}' ${e.type === "goal" ? "⚽" : e.type === "yellow_card" ? "🟨" : "🟥"} ${e.player || ""}`}>
+                                <span className={`block w-2 h-2 rounded-full ${e.type === "goal" ? "bg-primary" : e.type === "yellow_card" ? "bg-yellow-400" : "bg-red-500"}`} />
+                              </span>
+                            ))}
+                          </div>
+                        )}
+                      </div>
+                    );
+                  })()}
+
+                  {/* ── MULTIVIEW GRID ─────────────────────── */}
                   <div
                     className={
                       isCupMatch
                         ? "flex flex-col gap-2"
-                        : "grid grid-cols-1 lg:grid-cols-2 gap-6"
+                        : "grid grid-cols-1 lg:grid-cols-2 gap-4"
                     }
                   >
-                    {(isCupMatch ? [null] : [1, 2, 3, 4]).map((div) => (
+                    {(isCupMatch ? [null] : [1, 2, 3, 4, 5]).map((div) => (
                       <div key={div ?? "cup"}>
                         {!isCupMatch && (
-                          <h3 className="text-zinc-500 font-black uppercase text-xs mb-2 border-b border-zinc-800/50">
+                          <h3 className="text-[10px] font-black uppercase tracking-widest text-on-surface-variant/40 mb-1.5 mt-2 first:mt-0">
                             {DIVISION_NAMES[div] || `Div ${div}`}
                           </h3>
                         )}
@@ -3032,6 +3184,7 @@ function App() {
                                 teams.find((t) => t.id === m.homeTeamId)
                                   ?.division === div,
                             )
+                            .filter((m) => m.homeTeamId !== me.teamId && m.awayTeamId !== me.teamId)
                             .map((match, idx) => {
                               const hInfo = teams.find(
                                 (t) => t.id === match.homeTeamId,
@@ -3052,9 +3205,9 @@ function App() {
                                   e.type === "goal" &&
                                   e.team === "away",
                               );
-                              const isMyMatch =
-                                match.homeTeamId === me.teamId ||
-                                match.awayTeamId === me.teamId;
+                              const isHumanMatch = players.some(
+                                (p) => p.teamId === match.homeTeamId || p.teamId === match.awayTeamId,
+                              );
 
                               const flashHome =
                                 goalFlashRef.current[
@@ -3073,18 +3226,13 @@ function App() {
                               return (
                                 <div
                                   key={idx}
-                                  className={`text-base bg-surface rounded border ${isMyMatch ? "border-primary bg-primary/10" : "border-outline-variant/20"}`}
+                                  className={`bg-surface-container-low rounded-md overflow-hidden ${isHumanMatch ? "border-l-2 border-l-primary/50" : ""}`}
                                 >
-                                  {/* Line 1: teams + score */}
+                                  {/* Match card */}
                                   <div className="flex items-center">
-                                    <div
-                                      style={{
-                                        backgroundColor: hInfo?.color_primary,
-                                        color: hInfo?.color_secondary,
-                                      }}
-                                      className="flex-1 uppercase truncate font-black text-right px-2 py-1 rounded-tl text-sm"
-                                    >
-                                      {hInfo?.name}
+                                    <div className="flex-1 flex items-center gap-1.5 px-2.5 py-1.5 min-w-0">
+                                      <span className="w-2 h-2 rounded-full shrink-0" style={{ backgroundColor: hInfo?.color_primary || "#666" }} />
+                                      <span className="text-[11px] font-bold text-on-surface truncate">{hInfo?.name}</span>
                                     </div>
                                     <button
                                       onClick={() => {
@@ -3092,73 +3240,38 @@ function App() {
                                         setShowMatchDetail(true);
                                       }}
                                       title="Ver detalhes da partida"
-                                      className="px-2.5 py-0.5 bg-surface hover:bg-surface-bright text-on-surface text-center font-normal min-w-16 flex gap-0.5 items-center justify-center text-lg leading-none transition-colors cursor-pointer group"
+                                      className="px-3 py-1.5 bg-surface-container hover:bg-surface-bright text-on-surface text-center font-headline min-w-[52px] flex gap-1 items-center justify-center text-sm leading-none transition-colors cursor-pointer"
                                     >
                                       <span
+                                        className="font-black"
                                         style={{
-                                          color: homeFlashing
-                                            ? "#ff4444"
-                                            : "white",
-                                          fontWeight: homeFlashing
-                                            ? "900"
-                                            : "normal",
-                                          transition: homeFlashing
-                                            ? "none"
-                                            : "color 1.25s ease, font-weight 1.25s ease",
+                                          color: homeFlashing ? "#ff4444" : undefined,
+                                          transition: homeFlashing ? "none" : "color 1.25s ease",
                                         }}
                                       >
                                         {currentHome.length}
                                       </span>
-                                      <span className="mx-0.5">-</span>
+                                      <span className="text-on-surface-variant/30 text-xs">-</span>
                                       <span
+                                        className="font-black"
                                         style={{
-                                          color: awayFlashing
-                                            ? "#ff4444"
-                                            : "white",
-                                          fontWeight: awayFlashing
-                                            ? "900"
-                                            : "normal",
-                                          transition: awayFlashing
-                                            ? "none"
-                                            : "color 1.25s ease, font-weight 1.25s ease",
+                                          color: awayFlashing ? "#ff4444" : undefined,
+                                          transition: awayFlashing ? "none" : "color 1.25s ease",
                                         }}
                                       >
                                         {currentAway.length}
                                       </span>
                                     </button>
-                                    <div
-                                      style={{
-                                        backgroundColor: aInfo?.color_primary,
-                                        color: aInfo?.color_secondary,
-                                      }}
-                                      className="flex-1 uppercase truncate font-black text-left px-2 py-1 rounded-tr text-sm"
-                                    >
-                                      {aInfo?.name}
+                                    <div className="flex-1 flex items-center gap-1.5 px-2.5 py-1.5 min-w-0 justify-end">
+                                      <span className="text-[11px] font-bold text-on-surface truncate">{aInfo?.name}</span>
+                                      <span className="w-2 h-2 rounded-full shrink-0" style={{ backgroundColor: aInfo?.color_primary || "#666" }} />
                                     </div>
                                   </div>
-                                  {/* Line 2: home event | attendance | away event */}
-                                  <div className="grid grid-cols-3 border-t border-zinc-800/60 text-xs text-zinc-400 min-h-5">
-                                    <div className="px-2 py-0.5 text-center truncate">
-                                      {getMatchLastEventText(
-                                        matchEvents,
-                                        liveMinute,
-                                        "home",
-                                      )}
-                                    </div>
-                                    <div className="px-2 py-0.5 text-center truncate font-bold text-zinc-500">
-                                      {match.attendance
-                                        ? match.attendance.toLocaleString(
-                                            "pt-PT",
-                                          )
-                                        : ""}
-                                    </div>
-                                    <div className="px-2 py-0.5 text-center truncate">
-                                      {getMatchLastEventText(
-                                        matchEvents,
-                                        liveMinute,
-                                        "away",
-                                      )}
-                                    </div>
+                                  {/* Last event */}
+                                  <div className="flex text-[9px] text-on-surface-variant/40 px-2.5 pb-1">
+                                    <span className="flex-1 truncate">{getMatchLastEventText(matchEvents, liveMinute, "home")}</span>
+                                    {isHumanMatch && <span className="text-primary/40 font-bold text-[8px] uppercase">Humano</span>}
+                                    <span className="flex-1 truncate text-right">{getMatchLastEventText(matchEvents, liveMinute, "away")}</span>
                                   </div>
                                 </div>
                               );
@@ -3183,91 +3296,102 @@ function App() {
                   </div>
 
                   <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
-                    {[1, 2, 3, 4].map((div) => {
+                    {[1, 2, 3, 4, 5].map((div) => {
                       const divTeams = teams
                         .filter((t) => t.division === div)
                         .sort(
                           (a, b) =>
                             (b.points || 0) - (a.points || 0) ||
-                            (b.goals_for || 0) -
-                              (b.goals_against || 0) -
-                              ((a.goals_for || 0) - (a.goals_against || 0)),
+                            ((b.goals_for || 0) - (b.goals_against || 0)) -
+                              ((a.goals_for || 0) - (a.goals_against || 0)) ||
+                            (b.goals_for || 0) - (a.goals_for || 0) ||
+                            String(a.name || "").localeCompare(String(b.name || "")),
                         );
                       return (
                         <div
                           key={div}
                           className="bg-surface-container rounded-lg overflow-hidden"
                         >
-                          {/* Division header row */}
-                          <div className="flex items-center px-3 py-2 border-b border-outline-variant/20">
-                            <span className="flex-1 text-[10px] font-black uppercase tracking-widest text-on-surface-variant">
+                          {/* Division header */}
+                          <div className="px-3 py-2 bg-surface-container-high border-b border-outline-variant/20">
+                            <span className="text-[10px] font-black uppercase tracking-widest text-tertiary">
                               {DIVISION_NAMES[div] || `Div ${div}`}
                             </span>
-                            <div className="flex text-[9px] font-bold uppercase tracking-wider text-on-surface-variant/50">
-                              <span className="w-6 text-center">J</span>
-                              <span className="w-6 text-center">V</span>
-                              <span className="w-6 text-center">E</span>
-                              <span className="w-6 text-center">D</span>
-                              <span className="w-8 text-center">DG</span>
-                              <span className="w-7 text-center text-tertiary/70">
-                                Pts
-                              </span>
+                          </div>
+
+                          {/* Table header */}
+                          <div className="flex items-center px-3 py-1.5 border-b border-outline-variant/10 bg-surface-dim/30">
+                            <span className="w-5 shrink-0"></span>
+                            <span className="w-5 shrink-0"></span>
+                            <span className="flex-1 text-[9px] font-bold uppercase tracking-wider text-on-surface-variant/40">Clube</span>
+                            <div className="flex text-[9px] font-bold uppercase tracking-wider text-on-surface-variant/40 shrink-0">
+                              <span className="w-5 text-center">J</span>
+                              <span className="w-5 text-center">V</span>
+                              <span className="w-5 text-center">E</span>
+                              <span className="w-5 text-center">D</span>
+                              <span className="w-6 text-center">GM</span>
+                              <span className="w-6 text-center">GS</span>
+                              <span className="w-7 text-center">DG</span>
+                              <span className="w-7 text-center text-tertiary/70">Pts</span>
+                              <span className="w-[68px] text-center">Forma</span>
                             </div>
                           </div>
 
                           {/* Team rows */}
                           {divTeams.map((t, idx) => {
                             const isMe = t.id == me.teamId;
-                            const gd =
-                              (t.goals_for || 0) - (t.goals_against || 0);
-                            const played =
-                              (t.wins || 0) + (t.draws || 0) + (t.losses || 0);
-                            // Div 1 (I Liga) has no promotion spots
+                            const gd = (t.goals_for || 0) - (t.goals_against || 0);
+                            const played = (t.wins || 0) + (t.draws || 0) + (t.losses || 0);
                             const isPromo = div > 1 && idx < 2;
-                            // All divisions (incl. Div 4 Campeonato de Portugal) have relegation
                             const isRelegate = idx >= divTeams.length - 2;
+                            const form = teamForms[t.id] || "";
+                            const zoneBorder = isPromo ? "border-l-2 border-l-primary" : isRelegate ? "border-l-2 border-l-red-500" : "border-l-2 border-l-transparent";
                             return (
                               <div
                                 key={t.id}
                                 onClick={() => handleOpenTeamSquad(t)}
-                                className={`flex items-center gap-2 px-3 py-2 cursor-pointer transition-all border-b border-black/10 last:border-0 hover:brightness-110${isMe ? " outline outline-2 outline-inset outline-primary" : ""}`}
-                                style={{
-                                  backgroundColor: t.color_primary || "#1c1b1b",
-                                  color: t.color_secondary || "#fff",
-                                }}
+                                className={`flex items-center px-3 py-1.5 cursor-pointer transition-colors border-b border-outline-variant/5 last:border-0 hover:bg-surface-dim/50 ${zoneBorder}${isMe ? " bg-primary/10" : ""}`}
                               >
-                                {/* Zone indicator */}
-                                <span
-                                  className={`shrink-0 w-1.5 h-5 rounded-full ${isPromo ? "bg-primary/80" : isRelegate ? "bg-red-500/70" : "bg-white/10"}`}
-                                />
                                 {/* Position */}
-                                <span className="shrink-0 w-4 text-[11px] font-black opacity-60 text-right">
+                                <span className="shrink-0 w-5 text-[11px] font-black text-on-surface-variant/50 text-right">
                                   {idx + 1}
                                 </span>
-                                {/* Team name */}
-                                <span className="flex-1 text-[11px] font-black uppercase truncate">
-                                  {t.name}
-                                </span>
+                                {/* Team color dot + name */}
+                                <div className="flex items-center gap-1.5 flex-1 min-w-0 ml-1.5">
+                                  <span className="shrink-0 w-2.5 h-2.5 rounded-full" style={{ backgroundColor: t.color_primary || "#666" }} />
+                                  <span className={`text-[11px] font-bold truncate ${isMe ? "text-primary" : "text-on-surface"}`}>
+                                    {t.name}
+                                  </span>
+                                </div>
                                 {/* Stats */}
-                                <div className="flex text-[11px] font-bold shrink-0">
-                                  <span className="w-6 text-center opacity-60">
-                                    {played}
-                                  </span>
-                                  <span className="w-6 text-center opacity-60">
-                                    {t.wins || 0}
-                                  </span>
-                                  <span className="w-6 text-center opacity-60">
-                                    {t.draws || 0}
-                                  </span>
-                                  <span className="w-6 text-center opacity-60">
-                                    {t.losses || 0}
-                                  </span>
-                                  <span className="w-8 text-center opacity-60">
+                                <div className="flex text-[11px] font-mono shrink-0">
+                                  <span className="w-5 text-center text-on-surface-variant/60">{played}</span>
+                                  <span className="w-5 text-center text-on-surface-variant/60">{t.wins || 0}</span>
+                                  <span className="w-5 text-center text-on-surface-variant/60">{t.draws || 0}</span>
+                                  <span className="w-5 text-center text-on-surface-variant/60">{t.losses || 0}</span>
+                                  <span className="w-6 text-center text-on-surface-variant/60">{t.goals_for || 0}</span>
+                                  <span className="w-6 text-center text-on-surface-variant/60">{t.goals_against || 0}</span>
+                                  <span className={`w-7 text-center font-bold ${gd > 0 ? "text-primary" : gd < 0 ? "text-red-400" : "text-on-surface-variant/50"}`}>
                                     {gd > 0 ? `+${gd}` : gd}
                                   </span>
-                                  <span className="w-7 text-center font-black">
+                                  <span className="w-7 text-center font-black text-on-surface font-headline text-xs">
                                     {t.points || 0}
                                   </span>
+                                  {/* Form badges */}
+                                  <div className="w-[68px] flex items-center justify-center gap-0.5">
+                                    {form.split("").map((r, ri) => (
+                                      <span
+                                        key={ri}
+                                        className={`w-3 h-3 rounded-sm flex items-center justify-center text-[8px] font-black leading-none ${
+                                          r === "V" ? "bg-primary/80 text-on-primary" :
+                                          r === "D" ? "bg-red-500/70 text-white" :
+                                          "bg-on-surface-variant/20 text-on-surface-variant/60"
+                                        }`}
+                                      >
+                                        {r}
+                                      </span>
+                                    ))}
+                                  </div>
                                 </div>
                               </div>
                             );
@@ -3290,6 +3414,28 @@ function App() {
                       );
                     })}
                   </div>
+
+                  {/* Top Scorers sidebar */}
+                  {topScorers && topScorers.length > 0 && (
+                    <div className="bg-surface-container rounded-lg overflow-hidden">
+                      <div className="px-3 py-2 bg-surface-container-high border-b border-outline-variant/20">
+                        <span className="text-[10px] font-black uppercase tracking-widest text-tertiary">
+                          ⚽ Melhores Marcadores
+                        </span>
+                      </div>
+                      <div className="divide-y divide-outline-variant/5">
+                        {topScorers.slice(0, 10).map((s, i) => (
+                          <div key={s.id} className="flex items-center gap-2 px-3 py-1.5">
+                            <span className="w-4 text-right text-[10px] font-black text-on-surface-variant/40">{i + 1}</span>
+                            <span className="w-2.5 h-2.5 rounded-full shrink-0" style={{ backgroundColor: s.color_primary || "#666" }} />
+                            <span className="flex-1 text-[11px] font-bold text-on-surface truncate">{s.name}</span>
+                            <span className="text-[10px] text-on-surface-variant/50 truncate max-w-[80px]">{s.team_name}</span>
+                            <span className="text-xs font-headline font-black text-tertiary ml-1">{s.goals}</span>
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                  )}
                 </div>
               )}
 
@@ -4051,7 +4197,7 @@ function App() {
                               </span>
                             </td>
                             <td className="px-3 py-2 text-center text-zinc-400 text-sm">
-                              {player.nationality}
+                              <span title={FLAG_TO_COUNTRY[player.nationality] || player.nationality}>{player.nationality}</span>
                             </td>
                             <td className="px-3 py-2 text-center font-mono text-zinc-300 text-xs md:text-sm">
                               {formatCurrency(player.wage || 0)}
@@ -5133,7 +5279,7 @@ function App() {
                   <span className="font-normal text-zinc-700">
                     Nacionalidade
                   </span>
-                  <span className="font-bold">
+                  <span className="font-bold" title={FLAG_TO_COUNTRY[selectedAuctionPlayer.nationality] || ""}>
                     {selectedAuctionPlayer.nationality || "—"}
                   </span>
                 </div>

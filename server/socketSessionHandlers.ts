@@ -1,4 +1,5 @@
 import type { ActiveGame, PlayerSession } from "./types";
+import { getAllTeamForms } from "./coreHelpers";
 
 type AnyRow = Record<string, any>;
 
@@ -79,9 +80,12 @@ export function registerSessionSocketHandlers(
       io.to(roomCode).emit("roomLocked", { coaches: [...game.lockedCoaches] });
     }
 
-    game.db.all("SELECT * FROM teams", (err: any, teams: any[]) =>
-      socket.emit("teamsData", teams),
-    );
+    game.db.all("SELECT * FROM teams", (err: any, teams: any[]) => {
+      socket.emit("teamsData", teams);
+      getAllTeamForms(game.db).then((forms) => {
+        socket.emit("teamForms", forms);
+      }).catch(() => {});
+    });
     game.db.all(
       "SELECT * FROM players WHERE team_id = ?",
       [team.id],
@@ -95,6 +99,7 @@ export function registerSessionSocketHandlers(
       year: game.year,
       tactic: game.playersByName[name]?.tactic || null,
       lockedCoaches: [...game.lockedCoaches],
+      lastHalfTimePayload: game.matchState === "halftime" ? game.lastHalfTimePayload || null : null,
     });
 
     emitCurrentCupPhaseToSocket(game, socket);

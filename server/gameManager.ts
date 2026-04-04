@@ -220,14 +220,7 @@ function getGame(roomCode: string, onReady?: OnReady): ActiveGame | null {
       ensurePlayerSchema(db, () => {
         // One-time migration: randomize aggressiveness if all players still have the default (3).
         // This fixes room DBs copied from an old base.db before the seed was updated.
-        db.get(
-          "SELECT COUNT(*) AS total, SUM(CASE WHEN aggressiveness = 3 THEN 1 ELSE 0 END) AS allThree FROM players",
-          (aggCheckErr: Error | null, aggRow: { total: number; allThree: number } | null) => {
-            if (!aggCheckErr && aggRow && aggRow.total > 0 && aggRow.total === aggRow.allThree) {
-              console.log(`[gameManager] Backfilling aggressiveness for room ${roomCode} (all players had default 3)`);
-              db.run(`UPDATE players SET aggressiveness = 1 + (ABS(RANDOM()) % 5)`);
-            }
-        });
+        const continueAfterMigrations = () => {
         // Ensure morale column exists in teams (migration for existing DBs).
         db.run(
           "ALTER TABLE teams ADD COLUMN morale INTEGER DEFAULT 50",
@@ -392,6 +385,21 @@ function getGame(roomCode: string, onReady?: OnReady): ActiveGame | null {
               },
             );
           },
+        );
+        };
+        // One-time migration: randomize aggressiveness if all players still have the default (3).
+        db.get(
+          "SELECT COUNT(*) AS total, SUM(CASE WHEN aggressiveness = 3 THEN 1 ELSE 0 END) AS allThree FROM players",
+          (aggCheckErr: Error | null, aggRow: { total: number; allThree: number } | null) => {
+            if (!aggCheckErr && aggRow && aggRow.total > 0 && aggRow.total === aggRow.allThree) {
+              console.log(`[gameManager] Backfilling aggressiveness for room ${roomCode} (all players had default 3)`);
+              db.run(`UPDATE players SET aggressiveness = 1 + (ABS(RANDOM()) % 5)`, () => {
+                continueAfterMigrations();
+              });
+            } else {
+              continueAfterMigrations();
+            }
+          }
         );
       });
     },

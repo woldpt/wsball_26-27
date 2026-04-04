@@ -87,6 +87,38 @@ export function getStandingsRows(teams: AnyRow[] = []) {
   });
 }
 
+export async function getAllTeamForms(db: Db): Promise<Record<number, string>> {
+  const rows = await runAll(
+    db,
+    `SELECT m.home_team_id, m.away_team_id, m.home_score, m.away_score
+     FROM matches m
+     WHERE m.played = 1
+     ORDER BY m.matchweek DESC, m.id DESC`,
+  );
+  const formMap: Record<number, string[]> = {};
+  for (const row of rows) {
+    const homeId = row.home_team_id;
+    const awayId = row.away_team_id;
+    if (!formMap[homeId]) formMap[homeId] = [];
+    if (!formMap[awayId]) formMap[awayId] = [];
+    if (formMap[homeId].length < 5) {
+      formMap[homeId].push(
+        row.home_score > row.away_score ? "V" : row.home_score < row.away_score ? "D" : "E"
+      );
+    }
+    if (formMap[awayId].length < 5) {
+      formMap[awayId].push(
+        row.away_score > row.home_score ? "V" : row.away_score < row.home_score ? "D" : "E"
+      );
+    }
+  }
+  const result: Record<number, string> = {};
+  for (const [id, arr] of Object.entries(formMap)) {
+    result[Number(id)] = arr.join("");
+  }
+  return result;
+}
+
 export function pickRefereeSummary(
   roomCode: string,
   teamId: number,

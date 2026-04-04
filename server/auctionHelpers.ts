@@ -239,7 +239,7 @@ export function createAuctionHelpers(deps: AuctionDeps) {
           red_cards: player.red_cards || 0,
           injuries: player.injuries || 0,
           games_played: player.games_played || 0,
-          aggressiveness: player.aggressiveness ?? 25,
+          aggressiveness: player.aggressiveness ?? 3,
           is_star: player.is_star || 0,
           startingPrice,
           endsAt: now + durationMs,

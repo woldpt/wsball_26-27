@@ -1,4 +1,5 @@
 import type { ActiveGame, PlayerSession } from "./types";
+import { getAllTeamForms } from "./coreHelpers";
 
 interface WeeklyFlowDeps {
   io: any;
@@ -121,6 +122,10 @@ export function createWeeklyFlowHelpers(deps: WeeklyFlowDeps) {
         matchweek: game.matchweek,
         results: halfTimeFixtures,
       });
+      game.lastHalfTimePayload = {
+        matchweek: game.matchweek,
+        results: halfTimeFixtures,
+      };
       connectedPlayers.forEach((player) => {
         player.ready = false;
       });
@@ -284,6 +289,9 @@ export function createWeeklyFlowHelpers(deps: WeeklyFlowDeps) {
 
               game.db.all("SELECT * FROM teams", (err2: any, teams: any[]) => {
                 if (!err2) io.to(game.roomCode).emit("teamsData", teams);
+                getAllTeamForms(game.db).then((forms) => {
+                  io.to(game.roomCode).emit("teamForms", forms);
+                }).catch(() => {});
 
                 game.db.all(
                   "SELECT p.id, p.name, p.position, p.goals, p.team_id, t.name as team_name, t.color_primary, t.color_secondary FROM players p LEFT JOIN teams t ON p.team_id = t.id WHERE p.goals > 0 ORDER BY p.goals DESC, p.skill DESC LIMIT 20",
