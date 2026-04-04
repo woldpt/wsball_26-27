@@ -64,7 +64,7 @@ const lastB = [
   "Feroz",
   "Eterno",
 ];
-const nationalities = ["ZTR", "VNT", "BRR", "PNN", "MTR", "LST", "GNR", "FRR"];
+const nationalities = ["🇵🇹", "🇧🇷", "🇪🇸", "🇫🇷", "🇩🇪", "🇦🇷", "🇺🇾", "🇨🇴", "🇳🇬", "🇸🇳", "🇨🇮", "🇬🇭", "🇲🇦", "🇩🇿", "🇨🇲", "🇧🇪", "🇳🇱", "🇮🇹", "🇭🇷", "🇸🇪"];
 function randomAggressiveness() {
   return 1 + Math.floor(Math.random() * 5);
 }
@@ -312,7 +312,7 @@ db.serialize(() => {
           if (p.age) age = p.age;
           if (p.form) form = p.form;
           // agressividade é sempre gerada aleatoriamente (não é lida de fixtures)
-          if (p.nationality) nat = p.nationality;
+          if (p.nationality || p.country) nat = p.nationality || p.country;
         }
 
         const value = skill * 20000;
@@ -445,35 +445,6 @@ db.serialize(() => {
         managerId++;
       });
     }
-  }
-
-  // Generate 30 free agents for the transfer market
-  const freePositions = ["GR", "DEF", "DEF", "MED", "MED", "MED", "ATA", "ATA"];
-  for (let i = 0; i < 30; i++) {
-    const name = getRandomName();
-    const pos = freePositions[Math.floor(Math.random() * freePositions.length)];
-    let skill = randomSkill(0, 15);
-    const age = Math.floor(Math.random() * 16) + 18;
-    const form = Math.floor(Math.random() * 20) + 80;
-    const agg = randomAggressiveness();
-    const nat = nationalities[Math.floor(Math.random() * nationalities.length)];
-    const value = skill * 20000;
-    const wage = skill * 200;
-    const isStar =
-      (pos === "MED" || pos === "ATA") && Math.random() < 0.07 ? 1 : 0;
-    insertPlayer.run(
-      name,
-      pos,
-      skill,
-      age,
-      form,
-      agg,
-      nat,
-      value,
-      wage,
-      isStar,
-      null,
-    ); // team_id = null = free agent
   }
 
   // Initialize game state defaults
