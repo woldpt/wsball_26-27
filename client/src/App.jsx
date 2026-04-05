@@ -839,8 +839,12 @@ function App() {
         setShowHalftimePanel(true);
         setActiveTab("live");
       } else if (data.matchState === "running_first_half" || data.matchState === "playing_second_half") {
-        setIsPlayingMatch(true);
+        // Match is computing server-side but client has no match data.
+        // Keep UI unlocked; halfTimeResults/matchResults will arrive shortly.
+        setIsPlayingMatch(false);
         setShowHalftimePanel(false);
+        setMatchAction(null);
+        setIsMatchActionPending(false);
       } else {
         // Reset match-in-progress flags on (re)join so the sidebar is never
         // stuck hidden after a disconnect/reconnect between matches.
