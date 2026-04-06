@@ -287,7 +287,7 @@ async function applyInjuryEvent({
   const qualityLoss =
     injuryLabel === "grave" ? 2 + Math.floor(Math.random() * 4) : 0;
   db.run(
-    "UPDATE players SET injuries = injuries + 1, career_injuries = career_injuries + 1, skill = MAX(0, skill - ?), injury_until_matchweek = CASE WHEN injury_until_matchweek > ? THEN injury_until_matchweek ELSE ? END WHERE id = ?",
+    "UPDATE players SET injuries = injuries + 1, career_injuries = career_injuries + 1, prev_skill = skill, skill = MAX(0, skill - ?), injury_until_matchweek = CASE WHEN injury_until_matchweek > ? THEN injury_until_matchweek ELSE ? END WHERE id = ?",
     [qualityLoss, injuryUntil, injuryUntil, injuredPlayer.id],
   );
 
@@ -902,7 +902,7 @@ async function applyPostMatchQualityEvolution(
         db.serialize(() => {
           updates.forEach((update) => {
             db.run(
-              "UPDATE players SET skill = ? WHERE id = ?",
+              "UPDATE players SET prev_skill = skill, skill = ? WHERE id = ?",
               [update.skill, update.id],
               () => {
                 remaining -= 1;

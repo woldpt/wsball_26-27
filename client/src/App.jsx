@@ -4194,6 +4194,11 @@ function App() {
                               <span className="inline-flex items-center justify-center bg-zinc-950 text-white px-2 py-1 rounded text-sm border border-zinc-800 font-normal">
                                 {player.skill}
                               </span>
+                              {player.prev_skill != null && player.prev_skill !== player.skill && (
+                                <span className={`ml-1 text-xs font-black ${player.skill > player.prev_skill ? "text-emerald-400" : "text-red-400"}`}>
+                                  {player.skill > player.prev_skill ? "▲" : "▼"}
+                                </span>
+                              )}
                             </td>
                             <td className="px-3 py-2 text-center font-normal">
                               <AggBadge value={player.aggressiveness} />
@@ -4568,6 +4573,11 @@ function App() {
                           </span>
                           <span className="text-primary font-black text-sm shrink-0">
                             {player.skill}
+                            {player.prev_skill != null && player.prev_skill !== player.skill && (
+                              <span className={`ml-0.5 text-[10px] ${player.skill > player.prev_skill ? "text-emerald-400" : "text-red-400"}`}>
+                                {player.skill > player.prev_skill ? "▲" : "▼"}
+                              </span>
+                            )}
                           </span>
                           {openStatusPickerId === player.id &&
                             (() => {
@@ -5236,6 +5246,11 @@ function App() {
                             <span className="bg-zinc-950 text-white font-black px-2 py-1.5 rounded text-sm border border-zinc-800">
                               {player.skill}
                             </span>
+                            {player.prev_skill != null && player.prev_skill !== player.skill && (
+                              <span className={`ml-1 text-xs font-black ${player.skill > player.prev_skill ? "text-emerald-400" : "text-red-400"}`}>
+                                {player.skill > player.prev_skill ? "▲" : "▼"}
+                              </span>
+                            )}
                           </td>
                           <td className="px-4 py-2.5 text-center">
                             <AggBadge value={player.aggressiveness} />

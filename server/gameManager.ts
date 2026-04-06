@@ -72,6 +72,7 @@ function ensurePlayerSchema(
       ["career_reds", "INTEGER DEFAULT 0"],
       ["career_injuries", "INTEGER DEFAULT 0"],
       ["aggressiveness", "INTEGER DEFAULT 3"],
+      ["prev_skill", "INTEGER DEFAULT NULL"],
     ];
 
     const missing = required.filter(([name]) => !existing.has(name));
@@ -98,42 +99,51 @@ function ensurePlayerSchema(
             remaining -= 1;
             if (remaining === 0) {
               finished = true;
-              // Backfill is_star if it was just added: assign ~7% of MED/ATA players as craques
+              // Chain backfills for any columns that were just added
+              const backfillSteps: Array<(next: () => void) => void> = [];
+
               if (missing.some(([n]: [string, string]) => n === "is_star")) {
-                db.run(
-                  `UPDATE players SET is_star = 1 WHERE id IN (
-                    SELECT id FROM players
-                    WHERE (position = 'MED' OR position = 'ATA')
-                    ORDER BY RANDOM()
-                    LIMIT MAX(1, CAST(
-                      (SELECT COUNT(*) FROM players WHERE position = 'MED' OR position = 'ATA') * 0.10
-                    AS INTEGER))
-                  )`,
-                  (backfillErr) => {
-                    if (backfillErr)
-                      console.warn(
-                        "[gameManager] is_star backfill failed:",
-                        backfillErr.message,
-                      );
-                    if (onDone) onDone(null);
-                  },
-                );
-              } else if (missing.some(([n]: [string, string]) => n === "aggressiveness")) {
-                // Backfill aggressiveness with random 1-5 values
-                db.run(
-                  `UPDATE players SET aggressiveness = 1 + (ABS(RANDOM()) % 5)`,
-                  (backfillErr) => {
-                    if (backfillErr)
-                      console.warn(
-                        "[gameManager] aggressiveness backfill failed:",
-                        backfillErr.message,
-                      );
-                    if (onDone) onDone(null);
-                  },
-                );
-              } else {
-                if (onDone) onDone(null);
+                backfillSteps.push((next) => {
+                  db.run(
+                    `UPDATE players SET is_star = 1 WHERE id IN (
+                      SELECT id FROM players
+                      WHERE (position = 'MED' OR position = 'ATA')
+                      ORDER BY RANDOM()
+                      LIMIT MAX(1, CAST(
+                        (SELECT COUNT(*) FROM players WHERE position = 'MED' OR position = 'ATA') * 0.10
+                      AS INTEGER))
+                    )`,
+                    (backfillErr) => {
+                      if (backfillErr)
+                        console.warn("[gameManager] is_star backfill failed:", backfillErr.message);
+                      next();
+                    },
+                  );
+                });
               }
+
+              if (missing.some(([n]: [string, string]) => n === "aggressiveness")) {
+                backfillSteps.push((next) => {
+                  db.run(
+                    `UPDATE players SET aggressiveness = 1 + (ABS(RANDOM()) % 5)`,
+                    (backfillErr) => {
+                      if (backfillErr)
+                        console.warn("[gameManager] aggressiveness backfill failed:", backfillErr.message);
+                      next();
+                    },
+                  );
+                });
+              }
+
+              // Run backfill steps in sequence, then call onDone
+              const runBackfills = (idx: number) => {
+                if (idx >= backfillSteps.length) {
+                  if (onDone) onDone(null);
+                  return;
+                }
+                backfillSteps[idx](() => runBackfills(idx + 1));
+              };
+              runBackfills(0);
             }
           },
         );
@@ -387,12 +397,15 @@ function getGame(roomCode: string, onReady?: OnReady): ActiveGame | null {
           },
         );
         };
-        // One-time migration: randomize aggressiveness if all players still have the default (3).
+        // One-time migration: randomize aggressiveness if all players still have the default (3)
+        // OR if any values are outside the valid 1-5 range.
         db.get(
-          "SELECT COUNT(*) AS total, SUM(CASE WHEN aggressiveness = 3 THEN 1 ELSE 0 END) AS allThree FROM players",
-          (aggCheckErr: Error | null, aggRow: { total: number; allThree: number } | null) => {
-            if (!aggCheckErr && aggRow && aggRow.total > 0 && aggRow.total === aggRow.allThree) {
-              console.log(`[gameManager] Backfilling aggressiveness for room ${roomCode} (all players had default 3)`);
+          "SELECT COUNT(*) AS total, SUM(CASE WHEN aggressiveness = 3 THEN 1 ELSE 0 END) AS allThree, SUM(CASE WHEN aggressiveness < 1 OR aggressiveness > 5 THEN 1 ELSE 0 END) AS outOfRange FROM players",
+          (aggCheckErr: Error | null, aggRow: { total: number; allThree: number; outOfRange: number } | null) => {
+            const needsFix = !aggCheckErr && aggRow && aggRow.total > 0 &&
+              (aggRow.total === aggRow.allThree || aggRow.outOfRange > 0);
+            if (needsFix) {
+              console.log(`[gameManager] Backfilling aggressiveness for room ${roomCode} (all default=3 or out-of-range values found)`);
               db.run(`UPDATE players SET aggressiveness = 1 + (ABS(RANDOM()) % 5)`, () => {
                 continueAfterMigrations();
               });

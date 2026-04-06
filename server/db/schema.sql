@@ -51,6 +51,7 @@ CREATE TABLE IF NOT EXISTS players (
   transfer_status TEXT DEFAULT 'none',
   transfer_price INTEGER DEFAULT 0,
   is_star INTEGER DEFAULT 0,
+  prev_skill INTEGER DEFAULT NULL,
   team_id INTEGER,
   FOREIGN KEY(team_id) REFERENCES teams(id)
 );
