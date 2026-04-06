@@ -184,7 +184,7 @@ export function createWeeklyFlowHelpers(deps: WeeklyFlowDeps) {
         }
 
         for (const match of game.fixtures) {
-          const revenue = (match.attendance || 0) * 10;
+          const revenue = (match.attendance || 0) * 15;
           if (revenue > 0) {
             game.db.run("UPDATE teams SET budget = budget + ? WHERE id = ?", [
               revenue,
@@ -363,7 +363,7 @@ export function createWeeklyFlowHelpers(deps: WeeklyFlowDeps) {
         `
       UPDATE teams 
       SET budget = budget 
-        - CAST((loan_amount * 0.05) AS INTEGER) 
+        - CAST((loan_amount * 0.025) AS INTEGER) 
         - (SELECT COALESCE(SUM(wage), 0) FROM players WHERE players.team_id = teams.id)
     `,
         async (err: any) => {

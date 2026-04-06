@@ -100,6 +100,14 @@ export function createCupFlowHelpers(deps: CupFlowDeps) {
           resolve,
         );
       });
+      // Prémio do campeonato: 1.000.000€ para o vencedor da Primeira Liga
+      await new Promise((resolve) => {
+        game.db.run(
+          "UPDATE teams SET budget = budget + 1000000 WHERE id = ?",
+          [iLigaWinner.id],
+          resolve,
+        );
+      });
       io.to(game.roomCode).emit(
         "systemMessage",
         `🏆 ${iLigaWinner.name} é o Campeão Nacional de ${year}!`,

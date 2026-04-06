@@ -144,7 +144,7 @@ export async function calculateMatchAttendance(db: Db, homeTeamId: number) {
     "SELECT stadium_capacity FROM teams WHERE id = ?",
     [homeTeamId],
   );
-  const capacity = team ? team.stadium_capacity || 5000 : 5000;
+  const capacity = team ? team.stadium_capacity || 10000 : 10000;
 
   const recentMatches = await runAll<{
     home_team_id: number;
@@ -161,18 +161,21 @@ export async function calculateMatchAttendance(db: Db, homeTeamId: number) {
     [homeTeamId, homeTeamId],
   );
 
-  let formScore = recentMatches.length === 0 ? 5 : 0;
+  // Calcular índice de forma (0.0 a 1.0) com base nos últimos 5 jogos
+  // W=1.0, D=0.4, L=0 (conforme README)
+  let formPoints = recentMatches.length === 0 ? 0.5 : 0;
   for (const m of recentMatches) {
     const isHome = m.home_team_id === homeTeamId;
     const gf = isHome ? m.home_score : m.away_score;
     const ga = isHome ? m.away_score : m.home_score;
-    if (gf > ga) formScore += 3;
-    else if (gf === ga) formScore += 1;
+    if (gf > ga) formPoints += 1.0;
+    else if (gf === ga) formPoints += 0.4;
+  }
+  if (recentMatches.length > 0) {
+    formPoints /= recentMatches.length;
   }
 
-  const maxFormScore = Math.max(recentMatches.length, 1) * 3;
-  const baseOccupancy = 0.35 + (formScore / Math.max(maxFormScore, 15)) * 0.5;
-  const noise = (Math.random() - 0.5) * 0.16;
-  const occupancy = Math.max(0.15, Math.min(1.0, baseOccupancy + noise));
-  return Math.floor(capacity * occupancy);
+  // Ocupação do estádio: mínimo 30%, máximo 100%
+  const occupancyRate = 0.3 + formPoints * 0.7;
+  return Math.floor(capacity * occupancyRate);
 }
