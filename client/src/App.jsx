@@ -49,6 +49,7 @@ const POSITION_BG_CLASS = {
 
 const MAX_MATCH_SUBS = 3;
 const ADMIN_SESSION_KEY = "cashballAdminSession";
+const DEFAULT_TACTIC = { formation: "4-4-2", style: "Balanced", positions: {} };
 
 function loadAdminSession() {
   try {
@@ -528,11 +529,7 @@ function App() {
   const [selectedTeam, setSelectedTeam] = useState(null);
   const [selectedTeamSquad, setSelectedTeamSquad] = useState([]);
   const [selectedTeamLoading, setSelectedTeamLoading] = useState(false);
-  const [tactic, setTactic] = useState({
-    formation: "4-4-2",
-    style: "Balanced",
-    positions: {},
-  });
+  const [tactic, setTactic] = useState(DEFAULT_TACTIC);
   const [liveMinute, setLiveMinute] = useState(90);
   const [isPlayingMatch, setIsPlayingMatch] = useState(false);
   const [showHalftimePanel, setShowHalftimePanel] = useState(false);
@@ -1274,6 +1271,55 @@ function App() {
     setAuthSubmitting(false);
   };
 
+  const resetGameState = () => {
+    setTeams([]);
+    setTeamForms({});
+    setPlayers([]);
+    setMySquad([]);
+    setMarketPairs([]);
+    setTopScorers([]);
+    setMatchResults(null);
+    setMatchweekCount(0);
+    setActiveTab("players");
+    setTactic(DEFAULT_TACTIC);
+    setLockedCoaches([]);
+    setAwaitingCoaches([]);
+    setNextMatchSummary(null);
+    setNextMatchSummaryLoading(false);
+    setIsPlayingMatch(false);
+    setShowHalftimePanel(false);
+    setMatchAction(null);
+    setIsMatchActionPending(false);
+    setLiveMinute(90);
+    setSubsMade(0);
+    setSwapSource(null);
+    setSwapTarget(null);
+    setSubbedOut([]);
+    setConfirmedSubs([]);
+    setRefereePopup(null);
+    setCupDraw(null);
+    setShowCupDrawPopup(false);
+    setCupRoundResults(null);
+    setShowCupResults(false);
+    setCupPenaltyPopup(null);
+    setWelcomeModal(null);
+    setIsCupMatch(false);
+    setCupPreMatch(false);
+    setCupMatchRoundName("");
+    setCupExtraTimeBadge(false);
+    setIsCupExtraTime(false);
+    setCupActiveTeamIds([]);
+    setPalmares({ trophies: [], allChampions: [] });
+    setPalmaresTeamId(null);
+    setSelectedTeam(null);
+    setSelectedTeamSquad([]);
+    setSelectedTeamLoading(false);
+    setSelectedAuctionPlayer(null);
+    setAuctionBid("");
+    setMyAuctionBid(null);
+    setAuctionResult(null);
+  };
+
   const handleAuthenticate = async (mode) => {
     if (!name || !password || authSubmitting) return;
 
@@ -1361,6 +1407,7 @@ function App() {
     } catch {
       // ignore
     }
+    resetGameState();
     setMe(null);
     setName("");
     setPassword("");
@@ -1387,6 +1434,7 @@ function App() {
 
   const handleJoin = () => {
     if (name && password && roomCode && !joining) {
+      resetGameState();
       setJoinError("");
       setJoining(true);
       socket.emit("joinGame", {
