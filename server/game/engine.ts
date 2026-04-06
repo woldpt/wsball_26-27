@@ -549,8 +549,8 @@ async function simulateMatchSegment(
       "4-2-4": 1.15,
       "3-4-3": 1.12,
       "4-3-3": 1.08,
+      "3-5-2": 1.05,
       "4-4-2": 1.0,
-      "3-5-2": 0.95,
       "4-5-1": 0.9,
       "5-3-2": 0.85,
       "5-4-1": 0.8,
@@ -582,7 +582,7 @@ async function simulateMatchSegment(
     const formationAttack = formationOffensiveFactors[formation] ?? 1.0;
     const formationDefense = formationDefensiveFactors[formation] ?? 1.0;
 
-    const moraleFactor = 1 + (morale - 50) * 0.01;
+    const moraleFactor = 1 + (morale - 50) * 0.005;
 
     const attackBase = avgMidfielderQuality * 0.4 + avgForwardQuality * 0.6;
     const defenseBase = avgDefenderQuality * 0.6 + avgKeeperQuality * 0.4;
@@ -593,7 +593,7 @@ async function simulateMatchSegment(
         formationAttack *
         Math.max(0.5, Math.min(1.5, moraleFactor)) *
         styleOffensiveFactor[style],
-      defense: defenseBase * formationDefense * styleDefensiveFactor[style],
+      defense: defenseBase * formationDefense,
       style,
       squad,
     };
@@ -613,18 +613,30 @@ async function simulateMatchSegment(
       const defending = attackingSide === "home" ? currentAway : currentHome;
       const isHome = attackingSide === "home";
 
+      // Apply opponent style factor to attack per README spec:
+      // força_ofensiva *= (1 / estilo_factor[adversário_instrução])
+      const STYLE_FACTORS = { DEFENSIVO: 0.85, EQUILIBRADO: 1.0, OFENSIVO: 1.15 };
+      const opponentStyleFactor = STYLE_FACTORS[defending.style] || 1.0;
+      const adjustedAttack = (attacking.attack || 1) * (1.0 / opponentStyleFactor);
+
       const ratio =
-        (attacking.attack || 1) /
-        ((attacking.attack || 1) + (defending.defense || 1) * 2);
-      let probGoal = ratio * 0.01;
+        adjustedAttack /
+        (adjustedAttack + (defending.defense || 1) * 2);
+      let probGoal = ratio * 0.02;
       probGoal *= isHome ? 1.05 : 0.95;
 
-      if (defending.style === "DEFENSIVO") probGoal *= 0.85;
-      else if (defending.style === "OFENSIVO") probGoal *= 1.1;
+      // Ego conflict penalty: 3+ craques no onze titular reduzem probabilidade
+      const scoringSquad = isHome ? home.squad : away.squad;
+      const craquesInXI = scoringSquad.filter(
+        (p) => p.is_star && (p.position === "MED" || p.position === "ATA"),
+      ).length;
+      if (craquesInXI > 2) {
+        const egoPenalty = Math.min(0.3, (craquesInXI - 2) * 0.1);
+        probGoal *= 1.0 - egoPenalty;
+      }
 
       if (Math.random() >= probGoal) return;
 
-      const scoringSquad = isHome ? home.squad : away.squad;
       const scorers = scoringSquad.filter(
         (p) => p.position === "ATA" || p.position === "MED",
       );
@@ -634,10 +646,7 @@ async function simulateMatchSegment(
       if (isHome) fixture.finalHomeGoals++;
       else fixture.finalAwayGoals++;
 
-      const craqueCount = scoringSquad.filter(
-        (p) => p.is_star && (p.position === "MED" || p.position === "ATA"),
-      ).length;
-      const decisiveChance = Math.min(0.6, craqueCount * 0.2);
+      const decisiveChance = Math.min(0.6, craquesInXI * 0.2);
       const isDecisive = Math.random() < decisiveChance;
 
       fixture.events.push({

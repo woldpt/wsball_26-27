@@ -26,10 +26,15 @@ export function registerFinanceSocketHandlers(
       [playerState.teamId],
       (err, team) => {
         const cost = 300000;
+        const maxCapacity = 120000;
+        if (team && team.stadium_capacity >= maxCapacity) {
+          socket.emit("systemMessage", "Capacidade máxima atingida (120.000 lugares)!");
+          return;
+        }
         if (team && team.budget >= cost) {
           game.db.run(
-            "UPDATE teams SET budget = budget - ?, stadium_capacity = stadium_capacity + 5000 WHERE id = ?",
-            [cost, playerState.teamId],
+            "UPDATE teams SET budget = budget - ?, stadium_capacity = MIN(stadium_capacity + 5000, ?) WHERE id = ?",
+            [cost, maxCapacity, playerState.teamId],
             () => {
               game.db.all("SELECT * FROM teams", (err2, teams) =>
                 io.to(game.roomCode).emit("teamsData", teams),
@@ -55,10 +60,10 @@ export function registerFinanceSocketHandlers(
       [playerState.teamId],
       (err, team) => {
         if (!team) return;
-        if (team.loan_amount >= 2000000) {
+        if (team.loan_amount >= 2500000) {
           socket.emit(
             "systemMessage",
-            "Já tens demasiada dívida (máx: 2.000.000€)!",
+            "Já tens demasiada dívida (máx: 2.500.000€ — 5 empréstimos)!",
           );
           return;
         }
@@ -71,7 +76,7 @@ export function registerFinanceSocketHandlers(
             );
             socket.emit(
               "systemMessage",
-              "Empréstimo de 500.000€ aprovado (Juro 5%/Semana).",
+              "Empréstimo de 500.000€ aprovado (Juro 2,5%/Semana).",
             );
           },
         );

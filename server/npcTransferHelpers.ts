@@ -50,7 +50,7 @@ export function createNpcTransferHelpers(deps: NpcTransferDeps) {
         "SELECT id FROM players WHERE team_id = ?",
         [npcTeam.id],
       );
-      if (squadRows.length >= 22) continue;
+      if (squadRows.length >= 24) continue;
       if (Math.random() > 0.25) continue;
 
       for (const player of marketPlayers) {

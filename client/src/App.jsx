@@ -14,8 +14,8 @@ COUNTRY_FLAGS.forEach(({ flag, label }) => {
   FLAG_TO_COUNTRY[flag] = label.replace(/^\S+\s/, "");
 });
 const DIVISION_NAMES = {
-  1: "I Liga",
-  2: "II Liga",
+  1: "Primeira Liga",
+  2: "Segunda Liga",
   3: "Liga 3",
   4: "Campeonato de Portugal",
   5: "Distritais",
@@ -47,7 +47,7 @@ const POSITION_BG_CLASS = {
   ATA: "bg-rose-500/8",
 };
 
-const MAX_MATCH_SUBS = 5;
+const MAX_MATCH_SUBS = 3;
 const ADMIN_SESSION_KEY = "cashballAdminSession";
 
 function loadAdminSession() {
@@ -2234,9 +2234,9 @@ function App() {
     HOME_GAMES_PER_SEASON - homeGamesPlayed,
   );
   const matchweeksRemaining = Math.max(0, 14 - completedJornada);
-  const capacityRevPerGame = (teamInfo?.stadium_capacity || 5000) * 10;
+  const capacityRevPerGame = (teamInfo?.stadium_capacity || 10000) * 15;
   const loanAmount = teamInfo?.loan_amount || 0;
-  const loanInterestPerWeek = Math.round(loanAmount * 0.01);
+  const loanInterestPerWeek = Math.round(loanAmount * 0.025);
   const currentBudget = teamInfo?.budget || 0;
   const projectedFinalBudget =
     currentBudget +
@@ -3750,7 +3750,7 @@ function App() {
                         </span>
                         <span className="font-mono text-white font-black text-lg">
                           🏟️{" "}
-                          {(teamInfo?.stadium_capacity || 5000).toLocaleString(
+                          {(teamInfo?.stadium_capacity || 10000).toLocaleString(
                             "pt-PT",
                           )}{" "}
                           lugares
@@ -3819,10 +3819,10 @@ function App() {
                         +{formatCurrency(capacityRevPerGame)}
                       </span>
                       <span className="text-zinc-600 text-[10px]">
-                        {(teamInfo?.stadium_capacity || 5000).toLocaleString(
+                        {(teamInfo?.stadium_capacity || 10000).toLocaleString(
                           "pt-PT",
                         )}{" "}
-                        lugares × 10€
+                        lugares × 15€
                       </span>
                     </div>
                     {/* Balanço Final Projetado */}
@@ -3858,7 +3858,7 @@ function App() {
                               Bilheteiras
                             </p>
                             <p className="text-zinc-500 text-xs">
-                              10€/lugar × lotação — jornadas em casa
+                              15€/lugar × lotação — jornadas em casa
                             </p>
                           </div>
                           <div className="text-right">
@@ -3933,7 +3933,7 @@ function App() {
                                 Juros Bancários
                               </p>
                               <p className="text-zinc-500 text-xs">
-                                1% da dívida por jornada
+                                2,5% da dívida por jornada
                               </p>
                             </div>
                             <div className="text-right">
@@ -3964,7 +3964,7 @@ function App() {
                         <div>
                           <p className="text-white font-bold">Dívida Actual</p>
                           <p className="text-zinc-500 text-xs">
-                            Taxa de juro: 1% / jornada
+                            Taxa de juro: 2,5% / jornada
                           </p>
                         </div>
                         <p
@@ -3977,18 +3977,18 @@ function App() {
                       <div>
                         <div className="flex justify-between text-[10px] text-zinc-600 mb-1 font-bold">
                           <span>0€</span>
-                          <span>Máximo: 2.000.000€</span>
+                          <span>Máximo: 2.500.000€</span>
                         </div>
                         <div className="w-full h-3 bg-zinc-800 rounded-full overflow-hidden">
                           <div
-                            className={`h-full rounded-full transition-all ${loanAmount / 2000000 > 0.75 ? "bg-red-500" : loanAmount / 2000000 > 0.4 ? "bg-orange-500" : "bg-amber-400"}`}
+                            className={`h-full rounded-full transition-all ${loanAmount / 2500000 > 0.75 ? "bg-red-500" : loanAmount / 2500000 > 0.4 ? "bg-orange-500" : "bg-amber-400"}`}
                             style={{
-                              width: `${Math.min(100, (loanAmount / 2000000) * 100)}%`,
+                              width: `${Math.min(100, (loanAmount / 2500000) * 100)}%`,
                             }}
                           />
                         </div>
                         <p className="text-zinc-600 text-[10px] text-right mt-1">
-                          {((loanAmount / 2000000) * 100).toFixed(0)}% do limite
+                          {((loanAmount / 2500000) * 100).toFixed(0)}% do limite
                         </p>
                       </div>
 
@@ -4003,7 +4003,7 @@ function App() {
                           </p>
                           <button
                             onClick={() => socket.emit("takeLoan")}
-                            disabled={loanAmount >= 2000000}
+                            disabled={loanAmount >= 2500000}
                             className="w-full bg-red-900 hover:bg-red-800 disabled:opacity-40 disabled:cursor-not-allowed text-white font-black py-2.5 rounded-lg text-xs transition-all uppercase"
                           >
                             Pedir +500K
@@ -4048,7 +4048,7 @@ function App() {
                           </span>
                           <span className="text-white font-black text-2xl">
                             {(
-                              teamInfo?.stadium_capacity || 5000
+                              teamInfo?.stadium_capacity || 10000
                             ).toLocaleString("pt-PT")}
                           </span>
                           <span className="text-zinc-600 text-[10px]">
@@ -4063,22 +4063,22 @@ function App() {
                             {formatCurrency(capacityRevPerGame)}
                           </span>
                           <span className="text-zinc-600 text-[10px]">
-                            10€ × lotação (máx.)
+                            15€ × lotação (máx.)
                           </span>
                         </div>
                       </div>
 
                       <button
                         onClick={() => socket.emit("buildStadium")}
-                        disabled={currentBudget < 150000}
+                        disabled={currentBudget < 300000}
                         className="w-full bg-primary hover:brightness-110 disabled:opacity-40 disabled:cursor-not-allowed text-on-primary font-black py-3 rounded text-sm transition-all uppercase tracking-wide"
                       >
-                        Expandir Estádio — 150.000€
+                        Expandir Estádio — 300.000€
                       </button>
-                      {currentBudget < 150000 && (
+                      {currentBudget < 300000 && (
                         <p className="text-zinc-600 text-xs text-center">
                           Saldo insuficiente. Precisa de mais{" "}
-                          {formatCurrency(150000 - currentBudget)}.
+                          {formatCurrency(300000 - currentBudget)}.
                         </p>
                       )}
                     </div>
