@@ -124,11 +124,12 @@ Aproximadamente **10% dos jogadores das posições Médios e Avançados** são c
 - São mais caros (salário e valor de mercado mais elevados);
 - Guarda-redes e Defesas **não têm flag de craque** — a distinção aplica-se apenas a Médios e Avançados;
 - **Craques não afectam directamente a probabilidade de vitória**, mas têm **+20% de chance de marcar um golo decisivo** durante a simulação de um jogo;
-- Ter demasiados craques numa equipa pode criar efeitos indesejados (conflitos de egos).
+- Ter demasiados craques numa equipa pode criar efeitos indesejados (conflitos de egos) — ver secção **Conflito de Egos entre Craques**.
 
 ### Simulação de Jogos
 
-- Simulação **estatística/probabilística**, não em tempo real;
+- Simulação **estatística/probabilística**, calculada **in loco** durante a transmissão;
+- O resultado **não é pré-calculado** — é simulado em tempo real: 45 segundos de 1.ª Parte, intervalo com mudança de táctica/substituições, depois mais 45 segundos de 2.ª Parte com dados actualizados;
 - Resultado calculado com base em:
   - Atributos médios ponderados por posição;
   - Presença de craques em campo (+20% chance de golo decisivo por craque em campo);
@@ -173,7 +174,8 @@ ATA — Avançados
 Cada partida tem um **árbitro nomeado pelo servidor**. A inclinação do árbitro é **gerada aleatoriamente para cada jogo** — não é uma característica fixa de cada árbitro, é simplesmente um elemento de surpresa por jogo.
 
 - A inclinação é **visível antes da partida** através de uma pequena balança que mostra a tendência para a Equipa A ou Equipa B;
-- A inclinação afecta a probabilidade de **cartões (vermelho/amarelo)** e **penaltis**, com variação até ±15% em relação à probabilidade base;
+- A inclinação afecta a probabilidade de **cartões (vermelho/amarelo)** e **penaltis durante o jogo**, com variação até ±15% em relação à probabilidade base;
+- **Nas grandes penalidades da Taça**, a inclinação do árbitro **NÃO se aplica** às probabilidades de conversão em golo — cada penalti depende exclusivamente da qualidade do executante vs. guarda-redes;
 - **Não afecta directamente o resultado do jogo** — é um factor leve, apenas por diversão, que acrescenta imprevisibilidade e conversa entre treinadores;
 
 ---
@@ -207,6 +209,8 @@ Quando um clube humano é despromovido do **Campeonato de Portugal** (últimos 2
 - Durante este período, pode observar todos os jogos e o mercado, mas não pode fazer nenhuma acção de gestão;
 - Quando um clube sem humano o convida, o treinador regressa imediatamente com esse novo clube;
 - Não há limite de descidas — um treinador pode descer múltiplas vezes;
+
+**Quando um clube de IA desce ao Distrital:** Um treinador IA não tem modo de "observador" — o clube simplesmente sai da competição activa. O clube reaparece no **sorteio de promoção** para o Campeonato de Portugal normalmente após **uma época inteira de interregno** (a mesma regra que se aplica a todos os clubes relegados).
 
 ### Convites para Clubes Mais Fortes
 
@@ -352,12 +356,12 @@ Há duas formas de vender jogadores:
 
 ## Finanças
 
-| Receita         | Descrição                                   |
-| --------------- | ------------------------------------------- |
-| Bilheteira      | Depende de resultados recentes e capacidade |
-| Prémios de liga | Vencedor da Primeira Liga — 1.000.000€      |
-| Prémio da taça  | Vencedor da Taça de Portugal — 500.000€     |
-| Transferências  | Venda de jogadores                          |
+| Receita         | Descrição                               |
+| --------------- | --------------------------------------- |
+| Bilheteira      | Ver fórmula de bilheteira abaixo        |
+| Prémios de liga | Vencedor da Primeira Liga — 1.000.000€  |
+| Prémio da taça  | Vencedor da Taça de Portugal — 500.000€ |
+| Transferências  | Venda de jogadores (preço mínimo: 1€)   |
 
 | Despesa             | Descrição                                 |
 | ------------------- | ----------------------------------------- |
@@ -370,12 +374,52 @@ Há duas formas de vender jogadores:
 
 Todos os clubes têm um estádio com pelo menos 10.000 lugares.
 Podem construir lotes de 5.000 lugares com o custo de 300.000€ cada.
+**Limite máximo de capacidade: 120.000 lugares** — não é possível expandir para além deste valor.
 A receita da bilheteira de cada jogo varia consoante a fase boa ou má da equipa.
+
+### Fórmula de Bilheteira
+
+A receita de bilheteira por jogo em casa depende da capacidade do estádio e dos resultados recentes:
+
+```typescript
+function calculateTicketRevenue(team: Team, stadiumCapacity: number): number {
+  // Calcular índice de forma (0.0 a 1.0) com base nos últimos 5 jogos
+  const recentResults = getLastNResults(team, 5); // array de "W", "D", "L"
+  const formPoints =
+    recentResults.reduce((sum, r) => {
+      if (r === "W") return sum + 1.0;
+      if (r === "D") return sum + 0.4;
+      return sum; // Derrota = 0
+    }, 0) / 5; // formPoints entre 0.0 (5 derrotas) e 1.0 (5 vitórias)
+
+  // Ocupação do estádio: mínimo 30%, máximo 100%
+  // Boa fase (formPoints ~1.0) = lotação esgotada
+  // Má fase (formPoints ~0.0) = estádio quase vazio
+  const occupancyRate = 0.3 + formPoints * 0.7; // 30% a 100%
+
+  const attendance = Math.floor(stadiumCapacity * occupancyRate);
+
+  // Preço médio do bilhete: 15€
+  const ticketPrice = 15;
+
+  return attendance * ticketPrice;
+}
+
+// Exemplos:
+// 5 vitórias seguidas, estádio 20.000: 20.000 * 1.0 * 15€ = 300.000€
+// 5 derrotas seguidas, estádio 20.000: 20.000 * 0.30 * 15€ = 90.000€
+// 3V 1E 1D, estádio 50.000: 50.000 * 0.856 * 15€ = 642.000€
+```
+
+### Preço Mínimo de Venda de Jogadores
+
+Não existe preço mínimo de venda obrigatório — um jogador pode ser vendido por **1€**. O treinador é livre de definir qualquer preço, incluindo valores simbólicos.
 
 ### Empréstimos Bancários
 
 Os clubes podem solicitar **empréstimos bancários** para cobrir despesas ou financiar contratações.
 
+- **Limite máximo de 5 empréstimos activos em simultâneo** — o clube não pode solicitar um novo empréstimo se já tiver 5 em curso;
 - O empréstimo é creditado imediatamente no saldo do clube;
 - São cobrados **2.5% de juros por semana** sobre o valor em dívida;
 - O clube pode amortizar o empréstimo parcial ou totalmente a qualquer momento;
@@ -502,6 +546,7 @@ Os jogos de Taça seguem exactamente o mesmo modelo de submissão do campeonato:
 
 - Sequência de 5 penaltis por equipa, simulados individualmente;
 - Probabilidade de conversão baseada nos atributos de `qualidade` do executante e `qualidade` do guarda-redes adversário;
+- **A inclinação do árbitro NÃO se aplica** às probabilidades de conversão nas grandes penalidades — cada penalti depende exclusivamente da qualidade do executante vs. guarda-redes;
 - Em caso de igualdade após 5 penaltis, é morte súbita (penalti a penalti até haver vencedor).
 
 #### Prémios da Taça de Portugal
@@ -521,10 +566,114 @@ Os jogos de Taça seguem exactamente o mesmo modelo de submissão do campeonato:
 - O elenco de jogadores é **fixo e permanente** — não há jogadores novos criados pelo jogo, nem jogadores que se reformem ou envelheçam;
 - Os mesmos jogadores existem desde o início e mantêm-se indefinidamente no universo do jogo;
 - A `qualidade` de um jogador pode flutuar ao longo do tempo, com os limites **mínimo 1 e máximo 50**:
-  - Qualidade aumenta **+1** se o jogador jogou em **5+ jornadas consecutivas** na mesma equipa, ao lado de jogadores com qualidade acima da sua qualidade média;
+  - Qualidade aumenta **+1** se o jogador jogou em **5+ jornadas consecutivas** na mesma equipa, ao lado de jogadores **da mesma posição** com qualidade acima da sua (jogadores mais fortes na mesma posição tendem a fazer melhorar os mais fracos);
   - Jogadores perdem qualidade se houver **3 empates ou derrotas seguidos**;
 - A flag `craque` é **permanente** — não muda independentemente da evolução da `qualidade`;
 - Moral da equipa flutua com resultados em **ambas as competições**.
+
+### Conflito de Egos entre Craques
+
+Quando uma equipa tem **3 ou mais craques no onze titular**, surgem conflitos de egos que prejudicam o desempenho ofensivo. A penalização aplica-se à probabilidade de golo:
+
+```typescript
+function calculateEgoConflictPenalty(craquesInStartingXI: number): number {
+  // Sem penalização para 0, 1 ou 2 craques
+  if (craquesInStartingXI <= 2) return 1.0;
+
+  // Penalização progressiva a partir de 3 craques
+  // 3 craques: -10% na prob de golo
+  // 4 craques: -20% na prob de golo
+  // 5+ craques: -30% (cap)
+  const penalty = Math.min(0.3, (craquesInStartingXI - 2) * 0.1);
+  return 1.0 - penalty;
+}
+
+// Aplicar na fórmula de probabilidade de golo:
+// probGoal *= calculateEgoConflictPenalty(craquesInField);
+```
+
+### Auto-Golos
+
+Defesas podem marcar auto-golos durante a simulação. A probabilidade é baixa e depende da pressão ofensiva adversária:
+
+```typescript
+function checkOwnGoal(
+  defendingTeam: Team,
+  attackingOffensiveForce: number,
+  defendingDefensiveForce: number,
+  rng: SeededRandom,
+): MatchEvent | null {
+  // Probabilidade base muito baixa: 0.05% por minuto (~2% por jogo)
+  const baseProbOwnGoal = 0.0005;
+
+  // Quanto maior a pressão ofensiva adversária vs defesa, maior a probabilidade
+  const pressureRatio =
+    attackingOffensiveForce /
+    (defendingDefensiveForce + attackingOffensiveForce);
+  const adjustedProb = baseProbOwnGoal * (1 + pressureRatio);
+
+  if (rng.next() < adjustedProb) {
+    // Seleccionar o defesa que marca o auto-golo
+    const defenders = defendingTeam.players.filter((p) => p.position === "DEF");
+    const ownGoalScorer = defenders[Math.floor(rng.next() * defenders.length)];
+
+    return {
+      minute: calculateCurrentMinute(),
+      part: calculateCurrentPart(),
+      type: "OWN_GOAL",
+      team: "HOME", // equipa que SOFRE o golo (invertido na contagem)
+      player: ownGoalScorer,
+      isOwnGoal: true,
+    };
+  }
+
+  return null;
+}
+```
+
+### Cartão Vermelho Directo e Recálculo de Forças
+
+Se um jogador recebe **cartão vermelho directo** (ou duplo amarelo) durante a 1.ª Parte, a equipa joga com **10 jogadores** (ou menos) durante o resto do jogo. Isto tem impacto directo:
+
+- As forças ofensiva e defensiva são **recalculadas imediatamente** após a expulsão;
+- Os jogadores expulsos são removidos do cálculo de qualidade média por posição;
+- A equipa sofre uma **penalização adicional de -10% nas forças** por cada jogador a menos (simulando inferioridade numérica);
+- O treinador **pode substituir posicionalmente** ao intervalo para compensar a expulsão (por exemplo, meter um defesa se foi expulso um defesa);
+
+```typescript
+function recalculateTeamForces(
+  team: Team,
+  submission: Submission,
+  expelledPlayerIds: string[],
+  moral: number,
+): { offensiveForce: number; defensiveForce: number } {
+  // Remover jogadores expulsos do onze
+  const activePlayerIds = submission.startingXI.filter(
+    (id) => !expelledPlayerIds.includes(id),
+  );
+
+  // Penalização por inferioridade numérica: -10% por jogador a menos
+  const numericalPenalty = Math.pow(0.9, 11 - activePlayerIds.length);
+
+  const offensiveForce =
+    calculateOffensiveForce(
+      team,
+      {
+        ...submission,
+        startingXI: activePlayerIds,
+      },
+      moral,
+    ) * numericalPenalty;
+
+  const defensiveForce =
+    calculateDefensiveForce(team, {
+      ...submission,
+      startingXI: activePlayerIds,
+    }) * numericalPenalty;
+
+  return { offensiveForce, defensiveForce };
+}
+```
 
 ---
 
@@ -598,18 +747,25 @@ ENCERRADA — Época terminada (arquivo)
 8. **Socket.io já está implementado** — usar para notificações em tempo real (jornada simulada, sorteio da Taça, transmissão de eventos de jogo, pop-ups de leilão, etc.), nunca para sincronização de estado de jogo que deveria ser tratada por polling/API.
 9. A **Taça de Portugal tem 32 participantes** (apenas clubes das 4 divisões principais).
 10. **Craques existem apenas nas posições Médios e Avançados** — nunca atribuir flag `craque` a GR ou Defesas. Craques têm +20% chance de marcar um golo decisivo.
-11. **Árbitros não têm perfil fixo** — a inclinação é gerada aleatoriamente por jogo, afecta apenas a probabilidade de cartões e penaltis (±15%), não o resultado geral.
-12. **Empréstimos bancários têm 2,5% de juros por semana** — taxa intencional para penalizar má gestão financeira.
+11. **Árbitros não têm perfil fixo** — a inclinação é gerada aleatoriamente por jogo, afecta apenas a probabilidade de cartões e penaltis (±15%), não o resultado geral. **Nas grandes penalidades da Taça, a inclinação não se aplica às probabilidades de conversão.**
+12. **Empréstimos bancários têm 2,5% de juros por semana** — taxa intencional para penalizar má gestão financeira. **Máximo de 5 empréstimos activos em simultâneo.**
 13. **Plantel mínimo 11, máximo 24** — nunca permitir venda/leilão que faça descer abaixo de 11.
 14. **Leilões incluem todos os 32 clubes das divisões principais** como potenciais licitadores (humanos e IA). Pop-up de leilão aparece para todos; cada clube dá uma única licitação em 15 segundos de tempo real.
 15. **O elenco de jogadores é fixo** — nunca sugerir criação de novos jogadores, reformas, ou envelhecimento. Os jogadores do seed são permanentes. A `qualidade` flutua entre 1 e 50; a flag `craque` nunca muda.
 16. **Máximo 8 jogadores humanos por sala** — o acesso é feito exclusivamente por senha única gerada no momento da criação da sala.
 17. **Sem Distritais com simulação** — usar sorteio simples de promoção no final da época para economizar CPU.
-18. **Substituições são escolhidas ao intervalo** — durante a transmissão em directo do jogo, ao intervalo aparece um pop-up permitindo até 3 substituições no total. O treinador decide em tempo real durante os intervalos da partida (intervalo principal e potencial intervalo antes do tempo extra).
+18. **Substituições são escolhidas ao intervalo** — durante a transmissão em directo do jogo, ao intervalo aparece um pop-up permitindo até 3 substituições no total. O treinador decide em tempo real durante os intervalos da partida (intervalo principal e potencial intervalo antes do tempo extra). **A IA também faz substituições ao intervalo** se tiver jogadores de maior qualidade no banco.
 19. **Semanas com duplo jogo (Campeonato + Taça) têm ciclos de submissão independentes** — o treinador submete para o campeonato, após simulação submete para a Taça. Podem ocorrer em dias diferentes.
-20. **Convites de clubes mais fortes são avaliados no final de cada jornada** — aparece na interface do treinador imediatamente.
-21. **Descida aos Distritais deixa o treinador como observador** — fica sem clube até receber um convite de um clube sem humano. Não há limite de descidas.
-22. Em caso de dúvida sobre uma mecânica não descrita, **perguntar antes de inventar**.
+20. **Convites de clubes mais fortes são avaliados no final de cada jornada** — aparece na interface do treinador imediatamente. **Convites expiram em 10 minutos.**
+21. **Descida aos Distritais deixa o treinador como observador** — fica sem clube até receber um convite de um clube sem humano. Não há limite de descidas. **Clubes de IA que descem reaparecem no sorteio de promoção após 1 época de interregno.**
+22. **O resultado do jogo é calculado in loco** — a simulação decorre em tempo real (45s + intervalo + 45s), com recálculo de forças após substituições e expulsões. O resultado nunca é pré-calculado.
+23. **Jogos da mesma jornada são simulados em paralelo** — todos visíveis em simultâneo.
+24. **Auto-golos de defesas são possíveis** — probabilidade baixa, depende da pressão ofensiva adversária.
+25. **Cartão vermelho directo recalcula forças** — equipa fica com menos jogadores e sofre penalização de -10% por jogador a menos.
+26. **Conflito de egos entre craques** — 3+ craques no onze titular reduzem probabilidade de golo progressivamente (-10% por craque acima de 2, cap -30%).
+27. **Estádio tem capacidade máxima de 120.000 lugares** — não é possível expandir para além deste valor.
+28. **Preço mínimo de venda de jogador: 1€** — o treinador pode vender a qualquer preço.
+29. Em caso de dúvida sobre uma mecânica não descrita, **perguntar antes de inventar**.
 
 # CashBall 26/27 — Detalhamento Técnico
 
@@ -641,6 +797,8 @@ moral = max(0, min(100, moral))
 ```
 
 **Nota especial:** A moral é **compartilhada entre Campeonato e Taça** — uma derrota em qualquer competição afecta a mesma moral.
+
+**Despedimento e mudança de clube:** Se um treinador é despedido e aceita um convite de outro clube, a **moral da nova equipa permanece inalterada** — o treinador herda a moral que o clube já tinha. A moral pertence ao clube, não ao treinador.
 
 ### Impacto no Resultado do Jogo
 
@@ -682,6 +840,7 @@ formação_ofensiva_factor = {
   "4-2-4": 1.15,    // Muito ofensiva
   "3-4-3": 1.12,    // Ofensiva
   "4-3-3": 1.08,    // Ligeiramente ofensiva
+  "3-5-2": 1.05,    // Controlo de bola com ataque moderado
   "4-4-2": 1.00,    // Neutra
   "4-5-1": 0.90,    // Defensiva
   "5-3-2": 0.85,    // Muito defensiva
@@ -718,7 +877,7 @@ formação_defensiva_factor = {
   "5-3-2": 1.20,
   "4-5-1": 1.10,
   "4-4-2": 1.00,    // Neutra
-  "3-5-2": 0.95,
+  "3-5-2": 0.95,    // Controlo de bola, defesa moderada
   "4-3-3": 0.90,
   "3-4-3": 0.85,
   "4-2-4": 0.75     // Mínima defesa (mais golos sofridos)
@@ -977,17 +1136,20 @@ async function seasonLoop(seasonId: string) {
     await db.updateSeason(season);
 
     const matches = await db.getMatches(season.id, season.currentRound);
-    for (const match of matches) {
-      const result = simulateMatch(match, season.seed);
-      await db.updateMatchResult(match.id, result);
+    // Todos os jogos da jornada são simulados em PARALELO e visíveis em simultâneo
+    await Promise.all(
+      matches.map(async (match) => {
+        const result = await replayMatchViaSockets(io, season.id, match);
+        await db.updateMatchResult(match.id, result);
 
-      // Broadcast evento via Socket.io
-      io.to(`season_${season.id}`).emit("match:simulated", {
-        matchId: match.id,
-        result: result,
-        timestamp: new Date(),
-      });
-    }
+        // Broadcast evento via Socket.io
+        io.to(`season_${season.id}`).emit("match:simulated", {
+          matchId: match.id,
+          result: result,
+          timestamp: new Date(),
+        });
+      }),
+    );
 
     // FASE 4: Atualizar estado
     season.status = "POS_JORNADA";
@@ -1301,6 +1463,13 @@ function canTransition(from: SeasonState, to: SeasonState): boolean {
   //   team: "HOME" | "AWAY";
   //   player: { id: string; name: string };
   //   isDecisive: boolean;
+  //   isOwnGoal?: boolean; // true se auto-golo
+  // }
+
+  // Para PENALTY_MISS:
+  // {
+  //   team: "HOME" | "AWAY";
+  //   player: { id: string; name: string };
   // }
 
   // Para YELLOW_CARD / RED_CARD:
@@ -1443,7 +1612,7 @@ function canTransition(from: SeasonState, to: SeasonState): boolean {
   currentTeam?: { id: string; name: string }; // se trocando de clube
   reason: "PROMOTION" | "CRISIS" | "FIRED";
   timestamp: Date;
-  expiresAt: Date; // 24 horas para responder
+  expiresAt: Date; // 10 minutos para responder
 }
 ```
 
@@ -1501,7 +1670,7 @@ interface Team {
   seasonId: string;
   balance: number; // em euros
   stadium: {
-    capacity: number;
+    capacity: number; // mínimo 10.000, máximo 120.000
     expansionCost: number; // 300.000 por 5.000 lugares
   };
   currentTrainerId?: string; // null se gerido por IA
@@ -1566,12 +1735,19 @@ interface Match {
 interface MatchEvent {
   minute: number;
   part: "1ST_HALF" | "INTERVAL" | "2ND_HALF" | "EXTRA_TIME" | "PENALTIES";
-  type: "GOAL" | "YELLOW_CARD" | "RED_CARD" | "SUBSTITUTION";
+  type:
+    | "GOAL"
+    | "YELLOW_CARD"
+    | "RED_CARD"
+    | "SUBSTITUTION"
+    | "PENALTY_MISS"
+    | "OWN_GOAL";
   team: "HOME" | "AWAY";
   player: { id: string; name: string };
 
   // Se GOAL
   isDecisive?: boolean;
+  isOwnGoal?: boolean; // true se auto-golo de defesa
 
   // Se SUBSTITUTION
   playerOut?: { id: string; name: string };
@@ -1740,16 +1916,22 @@ CREATE INDEX idx_submission_team ON submissions(teamId);
 
 Antes de começar o desenvolvimento, valida:
 
-- [ ] Moral usa range 0-100, sobe/desce com resultados, afecta só ataque
-- [ ] Cálculo de força inclui pesos por posição, formação, estilo, moral, casa/fora
-- [ ] Craques têm +20% prob golo decisivo (não aditivo, capped em 60%)
-- [ ] Convites avaliados fim da jornada, máximo 1 por treinador, raros
-- [ ] Mercado: timestamp do servidor desempata bids simultâneos
+- [ ] Moral usa range 0-100, sobe/desce com resultados, afecta só ataque — pertence ao clube, não ao treinador
+- [ ] Cálculo de força inclui pesos por posição, formação (incl. 3-5-2), estilo, moral, casa/fora
+- [ ] Resultado calculado IN LOCO (45s + intervalo com subs/táctica + 45s recalculada) — nunca pré-calculado
+- [ ] Craques têm +20% prob golo decisivo (não aditivo, capped em 60%) — conflito de egos 3+ craques
+- [ ] Convites avaliados fim da jornada, máximo 1 por treinador, raros — expiram em 10 minutos
+- [ ] Mercado: timestamp do servidor desempata bids simultâneos — preço mínimo venda 1€
 - [ ] Seed é reprodutível e única por jornada + matchId
 - [ ] Estados forma máquina formal com transições explícitas
-- [ ] Socket.io eventos têm contrato definido
+- [ ] Socket.io eventos têm contrato definido (incl. PENALTY_MISS e OWN_GOAL)
 - [ ] Modelo de dados tem todas as entidades e índices
-- [ ] Loop semanal: abrir → esperar → simular → atualizar
+- [ ] Loop semanal: abrir → esperar → simular em paralelo → atualizar
+- [ ] Empréstimos bancários: máx 5 activos, 2.5% juros/semana
+- [ ] Estádio: máx 120.000 lugares
+- [ ] Auto-golos e cartão vermelho directo recalculam forças
+- [ ] IA faz substituições ao intervalo se melhorar a equipa
+- [ ] Sorteio de promoção exclui clubes descidos nessa mesma época
 
 # CashBall 26/27 — Clarificações Críticas
 
@@ -1928,9 +2110,11 @@ O sistema é **único** — a competição é entre 32 equipas, mas apenas até 
 
 O `seasonLoop` não tinha:
 
+- Simulação in loco (o resultado era pré-calculado — ERRADO)
 - Atraso de 45 segundos para 1ª Parte
 - Pop-up de intervalo com timeout
-- Atraso de 45 segundos para 2ª Parte
+- Recálculo de forças após substituições e expulsões para a 2ª Parte
+- IA a fazer substituições ao intervalo
 - Potencial tempo extra (30s) + pop-up + grandes penalidades
 
 ### Implementação Correcta
@@ -1940,8 +2124,12 @@ async function replayMatchViaSockets(
   io: Server,
   seasonId: string,
   match: Match,
-  result: MatchResult, // Resultado já simulado
-): Promise<void> {
+): Promise<MatchResult> {
+  // O resultado é calculado IN LOCO durante a simulação:
+  // 1.ª Parte: 45 segundos de cálculo minuto-a-minuto
+  // Intervalo: substituições e mudança de táctica (humanos e IA)
+  // 2.ª Parte: 45 segundos de cálculo com dados actualizados (novos jogadores, nova táctica)
+  // O resultado final só é conhecido quando a simulação termina.
   const roomId = `season_${seasonId}`;
   const matchRoom = `match_${match.id}`;
 
@@ -2058,19 +2246,42 @@ async function replayMatchViaSockets(
     "AWAY",
   );
 
-  // Actualizar events com substituições realizadas
-  result.events = applySubstitutions(
-    result.events,
-    homeSubstitutions,
-    awaySubstitutions,
-  );
+  // ===== IA DECIDE SUBSTITUIÇÕES AO INTERVALO =====
+  // Se a equipa é gerida por IA e ainda não submeteu substituições,
+  // a IA avalia se tem jogadores de maior qualidade no banco de suplentes
+  // na mesma posição. Se sim, substitui para melhorar a equipa.
+  if (!homeSubstitutions.length && !isHumanTrainer(homeTeamTrainerId)) {
+    const aiHomeSubs = calculateAiSubstitutions(match, "HOME");
+    await db.saveSubstitutions(match.id, "HOME", aiHomeSubs);
+  }
+  if (!awaySubstitutions.length && !isHumanTrainer(awayTeamTrainerId)) {
+    const aiAwaySubs = calculateAiSubstitutions(match, "AWAY");
+    await db.saveSubstitutions(match.id, "AWAY", aiAwaySubs);
+  }
 
-  // ===== 2ª PARTE: 45 SEGUNDOS =====
-  console.log(`[Match ${match.id}] 2ª Parte iniciada`);
+  // Aplicar substituições ao plantel em campo
+  applySubstitutions(match, homeSubstitutions, awaySubstitutions);
+
+  // ===== RECALCULAR FORÇAS PARA A 2ª PARTE =====
+  // Após substituições e potencial mudança de táctica ao intervalo,
+  // as forças ofensivas e defensivas são RECALCULADAS com os novos dados.
+  // Se um jogador recebeu cartão vermelho na 1ª Parte, a equipa joga
+  // com menos um jogador e a força é recalculada proporcionalmente.
+  const updatedHomeSubmission = await db.getUpdatedSubmission(match.id, "HOME");
+  const updatedAwaySubmission = await db.getUpdatedSubmission(match.id, "AWAY");
+
+  // ===== 2ª PARTE: 45 SEGUNDOS (SIMULAÇÃO IN LOCO) =====
+  // A 2ª parte é calculada minuto-a-minuto com os dados actualizados
+  console.log(`[Match ${match.id}] 2ª Parte iniciada (dados recalculados)`);
 
   const secondHalfStart = Date.now();
-  const secondHalfEvents = result.events.filter(
-    (e) => e.minute > 45 && e.minute <= 90,
+  const secondHalfEvents = simulateHalf(
+    match,
+    updatedHomeSubmission,
+    updatedAwaySubmission,
+    46,
+    90,
+    rng,
   );
 
   for (const event of secondHalfEvents) {
@@ -2152,7 +2363,7 @@ async function replayMatchViaSockets(
           matchId: match.id,
           minute: 120 + penalty.order,
           part: "PENALTIES",
-          type: penalty.scored ? "GOAL" : "MISS",
+          type: penalty.scored ? "GOAL" : "PENALTY_MISS",
           team: penalty.team,
           player: penalty.player,
           timestamp: new Date(),
@@ -2177,6 +2388,46 @@ async function replayMatchViaSockets(
     awayTeamMoralChange: result.awayTeamMoralChange,
     timestamp: new Date(),
   });
+}
+
+// ===== FUNÇÃO DE SUBSTITUIÇÕES DA IA AO INTERVALO =====
+function calculateAiSubstitutions(
+  match: Match,
+  team: "HOME" | "AWAY",
+): Substitution[] {
+  const submission =
+    team === "HOME" ? match.homeSubmission : match.awaySubmission;
+  const squad =
+    team === "HOME" ? match.homeTeam.players : match.awayTeam.players;
+  const substitutes = squad.filter((p) =>
+    submission.substitutes.includes(p.id),
+  );
+  const starters = squad.filter((p) => submission.startingXI.includes(p.id));
+  const subs: Substitution[] = [];
+
+  // Para cada suplente, verificar se há um titular da mesma posição com qualidade inferior
+  for (const sub of substitutes) {
+    if (subs.length >= 3) break; // Máximo 3 substituições
+
+    // Encontrar o titular mais fraco na mesma posição
+    const weakestStarter = starters
+      .filter(
+        (s) =>
+          s.position === sub.position &&
+          !subs.some((x) => x.playerOut.id === s.id),
+      )
+      .sort((a, b) => a.quality - b.quality)[0];
+
+    // IA substitui se o suplente tiver qualidade superior ao titular
+    if (weakestStarter && sub.quality > weakestStarter.quality) {
+      subs.push({
+        playerOut: { id: weakestStarter.id, name: weakestStarter.name },
+        playerIn: { id: sub.id, name: sub.name },
+      });
+    }
+  }
+
+  return subs;
 }
 ```
 
@@ -2268,6 +2519,7 @@ function calculateOffensiveForce(
     "4-2-4": 1.15,
     "3-4-3": 1.12,
     "4-3-3": 1.08,
+    "3-5-2": 1.05,
     "4-4-2": 1.0,
     "4-5-1": 0.9,
     "5-3-2": 0.85,
@@ -2420,9 +2672,14 @@ async function finalizeSeasonPromotions(seasonId: string) {
   // 1. Identificar equipas despromovidas
   const relegated = getLastTwoTeams(standings.division4); // 2 equipas
 
-  // 2. No final da época, sortear 2 de entre TODOS os 32 clubes
+  // 2. No final da época, sortear 2 de entre os clubes elegíveis
+  // EXCLUIR os clubes que desceram NESTA mesma época (têm de esperar 1 época)
   const allTeams = await db.getAllTeamsInSeason(seasonId);
-  const randomSelectedTeams = random.shuffle(allTeams).slice(0, 2);
+  const relegatedThisSeason = relegated.map((t) => t.id);
+  const eligibleTeams = allTeams.filter(
+    (t) => !relegatedThisSeason.includes(t.id),
+  );
+  const randomSelectedTeams = random.shuffle(eligibleTeams).slice(0, 2);
 
   // 3. Essas 2 são promovidas para divisão 4 (substituindo os 2 que desceram)
   for (const promotedTeam of randomSelectedTeams) {
@@ -2449,7 +2706,8 @@ async function finalizeSeasonPromotions(seasonId: string) {
 
 ### Clarificação
 
-- **Puro random**: Qualquer uma das 32 equipas tem igual probabilidade
+- **Random entre elegíveis**: Qualquer clube que não tenha descido nessa mesma época é elegível para o sorteio
+- **Clubes relegados excluídos**: Os 2 clubes que desceram nessa mesma época NÃO entram no sorteio — têm de esperar 1 época completa
 - **Sem critérios**: Não favorece equipas que desceram, equipas em forma, nada
 - **Justo**: Cria incerteza e drama na competição
 
@@ -2461,14 +2719,24 @@ async function finalizeSeasonPromotions(seasonId: string) {
 - [ ] 19 fases de submissão máximo (14 campeonato + 5 taça)
 - [ ] Submissões independentes: Campeonato depois Taça na mesma semana
 - [ ] 32 equipas totais, max 8 humanas, resto IA
-- [ ] Simulação cronometrada: 45s + intervalo (60s) + 45s + potencial 30s + penaltis
-- [ ] Pop-up de substituições ao intervalo (timeout 60s)
+- [ ] Simulação IN LOCO: 45s 1ª parte + intervalo (subs + táctica) + 45s 2ª parte (recalculada) + potencial 30s + penaltis
+- [ ] Pop-up de substituições ao intervalo (timeout 60s) — IA também faz subs ao intervalo
 - [ ] Cálculos sem erros de sintaxe, valores realistas
-- [ ] Força ofensiva inclui: qualidade, formação, moral, estilo
-- [ ] Força defensiva inclui: qualidade, formação, estilo (não moral)
+- [ ] Força ofensiva inclui: qualidade, formação (incl. 3-5-2), moral, estilo
+- [ ] Força defensiva inclui: qualidade, formação (incl. 3-5-2), estilo (não moral)
 - [ ] Probabilidade golo ~0.5-1% por minuto (realista)
 - [ ] Cartão amarelo: 2% base \* factor agressividade
-- [ ] Cartão vermelho: 15% de amarelo vira vermelho
-- [ ] Craques: +20% prob golo decisivo, capped em 60%
-- [ ] Promoção: random puro de 32 clubes (sem critérios)
-- [ ] Árbitro inclinação: gerado random por jogo (±15% em cartões/penaltis)
+- [ ] Cartão vermelho: 15% de amarelo vira vermelho — equipa recalculada com -10% por jogador a menos
+- [ ] Craques: +20% prob golo decisivo, capped em 60% — conflito de egos com 3+ craques
+- [ ] Promoção: random de clubes elegíveis (exclui os que desceram nessa mesma época)
+- [ ] Árbitro inclinação: gerado random por jogo (±15% em cartões/penaltis) — NÃO afecta grandes penalidades da Taça
+- [ ] Moral pertence ao clube, não ao treinador — treinador despedido herda moral do novo clube
+- [ ] Convites expiram em 10 minutos (não 24 horas)
+- [ ] Empréstimos bancários: máximo 5 activos em simultâneo
+- [ ] Estádio: capacidade máxima 120.000 lugares
+- [ ] Preço mínimo de venda: 1€ (sem mínimo obrigatório)
+- [ ] Clubes de IA que descem reaparecem no sorteio após 1 época de interregno
+- [ ] Jogos da mesma jornada simulados em paralelo
+- [ ] Auto-golos de defesas possíveis (probabilidade baixa)
+- [ ] Evento PENALTY_MISS e OWN_GOAL definidos no contrato match:event
+- [ ] Evolução qualidade: jogadores mesma posição com qualidade superior fazem evoluir os mais fracos
