@@ -1043,7 +1043,7 @@
     },
     {
       "name": "Juventude Sport Clube",
-      "division": 3,
+      "division": 4,
       "colors": { "primary": "#0000ff", "secondary": "#ffffff" },
       "stadium": { "name": "Estádio Juventude Sport Clube", "capacity": 5000 },
       "manager": { "name": "João Mateus" },
