@@ -330,6 +330,8 @@ function getGame(roomCode: string, onReady?: OnReady): ActiveGame | null {
               if (st["cupHalftimePayload"]) {
                 try { game.cupHalftimePayload = JSON.parse(st["cupHalftimePayload"]); } catch (_) {}
                 game.lastHalftimePayload = game.cupHalftimePayload;
+              } else if (st["lastHalftimePayload"]) {
+                try { game.lastHalftimePayload = JSON.parse(st["lastHalftimePayload"]); } catch (_) {}
               } else if (st["cupRuntime"]) {
                 try {
                   const parsed = JSON.parse(st["cupRuntime"]);
@@ -421,6 +423,7 @@ function saveGameState(game: ActiveGame): void {
   upsert("matchweek", String(game.matchweek || 1));
   upsert("cupTeamIds", JSON.stringify(game.cupTeamIds || []));
   upsert("cupHalftimePayload", game.cupHalftimePayload ? JSON.stringify(game.cupHalftimePayload) : "null");
+  upsert("lastHalftimePayload", game.lastHalftimePayload ? JSON.stringify(game.lastHalftimePayload) : "null");
   upsert("lockedCoaches", JSON.stringify([...game.lockedCoaches]));
 
   // Persist current fixtures for crash recovery (only serialisable fields)

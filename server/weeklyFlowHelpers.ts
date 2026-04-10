@@ -76,6 +76,8 @@ export function createWeeklyFlowHelpers(deps: WeeklyFlowDeps) {
   // Handles both league and cup first/second halves.
   // Uses game.currentFixtures populated by the caller.
 
+  const MS_PER_GAME_MINUTE = 1000;
+
   async function runMatchSegment(
     game: ActiveGame,
     startMin: number,
@@ -90,21 +92,69 @@ export function createWeeklyFlowHelpers(deps: WeeklyFlowDeps) {
       }
     }
 
-    // Simulate all fixtures
-    for (const fixture of game.currentFixtures) {
-      // Use stored tactics from fixture (set during draw/fixture generation) or look up live player tactic
+    // Read tactics for all fixtures once at segment start
+    const fixtureTactics: Array<{ t1: any; t2: any }> = game.currentFixtures.map((fixture) => {
       const p1 = Object.values(game.playersByName).find((p) => p.teamId === fixture.homeTeamId);
       const p2 = Object.values(game.playersByName).find((p) => p.teamId === fixture.awayTeamId);
       const t1 = p1 ? p1.tactic : (fixture._t1 || { formation: "4-4-2", style: "Balanced" });
       const t2 = p2 ? p2.tactic : (fixture._t2 || { formation: "4-4-2", style: "Balanced" });
-      // Also keep _t1/_t2 updated for second half (in case player changed tactic at halftime)
       if (p1) fixture._t1 = t1;
       if (p2) fixture._t2 = t2;
-      await simulateMatchSegment(game.db, fixture, t1, t2, startMin, endMin, {
-        game,
-        io,
-        matchweek: game.matchweek,
+      return { t1, t2 };
+    });
+
+    // Emit match segment start so the client can show the match UI immediately
+    io.to(game.roomCode).emit("matchSegmentStart", {
+      startMin,
+      endMin,
+      matchweek: game.matchweek,
+      isCup: entry?.type === "cup",
+      cupRoundName: entry?.type === "cup" ? (entry as any).roundName : null,
+      fixtures: game.currentFixtures.map((f) => ({
+        homeTeamId: f.homeTeamId,
+        awayTeamId: f.awayTeamId,
+        homeTeam: f.homeTeam || null,
+        awayTeam: f.awayTeam || null,
+        finalHomeGoals: f.finalHomeGoals || 0,
+        finalAwayGoals: f.finalAwayGoals || 0,
+        events: f.events || [],
+        attendance: f.attendance || null,
+        homeLineup: f.homeLineup || [],
+        awayLineup: f.awayLineup || [],
+      })),
+    });
+
+    // ── Simulate minute by minute, all fixtures in parallel ──────────────
+    for (let minute = startMin; minute <= endMin; minute++) {
+      // Simulate this minute for every fixture
+      for (let fi = 0; fi < game.currentFixtures.length; fi++) {
+        const fixture = game.currentFixtures[fi];
+        const { t1, t2 } = fixtureTactics[fi];
+        await simulateMatchSegment(game.db, fixture, t1, t2, minute, minute, {
+          game,
+          io,
+          matchweek: game.matchweek,
+        });
+      }
+
+      // Emit per-minute update so the client clock stays in sync
+      io.to(game.roomCode).emit("matchMinuteUpdate", {
+        minute,
+        fixtures: game.currentFixtures.map((f) => ({
+          homeTeamId: f.homeTeamId,
+          awayTeamId: f.awayTeamId,
+          homeGoals: f.finalHomeGoals,
+          awayGoals: f.finalAwayGoals,
+          minuteEvents: (f.events || []).filter((e) => e.minute === minute),
+          homeLineup: f.homeLineup || [],
+          awayLineup: f.awayLineup || [],
+        })),
       });
+
+      // Wait before next minute to sync with client clock
+      if (minute < endMin) {
+        await new Promise((r) => setTimeout(r, MS_PER_GAME_MINUTE));
+      }
     }
 
     if (endMin === 45) {

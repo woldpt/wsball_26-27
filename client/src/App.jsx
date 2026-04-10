@@ -517,6 +517,7 @@ function App() {
   const [tactic, setTactic] = useState(DEFAULT_TACTIC);
   const [liveMinute, setLiveMinute] = useState(90);
   const [isPlayingMatch, setIsPlayingMatch] = useState(false);
+  const [isLiveSimulation, setIsLiveSimulation] = useState(false);
   const [showHalftimePanel, setShowHalftimePanel] = useState(false);
   const [matchAction, setMatchAction] = useState(null);
   const [isMatchActionPending, setIsMatchActionPending] = useState(false);
@@ -534,6 +535,7 @@ function App() {
   const [matchDetailFixture, setMatchDetailFixture] = useState(null);
   const meRef = React.useRef(null);
   const isPlayingMatchRef = React.useRef(false);
+  const isLiveSimulationRef = React.useRef(false);
   const selectedTeamRef = React.useRef(null);
   const marketPairsRef = React.useRef([]);
   const mySquadRef = React.useRef([]);
@@ -582,6 +584,10 @@ function App() {
       setAuctionResult(null);
     }
   }, [isPlayingMatch]);
+
+  useEffect(() => {
+    isLiveSimulationRef.current = isLiveSimulation;
+  }, [isLiveSimulation]);
 
   // BUG-07 FIX: All socket listeners in a single effect with [] dep so they're
   // registered exactly once and cleaned up correctly on unmount.
@@ -874,10 +880,71 @@ function App() {
       setAwaitingCoaches(offline || []);
     });
 
+    socket.on("matchSegmentStart", (data) => {
+      setIsMatchActionPending(false);
+      setIsLiveSimulation(true);
+      setLiveMinute(data.startMin);
+      setIsPlayingMatch(true);
+      setActiveTab("live");
+      if (data.startMin === 1) {
+        // First half — set up match UI from scratch
+        setShowHalftimePanel(false);
+        setSubsMade(0);
+        setSubbedOut([]);
+        setConfirmedSubs([]);
+        setSwapSource(null);
+        setSwapTarget(null);
+        setMatchResults({
+          matchweek: data.matchweek,
+          results: (data.fixtures || []).map((f) => ({
+            homeTeamId: f.homeTeamId,
+            awayTeamId: f.awayTeamId,
+            homeTeam: f.homeTeam,
+            awayTeam: f.awayTeam,
+            finalHomeGoals: f.finalHomeGoals || 0,
+            finalAwayGoals: f.finalAwayGoals || 0,
+            events: f.events || [],
+            attendance: f.attendance || null,
+            homeLineup: f.homeLineup || [],
+            awayLineup: f.awayLineup || [],
+          })),
+        });
+      } else if (data.startMin === 46) {
+        // Second half — dismiss halftime panel, keep existing match data
+        setShowHalftimePanel(false);
+      }
+    });
+
+    socket.on("matchMinuteUpdate", (data) => {
+      setLiveMinute(data.minute);
+      setMatchResults((prev) => {
+        if (!prev) return prev;
+        const updatedResults = (prev.results || []).map((r) => {
+          const update = (data.fixtures || []).find(
+            (f) => f.homeTeamId === r.homeTeamId && f.awayTeamId === r.awayTeamId,
+          );
+          if (!update) return r;
+          const existingEvents = r.events || [];
+          const newEvents = (update.minuteEvents || []).filter(
+            (ne) => !existingEvents.some((ee) => ee.minute === ne.minute && ee.type === ne.type && ee.playerId === ne.playerId),
+          );
+          return {
+            ...r,
+            finalHomeGoals: update.homeGoals,
+            finalAwayGoals: update.awayGoals,
+            events: [...existingEvents, ...newEvents],
+            homeLineup: update.homeLineup?.length ? update.homeLineup : r.homeLineup,
+            awayLineup: update.awayLineup?.length ? update.awayLineup : r.awayLineup,
+          };
+        });
+        return { ...prev, results: updatedResults };
+      });
+    });
+
     socket.on("halfTimeResults", (data) => {
       setIsMatchActionPending(false);
+      setIsLiveSimulation(false);
       setMatchResults(data);
-      setLiveMinute(0);
       setSubsMade(0);
       setSubbedOut([]); // Reset substituted-out players for the new match
       setConfirmedSubs([]);
@@ -990,11 +1057,22 @@ function App() {
       setMatchResults(data);
       setMatchweekCount(data.matchweek);
       setShowHalftimePanel(false);
-      setLiveMinute(45);
-      setIsPlayingMatch(true);
       setIsCupMatch(false);
       setCupExtraTimeBadge(false);
       setActiveTab("live");
+
+      // If live simulation drove the clock, don't restart a replay.
+      // The match is already at minute 90 — just trigger the end-of-match transition.
+      if (isLiveSimulationRef.current) {
+        setIsLiveSimulation(false);
+        setLiveMinute(90);
+        setIsPlayingMatch(true);
+      } else {
+        // Reconnect/fallback: no live simulation was in progress, start a replay
+        setLiveMinute(45);
+        setIsPlayingMatch(true);
+      }
+
       // Após jogo: todos os jogadores vão a "Não convocado"
       setTactic((prev) => {
         const allExcluded = Object.fromEntries(
@@ -1053,6 +1131,8 @@ function App() {
       socket.off("cupSecondHalfStart");
       socket.off("cupPenaltyShootout");
       socket.off("palmaresData");
+      socket.off("matchSegmentStart");
+      socket.off("matchMinuteUpdate");
       socket.off("matchResults");
       socket.off("halfTimeResults");
       socket.off("matchActionRequired");
@@ -1142,6 +1222,37 @@ function App() {
   useEffect(() => {
     if (isPlayingMatch) {
       if (isMatchActionPending) return;
+
+      // During live simulation, the server drives liveMinute via matchMinuteUpdate.
+      // Don't auto-advance the clock — only handle end-of-match transitions.
+      if (isLiveSimulation) {
+        if (liveMinute >= 120 && isCupExtraTime) {
+          const timer = setTimeout(() => {
+            setIsPlayingMatch(false);
+            setIsLiveSimulation(false);
+            setIsCupExtraTime(false);
+            socket.emit("cupExtraTimeDone");
+          }, 2000);
+          return () => clearTimeout(timer);
+        }
+        if (liveMinute >= 90 && !isCupExtraTime) {
+          const timer = setTimeout(() => {
+            setIsPlayingMatch(false);
+            setIsLiveSimulation(false);
+            if (isCupMatch) {
+              socket.emit("cupSecondHalfDone");
+            } else {
+              socket.emit("leagueAnimDone");
+              setActiveTab("standings");
+            }
+          }, 3000);
+          return () => clearTimeout(timer);
+        }
+        // Otherwise, just wait for the next matchMinuteUpdate from the server
+        return;
+      }
+
+      // ── Replay mode (reconnect fallback) ──
       const isSecondHalfReplay = !showHalftimePanel;
 
       if (
@@ -1167,14 +1278,8 @@ function App() {
         const timer = setTimeout(() => {
           setIsPlayingMatch(false);
           if (isCupMatch) {
-            // Signal server that the cup 2nd-half animation is done so it can
-            // proceed with ET/penalties and then emit cupRoundResults.
             socket.emit("cupSecondHalfDone");
-            // Stay on live tab — ET/penalties will follow via extraTimeHalfTime
-            // and cupPenaltyShootout events; cupRoundResults shows the final popup.
           } else {
-            // Signal server that the league animation is done — if there is a
-            // pending cup draw it will now be triggered.
             socket.emit("leagueAnimDone");
             setActiveTab("standings");
           }
@@ -1190,6 +1295,7 @@ function App() {
     isCupMatch,
     isCupExtraTime,
     isMatchActionPending,
+    isLiveSimulation,
   ]);
 
   // Detect per-minute events: flash goal score & play notification for human matches
@@ -1275,6 +1381,7 @@ function App() {
     setNextMatchSummary(null);
     setNextMatchSummaryLoading(false);
     setIsPlayingMatch(false);
+    setIsLiveSimulation(false);
     setShowHalftimePanel(false);
     setMatchAction(null);
     setIsMatchActionPending(false);

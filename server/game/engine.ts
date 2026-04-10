@@ -510,49 +510,65 @@ async function simulateMatchSegment(
     fixture._yellowCards = {};
   }
 
-  // Load team morale values
-  const [homeMorale, awayMorale] = await Promise.all([
-    new Promise<number>((res) =>
-      db.get(
-        "SELECT morale FROM teams WHERE id = ?",
-        [fixture.homeTeamId],
-        (err, row) => res(row && row.morale != null ? row.morale : 50),
+  // Load team morale values (cached on fixture for minute-by-minute mode)
+  let homeMorale: number, awayMorale: number;
+  if (fixture._homeMorale !== undefined) {
+    homeMorale = fixture._homeMorale;
+    awayMorale = fixture._awayMorale;
+  } else {
+    [homeMorale, awayMorale] = await Promise.all([
+      new Promise<number>((res) =>
+        db.get(
+          "SELECT morale FROM teams WHERE id = ?",
+          [fixture.homeTeamId],
+          (err, row) => res(row && row.morale != null ? row.morale : 50),
+        ),
       ),
-    ),
-    new Promise<number>((res) =>
-      db.get(
-        "SELECT morale FROM teams WHERE id = ?",
-        [fixture.awayTeamId],
-        (err, row) => res(row && row.morale != null ? row.morale : 50),
+      new Promise<number>((res) =>
+        db.get(
+          "SELECT morale FROM teams WHERE id = ?",
+          [fixture.awayTeamId],
+          (err, row) => res(row && row.morale != null ? row.morale : 50),
+        ),
       ),
-    ),
-  ]);
+    ]);
+    fixture._homeMorale = homeMorale;
+    fixture._awayMorale = awayMorale;
+  }
 
-  // Load full rosters for bench availability during injuries
-  const homeFullRoster = await new Promise<PlayerRow[]>((resolve, reject) => {
-    db.all(
-      "SELECT * FROM players WHERE team_id = ?",
-      [fixture.homeTeamId],
-      (err, rows) => {
-        if (err) return reject(err);
-        resolve(
-          (rows || []).filter((p) => isPlayerAvailable(p, currentMatchweek)),
-        );
-      },
-    );
-  });
-  const awayFullRoster = await new Promise<PlayerRow[]>((resolve, reject) => {
-    db.all(
-      "SELECT * FROM players WHERE team_id = ?",
-      [fixture.awayTeamId],
-      (err, rows) => {
-        if (err) return reject(err);
-        resolve(
-          (rows || []).filter((p) => isPlayerAvailable(p, currentMatchweek)),
-        );
-      },
-    );
-  });
+  // Load full rosters for bench availability during injuries (cached on fixture)
+  let homeFullRoster: PlayerRow[], awayFullRoster: PlayerRow[];
+  if (fixture._homeFullRoster) {
+    homeFullRoster = fixture._homeFullRoster;
+    awayFullRoster = fixture._awayFullRoster;
+  } else {
+    homeFullRoster = await new Promise<PlayerRow[]>((resolve, reject) => {
+      db.all(
+        "SELECT * FROM players WHERE team_id = ?",
+        [fixture.homeTeamId],
+        (err, rows) => {
+          if (err) return reject(err);
+          resolve(
+            (rows || []).filter((p) => isPlayerAvailable(p, currentMatchweek)),
+          );
+        },
+      );
+    });
+    awayFullRoster = await new Promise<PlayerRow[]>((resolve, reject) => {
+      db.all(
+        "SELECT * FROM players WHERE team_id = ?",
+        [fixture.awayTeamId],
+        (err, rows) => {
+          if (err) return reject(err);
+          resolve(
+            (rows || []).filter((p) => isPlayerAvailable(p, currentMatchweek)),
+          );
+        },
+      );
+    });
+    fixture._homeFullRoster = homeFullRoster;
+    fixture._awayFullRoster = awayFullRoster;
+  }
 
   // Snapshot the lineups for this segment so clients can display "who was on the pitch"
   const lineupSnapshot = (squad: any[]) =>
