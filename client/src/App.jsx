@@ -3510,7 +3510,7 @@ function App() {
                   </div>
 
                   <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
-                    {[1, 2, 3, 4, 5].map((div) => {
+                    {[1, 2, 3, 4].map((div) => {
                       const divTeams = teams
                         .filter((t) => t.division === div)
                         .sort(
@@ -4034,19 +4034,7 @@ function App() {
                           lugares
                         </span>
                       </div>
-                      <div className="flex items-center justify-between border-t border-outline-variant/15 pt-3">
-                        <span className="text-on-surface-variant font-bold text-sm">
-                          Receita Máx./Jogo em Casa
-                        </span>
-                        <span className="font-mono text-emerald-400 font-bold text-sm">
-                          {formatCurrency(capacityRevPerGame)}
-                        </span>
-                      </div>
-                      <p className="text-on-surface-variant text-xs mt-1">
-                        Para expandir estádio ou gerir empréstimos, vê o
-                        separador{" "}
-                        <strong className="text-tertiary">Finanças</strong>.
-                      </p>
+
                     </div>
                   </div>
                 </div>
@@ -4088,35 +4076,7 @@ function App() {
                         />
                       </div>
                     </div>
-                    {/* Receita por Jogo */}
-                    <div className="bg-surface-container rounded-lg p-5 flex flex-col gap-1">
-                      <span className="text-zinc-500 font-black uppercase text-[10px] tracking-widest">
-                        Bilheteiras/Jogo em Casa
-                      </span>
-                      <span className="font-mono text-emerald-400 text-xl font-black">
-                        +{formatCurrency(capacityRevPerGame)}
-                      </span>
-                      <span className="text-zinc-600 text-[10px]">
-                        {(teamInfo?.stadium_capacity || 10000).toLocaleString(
-                          "pt-PT",
-                        )}{" "}
-                        lugares × 15€
-                      </span>
-                    </div>
-                    {/* Balanço Final Projetado */}
-                    <div className="bg-surface-container rounded-lg p-5 flex flex-col gap-1">
-                      <span className="text-zinc-500 font-black uppercase text-[10px] tracking-widest">
-                        Balanço Proj. Final
-                      </span>
-                      <span
-                        className={`font-mono text-xl font-black ${projectedFinalBudget >= currentBudget ? "text-emerald-400" : "text-red-400"}`}
-                      >
-                        {formatCurrency(projectedFinalBudget)}
-                      </span>
-                      <span className="text-zinc-600 text-[10px]">
-                        {matchweeksRemaining} jornadas restantes
-                      </span>
-                    </div>
+
                   </div>
 
                   {/* ── RECEITAS ──────────────────────────────────────────────────── */}
@@ -4149,25 +4109,7 @@ function App() {
                             </p>
                           </div>
                         </div>
-                        {/* Home-games progress bar */}
-                        <div className="flex items-center gap-2 mt-3">
-                          <span className="text-zinc-600 text-[10px] w-20 shrink-0">
-                            Em casa
-                          </span>
-                          <div className="flex-1 flex gap-0.5">
-                            {Array.from({ length: HOME_GAMES_PER_SEASON }).map(
-                              (_, i) => (
-                                <div
-                                  key={i}
-                                  className={`flex-1 h-2 rounded-sm ${i < homeGamesPlayed ? "bg-primary" : i === homeGamesPlayed ? "bg-primary/40 animate-pulse" : "bg-surface-bright"}`}
-                                />
-                              ),
-                            )}
-                          </div>
-                          <span className="text-zinc-500 text-[10px] w-10 text-right">
-                            {homeGamesPlayed}/{HOME_GAMES_PER_SEASON}
-                          </span>
-                        </div>
+
                       </div>
                     </div>
                   </div>
