@@ -6081,6 +6081,7 @@ function App() {
                             "goal",
                             "penalty_goal",
                             "penalty_miss",
+                            "yellow",
                             "red",
                             "injury",
                             "substitution",

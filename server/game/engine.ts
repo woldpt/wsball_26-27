@@ -706,7 +706,7 @@ async function simulateMatchSegment(
       const side = isHomeCard ? "home" : "away";
       if (squad.length > 0) {
         const offender = squad[Math.floor(Math.random() * squad.length)];
-        if (Math.random() < 0.15) {
+        if (Math.random() < 0.04) {
           // Cartão vermelho — 2 jogos de suspensão
           db.run(
             "UPDATE players SET red_cards = red_cards + 1, career_reds = career_reds + 1, suspension_games = suspension_games + 2, suspension_until_matchweek = CASE WHEN suspension_until_matchweek > ? THEN suspension_until_matchweek ELSE ? END WHERE id = ?",
