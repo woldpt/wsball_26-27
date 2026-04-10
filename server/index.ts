@@ -47,20 +47,12 @@ const {
   calculateMatchAttendance,
 } = require("./coreHelpers") as typeof import("./coreHelpers");
 const {
-  setCupPhase,
-  clearCupTimeout,
-  armCupTimeout,
-  allConnectedCoachesAcked,
-  allCupCoachesAcked,
-} = require("./cupHelpers") as typeof import("./cupHelpers");
-const {
   DIVISION_NAMES,
-  CUP_ROUND_AFTER_MATCHWEEK,
   CUP_ROUND_NAMES,
   CUP_TEAMS_BY_ROUND,
   SEASON_CALENDAR,
 } = require("./gameConstants") as typeof import("./gameConstants");
-const { isMatchInProgress, finalizeAllRunningAuctions, cancelPendingCupDraw } =
+const { isMatchInProgress, finalizeAllRunningAuctions } =
   require("./matchFlowHelpers") as typeof import("./matchFlowHelpers");
 const { createAuctionHelpers } =
   require("./auctionHelpers") as typeof import("./auctionHelpers");
@@ -94,9 +86,6 @@ function resolveDbDir() {
     path.join(__dirname, "..", "db"),
     path.join(process.cwd(), "db"),
   ];
-  // Prefer the directory that actually contains base.db (the seeded SQLite
-  // database). This prevents the compiled dist/db/ directory — which only
-  // holds transpiled JS files — from being mistakenly returned in production.
   return (
     candidates.find((dir) => fs.existsSync(path.join(dir, "base.db"))) ??
     candidates.find((dir) => fs.existsSync(dir)) ??
@@ -110,9 +99,6 @@ app.use(cors());
 app.use(express.json());
 app.use("/admin", adminRoutes);
 
-// ── RATE LIMITER ─────────────────────────────────────────────────────────────
-// Protects endpoints that perform I/O from being flooded.
-// Max 30 requests per minute per IP — generous for legitimate clients.
 const apiLimiter = rateLimit({
   windowMs: 60 * 1000,
   max: 30,
@@ -121,15 +107,10 @@ const apiLimiter = rateLimit({
   message: { error: "Demasiadas tentativas. Tenta novamente em breve." },
 });
 
-// ── HEALTH CHECK ──────────────────────────────────────────────────────────────
-// Used by Docker healthcheck and monitoring tools to confirm the server is up.
 app.get("/health", (req, res) => {
   res.json({ status: "ok", uptime: process.uptime() });
 });
 
-// ── LIST SAVES ────────────────────────────────────────────────────────────────
-// Returns only the room codes that the requesting coach has access to.
-// ?name=<coach> filters to that coach's rooms; omitting it returns all saves.
 app.get("/saves", apiLimiter, async (req, res) => {
   try {
     const files = fs.readdirSync(resolveDbDir());
@@ -142,7 +123,6 @@ app.get("/saves", apiLimiter, async (req, res) => {
       return res.json(allSaves);
     }
 
-    // Filter to rooms this coach has joined
     const mySaves = await getManagerRooms(managerName);
     const filtered = mySaves.filter((r) => allSaves.includes(r));
     res.json(filtered);
@@ -152,60 +132,39 @@ app.get("/saves", apiLimiter, async (req, res) => {
   }
 });
 
-// ── DELETE SAVE ───────────────────────────────────────────────────────────────
-// Deletes a room's .db file. Only allowed if the requesting coach has access
-// to that room, no players are currently connected, and credentials are valid.
 app.delete("/saves/:roomCode", apiLimiter, async (req, res) => {
   try {
     const name = typeof req.body?.name === "string" ? req.body.name.trim() : "";
-    const password =
-      typeof req.body?.password === "string" ? req.body.password : "";
+    const password = typeof req.body?.password === "string" ? req.body.password : "";
     const roomCode = (req.params.roomCode || "").toUpperCase();
 
-    if (!name) {
-      return res.status(400).json({ error: "Nome de treinador inválido." });
-    }
-    if (!password) {
-      return res.status(400).json({ error: "A palavra-passe é obrigatória." });
-    }
-    if (!roomCode) {
-      return res.status(400).json({ error: "Código de sala inválido." });
-    }
+    if (!name) return res.status(400).json({ error: "Nome de treinador inválido." });
+    if (!password) return res.status(400).json({ error: "A palavra-passe é obrigatória." });
+    if (!roomCode) return res.status(400).json({ error: "Código de sala inválido." });
 
     const authResult = await verifyManager(name, password);
-    if (!authResult.ok) {
-      return res.status(401).json({ error: authResult.error });
-    }
+    if (!authResult.ok) return res.status(401).json({ error: authResult.error });
 
-    // Verify this coach has access to the room
     const myRooms = await getManagerRooms(name);
     if (!myRooms.includes(roomCode)) {
       return res.status(403).json({ error: "Não tens acesso a esta sala." });
     }
 
-    // Refuse if any player is actively connected to this room
     const activeGame = getGame(roomCode);
     if (activeGame) {
       const connected = Object.values(activeGame.playersByName).filter(
         (p: any) => p.socketId,
       ).length;
       if (connected > 0) {
-        return res
-          .status(409)
-          .json({ error: "Sala tem jogadores ligados. Tenta mais tarde." });
+        return res.status(409).json({ error: "Sala tem jogadores ligados. Tenta mais tarde." });
       }
     }
 
-    // Delete the .db file
     const dbDir = resolveDbDir();
     const dbFile = path.join(dbDir, `game_${roomCode}.db`);
-    if (fs.existsSync(dbFile)) {
-      fs.unlinkSync(dbFile);
-    }
+    if (fs.existsSync(dbFile)) fs.unlinkSync(dbFile);
 
-    // Remove room_managers entries so it disappears from saves lists
     await deleteRoomAccess(roomCode);
-
     console.log(`[/saves] Room "${roomCode}" deleted by coach "${name}"`);
     return res.json({ ok: true });
   } catch (error) {
@@ -217,21 +176,11 @@ app.delete("/saves/:roomCode", apiLimiter, async (req, res) => {
 app.post("/auth/login", apiLimiter, async (req, res) => {
   try {
     const name = typeof req.body?.name === "string" ? req.body.name.trim() : "";
-    const password =
-      typeof req.body?.password === "string" ? req.body.password : "";
-
-    if (!name) {
-      return res.status(400).json({ error: "Nome de treinador inválido." });
-    }
-    if (!password) {
-      return res.status(400).json({ error: "A palavra-passe é obrigatória." });
-    }
-
+    const password = typeof req.body?.password === "string" ? req.body.password : "";
+    if (!name) return res.status(400).json({ error: "Nome de treinador inválido." });
+    if (!password) return res.status(400).json({ error: "A palavra-passe é obrigatória." });
     const authResult = await verifyManager(name, password);
-    if (!authResult.ok) {
-      return res.status(401).json({ error: authResult.error });
-    }
-
+    if (!authResult.ok) return res.status(401).json({ error: authResult.error });
     return res.json({ ok: true, name });
   } catch (error) {
     console.error("[/auth/login] Error:", error.message);
@@ -242,21 +191,11 @@ app.post("/auth/login", apiLimiter, async (req, res) => {
 app.post("/auth/register", apiLimiter, async (req, res) => {
   try {
     const name = typeof req.body?.name === "string" ? req.body.name.trim() : "";
-    const password =
-      typeof req.body?.password === "string" ? req.body.password : "";
-
-    if (!name) {
-      return res.status(400).json({ error: "Nome de treinador inválido." });
-    }
-    if (!password) {
-      return res.status(400).json({ error: "A palavra-passe é obrigatória." });
-    }
-
+    const password = typeof req.body?.password === "string" ? req.body.password : "";
+    if (!name) return res.status(400).json({ error: "Nome de treinador inválido." });
+    if (!password) return res.status(400).json({ error: "A palavra-passe é obrigatória." });
     const authResult = await createManager(name, password);
-    if (!authResult.ok) {
-      return res.status(409).json({ error: authResult.error });
-    }
-
+    if (!authResult.ok) return res.status(409).json({ error: authResult.error });
     return res.json({ ok: true, name });
   } catch (error) {
     console.error("[/auth/register] Error:", error.message);
@@ -269,6 +208,11 @@ const server = http.createServer(app);
 const io = new Server(server, {
   cors: { origin: "*", methods: ["GET", "POST"] },
 });
+
+// ── HELPERS ───────────────────────────────────────────────────────────────────
+
+const emitAwaitingCoaches = (game: ActiveGame) =>
+  emitAwaitingCoachesHelper(game, io);
 
 const auctionHelpers = createAuctionHelpers({
   io,
@@ -300,6 +244,30 @@ const matchSummaryHelpers = createMatchSummaryHelpers({
 const buildNextMatchSummary = matchSummaryHelpers.buildNextMatchSummary;
 const persistMatchResults = matchSummaryHelpers.persistMatchResults;
 
+const refreshMarket = auctionHelpers.refreshMarket;
+const emitSquadForPlayer = auctionHelpers.emitSquadForPlayer;
+const listPlayerOnMarket = auctionHelpers.listPlayerOnMarket;
+const startAuction = auctionHelpers.startAuction;
+const finalizeAuction = auctionHelpers.finalizeAuction;
+const placeAuctionBid = auctionHelpers.placeAuctionBid;
+
+const processContractExpiries = contractHelpers.processContractExpiries;
+const processNpcTransferActivity = (game) =>
+  npcTransferHelpers.processNpcTransferActivity(game, listPlayerOnMarket);
+
+function scheduleNpcAuctionBids(game, playerId) {
+  return npcTransferHelpers.scheduleNpcAuctionBids(game, playerId, placeAuctionBid);
+}
+
+// ── CUP FLOW ──────────────────────────────────────────────────────────────────
+// Cup flow is created first because weeklyFlowHelpers depends on startCupRound
+// and finalizeCupRound. checkAllReady is injected into cupFlowHelpers after
+// weeklyFlowHelpers is created (see below).
+
+// We use a late-binding wrapper to avoid circular dependency:
+// cupFlowHelpers needs checkAllReady, weeklyFlowHelpers needs startCupRound + finalizeCupRound.
+const checkAllReadyRef: { fn: ((game: ActiveGame) => Promise<void>) | null } = { fn: null };
+
 const cupFlowHelpers = createCupFlowHelpers({
   io,
   runAll,
@@ -308,69 +276,40 @@ const cupFlowHelpers = createCupFlowHelpers({
   DIVISION_NAMES,
   CUP_TEAMS_BY_ROUND,
   CUP_ROUND_NAMES,
-  setCupPhase,
-  clearCupTimeout,
-  armCupTimeout,
   saveGameState,
   getTeamSquad,
   simulateExtraTime,
   simulatePenaltyShootout,
-  simulateMatchSegment,
   pickRefereeSummary,
   getPlayerList,
+  checkAllReady: (game) => {
+    if (!checkAllReadyRef.fn) return Promise.resolve();
+    return checkAllReadyRef.fn(game);
+  },
 });
 
 const applySeasonEnd = cupFlowHelpers.applySeasonEnd;
 const startCupRound = cupFlowHelpers.startCupRound;
-const simulateCupFirstHalf = cupFlowHelpers.simulateCupFirstHalf;
-const simulateCupSecondHalf = cupFlowHelpers.simulateCupSecondHalf;
 const finalizeCupRound = cupFlowHelpers.finalizeCupRound;
-const emitCurrentCupPhaseToSocket = cupFlowHelpers.emitCurrentCupPhaseToSocket;
-const ensureCupPhaseTimeout = cupFlowHelpers.ensureCupPhaseTimeout;
+const transitionToKickoff = cupFlowHelpers.transitionToKickoff;
+const emitCurrentPhaseToSocket = cupFlowHelpers.emitCurrentPhaseToSocket;
+const ensurePhaseTimeout = cupFlowHelpers.ensurePhaseTimeout;
 
-const refreshMarket = auctionHelpers.refreshMarket;
-const emitSquadForPlayer = auctionHelpers.emitSquadForPlayer;
-const listPlayerOnMarket = auctionHelpers.listPlayerOnMarket;
-const startAuction = auctionHelpers.startAuction;
-const finalizeAuction = auctionHelpers.finalizeAuction;
-const placeAuctionBid = auctionHelpers.placeAuctionBid;
-
-// ─── CONTRACT EXPIRY CHECK ─────────────────────────────────────────────────
-// Called after each matchweek. Releases players whose contracts expired and
-// triggers renewal requests for players approaching contract end.
-const processContractExpiries = contractHelpers.processContractExpiries;
-
-// ─── NPC TRANSFER ACTIVITY ─────────────────────────────────────────────────
-// Called after each matchweek. NPC teams buy players they need.
-const processNpcTransferActivity = (game) =>
-  npcTransferHelpers.processNpcTransferActivity(game, listPlayerOnMarket);
-
-// ─── NPC AUCTION BIDDING ───────────────────────────────────────────────────
-// Sealed-bid model: each NPC team places exactly one blind bid at a random
-// delay (2-12s). Bid amount is random between startingPrice and a cap.
-function scheduleNpcAuctionBids(game, playerId) {
-  return npcTransferHelpers.scheduleNpcAuctionBids(
-    game,
-    playerId,
-    placeAuctionBid,
-  );
-}
+// ── WEEKLY FLOW ────────────────────────────────────────────────────────────────
 
 const weeklyFlowHelpers = createWeeklyFlowHelpers({
   io,
   getPlayerList,
   generateFixturesForDivision,
-  finalizeAllRunningAuctions,
   finalizeAuction,
-  cancelPendingCupDraw,
   simulateMatchSegment,
   calculateMatchAttendance,
   pickRefereeSummary,
   saveGameState,
   persistMatchResults,
   applyPostMatchQualityEvolution,
-  CUP_ROUND_AFTER_MATCHWEEK,
   startCupRound,
+  finalizeCupRound,
   applySeasonEnd,
   listPlayerOnMarket,
   processContractExpiries,
@@ -379,6 +318,11 @@ const weeklyFlowHelpers = createWeeklyFlowHelpers({
 });
 
 const checkAllReady = weeklyFlowHelpers.checkAllReady;
+
+// Resolve the late-binding reference so cupFlowHelpers can call checkAllReady
+checkAllReadyRef.fn = checkAllReady;
+
+// ── SOCKET HANDLERS ───────────────────────────────────────────────────────────
 
 io.on("connection", (socket) => {
   registerSessionSocketHandlers(socket, {
@@ -391,8 +335,8 @@ io.on("connection", (socket) => {
     bindSocket,
     getPlayerList,
     saveGameState,
-    emitCurrentCupPhaseToSocket,
-    ensureCupPhaseTimeout,
+    emitCurrentPhaseToSocket,
+    ensurePhaseTimeout,
     emitAwaitingCoaches,
     runAll,
     buildNextMatchSummary,
@@ -403,17 +347,9 @@ io.on("connection", (socket) => {
     getGameBySocket,
     getPlayerBySocket,
     getPlayerList,
-    allConnectedCoachesAcked,
-    allCupCoachesAcked,
-    clearCupTimeout,
-    setCupPhase,
     saveGameState,
-    CUP_ROUND_NAMES,
-    armCupTimeout,
-    simulateCupFirstHalf,
-    simulateCupSecondHalf,
-    startCupRound,
-    finalizeCupRound,
+    transitionToKickoff,
+    checkAllReady,
   });
 
   registerTransferSocketHandlers(socket, {
@@ -445,12 +381,6 @@ io.on("connection", (socket) => {
     emitAwaitingCoaches,
   });
 });
-
-// ── MATCH FLOW ────────────────────────────────────────────────────────────────
-
-// Helper: broadcast which locked coaches are currently offline.
-const emitAwaitingCoaches = (game: ActiveGame) =>
-  emitAwaitingCoachesHelper(game, io);
 
 const PORT = 3000;
 server.listen(PORT, () => {

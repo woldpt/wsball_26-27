@@ -22,37 +22,58 @@ export interface PlayerSession {
   [key: string]: any;
 }
 
-export interface CupRuntime {
-  phaseToken: string;
-  drawPayload: unknown;
-  preMatchPayload?: unknown;
-  halftimePayload: unknown;
-  secondHalfPayload: unknown;
-  fixtures: unknown[];
-}
+/**
+ * Single unified state machine replacing the old matchState + cupState dual machines.
+ * Transitions are always linear: no concurrent league+cup activity.
+ */
+export type GamePhase =
+  | "lobby"                  // Between events: tactics, transfers, squad review
+  | "match_first_half"       // Engine running 1-45 (league OR cup)
+  | "match_halftime"         // Waiting: all humans confirm Ready
+  | "match_second_half"      // Engine running 46-90
+  | "match_extra_time"       // Cup only: ET simulation
+  | "match_finalizing"       // Post-match processing (brief, blocking)
+  | "cup_draw"               // Cup only: show draw, wait for acks
+  | "cup_awaiting_kickoff"   // Cup only: all cup managers confirm Ready
+  | "season_end";            // Season wrap-up: promotions, relegations
 
 export interface ActiveGame {
   roomCode: string;
   db: any;
   playersByName: Record<string, PlayerSession>;
   socketToName: Record<string, string>;
-  matchweek: number;
-  matchState: string;
+
+  // ── Single calendar cursor (replaces matchweek + cupRound as progress trackers) ──
+  calendarIndex: number;    // 0..18 within the season (index into SEASON_CALENDAR)
   season: number;
   year: number;
-  cupRound: number;
-  cupState: string;
+  matchweek: number;        // convenience field: updated at end of each league event
+
+  // ── Single state machine (replaces matchState + cupState) ──
+  gamePhase: GamePhase;
+
+  // ── Current event runtime ──
+  currentEvent: any | null; // CalendarEntry | null — what we're playing RIGHT NOW
+  currentFixtures: any[];   // active fixture objects (league or cup)
+
+  // ── Single phase timer + ack set (replaces 5 separate timeouts + ack sets) ──
+  phaseToken: string;
+  phaseTimer: ReturnType<typeof setTimeout> | null;
+  phaseAcks: Set<string>;
+
+  // ── Cup runtime payloads (flat fields replacing CupRuntime object) ──
   cupTeamIds: number[];
-  cupFixtures: unknown[];
-  cupHumanInCup: boolean;
-  cupDrawAcks: Set<string>;
-  cupRuntime: CupRuntime;
+  cupDrawPayload: unknown | null;
+  cupHalftimePayload: unknown | null;
+  cupSecondHalfPayload: unknown | null;
+
+  // ── Retained fields ──
   lockedCoaches: Set<string>;
   globalMarket: any[];
-  fixtures: any[];
   auctions: Record<string, unknown>;
   auctionTimers: Record<string, unknown>;
   pendingAuctionQueue: unknown[];
   initialized: boolean;
+  lastHalftimePayload?: any;
   [key: string]: any;
 }

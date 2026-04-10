@@ -1,11 +1,12 @@
 import fs from "fs";
 import path from "path";
 import sqlite3 from "sqlite3";
-import type { ActiveGame, PlayerSession } from "./types";
+import type { ActiveGame, GamePhase, PlayerSession } from "./types";
+import { SEASON_CALENDAR } from "./gameConstants";
 
 const sqlite = sqlite3.verbose();
 
-const activeGames: Record<string, ActiveGame> = {}; // { roomCode: { db, playersByName: {}, socketToName: {}, matchweek, matchState, globalMarket, fixtures } }
+const activeGames: Record<string, ActiveGame> = {};
 
 type SqliteDb = any;
 type DbRow = { [key: string]: any } | null;
@@ -99,7 +100,6 @@ function ensurePlayerSchema(
             remaining -= 1;
             if (remaining === 0) {
               finished = true;
-              // Chain backfills for any columns that were just added
               const backfillSteps: Array<(next: () => void) => void> = [];
 
               if (missing.some(([n]: [string, string]) => n === "is_star")) {
@@ -135,7 +135,6 @@ function ensurePlayerSchema(
                 });
               }
 
-              // Run backfill steps in sequence, then call onDone
               const runBackfills = (idx: number) => {
                 if (idx >= backfillSteps.length) {
                   if (onDone) onDone(null);
@@ -150,6 +149,39 @@ function ensurePlayerSchema(
       }
     });
   });
+}
+
+/**
+ * Derive calendarIndex from legacy DB keys (for rooms saved before the refactor).
+ * Maps old matchweek + cupRound/cupState to the new calendarIndex.
+ */
+function deriveCalendarIndex(matchweek: number, cupRound: number, cupState: string): number {
+  if (cupState && cupState !== "idle" && cupState !== "done_cup" && cupRound > 0) {
+    const cupEntry = SEASON_CALENDAR.find(
+      (e) => e.type === "cup" && (e as any).round === cupRound,
+    );
+    if (cupEntry) return cupEntry.calendarIndex;
+  }
+  const normMw = ((matchweek - 1) % 14) + 1;
+  const leagueEntry = SEASON_CALENDAR.find(
+    (e) => e.type === "league" && (e as any).matchweek === normMw,
+  );
+  return leagueEntry?.calendarIndex ?? 0;
+}
+
+/**
+ * Derive gamePhase from legacy matchState + cupState.
+ * Used when reading rooms saved before the refactor.
+ */
+function deriveGamePhase(matchState: string, cupState: string): GamePhase {
+  if (cupState === "draw") return "cup_draw";
+  if (cupState === "pre_match") return "cup_awaiting_kickoff";
+  if (cupState === "halftime") return "match_halftime";
+  // Conservative: treat second_half_waiting as halftime so coaches can re-confirm
+  if (cupState === "second_half_waiting") return "match_halftime";
+  if (matchState === "halftime") return "match_halftime";
+  // All transient simulation states → lobby (safe default)
+  return "lobby";
 }
 
 function getGame(roomCode: string, onReady?: OnReady): ActiveGame | null {
@@ -172,7 +204,6 @@ function getGame(roomCode: string, onReady?: OnReady): ActiveGame | null {
         );
       return null;
     }
-    // Validate base.db is not empty before copying
     const stat = fs.statSync(basePath);
     if (stat.size < 1024) {
       console.error(
@@ -193,28 +224,34 @@ function getGame(roomCode: string, onReady?: OnReady): ActiveGame | null {
   const game: ActiveGame = {
     roomCode,
     db,
-    playersByName: {} as Record<string, PlayerSession>, // name -> { name, teamId, roomCode, ready, tactic, socketId }
-    socketToName: {} as Record<string, string>, // socketId -> name
-    matchweek: 1,
-    matchState: "idle",
+    playersByName: {} as Record<string, PlayerSession>,
+    socketToName: {} as Record<string, string>,
+
+    // New unified state machine
+    calendarIndex: 0,
+    gamePhase: "lobby",
     season: 1,
-    year: 2026, // real-world year of the current season (starts 2026)
-    cupRound: 0, // 0 = no cup in progress; 1-5 = current round
-    cupState: "idle", // idle | draw | playing | done_round | done_cup
-    cupTeamIds: [], // team IDs still alive in the cup this season
-    cupFixtures: [],
-    cupHumanInCup: false,
-    cupDrawAcks: new Set<string>(), // socket IDs that acknowledged the current draw
-    cupRuntime: {
-      phaseToken: "",
-      drawPayload: null,
-      halftimePayload: null,
-      secondHalfPayload: null,
-      fixtures: [],
-    },
-    lockedCoaches: new Set<string>(), // names of all human coaches ever in this room (lock is permanent once >= 2)
+    year: 2026,
+    matchweek: 1,
+
+    // Current event runtime
+    currentEvent: null,
+    currentFixtures: [],
+
+    // Single phase timer + ack set
+    phaseToken: "",
+    phaseTimer: null,
+    phaseAcks: new Set<string>(),
+
+    // Cup runtime payloads (flat)
+    cupTeamIds: [],
+    cupDrawPayload: null,
+    cupHalftimePayload: null,
+    cupSecondHalfPayload: null,
+
+    // Retained fields
+    lockedCoaches: new Set<string>(),
     globalMarket: [],
-    fixtures: [],
     auctions: {} as Record<string, unknown>,
     auctionTimers: {} as Record<string, unknown>,
     pendingAuctionQueue: [],
@@ -223,196 +260,201 @@ function getGame(roomCode: string, onReady?: OnReady): ActiveGame | null {
 
   activeGames[roomCode] = game;
 
-  // Load persisted state — chain DB reads so all values are ready before onReady fires
   db.run(
     "CREATE TABLE IF NOT EXISTS game_state (key TEXT PRIMARY KEY, value TEXT)",
     () => {
       ensurePlayerSchema(db, () => {
-        // One-time migration: randomize aggressiveness if all players still have the default (3).
-        // This fixes room DBs copied from an old base.db before the seed was updated.
         const continueAfterMigrations = () => {
-        // Ensure morale column exists in teams (migration for existing DBs).
-        db.run(
-          "ALTER TABLE teams ADD COLUMN morale INTEGER DEFAULT 50",
-          () => {},
-        );
-        // Ensure attendance column exists in matches (migration for existing DBs).
-        // Callback suppresses the "duplicate column" error on existing DBs.
-        db.run(
-          "ALTER TABLE matches ADD COLUMN attendance INTEGER DEFAULT 0",
-          () => {},
-        );
-        // Ensure cup/palmares tables added after initial schema
-        db.run(`CREATE TABLE IF NOT EXISTS cup_matches (
-          id INTEGER PRIMARY KEY AUTOINCREMENT,
-          season INTEGER NOT NULL,
-          round INTEGER NOT NULL,
-          home_team_id INTEGER,
-          away_team_id INTEGER,
-          home_score INTEGER DEFAULT 0,
-          away_score INTEGER DEFAULT 0,
-          home_et_score INTEGER DEFAULT 0,
-          away_et_score INTEGER DEFAULT 0,
-          home_penalties INTEGER DEFAULT 0,
-          away_penalties INTEGER DEFAULT 0,
-          winner_team_id INTEGER,
-          played BOOLEAN DEFAULT 0
-        )`);
-        db.run(`CREATE TABLE IF NOT EXISTS palmares (
-          id INTEGER PRIMARY KEY AUTOINCREMENT,
-          team_id INTEGER NOT NULL,
-          season INTEGER NOT NULL,
-          achievement TEXT NOT NULL
-        )`);
-        db.get(
-          "SELECT value FROM game_state WHERE key = 'matchweek'",
-          (err: Error | null, row: DbRow) => {
-            if (row) game.matchweek = parseInt(row.value) || 1;
+          db.run("ALTER TABLE teams ADD COLUMN morale INTEGER DEFAULT 50", () => {});
+          db.run("ALTER TABLE matches ADD COLUMN attendance INTEGER DEFAULT 0", () => {});
+          db.run(`CREATE TABLE IF NOT EXISTS cup_matches (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            season INTEGER NOT NULL,
+            round INTEGER NOT NULL,
+            home_team_id INTEGER,
+            away_team_id INTEGER,
+            home_score INTEGER DEFAULT 0,
+            away_score INTEGER DEFAULT 0,
+            home_et_score INTEGER DEFAULT 0,
+            away_et_score INTEGER DEFAULT 0,
+            home_penalties INTEGER DEFAULT 0,
+            away_penalties INTEGER DEFAULT 0,
+            winner_team_id INTEGER,
+            played BOOLEAN DEFAULT 0
+          )`);
+          db.run(`CREATE TABLE IF NOT EXISTS palmares (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            team_id INTEGER NOT NULL,
+            season INTEGER NOT NULL,
+            achievement TEXT NOT NULL
+          )`);
 
-            db.get(
-              "SELECT value FROM game_state WHERE key = 'matchState'",
-              (err2: Error | null, row2: DbRow) => {
-                if (row2) game.matchState = row2.value || "idle";
-                // Recovery: if matchState is stuck in a transient state, reset to idle
-                const stuckStates = [
-                  "running_first_half",
-                  "playing_second_half",
-                ];
-                if (stuckStates.includes(game.matchState)) {
-                  console.warn(
-                    `[gameManager] Recovering stuck matchState '${game.matchState}' -> 'idle' for room ${roomCode}`,
-                  );
-                  game.matchState = "idle";
-                }
+          // ── Read persisted state ──────────────────────────────────────────
+          // Try new keys first; fall back to legacy keys for pre-refactor rooms.
+          db.get("SELECT value FROM game_state WHERE key = 'calendarIndex'", (_, rowCI: DbRow) => {
+            db.get("SELECT value FROM game_state WHERE key = 'gamePhase'", (_, rowGP: DbRow) => {
+              db.get("SELECT value FROM game_state WHERE key = 'season'", (_, rowS: DbRow) => {
+                db.get("SELECT value FROM game_state WHERE key = 'year'", (_, rowY: DbRow) => {
+                  db.get("SELECT value FROM game_state WHERE key = 'matchweek'", (_, rowMW: DbRow) => {
+                    db.get("SELECT value FROM game_state WHERE key = 'cupTeamIds'", (_, rowCTI: DbRow) => {
+                      db.get("SELECT value FROM game_state WHERE key = 'cupDrawPayload'", (_, rowCDP: DbRow) => {
+                        db.get("SELECT value FROM game_state WHERE key = 'cupHalftimePayload'", (_, rowCHP: DbRow) => {
+                          db.get("SELECT value FROM game_state WHERE key = 'cupSecondHalfPayload'", (_, rowCSP: DbRow) => {
+                            db.get("SELECT value FROM game_state WHERE key = 'phaseToken'", (_, rowPT: DbRow) => {
+                              db.get("SELECT value FROM game_state WHERE key = 'currentFixtures'", (_, rowCF: DbRow) => {
+                                // Legacy keys (for backward compat migration)
+                                db.get("SELECT value FROM game_state WHERE key = 'matchState'", (_, rowLMS: DbRow) => {
+                                  db.get("SELECT value FROM game_state WHERE key = 'cupRound'", (_, rowLCR: DbRow) => {
+                                    db.get("SELECT value FROM game_state WHERE key = 'cupState'", (_, rowLCS: DbRow) => {
+                                      db.get("SELECT value FROM game_state WHERE key = 'cupRuntime'", (_, rowLCRT: DbRow) => {
+                                        db.get("SELECT value FROM game_state WHERE key = 'lockedCoaches'", (_, rowLC: DbRow) => {
 
-                db.get(
-                  "SELECT value FROM game_state WHERE key = 'season'",
-                  (err3: Error | null, row3: DbRow) => {
-                    if (row3) game.season = parseInt(row3.value) || 1;
+                                          // ── Apply season and year ──
+                                          if (rowS) game.season = parseInt(rowS.value) || 1;
+                                          if (rowY) {
+                                            game.year = parseInt(rowY.value) || (2025 + game.season);
+                                          } else {
+                                            game.year = 2025 + game.season;
+                                          }
+                                          if (rowMW) game.matchweek = parseInt(rowMW.value) || 1;
 
-                    db.get(
-                      "SELECT value FROM game_state WHERE key = 'cupRound'",
-                      (err4: Error | null, row4: DbRow) => {
-                        if (row4) game.cupRound = parseInt(row4.value) || 0;
+                                          // ── Apply new fields or derive from legacy ──
+                                          if (rowCI) {
+                                            game.calendarIndex = parseInt(rowCI.value) || 0;
+                                          } else {
+                                            // Derive from legacy matchweek + cupRound + cupState
+                                            const legacyMW = parseInt(rowMW?.value) || 1;
+                                            const legacyCR = parseInt(rowLCR?.value) || 0;
+                                            const legacyCS = rowLCS?.value || "idle";
+                                            game.calendarIndex = deriveCalendarIndex(legacyMW, legacyCR, legacyCS);
+                                          }
 
-                        db.get(
-                          "SELECT value FROM game_state WHERE key = 'cupState'",
-                          (err5: Error | null, row5: DbRow) => {
-                            if (row5) game.cupState = row5.value || "idle";
-
-                            db.get(
-                              "SELECT value FROM game_state WHERE key = 'cupRuntime'",
-                              (
-                                errCupRuntime: Error | null,
-                                rowCupRuntime: DbRow,
-                              ) => {
-                                if (rowCupRuntime && rowCupRuntime.value) {
-                                  try {
-                                    const parsed = JSON.parse(
-                                      rowCupRuntime.value,
-                                    );
-                                    if (parsed && typeof parsed === "object") {
-                                      game.cupRuntime = {
-                                        phaseToken: parsed.phaseToken || "",
-                                        drawPayload: parsed.drawPayload || null,
-                                        halftimePayload:
-                                          parsed.halftimePayload || null,
-                                        secondHalfPayload:
-                                          parsed.secondHalfPayload || null,
-                                        fixtures: Array.isArray(parsed.fixtures)
-                                          ? parsed.fixtures
-                                          : [],
-                                      };
-                                      game.cupFixtures =
-                                        game.cupRuntime.fixtures || [];
-                                    }
-                                  } catch (_) {}
-                                }
-
-                                if (game.cupState === "playing_first_half") {
-                                  game.cupState = game.cupRuntime
-                                    .halftimePayload
-                                    ? "halftime"
-                                    : "draw";
-                                }
-                                if (game.cupState === "playing_second_half") {
-                                  game.cupState = game.cupRuntime
-                                    .secondHalfPayload
-                                    ? "second_half_waiting"
-                                    : "halftime";
-                                }
-
-                                db.get(
-                                  "SELECT value FROM game_state WHERE key = 'year'",
-                                  (err6y: Error | null, row6y: DbRow) => {
-                                    if (row6y) {
-                                      game.year =
-                                        parseInt(row6y.value) ||
-                                        2025 + game.season;
-                                    } else {
-                                      // Migrate: derive year from season for existing games
-                                      game.year = 2025 + game.season;
-                                    }
-
-                                    db.get(
-                                      "SELECT value FROM game_state WHERE key = 'lockedCoaches'",
-                                      (err8: Error | null, row8: DbRow) => {
-                                        if (row8 && row8.value) {
-                                          try {
-                                            const names = JSON.parse(
-                                              row8.value,
-                                            );
-                                            if (Array.isArray(names)) {
-                                              game.lockedCoaches = new Set(
-                                                names,
+                                          if (rowGP) {
+                                            const savedPhase = rowGP.value as GamePhase;
+                                            // Reset transient simulation states to lobby (safe)
+                                            const transientStates: GamePhase[] = [
+                                              "match_first_half",
+                                              "match_second_half",
+                                              "match_extra_time",
+                                              "match_finalizing",
+                                            ];
+                                            if (transientStates.includes(savedPhase)) {
+                                              console.warn(
+                                                `[gameManager] Recovering stuck gamePhase '${savedPhase}' -> 'lobby' for room ${roomCode}`,
                                               );
+                                              game.gamePhase = "lobby";
+                                            } else {
+                                              game.gamePhase = savedPhase;
                                             }
-                                          } catch (_) {}
-                                        }
+                                          } else {
+                                            // Derive from legacy matchState + cupState
+                                            const legacyMS = rowLMS?.value || "idle";
+                                            const legacyCS = rowLCS?.value || "idle";
+                                            game.gamePhase = deriveGamePhase(legacyMS, legacyCS);
+                                          }
 
-                                        // Load free agents and transfer-listed players for market
-                                        db.all(
-                                          "SELECT * FROM players WHERE team_id IS NULL OR transfer_status != 'none' ORDER BY RANDOM() LIMIT 40",
-                                          (err7, rows) => {
-                                            if (!err7 && rows)
-                                              game.globalMarket = rows;
-                                            game.initialized = true;
-                                            if (onReady) onReady(game);
-                                          },
-                                        );
-                                      },
-                                    );
-                                  },
-                                );
-                              },
-                            );
-                          },
-                        );
-                      },
-                    );
-                  },
-                );
-              },
-            );
-          },
-        );
+                                          // Restore match_halftime payload for reconnect replay
+                                          if (game.gamePhase === "match_halftime") {
+                                            if (rowCHP?.value) {
+                                              try { game.cupHalftimePayload = JSON.parse(rowCHP.value); } catch (_) {}
+                                              game.lastHalftimePayload = game.cupHalftimePayload;
+                                            } else if (rowLCRT?.value) {
+                                              try {
+                                                const parsed = JSON.parse(rowLCRT.value);
+                                                if (parsed?.halftimePayload) {
+                                                  game.lastHalftimePayload = parsed.halftimePayload;
+                                                }
+                                              } catch (_) {}
+                                            }
+                                          }
+
+                                          // Cup draw payload
+                                          if (rowCDP?.value) {
+                                            try { game.cupDrawPayload = JSON.parse(rowCDP.value); } catch (_) {}
+                                          } else if (rowLCRT?.value && game.gamePhase === "cup_draw") {
+                                            try {
+                                              const parsed = JSON.parse(rowLCRT.value);
+                                              if (parsed?.drawPayload) game.cupDrawPayload = parsed.drawPayload;
+                                            } catch (_) {}
+                                          }
+
+                                          // Cup second half payload
+                                          if (rowCSP?.value) {
+                                            try { game.cupSecondHalfPayload = JSON.parse(rowCSP.value); } catch (_) {}
+                                          }
+
+                                          // Phase token
+                                          if (rowPT?.value) game.phaseToken = rowPT.value;
+
+                                          // Cup team IDs
+                                          if (rowCTI?.value) {
+                                            try {
+                                              const parsed = JSON.parse(rowCTI.value);
+                                              if (Array.isArray(parsed)) game.cupTeamIds = parsed;
+                                            } catch (_) {}
+                                          }
+
+                                          // Current fixtures (for reconnect during match)
+                                          if (rowCF?.value) {
+                                            try {
+                                              const parsed = JSON.parse(rowCF.value);
+                                              if (Array.isArray(parsed)) game.currentFixtures = parsed;
+                                            } catch (_) {}
+                                          }
+
+                                          // Locked coaches
+                                          if (rowLC?.value) {
+                                            try {
+                                              const names = JSON.parse(rowLC.value);
+                                              if (Array.isArray(names)) game.lockedCoaches = new Set(names);
+                                            } catch (_) {}
+                                          }
+
+                                          // Set currentEvent from calendarIndex
+                                          game.currentEvent = SEASON_CALENDAR[game.calendarIndex] ?? null;
+
+                                          // Load market
+                                          db.all(
+                                            "SELECT * FROM players WHERE team_id IS NULL OR transfer_status != 'none' ORDER BY RANDOM() LIMIT 40",
+                                            (err7, rows) => {
+                                              if (!err7 && rows) game.globalMarket = rows;
+                                              game.initialized = true;
+                                              if (onReady) onReady(game);
+                                            },
+                                          );
+                                        });
+                                      });
+                                    });
+                                  });
+                                });
+                              });
+                            });
+                          });
+                        });
+                      });
+                    });
+                  });
+                });
+              });
+            });
+          });
         };
-        // One-time migration: randomize aggressiveness if all players still have the default (3)
-        // OR if any values are outside the valid 1-5 range.
+
+        // One-time migration: fix aggressiveness if all-default or out-of-range
         db.get(
           "SELECT COUNT(*) AS total, SUM(CASE WHEN aggressiveness = 3 THEN 1 ELSE 0 END) AS allThree, SUM(CASE WHEN aggressiveness < 1 OR aggressiveness > 5 THEN 1 ELSE 0 END) AS outOfRange FROM players",
           (aggCheckErr: Error | null, aggRow: { total: number; allThree: number; outOfRange: number } | null) => {
             const needsFix = !aggCheckErr && aggRow && aggRow.total > 0 &&
               (aggRow.total === aggRow.allThree || aggRow.outOfRange > 0);
             if (needsFix) {
-              console.log(`[gameManager] Backfilling aggressiveness for room ${roomCode} (all default=3 or out-of-range values found)`);
+              console.log(`[gameManager] Backfilling aggressiveness for room ${roomCode}`);
               db.run(`UPDATE players SET aggressiveness = 1 + (ABS(RANDOM()) % 5)`, () => {
                 continueAfterMigrations();
               });
             } else {
               continueAfterMigrations();
             }
-          }
+          },
         );
       });
     },
@@ -422,57 +464,77 @@ function getGame(roomCode: string, onReady?: OnReady): ActiveGame | null {
 }
 
 function saveGameState(game: ActiveGame): void {
-  game.db.run(
-    "INSERT OR REPLACE INTO game_state (key, value) VALUES ('matchweek', ?)",
-    [String(game.matchweek)],
-    (err) => {
-      if (err) console.error("Error saving matchweek:", err);
-    },
-  );
-  game.db.run(
-    "INSERT OR REPLACE INTO game_state (key, value) VALUES ('matchState', ?)",
-    [game.matchState],
-    (err) => {
-      if (err) console.error("Error saving matchState:", err);
-    },
-  );
-  game.db.run(
-    "INSERT OR REPLACE INTO game_state (key, value) VALUES ('season', ?)",
-    [String(game.season || 1)],
-  );
-  game.db.run(
-    "INSERT OR REPLACE INTO game_state (key, value) VALUES ('cupRound', ?)",
-    [String(game.cupRound || 0)],
-  );
-  game.db.run(
-    "INSERT OR REPLACE INTO game_state (key, value) VALUES ('cupState', ?)",
-    [game.cupState || "idle"],
-  );
-  game.db.run(
-    "INSERT OR REPLACE INTO game_state (key, value) VALUES ('cupRuntime', ?)",
-    [
-      JSON.stringify({
-        phaseToken: game.cupRuntime?.phaseToken || "",
-        drawPayload: game.cupRuntime?.drawPayload || null,
-        halftimePayload: game.cupRuntime?.halftimePayload || null,
-        secondHalfPayload: game.cupRuntime?.secondHalfPayload || null,
-        fixtures: Array.isArray(game.cupFixtures)
-          ? game.cupFixtures
-          : game.cupRuntime?.fixtures || [],
-      }),
-    ],
-  );
-  game.db.run(
-    "INSERT OR REPLACE INTO game_state (key, value) VALUES ('year', ?)",
-    [String(game.year || 2026)],
-  );
-  game.db.run(
-    "INSERT OR REPLACE INTO game_state (key, value) VALUES ('lockedCoaches', ?)",
-    [JSON.stringify([...game.lockedCoaches])],
-  );
+  const upsert = (key: string, value: string) => {
+    game.db.run(
+      "INSERT OR REPLACE INTO game_state (key, value) VALUES (?, ?)",
+      [key, value],
+      (err) => { if (err) console.error(`[gameManager] Error saving ${key}:`, err); },
+    );
+  };
+
+  // ── New keys ──────────────────────────────────────────────────────────────
+  upsert("calendarIndex", String(game.calendarIndex));
+  upsert("gamePhase", game.gamePhase);
+  upsert("phaseToken", game.phaseToken || "");
+  upsert("season", String(game.season || 1));
+  upsert("year", String(game.year || 2026));
+  upsert("matchweek", String(game.matchweek || 1));
+  upsert("cupTeamIds", JSON.stringify(game.cupTeamIds || []));
+  upsert("cupDrawPayload", game.cupDrawPayload ? JSON.stringify(game.cupDrawPayload) : "null");
+  upsert("cupHalftimePayload", game.cupHalftimePayload ? JSON.stringify(game.cupHalftimePayload) : "null");
+  upsert("cupSecondHalfPayload", game.cupSecondHalfPayload ? JSON.stringify(game.cupSecondHalfPayload) : "null");
+  upsert("lockedCoaches", JSON.stringify([...game.lockedCoaches]));
+
+  // Persist current fixtures for crash recovery (only serialisable fields)
+  if (game.currentFixtures && game.currentFixtures.length > 0) {
+    const serializableFixtures = game.currentFixtures.map((f) => ({
+      homeTeamId: f.homeTeamId,
+      awayTeamId: f.awayTeamId,
+      homeTeam: f.homeTeam || null,
+      awayTeam: f.awayTeam || null,
+      finalHomeGoals: f.finalHomeGoals || 0,
+      finalAwayGoals: f.finalAwayGoals || 0,
+      attendance: f.attendance || 0,
+      events: f.events || [],
+      homeLineup: f.homeLineup || [],
+      awayLineup: f.awayLineup || [],
+      _t1: f._t1 || null,
+      _t2: f._t2 || null,
+    }));
+    upsert("currentFixtures", JSON.stringify(serializableFixtures));
+  } else {
+    upsert("currentFixtures", "[]");
+  }
+
+  // ── Legacy keys (backward compat — kept so old clients/DBs still work) ──
+  // Derive legacy values from new state
+  const legacyMatchState = (() => {
+    switch (game.gamePhase) {
+      case "match_first_half": return "running_first_half";
+      case "match_halftime": return "halftime";
+      case "match_second_half": return "playing_second_half";
+      default: return "idle";
+    }
+  })();
+  const cupEntry = game.currentEvent?.type === "cup" ? game.currentEvent : null;
+  const legacyCupRound = cupEntry ? cupEntry.round : 0;
+  const legacyCupState = (() => {
+    if (!cupEntry) return "idle";
+    switch (game.gamePhase) {
+      case "cup_draw": return "draw";
+      case "cup_awaiting_kickoff": return "pre_match";
+      case "match_first_half": return "playing_first_half";
+      case "match_halftime": return "halftime";
+      case "match_second_half": return "playing_second_half";
+      default: return "idle";
+    }
+  })();
+
+  upsert("matchState", legacyMatchState);
+  upsert("cupRound", String(legacyCupRound));
+  upsert("cupState", legacyCupState);
 }
 
-// Look up a player entry by socket ID
 function getPlayerBySocket(
   game: ActiveGame,
   socketId: string,
@@ -481,9 +543,7 @@ function getPlayerBySocket(
   return name ? game.playersByName[name] : null;
 }
 
-// Register / update a player's socket ID binding
 function bindSocket(game: ActiveGame, name: string, socketId: string): void {
-  // Remove any old socket binding for this name
   const existing = game.playersByName[name];
   if (existing && existing.socketId && existing.socketId !== socketId) {
     delete game.socketToName[existing.socketId];
@@ -494,7 +554,6 @@ function bindSocket(game: ActiveGame, name: string, socketId: string): void {
   game.socketToName[socketId] = name;
 }
 
-// Remove a player socket binding on disconnect (keep the player entry so they can reconnect)
 function unbindSocket(game: ActiveGame, socketId: string): void {
   const name = game.socketToName[socketId];
   if (name && game.playersByName[name]) {
@@ -512,7 +571,6 @@ function getGameBySocket(socketId: string): ActiveGame | null {
   return null;
 }
 
-// Return a snapshot of all connected players (for socket broadcasts)
 function getPlayerList(game: ActiveGame): PlayerSession[] {
   return Object.values(game.playersByName).filter((p) => p.socketId !== null);
 }

@@ -1,10 +1,17 @@
 import type { ActiveGame } from "./types";
 
+/**
+ * Returns true if any match simulation is currently running.
+ * Used by auction helpers to block new auctions during live matches.
+ * Uses the unified gamePhase instead of the old dual matchState + cupState.
+ */
 export function isMatchInProgress(game: ActiveGame) {
   return (
-    game.matchState === "running_first_half" ||
-    game.matchState === "halftime" ||
-    game.matchState === "playing_second_half"
+    game.gamePhase === "match_first_half" ||
+    game.gamePhase === "match_halftime" ||
+    game.gamePhase === "match_second_half" ||
+    game.gamePhase === "match_extra_time" ||
+    game.gamePhase === "match_finalizing"
   );
 }
 
@@ -25,20 +32,20 @@ export function finalizeAllRunningAuctions(
   }
 }
 
-export function cancelPendingCupDraw(game: ActiveGame) {
-  if (game._leagueAnimTimeout) {
-    clearTimeout(game._leagueAnimTimeout);
-    game._leagueAnimTimeout = null;
+/**
+ * Clear the single phase timer and ack set.
+ * Replaces the old clearCupTimeout / individual timeout slots.
+ */
+export function clearPhaseTimer(game: ActiveGame) {
+  if (game.phaseTimer) {
+    clearTimeout(game.phaseTimer);
+    game.phaseTimer = null;
   }
-  if (game._cupDrawTimeout) {
-    clearTimeout(game._cupDrawTimeout);
-    game._cupDrawTimeout = null;
-  }
+}
 
-  if (game.pendingCupRound != null) {
-    game.deferredCupRound = game.pendingCupRound;
-  }
-  game.pendingCupRound = null;
-  game.leagueAnimAcks = new Set();
-  game.cupDrawAcks = new Set();
+/**
+ * Generate a phase token — used to detect stale timer callbacks after state transitions.
+ */
+export function makePhaseToken(game: ActiveGame): string {
+  return `${game.season}:${game.calendarIndex}:${game.gamePhase}:${Date.now()}:${Math.random().toString(36).slice(2, 8)}`;
 }

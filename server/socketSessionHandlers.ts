@@ -1,4 +1,4 @@
-import type { ActiveGame, PlayerSession } from "./types";
+import type { ActiveGame, GamePhase, PlayerSession } from "./types";
 import { getAllTeamForms } from "./coreHelpers";
 
 type AnyRow = Record<string, any>;
@@ -21,18 +21,41 @@ interface SessionHandlerDeps {
   ) => ActiveGame | null;
   recordRoomAccess: (name: string, roomCode: string) => void;
   getGameBySocket: (socketId: string) => ActiveGame | null;
-  getPlayerBySocket: (
-    game: ActiveGame,
-    socketId: string,
-  ) => PlayerSession | null;
+  getPlayerBySocket: (game: ActiveGame, socketId: string) => PlayerSession | null;
   bindSocket: (game: ActiveGame, name: string, socketId: string) => void;
   getPlayerList: (game: ActiveGame) => PlayerSession[];
   saveGameState: (game: ActiveGame) => void;
-  emitCurrentCupPhaseToSocket: (game: ActiveGame, socket: any) => void;
-  ensureCupPhaseTimeout: (game: ActiveGame) => void;
+  emitCurrentPhaseToSocket: (game: ActiveGame, socket: any) => void;
+  ensurePhaseTimeout: (game: ActiveGame) => void;
   emitAwaitingCoaches: (game: ActiveGame) => void;
   runAll: RunAll;
   buildNextMatchSummary: (game: ActiveGame, teamId: number) => Promise<any>;
+}
+
+// ─── LEGACY COMPAT HELPERS ───────────────────────────────────────────────────
+// Derive old-style matchState/cupState from the new unified gamePhase.
+// Keeps the existing client working without changes.
+
+function legacyMatchState(gamePhase: GamePhase): string {
+  switch (gamePhase) {
+    case "match_first_half": return "running_first_half";
+    case "match_halftime":   return "halftime";
+    case "match_second_half": return "playing_second_half";
+    default: return "idle";
+  }
+}
+
+function legacyCupState(game: ActiveGame): string {
+  if (!game.currentEvent || game.currentEvent.type !== "cup") return "idle";
+  switch (game.gamePhase) {
+    case "cup_draw":             return "draw";
+    case "cup_awaiting_kickoff": return "pre_match";
+    case "match_first_half":     return "playing_first_half";
+    case "match_halftime":       return "halftime";
+    case "match_second_half":
+    case "match_extra_time":     return "playing_second_half";
+    default: return "idle";
+  }
 }
 
 export function registerSessionSocketHandlers(
@@ -49,8 +72,8 @@ export function registerSessionSocketHandlers(
     bindSocket,
     getPlayerList,
     saveGameState,
-    emitCurrentCupPhaseToSocket,
-    ensureCupPhaseTimeout,
+    emitCurrentPhaseToSocket,
+    ensurePhaseTimeout,
     emitAwaitingCoaches,
     runAll,
     buildNextMatchSummary,
@@ -93,18 +116,26 @@ export function registerSessionSocketHandlers(
       (err: any, squad: any[]) => socket.emit("mySquad", squad),
     );
     socket.emit("marketUpdate", game.globalMarket);
+
+    // Emit gameState with both new fields and legacy compat fields
     socket.emit("gameState", {
+      // ── New fields ──────────────────────────────────────────────────────────
+      gamePhase: game.gamePhase,
+      calendarIndex: game.calendarIndex,
+      currentEvent: game.currentEvent,
+      // ── Legacy compat fields (derived from new state machine) ────────────────
       matchweek: game.matchweek,
-      matchState: game.matchState,
-      cupState: game.cupState,
+      matchState: legacyMatchState(game.gamePhase),
+      cupState: legacyCupState(game),
+      cupRound: game.currentEvent?.type === "cup" ? (game.currentEvent as any).round : 0,
       year: game.year,
       tactic: game.playersByName[name]?.tactic || null,
       lockedCoaches: [...game.lockedCoaches],
-      lastHalfTimePayload: game.matchState === "halftime" ? game.lastHalfTimePayload || null : null,
+      lastHalfTimePayload: game.gamePhase === "match_halftime" ? game.lastHalftimePayload || null : null,
     });
 
-    emitCurrentCupPhaseToSocket(game, socket);
-    ensureCupPhaseTimeout(game);
+    emitCurrentPhaseToSocket(game, socket);
+    ensurePhaseTimeout(game);
     io.to(roomCode).emit("playerListUpdate", getPlayerList(game));
     emitAwaitingCoaches(game);
 
@@ -120,10 +151,7 @@ export function registerSessionSocketHandlers(
       [team.id],
       (err: any, details: any) => {
         if (err) {
-          console.error(
-            `[${roomCode}] assignPlayer: failed to fetch team details for id=${team.id}:`,
-            err,
-          );
+          console.error(`[${roomCode}] assignPlayer: failed to fetch team details for id=${team.id}:`, err);
         }
         const d = details || team;
         socket.emit("teamAssigned", {
@@ -177,18 +205,13 @@ export function registerSessionSocketHandlers(
 
         game.db.get(fallbackQuery, fallbackParams, (err2: any, team2: any) => {
           if (err2 || !team2) {
-            socket.emit(
-              "systemMessage",
-              "Nenhuma equipa disponível na Divisão 4.",
-            );
+            socket.emit("systemMessage", "Nenhuma equipa disponível na Divisão 4.");
             return;
           }
           game.db.run(
             "UPDATE teams SET manager_id = ? WHERE id = ?",
             [managerId, team2.id],
-            () => {
-              assignPlayer(game, name, team2, roomCode);
-            },
+            () => assignPlayer(game, name, team2, roomCode),
           );
         });
         return;
@@ -196,9 +219,7 @@ export function registerSessionSocketHandlers(
       game.db.run(
         "UPDATE teams SET manager_id = ? WHERE id = ?",
         [managerId, team.id],
-        () => {
-          assignPlayer(game, name, team, roomCode);
-        },
+        () => assignPlayer(game, name, team, roomCode),
       );
     });
   }
@@ -228,9 +249,7 @@ export function registerSessionSocketHandlers(
       if (!game || gameErr) {
         return socket.emit(
           "joinError",
-          gameErr
-            ? gameErr.message
-            : "Erro ao carregar o jogo. Contacta o administrador.",
+          gameErr ? gameErr.message : "Erro ao carregar o jogo. Contacta o administrador.",
         );
       }
       socket.join(roomCode);
