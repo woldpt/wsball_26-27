@@ -3299,6 +3299,23 @@ function App() {
                               <span className="text-xs font-bold text-on-surface truncate max-w-[120px]">
                                 {hInfo?.name}
                               </span>
+                              <div className="flex flex-col items-center mt-1">
+                                {matchEvents
+                                  .filter(e => e.minute <= liveMinute && e.team === "home" && ["goal","penalty_goal","own_goal","yellow","red","injury","substitution"].includes(e.type))
+                                  .sort((a, b) => a.minute - b.minute)
+                                  .map((e, i) => {
+                                    const icon = e.type === "goal" || e.type === "penalty_goal" ? "⚽" : e.type === "own_goal" ? "⚽🔙" : e.type === "yellow" ? "🟨" : e.type === "red" ? "🟥" : e.type === "injury" ? "🤕" : e.type === "substitution" ? "🔄" : "";
+                                    const name = e.playerName || e.player_name || e.player || "?";
+                                    return (
+                                      <div key={i} className="flex items-center justify-center gap-1.5 text-[10px] leading-tight">
+                                        <span className="text-on-surface-variant/40 tabular-nums shrink-0">{e.minute}'</span>
+                                        <span>{icon}</span>
+                                        <span className={`font-bold truncate max-w-[100px] ${e.type === "goal" || e.type === "penalty_goal" ? "text-primary" : e.type === "own_goal" ? "text-orange-400" : e.type === "red" ? "text-red-400" : "text-on-surface-variant/70"}`}>{name}</span>
+                                      </div>
+                                    );
+                                  })
+                                }
+                              </div>
                             </div>
 
                             {/* Score center */}
@@ -3397,30 +3414,25 @@ function App() {
                               <span className="text-xs font-bold text-on-surface truncate max-w-[120px]">
                                 {aInfo?.name}
                               </span>
+                              <div className="flex flex-col items-center mt-1">
+                                {matchEvents
+                                  .filter(e => e.minute <= liveMinute && e.team === "away" && ["goal","penalty_goal","own_goal","yellow","red","injury","substitution"].includes(e.type))
+                                  .sort((a, b) => a.minute - b.minute)
+                                  .map((e, i) => {
+                                    const icon = e.type === "goal" || e.type === "penalty_goal" ? "⚽" : e.type === "own_goal" ? "⚽🔙" : e.type === "yellow" ? "🟨" : e.type === "red" ? "🟥" : e.type === "injury" ? "🤕" : e.type === "substitution" ? "🔄" : "";
+                                    const name = e.playerName || e.player_name || e.player || "?";
+                                    return (
+                                      <div key={i} className="flex items-center justify-center gap-1.5 text-[10px] leading-tight">
+                                        <span className={`font-bold truncate max-w-[100px] ${e.type === "goal" || e.type === "penalty_goal" ? "text-primary" : e.type === "own_goal" ? "text-orange-400" : e.type === "red" ? "text-red-400" : "text-on-surface-variant/70"}`}>{name}</span>
+                                        <span>{icon}</span>
+                                        <span className="text-on-surface-variant/40 tabular-nums shrink-0">{e.minute}'</span>
+                                      </div>
+                                    );
+                                  })
+                                }
+                              </div>
                             </div>
                           </div>
-
-                          {/* Events log list (all types) - replaces stats bar and old timeline */}
-                          {matchEvents.filter(e => e.minute <= liveMinute && ["goal","penalty_goal","own_goal","yellow","red","injury","substitution"].includes(e.type)).length > 0 && (
-                            <div className="relative px-4 pb-3 space-y-0.5">
-                              {matchEvents
-                                .filter(e => e.minute <= liveMinute && ["goal","penalty_goal","own_goal","yellow","red","injury","substitution"].includes(e.type))
-                                .sort((a, b) => a.minute - b.minute)
-                                .map((e, i) => {
-                                  const isHome = e.team === "home";
-                                  const icon = e.type === "goal" || e.type === "penalty_goal" ? "⚽" : e.type === "own_goal" ? "⚽🔙" : e.type === "yellow" ? "🟨" : e.type === "red" ? "🟥" : e.type === "injury" ? "🤕" : e.type === "substitution" ? "🔄" : "";
-                                  const name = e.playerName || e.player_name || e.player || "?";
-                                  return (
-                                    <div key={i} className={`flex items-center gap-1 text-[10px] ${isHome ? "" : "flex-row-reverse"}`}>
-                                      <span className="text-on-surface-variant/40 tabular-nums shrink-0">{e.minute}'</span>
-                                      <span>{icon}</span>
-                                      <span className={`font-bold truncate ${e.type === "goal" || e.type === "penalty_goal" ? "text-primary" : e.type === "own_goal" ? "text-orange-400" : e.type === "red" ? "text-red-400" : "text-on-surface-variant/70"}`}>{name}</span>
-                                    </div>
-                                  );
-                                })
-                              }
-                            </div>
-                          )}
                         </div>
                       );
                     })()}
