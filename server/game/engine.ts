@@ -304,7 +304,15 @@ async function applyInjuryEvent({
 
   const teamId = teamSide === "home" ? fixture.homeTeamId : fixture.awayTeamId;
   const availableBench = getAvailableBench(fullRoster || squad, lineupIds);
-  const fallback = () => pickBestPlayer(availableBench)?.id || null;
+
+  // If the injured player is a goalkeeper, prefer substituting with another goalkeeper
+  let substituteCandidates = availableBench;
+  if (injuredPlayer.position === "GR") {
+    const grBench = availableBench.filter((p) => p.position === "GR");
+    substituteCandidates = grBench.length > 0 ? grBench : availableBench;
+  }
+
+  const fallback = () => pickBestPlayer(substituteCandidates)?.id || null;
   const result = await waitForMatchAction({
     game,
     io,
@@ -318,7 +326,7 @@ async function applyInjuryEvent({
         name: injuredPlayer.name,
         position: injuredPlayer.position,
       },
-      benchPlayers: availableBench.map((p) => ({
+      benchPlayers: substituteCandidates.map((p) => ({
         id: p.id,
         name: p.name,
         position: p.position,

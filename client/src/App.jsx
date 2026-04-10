@@ -193,9 +193,13 @@ function buildAutoPositions(
     }
   }
   // preencher slots restantes com os melhores ainda não escolhidos
+  // Não adicionar um 2º GR suplente
+  const grSubsCount = subs.filter((p) => p.position === "GR").length;
   for (const p of remaining) {
     if (subs.length >= 5) break;
     if (!usedInSubs.has(p.id)) {
+      // Skip GR if already have 1 GR substitute
+      if (p.position === "GR" && grSubsCount >= 1) continue;
       subs.push(p);
       usedInSubs.add(p.id);
     }
@@ -2942,6 +2946,13 @@ function App() {
                                       className={`flex-1 truncate text-[11px] font-bold ${swapSource === p.id ? "text-red-200" : "text-zinc-200"}`}
                                     >
                                       {p.name}
+                                      {!!p.is_star &&
+                                        (p.position === "MED" ||
+                                          p.position === "ATA") && (
+                                          <span className="ml-0.5 text-amber-400 font-black">
+                                            *
+                                          </span>
+                                        )}
                                     </span>
                                     <span
                                       className={`shrink-0 text-[10px] font-black tabular-nums ${swapSource === p.id ? "text-red-400" : "text-zinc-600"}`}
@@ -3009,6 +3020,14 @@ function App() {
                                         }`}
                                       >
                                         {p.name}
+                                        {!alreadyUsed &&
+                                          !!p.is_star &&
+                                          (p.position === "MED" ||
+                                            p.position === "ATA") && (
+                                            <span className="ml-0.5 text-amber-400 font-black">
+                                              *
+                                            </span>
+                                          )}
                                       </span>
                                       <span
                                         className={`shrink-0 text-[10px] font-black tabular-nums ${
