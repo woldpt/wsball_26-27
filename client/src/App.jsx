@@ -3657,14 +3657,14 @@ function App() {
                               <span className="w-5 text-center">J</span>
                               <span className="w-5 text-center">V</span>
                               <span className="w-5 text-center">E</span>
-                              <span className="w-5 text-center">D</span>
+                              <span className="hidden sm:inline w-5 text-center">D</span>
                               <span className="w-6 text-center">GM</span>
                               <span className="w-6 text-center">GS</span>
                               <span className="w-7 text-center">DG</span>
                               <span className="w-7 text-center text-tertiary/70">
                                 Pts
                               </span>
-                              <span className="w-[68px] text-center">
+                              <span className="hidden sm:inline w-[68px] text-center">
                                 Forma
                               </span>
                             </div>
@@ -3721,7 +3721,7 @@ function App() {
                                   <span className="w-5 text-center text-on-surface-variant/60">
                                     {t.draws || 0}
                                   </span>
-                                  <span className="w-5 text-center text-on-surface-variant/60">
+                                  <span className="hidden sm:inline-block w-5 text-center text-on-surface-variant/60">
                                     {t.losses || 0}
                                   </span>
                                   <span className="w-6 text-center text-on-surface-variant/60">
@@ -3739,7 +3739,7 @@ function App() {
                                     {t.points || 0}
                                   </span>
                                   {/* Form badges */}
-                                  <div className="w-[68px] flex items-center justify-center gap-0.5">
+                                  <div className="hidden sm:flex w-[68px] items-center justify-center gap-0.5">
                                     {form.split("").map((r, ri) => (
                                       <span
                                         key={ri}
@@ -5521,18 +5521,16 @@ function App() {
             </div>
 
             {/* Player card — yellow background inspired by PC Futebol */}
-            <div className="p-5 space-y-3 text-zinc-950">
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-x-6 gap-y-1 text-sm">
-                <div className="flex gap-2">
-                  <span className="font-normal text-zinc-700">Equipa</span>
+            <div className="p-3 sm:p-5 space-y-3 text-zinc-950">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-x-6 gap-y-1.5 text-sm">
+                <div className="flex flex-wrap items-baseline gap-x-2 gap-y-0.5">
+                  <span className="font-normal text-zinc-700 shrink-0">Equipa</span>
                   <span className="font-black bg-blue-800 text-white px-2 py-0.5 rounded text-xs leading-tight uppercase">
                     {selectedAuctionPlayer.team_name || "Sem clube"}
                   </span>
                 </div>
-                <div className="flex gap-2">
-                  <span className="font-normal text-zinc-700">
-                    Nacionalidade
-                  </span>
+                <div className="flex flex-wrap items-baseline gap-x-2 gap-y-0.5">
+                  <span className="font-normal text-zinc-700 shrink-0">Nacionalidade</span>
                   <span
                     className="font-bold"
                     title={
@@ -5542,86 +5540,34 @@ function App() {
                     {selectedAuctionPlayer.nationality || "—"}
                   </span>
                 </div>
-                <div className="flex gap-2">
-                  <span className="font-normal text-zinc-700">Jogador</span>
+                <div className="flex flex-wrap items-baseline gap-x-2 gap-y-0.5">
+                  <span className="font-normal text-zinc-700 shrink-0">Jogador</span>
                   <span className="font-black text-lg leading-tight">
                     {selectedAuctionPlayer.name}
                   </span>
                 </div>
-                <div></div>
-                <div className="flex gap-2">
-                  <span className="font-normal text-zinc-700">Posição</span>
-                  <span className="font-bold">
-                    {selectedAuctionPlayer.position}
-                  </span>
+                <div className="flex flex-wrap items-baseline gap-x-2 gap-y-0.5">
+                  <span className="font-normal text-zinc-700 shrink-0">Posição</span>
+                  <span className="font-bold">{selectedAuctionPlayer.position}</span>
                 </div>
-                <div className="flex gap-2">
-                  <span className="font-normal text-zinc-700">
-                    Agressividade
-                  </span>
+                <div className="flex flex-wrap items-baseline gap-x-2 gap-y-0.5">
+                  <span className="font-normal text-zinc-700 shrink-0">Força</span>
+                  <span className="font-black text-xl">{selectedAuctionPlayer.skill}</span>
+                </div>
+                <div className="flex flex-wrap items-baseline gap-x-2 gap-y-0.5">
+                  <span className="font-normal text-zinc-700 shrink-0">Agressividade</span>
                   <span className="font-bold">
                     <AggBadge value={selectedAuctionPlayer.aggressiveness} />
                   </span>
                 </div>
-                <div className="flex gap-2">
-                  <span className="font-normal text-zinc-700">Força</span>
-                  <span className="font-black text-xl">
-                    {selectedAuctionPlayer.skill}
-                  </span>
-                </div>
-                <div className="flex gap-2">
-                  <span className="font-normal text-zinc-700">
-                    Golos esta época
-                  </span>
-                  <span className="font-bold">
-                    {selectedAuctionPlayer.goals || 0}
-                  </span>
-                </div>
-              </div>
-
-              {/* Historial box */}
-              <div className="border border-zinc-700 rounded-lg p-3 bg-amber-300/50 text-sm">
-                <p className="font-bold text-zinc-700 mb-1.5">Historial</p>
-                <div className="grid grid-cols-2 gap-x-6 gap-y-0.5">
-                  <div className="flex justify-between">
-                    <span>Jogos</span>
-                    <span className="font-bold">
-                      {selectedAuctionPlayer.games_played || 0}
-                    </span>
-                  </div>
-                  <div className="flex justify-between">
-                    <span>Golos</span>
-                    <span className="font-bold">
-                      {selectedAuctionPlayer.goals || 0}
-                    </span>
-                  </div>
-                  <div className="flex justify-between">
-                    <span>Cartões vermelhos</span>
-                    <span className="font-bold">
-                      {selectedAuctionPlayer.red_cards || 0}
-                    </span>
-                  </div>
-                  <div className="flex justify-between">
-                    <span>Lesões</span>
-                    <span className="font-bold">
-                      {selectedAuctionPlayer.injuries || 0}
-                    </span>
-                  </div>
-                </div>
-              </div>
-
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-x-6 text-sm">
-                <div className="flex gap-2">
-                  <span className="font-normal text-zinc-700">
-                    Salário pretendido
-                  </span>
+                <div className="flex flex-wrap items-baseline gap-x-2 gap-y-0.5">
+                  <span className="font-normal text-zinc-700 shrink-0">Salário pretendido</span>
                   <span className="font-bold">
                     {formatCurrency(selectedAuctionPlayer.wage || 0)} /sem
                   </span>
                 </div>
-                <div></div>
-                <div className="flex gap-2">
-                  <span className="font-normal text-zinc-700">Preço base</span>
+                <div className="flex flex-wrap items-baseline gap-x-2 gap-y-0.5">
+                  <span className="font-normal text-zinc-700 shrink-0">Preço base</span>
                   <span className="font-black">
                     {formatCurrency(
                       selectedAuctionPlayer.startingPrice ||
@@ -5630,14 +5576,43 @@ function App() {
                     )}
                   </span>
                 </div>
-                {selectedAuctionPlayer.is_star ? (
+                {selectedAuctionPlayer.is_star && (
                   <div className="flex items-center gap-1">
                     <span className="text-amber-600 font-black">★</span>
                     <span className="font-bold text-amber-700">Craque</span>
                   </div>
-                ) : (
-                  <div></div>
                 )}
+              </div>
+
+              {/* Historial box */}
+              <div className="border border-zinc-700 rounded-lg p-3 bg-amber-300/50 text-sm">
+                <p className="font-bold text-zinc-700 mb-1.5">Historial</p>
+                <div className="grid grid-cols-2 gap-x-4 gap-y-0.5">
+                  <div className="flex justify-between gap-2">
+                    <span>Jogos</span>
+                    <span className="font-bold">
+                      {selectedAuctionPlayer.games_played || 0}
+                    </span>
+                  </div>
+                  <div className="flex justify-between gap-2">
+                    <span>Golos</span>
+                    <span className="font-bold">
+                      {selectedAuctionPlayer.goals || 0}
+                    </span>
+                  </div>
+                  <div className="flex justify-between gap-2">
+                    <span>Vermelhos</span>
+                    <span className="font-bold">
+                      {selectedAuctionPlayer.red_cards || 0}
+                    </span>
+                  </div>
+                  <div className="flex justify-between gap-2">
+                    <span>Lesões</span>
+                    <span className="font-bold">
+                      {selectedAuctionPlayer.injuries || 0}
+                    </span>
+                  </div>
+                </div>
               </div>
             </div>
 
@@ -5690,9 +5665,9 @@ function App() {
               </div>
             ) : (
               // Bidding phase
-              <div className="px-5 py-4 bg-linear-to-r from-red-600 to-red-500 border-t-2 border-red-700 text-white">
-                <div className="flex items-center gap-3 mb-2">
-                  <span className="font-bold text-sm">Oferta (€):</span>
+              <div className="px-4 py-3 sm:px-5 sm:py-4 bg-linear-to-r from-red-600 to-red-500 border-t-2 border-red-700 text-white">
+                <p className="font-bold text-sm mb-1.5">Oferta (€):</p>
+                <div className="flex items-center gap-2 mb-2">
                   <input
                     type="number"
                     min="0"
@@ -5701,19 +5676,20 @@ function App() {
                     placeholder={String(
                       selectedAuctionPlayer.startingPrice || 0,
                     )}
-                    className="flex-1 bg-white border-2 border-zinc-300 rounded-lg px-3 py-2 text-zinc-950 font-mono text-lg outline-none focus:border-amber-500"
+                    className="flex-1 min-w-0 bg-white border-2 border-zinc-300 rounded-lg px-3 py-2 text-zinc-950 font-mono text-lg outline-none focus:border-amber-500"
                     autoFocus
                   />
                   <button
                     onClick={submitAuctionBid}
-                    className="bg-emerald-500 hover:bg-emerald-400 text-white font-black uppercase text-sm px-6 py-2.5 rounded-lg flex items-center gap-2"
+                    className="shrink-0 bg-emerald-500 hover:bg-emerald-400 text-white font-black uppercase text-sm px-5 py-2.5 rounded-lg flex items-center gap-1.5"
                   >
                     <span>✓</span> OK
                   </button>
                 </div>
                 <p className="text-xs text-red-200 font-medium">
-                  Dinheiro em caixa: {formatCurrency(teamInfo?.budget || 0)} ·
-                  Leilão fechado — o lance mais alto vence.
+                  Caixa: {formatCurrency(teamInfo?.budget || 0)}
+                  <span className="mx-1.5 opacity-50">·</span>
+                  Lance mais alto vence.
                 </p>
               </div>
             )}
