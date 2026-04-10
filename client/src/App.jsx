@@ -2733,7 +2733,7 @@ function App() {
                   className={`bg-surface-container text-on-surface font-body p-6 border border-outline-variant/20 shadow-sm relative overflow-hidden${isMatchInProgress ? " fixed inset-0 z-30 overflow-y-auto rounded-none" : " min-h-150 rounded-lg"}`}
                 >
                   {matchAction && (
-                    <div className="absolute inset-0 z-50 bg-surface/95 backdrop-blur-sm p-6 flex flex-col">
+                    <div className="fixed inset-0 z-[150] bg-surface/95 backdrop-blur-sm p-6 flex flex-col justify-center">
                       <h2 className="text-3xl font-black text-amber-500 mb-2 tracking-widest text-center uppercase">
                         {matchAction.type === "injury" ? "LESÃO" : "PENÁLTI"}
                       </h2>

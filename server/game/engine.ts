@@ -466,18 +466,49 @@ async function simulateMatchSegment(
   const io = context.io;
   const game = context.game;
 
-  const homeSquad = await getTeamSquad(
-    db,
-    fixture.homeTeamId,
-    homeTactic,
-    currentMatchweek,
-  );
-  const awaySquad = await getTeamSquad(
-    db,
-    fixture.awayTeamId,
-    awayTactic,
-    currentMatchweek,
-  );
+  let homeSquad;
+  if (fixture._homeSquad) {
+    homeSquad = fixture._homeSquad;
+  } else if (fixture.homeLineup && fixture.homeLineup.length > 0) {
+    const homeIds = new Set(fixture.homeLineup.map((p: any) => p.id));
+    for (const e of (fixture.events || [])) {
+      if (e.team === "home") {
+        if ((e.type === "red" || e.type === "injury") && e.playerId) homeIds.delete(e.playerId);
+        if (e.type === "substitution" && e.playerId) homeIds.add(e.playerId);
+      }
+    }
+    homeSquad = await new Promise<any[]>((resolve) => {
+      db.all(`SELECT * FROM players WHERE id IN (${Array.from(homeIds).join(",") || "0"})`, (_, r) => resolve(r || []));
+    });
+    fixture._homeSquad = homeSquad;
+  } else {
+    homeSquad = await getTeamSquad(db, fixture.homeTeamId, homeTactic, currentMatchweek);
+    fixture._homeSquad = homeSquad;
+  }
+
+  let awaySquad;
+  if (fixture._awaySquad) {
+    awaySquad = fixture._awaySquad;
+  } else if (fixture.awayLineup && fixture.awayLineup.length > 0) {
+    const awayIds = new Set(fixture.awayLineup.map((p: any) => p.id));
+    for (const e of (fixture.events || [])) {
+      if (e.team === "away") {
+        if ((e.type === "red" || e.type === "injury") && e.playerId) awayIds.delete(e.playerId);
+        if (e.type === "substitution" && e.playerId) awayIds.add(e.playerId);
+      }
+    }
+    awaySquad = await new Promise<any[]>((resolve) => {
+      db.all(`SELECT * FROM players WHERE id IN (${Array.from(awayIds).join(",") || "0"})`, (_, r) => resolve(r || []));
+    });
+    fixture._awaySquad = awaySquad;
+  } else {
+    awaySquad = await getTeamSquad(db, fixture.awayTeamId, awayTactic, currentMatchweek);
+    fixture._awaySquad = awaySquad;
+  }
+
+  if (!fixture._yellowCards) {
+    fixture._yellowCards = {};
+  }
 
   // Load team morale values
   const [homeMorale, awayMorale] = await Promise.all([
@@ -524,7 +555,7 @@ async function simulateMatchSegment(
   });
 
   // Snapshot the lineups for this segment so clients can display "who was on the pitch"
-  const lineupSnapshot = (squad) =>
+  const lineupSnapshot = (squad: any[]) =>
     squad.map((p) => ({
       id: p.id,
       name: p.name,
@@ -532,12 +563,14 @@ async function simulateMatchSegment(
       is_star: p.is_star || 0,
       skill: p.skill,
     }));
-  fixture.homeLineup = lineupSnapshot(homeSquad);
-  fixture.awayLineup = lineupSnapshot(awaySquad);
+  if (!fixture.homeLineup || fixture.homeLineup.length === 0) {
+    fixture.homeLineup = lineupSnapshot(homeSquad);
+    fixture.awayLineup = lineupSnapshot(awaySquad);
+  }
 
   // Persistent lineup tracking across all minutes in this segment
-  const homeLineupIds = new Set(homeSquad.map((p) => p.id));
-  const awayLineupIds = new Set(awaySquad.map((p) => p.id));
+  const homeLineupIds = new Set<number>(homeSquad.map((p: any) => p.id));
+  const awayLineupIds = new Set<number>(awaySquad.map((p: any) => p.id));
 
   const getPower = (squad, tactic, morale = 50) => {
     const formation = String(tactic?.formation || "4-4-2");
@@ -701,12 +734,14 @@ async function simulateMatchSegment(
       away.squad.map((p) => getAggressivenessValue(p)),
     );
 
-    const emitCard = (isHomeCard) => {
+    const emitCard = (isHomeCard: boolean) => {
       const squad = isHomeCard ? home.squad : away.squad;
       const side = isHomeCard ? "home" : "away";
       if (squad.length > 0) {
         const offender = squad[Math.floor(Math.random() * squad.length)];
-        if (Math.random() < 0.04) {
+        const offenderId = offender.id;
+
+        const executeRedCard = () => {
           // Cartão vermelho — 2 jogos de suspensão
           db.run(
             "UPDATE players SET red_cards = red_cards + 1, career_reds = career_reds + 1, suspension_games = suspension_games + 2, suspension_until_matchweek = CASE WHEN suspension_until_matchweek > ? THEN suspension_until_matchweek ELSE ? END WHERE id = ?",
@@ -721,10 +756,17 @@ async function simulateMatchSegment(
             playerName: offender.name,
             text: `[${minute}'] 🟥 Vermelho! ${offender.name}`,
           });
-          const idx = squad.findIndex((p) => p.id === offender.id);
+          const idx = squad.findIndex((p: any) => p.id === offender.id);
           if (idx > -1) squad.splice(idx, 1);
+        };
+
+        if (fixture._yellowCards[offenderId] >= 1) {
+          executeRedCard();
+        } else if (Math.random() < 0.04) {
+          executeRedCard();
         } else {
           // Cartão amarelo — sem expulsão
+          fixture._yellowCards[offenderId] = (fixture._yellowCards[offenderId] || 0) + 1;
           fixture.events.push({
             minute,
             type: "yellow",
