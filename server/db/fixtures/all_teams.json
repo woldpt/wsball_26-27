@@ -1,7 +1,7 @@
 {
   "teams": [
     {
-      "name": "Sporting CP",
+      "name": "Sporting",
       "division": 1,
       "colors": { "primary": "#1ba84a", "secondary": "#ffffff" },
       "stadium": { "name": "Estádio José Alvalade", "capacity": 50000 },
@@ -32,7 +32,7 @@
       ]
     },
     {
-      "name": "FC Porto",
+      "name": "Porto",
       "division": 1,
       "colors": { "primary": "#00428C", "secondary": "#FFFFFF" },
       "stadium": { "name": "Estádio do Dragão", "capacity": 50000 },
@@ -65,7 +65,7 @@
       ]
     },
     {
-      "name": "SL Benfica",
+      "name": "Benfica",
       "division": 1,
       "colors": { "primary": "#EF2D2D", "secondary": "#FFFFFF" },
       "stadium": { "name": "Estádio da Luz", "capacity": 65000 },
@@ -97,7 +97,7 @@
       ]
     },
     {
-      "name": "SC Braga",
+      "name": "Sp. Braga",
       "division": 1,
       "colors": { "primary": "#DC0B15", "secondary": "#FFFFFF" },
       "stadium": { "name": "Estádio Municipal de Braga", "capacity": 30000 },
@@ -127,7 +127,7 @@
       ]
     },
     {
-      "name": "FC Famalicão",
+      "name": "Famalicão",
       "division": 1,
       "colors": { "primary": "#13273F", "secondary": "#F6C605" },
       "stadium": {
@@ -161,7 +161,7 @@
       ]
     },
     {
-      "name": "Gil Vicente FC",
+      "name": "Gil Vicente",
       "division": 1,
       "colors": { "primary": "#E30613", "secondary": "#FFFFFF" },
       "stadium": { "name": "Estádio Cidade de Barcelos", "capacity": 15000 },
@@ -192,7 +192,7 @@
       ]
     },
     {
-      "name": "GD Estoril Praia",
+      "name": "Estoril",
       "division": 1,
       "colors": { "primary": "#FFEE00", "secondary": "#0000FF" },
       "stadium": {
@@ -225,7 +225,7 @@
       ]
     },
     {
-      "name": "Moreirense FC",
+      "name": "Moreirense",
       "division": 1,
       "colors": { "primary": "#00A650", "secondary": "#FFFFFF" },
       "stadium": {
@@ -261,7 +261,7 @@
     },
 
     {
-      "name": "CS Marítimo",
+      "name": "Marítimo",
       "division": 2,
       "colors": { "primary": "#00A650", "secondary": "#FFFFFF" },
       "stadium": { "name": "Estádio dos Barreiros", "capacity": 15000 },
@@ -292,7 +292,7 @@
       ]
     },
     {
-      "name": "Académico de Viseu FC",
+      "name": "Ac.Viseu",
       "division": 2,
       "colors": { "primary": "#000000", "secondary": "#FFFFFF" },
       "stadium": { "name": "Estádio do Fontelo", "capacity": 15000 },
@@ -326,7 +326,7 @@
       ]
     },
     {
-      "name": "SCU Torreense",
+      "name": "Torreense",
       "division": 2,
       "colors": { "primary": "#0000FF", "secondary": "#FFFFFF" },
       "stadium": { "name": "Estádio Manuel Marques", "capacity": 15000 },
@@ -358,7 +358,7 @@
       ]
     },
     {
-      "name": "UD Leiria",
+      "name": "U. Leiria",
       "division": 2,
       "colors": { "primary": "#FFFFFF", "secondary": "#000000" },
       "stadium": { "name": "Estádio Dr. Magalhães Pessoa", "capacity": 25000 },
@@ -392,7 +392,7 @@
       ]
     },
     {
-      "name": "FC Vizela",
+      "name": "Vizela",
       "division": 2,
       "colors": { "primary": "#0000FF", "secondary": "#FFFFFF" },
       "stadium": { "name": "Estádio do FC Vizela", "capacity": 10000 },
@@ -424,7 +424,7 @@
       ]
     },
     {
-      "name": "Lusitânia de Lourosa FC",
+      "name": "Lus. Lourosa",
       "division": 2,
       "colors": { "primary": "#008000", "secondary": "#FFFFFF" },
       "stadium": {
@@ -462,7 +462,7 @@
       ]
     },
     {
-      "name": "CD Feirense",
+      "name": "Feirense",
       "division": 2,
       "colors": { "primary": "#0000ff", "secondary": "#ffffff" },
       "stadium": { "name": "Estádio Marcolino de Castro", "capacity": 10000 },
@@ -492,7 +492,7 @@
       ]
     },
     {
-      "name": "GD Chaves",
+      "name": "Chaves",
       "division": 2,
       "colors": { "primary": "#0033cc", "secondary": "#ff0000" },
       "stadium": {
@@ -529,7 +529,7 @@
       ]
     },
     {
-      "name": "Amarante FC",
+      "name": "Amarante",
       "division": 3,
       "colors": { "primary": "#000000", "secondary": "#ffffff" },
       "stadium": { "name": "Estádio Municipal de Amarante", "capacity": 5000 },
@@ -561,7 +561,7 @@
       ]
     },
     {
-      "name": "CF Os Belenenses",
+      "name": "Belenenses",
       "division": 3,
       "colors": { "primary": "#0000ff", "secondary": "#ffffff" },
       "stadium": { "name": "Estádio do Restelo", "capacity": 20000 },
@@ -594,7 +594,7 @@
       ]
     },
     {
-      "name": "Académica de Coimbra",
+      "name": "Académica",
       "division": 3,
       "colors": { "primary": "#000000", "secondary": "#ffffff" },
       "stadium": { "name": "Estádio Cidade de Coimbra", "capacity": 30000 },
@@ -629,7 +629,7 @@
       ]
     },
     {
-      "name": "Varzim SC",
+      "name": "Varzim",
       "division": 3,
       "colors": { "primary": "#ffffff", "secondary": "#000000" },
       "stadium": { "name": "Estádio do Varzim SC", "capacity": 10000 },
@@ -662,7 +662,7 @@
       ]
     },
     {
-      "name": "CD Mafra",
+      "name": "Mafra",
       "division": 3,
       "colors": { "primary": "#009933", "secondary": "#ffffff" },
       "stadium": { "name": "Estádio Municipal de Mafra", "capacity": 5000 },
@@ -729,7 +729,7 @@
       ]
     },
     {
-      "name": "CD Trofense",
+      "name": "Trofense",
       "division": 3,
       "colors": { "primary": "#ffcc00", "secondary": "#000000" },
       "stadium": { "name": "Estádio do CD Trofense", "capacity": 5000 },
@@ -763,7 +763,7 @@
       ]
     },
     {
-      "name": "Atlético CP",
+      "name": "Atlético",
       "division": 3,
       "colors": { "primary": "#ffffff", "secondary": "#0000ff" },
       "stadium": { "name": "Estádio da Tapadinha", "capacity": 10000 },
@@ -797,7 +797,7 @@
     },
 
     {
-      "name": "GD Bragança",
+      "name": "Bragança",
       "division": 4,
       "colors": { "primary": "#FFD700", "secondary": "#0047AB" },
       "stadium": { "name": "Estádio Municipal de Bragança", "capacity": 10000 },
@@ -832,7 +832,7 @@
       ]
     },
     {
-      "name": "Sport Clube Vianense",
+      "name": "Vianense",
       "division": 4,
       "colors": { "primary": "#003087", "secondary": "#ffffff" },
       "stadium": { "name": "Estádio Dr. José de Matos", "capacity": 5000 },
@@ -865,7 +865,7 @@
       ]
     },
     {
-      "name": "Rebordosa AC",
+      "name": "Rebordosa",
       "division": 4,
       "colors": { "primary": "#1565C0", "secondary": "#ffffff" },
       "stadium": {
@@ -901,7 +901,7 @@
       ]
     },
     {
-      "name": "Leça FC",
+      "name": "Leça",
       "division": 4,
       "colors": { "primary": "#228B22", "secondary": "#ffffff" },
       "stadium": { "name": "Estádio do Leça Futebol Clube", "capacity": 5000 },
@@ -935,7 +935,7 @@
       ]
     },
     {
-      "name": "GD Vitória de Sernache",
+      "name": "Vit. Sernache",
       "division": 4,
       "colors": { "primary": "#006400", "secondary": "#ffffff" },
       "stadium": {
@@ -972,7 +972,7 @@
       ]
     },
     {
-      "name": "Associação Naval 1893",
+      "name": "Naval 1893",
       "division": 4,
       "colors": { "primary": "#009900", "secondary": "#ffffff" },
       "stadium": {
@@ -1010,7 +1010,7 @@
       ]
     },
     {
-      "name": "Louletano DC",
+      "name": "Louletano",
       "division": 4,
       "colors": { "primary": "#CC0000", "secondary": "#ffffff" },
       "stadium": { "name": "Estádio Municipal de Loulé", "capacity": 10000 },
@@ -1042,7 +1042,7 @@
       ]
     },
     {
-      "name": "Juventude Sport Clube",
+      "name": "Juventude",
       "division": 4,
       "colors": { "primary": "#1E4DB7", "secondary": "#ffffff" },
       "stadium": { "name": "Estádio Juventude Sport Clube", "capacity": 5000 },
@@ -1076,7 +1076,7 @@
     },
 
     {
-      "name": "GD Portel",
+      "name": "Portel",
       "division": 5,
       "colors": { "primary": "#006400", "secondary": "#FFD700" },
       "stadium": {
@@ -1114,7 +1114,7 @@
       ]
     },
     {
-      "name": "União de Montemor",
+      "name": "U. Montemor",
       "division": 5,
       "colors": { "primary": "#1A1A1A", "secondary": "#ffffff" },
       "stadium": { "name": "Estádio 1º de Maio", "capacity": 5000 },
@@ -1148,7 +1148,7 @@
       ]
     },
     {
-      "name": "GD Monte do Trigo",
+      "name": "Monte do Trigo",
       "division": 5,
       "colors": { "primary": "#CC0000", "secondary": "#FFFFFF" },
       "stadium": { "name": "Campo D. Manuel II", "capacity": 5000 },
@@ -1182,7 +1182,7 @@
       ]
     },
     {
-      "name": "Estrela Vendas Novas",
+      "name": "Vendas Novas",
       "division": 5,
       "colors": { "primary": "#228B22", "secondary": "#ffffff" },
       "stadium": {
@@ -1219,7 +1219,7 @@
       ]
     },
     {
-      "name": "Atlético de Reguengos",
+      "name": "At. Reguengos",
       "division": 5,
       "colors": { "primary": "#CC0000", "secondary": "#000033" },
       "stadium": { "name": "Campo Virgílio Durão", "capacity": 5000 },
@@ -1319,7 +1319,7 @@
       ]
     },
     {
-      "name": "Redondense FC",
+      "name": "Redondense",
       "division": 5,
       "colors": { "primary": "#CC0000", "secondary": "#ffffff" },
       "stadium": { "name": "Parque de Jogos do Calvário", "capacity": 5000 },
