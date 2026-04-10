@@ -1794,15 +1794,15 @@ function App() {
           <h1 className="text-5xl font-headline font-black text-primary mb-6 tracking-tight">
             CashBall <span className="text-on-surface">26/27</span>
           </h1>
-          <div className="bg-surface-container p-8 rounded-lg w-full max-w-md relative overflow-hidden shadow-2xl text-center">
-            <div className="absolute top-0 inset-x-0 h-0.5 bg-primary"></div>
-            <p className="text-xs text-zinc-500 uppercase font-black tracking-widest mb-2">
+          <div className="bg-surface-container p-8 rounded-md w-full max-w-md relative overflow-hidden shadow-2xl text-center">
+            <div className="absolute top-0 inset-x-0 h-0.5 bg-gradient-to-r from-primary via-primary to-transparent"></div>
+            <p className="text-[10px] uppercase tracking-[0.35em] text-on-surface-variant font-bold mb-3">
               Sessão guardada
             </p>
-            <p className="text-2xl font-black text-white mb-2">
+            <p className="text-2xl font-headline font-black text-on-surface mb-1">
               A reconectar...
             </p>
-            <p className="text-sm text-zinc-400 font-medium">
+            <p className="text-xs text-on-surface-variant font-medium tracking-wide">
               {me.name} · {me.roomCode?.toUpperCase()}
             </p>
           </div>
@@ -1817,14 +1817,21 @@ function App() {
       <div className="min-h-screen bg-surface text-on-surface flex items-center justify-center p-6 relative overflow-hidden">
         {/* Decorative background */}
         <div className="pointer-events-none fixed inset-0 z-0">
-          <div className="absolute top-[-10%] left-[-5%] w-[40vw] h-[40vw] rounded-full bg-primary/5 blur-[80px]"></div>
-          <div className="absolute bottom-[-10%] right-[-5%] w-[35vw] h-[35vw] rounded-full bg-surface-container/40 blur-[80px]"></div>
+          <div className="absolute inset-0 tactical-pattern"></div>
+          <div className="absolute inset-0 pitch-glow"></div>
+          <div className="absolute inset-0 bg-gradient-to-b from-transparent via-surface/50 to-surface"></div>
         </div>
 
         <div className="relative z-10 w-full max-w-2xl">
-          <h1 className="text-5xl font-headline font-black text-primary mb-6 tracking-tight text-center">
-            CashBall <span className="text-on-surface">26/27</span>
-          </h1>
+          <div className="mb-8 text-center">
+            <p className="text-[10px] uppercase tracking-[0.4em] text-on-surface-variant font-bold mb-3">
+              Gestão de Futebol Multiplayer
+            </p>
+            <h1 className="font-headline font-black tracking-tighter leading-none">
+              <span className="text-6xl md:text-8xl text-tertiary">CashBall</span>
+              <span className="block text-3xl md:text-4xl text-primary mt-1">26/27</span>
+            </h1>
+          </div>
 
           <div className="bg-surface-container rounded-lg relative overflow-hidden shadow-2xl">
             <div className="absolute top-0 inset-x-0 h-0.5 bg-primary"></div>
@@ -2332,7 +2339,7 @@ function App() {
         {toasts.map((t) => (
           <div
             key={t.id}
-            className="bg-surface-container border border-outline-variant text-on-surface text-sm font-bold px-5 py-3 rounded shadow-2xl animate-pulse"
+            className="bg-surface-container border border-outline-variant/60 text-on-surface text-sm font-bold px-5 py-3 rounded-md shadow-2xl toast-slide-in"
           >
             {t.msg}
           </div>
@@ -2349,12 +2356,13 @@ function App() {
           {/* Left: brand + session info */}
           <div className="flex items-center gap-3">
             <h1
-              className="text-lg font-headline font-black tracking-tight"
+              className="text-base font-headline font-black tracking-tighter uppercase"
               style={{ color: teamInfo?.color_secondary || "#e5e2e1" }}
             >
-              CashBall 26/27
+              CashBall{" "}
+              <span style={{ opacity: 0.55 }}>26/27</span>
             </h1>
-            <span className="hidden md:block text-xs font-bold text-on-surface-variant uppercase tracking-widest">
+            <span className="hidden md:block text-[10px] font-bold text-on-surface-variant uppercase tracking-[0.2em]">
               {seasonYear} · J{currentJornada} · {me.roomCode}
             </span>
           </div>
@@ -2550,7 +2558,7 @@ function App() {
                 onClick={() => setActiveTab(key)}
                 className={`w-full flex items-center gap-3 px-4 py-3 text-sm font-bold transition-all text-left ${
                   activeTab === key
-                    ? "bg-primary-container/20 text-primary border-r-4 border-primary"
+                    ? "bg-primary-container/20 text-primary border-l-4 border-primary"
                     : "text-on-surface-variant hover:bg-surface-bright hover:text-on-surface"
                 }`}
               >
@@ -2561,7 +2569,25 @@ function App() {
               </button>
             ))}
           </div>
-          <div className="px-3 pb-4 border-t border-outline-variant/20 pt-4">
+          <div className="px-3 pb-4 border-t border-outline-variant/20 pt-4 space-y-3">
+            {teamInfo && (
+              <div className="px-4 py-3 bg-surface-container rounded-md">
+                <p className="text-[9px] uppercase tracking-widest text-on-surface-variant font-bold mb-1">
+                  {seasonYear} · J{currentJornada}
+                </p>
+                <div className="flex items-center gap-2">
+                  {teamInfo.color_primary && (
+                    <span
+                      className="w-2 h-2 rounded-full shrink-0"
+                      style={{ backgroundColor: teamInfo.color_primary }}
+                    />
+                  )}
+                  <p className="text-xs font-black text-on-surface truncate">
+                    {teamInfo.name}
+                  </p>
+                </div>
+              </div>
+            )}
             <button
               onClick={() => setActiveTab("live")}
               className={`w-full flex items-center gap-3 px-4 py-3 text-sm font-bold transition-all ${
@@ -2573,7 +2599,15 @@ function App() {
               <span className="material-symbols-outlined text-[20px] shrink-0 leading-none">
                 sports_soccer
               </span>
-              <span className="font-black uppercase tracking-widest">LIVE</span>
+              <span className="font-black uppercase tracking-widest flex-1">LIVE</span>
+              <span className="relative flex h-2 w-2 shrink-0">
+                <span
+                  className={`animate-ping absolute inline-flex h-full w-full rounded-full opacity-75 ${activeTab === "live" ? "bg-[#003824]" : "bg-primary"}`}
+                />
+                <span
+                  className={`relative inline-flex rounded-full h-2 w-2 ${activeTab === "live" ? "bg-[#003824]" : "bg-primary"}`}
+                />
+              </span>
             </button>
           </div>
         </nav>
@@ -2581,7 +2615,7 @@ function App() {
 
       {/* ── MOBILE BOTTOM NAV ────────────────────────────────────────────── */}
       {!isMatchInProgress && (
-        <nav className="lg:hidden fixed bottom-0 left-0 right-0 h-16 bg-surface-container-low border-t border-outline-variant z-10 flex">
+        <nav className="lg:hidden fixed bottom-0 left-0 right-0 h-16 bg-surface-container-low/95 backdrop-blur-sm border-t border-outline-variant/30 z-10 flex">
           {[
             { key: "standings", label: "Classif.", icon: "leaderboard" },
             { key: "players", label: "Jogadores", icon: "group" },
@@ -2592,10 +2626,13 @@ function App() {
             <button
               key={key}
               onClick={() => setActiveTab(key)}
-              className={`flex-1 flex flex-col items-center justify-center gap-0.5 text-[10px] font-bold uppercase tracking-wider transition-colors ${
+              className={`flex-1 flex flex-col items-center justify-center gap-0.5 text-[10px] font-bold uppercase tracking-wider transition-colors relative ${
                 activeTab === key ? "text-primary" : "text-on-surface-variant"
               }`}
             >
+              {activeTab === key && (
+                <span className="absolute top-0 left-1/2 -translate-x-1/2 w-8 h-0.5 bg-primary rounded-b-full" />
+              )}
               <span className="material-symbols-outlined text-[22px] leading-none">
                 {icon}
               </span>

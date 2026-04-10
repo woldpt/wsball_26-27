@@ -57,3 +57,54 @@ body {
     "opsz" 24;
   user-select: none;
 }
+
+/* Tactical dot grid background */
+.tactical-pattern {
+  background-image: radial-gradient(#424843 1px, transparent 1px);
+  background-size: 24px 24px;
+  opacity: 0.08;
+}
+
+/* Atmospheric pitch glow */
+.pitch-glow {
+  background: radial-gradient(
+    ellipse at 50% 60%,
+    rgba(0, 65, 43, 0.18) 0%,
+    transparent 65%
+  );
+}
+
+/* Custom scrollbar — thin, non-obtrusive */
+* {
+  scrollbar-width: thin;
+  scrollbar-color: #393939 transparent;
+}
+::-webkit-scrollbar {
+  width: 4px;
+  height: 4px;
+}
+::-webkit-scrollbar-track {
+  background: transparent;
+}
+::-webkit-scrollbar-thumb {
+  background: #393939;
+  border-radius: 2px;
+}
+::-webkit-scrollbar-thumb:hover {
+  background: #494949;
+}
+
+/* Toast slide-in */
+@keyframes toast-in {
+  from {
+    opacity: 0;
+    transform: translateX(0.75rem);
+  }
+  to {
+    opacity: 1;
+    transform: translateX(0);
+  }
+}
+.toast-slide-in {
+  animation: toast-in 0.2s ease-out forwards;
+}
