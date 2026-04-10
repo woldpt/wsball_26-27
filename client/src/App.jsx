@@ -3110,35 +3110,38 @@ function App() {
 
                   {/* ── V2 TOP BAR ─────────────────────── */}
                   <div className="flex items-center justify-between mb-4">
-                    <div className="flex items-center gap-3">
-                      <h2 className="text-lg font-headline font-black text-on-surface tracking-tight">
-                        {isCupMatch ? (
-                          <>
-                            🏆 Taça · {cupMatchRoundName}
-                            {cupPreMatch
-                              ? " — Pré-Jogo"
-                              : cupExtraTimeBadge
-                                ? " — Prolongamento"
-                                : ""}
-                          </>
-                        ) : (
-                          <>Multiview Jornada {matchResults?.matchweek || ""}</>
-                        )}
-                      </h2>
-                      {isPlayingMatch && (
-                        <span className="flex items-center gap-1.5 bg-primary/15 px-2 py-0.5 rounded-sm">
-                          <span className="w-2 h-2 rounded-full bg-primary animate-pulse" />
-                          <span className="text-xs font-headline font-black text-primary tabular-nums">
+                    <h2 className="text-lg font-headline font-black text-on-surface tracking-tight">
+                      {isCupMatch ? (
+                        <>
+                          🏆 Taça · {cupMatchRoundName}
+                          {cupPreMatch
+                            ? " — Pré-Jogo"
+                            : cupExtraTimeBadge
+                              ? " — Prolongamento"
+                              : ""}
+                        </>
+                      ) : (
+                        <>Multiview Jornada {matchResults?.matchweek || ""}</>
+                      )}
+                    </h2>
+                    {/* ── CENTERED CLOCK ── */}
+                    <div className="flex flex-col items-center">
+                      {isPlayingMatch ? (
+                        <>
+                          <span className="text-3xl font-headline font-black text-primary tabular-nums leading-none">
                             {liveMinute}'
                           </span>
-                        </span>
-                      )}
-                      {liveMinute === 45 && !isPlayingMatch && !isCupMatch && (
-                        <span className="text-xs font-bold text-tertiary uppercase tracking-wide">
+                          <span className="text-[9px] font-bold text-primary/60 uppercase tracking-widest mt-0.5">
+                            {liveMinute > 45 ? "2ª Parte" : "1ª Parte"}
+                          </span>
+                        </>
+                      ) : liveMinute === 45 && !isCupMatch ? (
+                        <span className="text-sm font-black text-tertiary uppercase tracking-wide">
                           Intervalo
                         </span>
-                      )}
+                      ) : null}
                     </div>
+                    <div className="w-32" />{/* spacer for centering */}
                   </div>
 
                   {/* ── HERO: MY MATCH ─────────────────────── */}
@@ -3169,20 +3172,7 @@ function App() {
                           e.type === "goal" &&
                           e.team === "away",
                       );
-                      const homeCards = matchEvents.filter(
-                        (e) =>
-                          e.minute <= liveMinute &&
-                          (e.type === "yellow_card" || e.type === "red_card") &&
-                          e.team === "home",
-                      );
-                      const awayCards = matchEvents.filter(
-                        (e) =>
-                          e.minute <= liveMinute &&
-                          (e.type === "yellow_card" || e.type === "red_card") &&
-                          e.team === "away",
-                      );
                       const progress = Math.min(100, (liveMinute / 90) * 100);
-                      const referee = myMatch.referee;
 
                       return (
                         <div className="bg-surface-container rounded-md overflow-hidden mb-4 relative">
@@ -3195,25 +3185,12 @@ function App() {
                           />
 
                           {/* Matchday label bar */}
-                          <div className="relative flex items-center justify-between px-4 py-2 text-[10px] uppercase tracking-widest text-on-surface-variant/50 font-bold">
+                          <div className="relative flex items-center justify-center px-4 py-2 text-[10px] uppercase tracking-widest text-on-surface-variant/50 font-bold">
                             <span>
                               {isCupMatch
                                 ? `Taça · ${cupMatchRoundName}`
                                 : `${DIVISION_NAMES[hInfo?.division] || ""} · Jornada ${matchResults.matchweek}`}
                             </span>
-                            {referee && (
-                              <span className="flex items-center gap-1">
-                                ⚖️ {referee.name}
-                                {referee.favorsTeamA !== undefined && (
-                                  <span
-                                    className={`ml-1 text-[9px] ${referee.favorsTeamA ? "text-primary/60" : "text-error/60"}`}
-                                  >
-                                    ({referee.balance > 0 ? "+" : ""}
-                                    {referee.balance})
-                                  </span>
-                                )}
-                              </span>
-                            )}
                           </div>
 
                           {/* Teams + Score */}
@@ -3236,52 +3213,96 @@ function App() {
                                 {hInfo?.name}
                               </span>
                               <div className="mt-1 space-y-0.5">
-                                {homeGoals.map((g, i) => (
-                                  <span
-                                    key={i}
-                                    className="block text-[10px] text-primary/70 font-bold"
-                                  >
-                                    ⚽ {g.player || "?"} {g.minute}'
-                                  </span>
-                                ))}
+                                {matchEvents.filter(e => e.minute <= liveMinute && e.team === "home" && ["goal","penalty_goal","own_goal","yellow_card","red_card","injury","substitution"].includes(e.type)).map((e, i) => {
+                                  const icon = e.type === "goal" || e.type === "penalty_goal" ? "⚽" : e.type === "own_goal" ? "⚽🔙" : e.type === "yellow_card" ? "🟨" : e.type === "red_card" ? "🟥" : e.type === "injury" ? "🤕" : e.type === "substitution" ? "🔄" : "";
+                                  const name = e.playerName || e.player_name || e.player;
+                                  return (
+                                    <span key={i} className="block text-[10px] text-primary/70 font-bold">
+                                      {icon} {name || "?"} {e.minute}'
+                                    </span>
+                                  );
+                                })}
                               </div>
                             </div>
 
                             {/* Score center */}
-                            <div className="flex flex-col items-center justify-center gap-1 min-w-[100px]">
-                              <button
-                                onClick={() => {
-                                  setMatchDetailFixture(myMatch);
-                                  setShowMatchDetail(true);
-                                }}
-                                className="flex items-baseline gap-2 cursor-pointer group"
-                              >
-                                <span className="text-5xl font-headline font-black text-on-surface tracking-tighter group-hover:text-primary transition-colors">
-                                  {homeGoals.length}
-                                </span>
-                                <span className="text-2xl text-on-surface-variant/30 font-headline">
-                                  -
-                                </span>
-                                <span className="text-5xl font-headline font-black text-on-surface tracking-tighter group-hover:text-primary transition-colors">
-                                  {awayGoals.length}
-                                </span>
-                              </button>
-                              {isPlayingMatch && (
-                                <span className="flex items-center gap-1">
-                                  <span className="w-1.5 h-1.5 rounded-full bg-primary animate-pulse" />
-                                  <span className="text-[10px] font-bold text-primary">
-                                    {liveMinute > 45 ? "2ª Parte" : "1ª Parte"}
-                                  </span>
-                                </span>
-                              )}
-                              {/* Progress bar */}
-                              <div className="w-20 h-0.5 bg-outline-variant/20 rounded-full overflow-hidden mt-1">
-                                <div
-                                  className="h-full bg-primary transition-all duration-1000"
-                                  style={{ width: `${progress}%` }}
-                                />
-                              </div>
-                            </div>
+                            {(() => {
+                              const myFlashHome = goalFlashRef.current[`${myMatch.homeTeamId}_${myMatch.awayTeamId}_home`];
+                              const myFlashAway = goalFlashRef.current[`${myMatch.homeTeamId}_${myMatch.awayTeamId}_away`];
+                              const nowTs = Date.now();
+                              const myHomeFlashing = myFlashHome && nowTs - myFlashHome < 1500;
+                              const myAwayFlashing = myFlashAway && nowTs - myFlashAway < 1500;
+                              return (
+                                <div className="flex flex-col items-center justify-center gap-1 min-w-[100px]">
+                                  <button
+                                    onClick={() => {
+                                      setMatchDetailFixture(myMatch);
+                                      setShowMatchDetail(true);
+                                    }}
+                                    className="flex items-baseline gap-2 cursor-pointer group"
+                                  >
+                                    <span
+                                      className="text-5xl font-headline font-black tracking-tighter"
+                                      style={{
+                                        color: myHomeFlashing ? "#ff4444" : undefined,
+                                        transition: myHomeFlashing ? "none" : "color 1.25s ease",
+                                      }}
+                                    >
+                                      {homeGoals.length}
+                                    </span>
+                                    <span className="text-2xl text-on-surface-variant/30 font-headline">
+                                      -
+                                    </span>
+                                    <span
+                                      className="text-5xl font-headline font-black tracking-tighter"
+                                      style={{
+                                        color: myAwayFlashing ? "#ff4444" : undefined,
+                                        transition: myAwayFlashing ? "none" : "color 1.25s ease",
+                                      }}
+                                    >
+                                      {awayGoals.length}
+                                    </span>
+                                  </button>
+                                  {/* Enriched progress bar */}
+                                  <div className="relative w-40 mt-2">
+                                    <div className="relative h-1.5 bg-outline-variant/20 rounded-full overflow-hidden">
+                                      <div
+                                        className="h-full bg-primary transition-all duration-1000"
+                                        style={{ width: `${progress}%` }}
+                                      />
+                                      {/* Event markers on progress bar */}
+                                      {matchEvents.filter(e => e.minute <= liveMinute && ["goal","penalty_goal","own_goal","yellow_card","red_card","injury"].includes(e.type)).map((e, i) => (
+                                        <span
+                                          key={i}
+                                          className="absolute top-1/2 -translate-y-1/2 -translate-x-1/2"
+                                          style={{ left: `${Math.min(98, Math.max(2, (e.minute / 90) * 100))}%` }}
+                                          title={`${e.minute}' ${e.type}`}
+                                        >
+                                          <span className={`block w-1.5 h-1.5 rounded-full ${
+                                            e.type === "goal" || e.type === "penalty_goal" ? "bg-primary" :
+                                            e.type === "own_goal" ? "bg-orange-400" :
+                                            e.type === "yellow_card" ? "bg-yellow-400" :
+                                            e.type === "red_card" ? "bg-red-500" :
+                                            "bg-blue-400"
+                                          }`} />
+                                        </span>
+                                      ))}
+                                    </div>
+                                    <div className="flex justify-between text-[8px] text-on-surface-variant/30 mt-0.5">
+                                      <span>0'</span>
+                                      <span className="font-bold text-primary/60">{liveMinute}'</span>
+                                      <span>90'</span>
+                                    </div>
+                                    {myMatch.attendance && (
+                                      <div className="flex items-center justify-center gap-1 mt-1 text-[10px] text-on-surface-variant/50">
+                                        <span>🏟️</span>
+                                        <span className="font-bold">{myMatch.attendance.toLocaleString("pt-PT")}</span>
+                                      </div>
+                                    )}
+                                  </div>
+                                </div>
+                              );
+                            })()}
 
                             {/* Away */}
                             <div className="flex-1 flex flex-col items-center gap-1">
@@ -3301,116 +3322,38 @@ function App() {
                                 {aInfo?.name}
                               </span>
                               <div className="mt-1 space-y-0.5">
-                                {awayGoals.map((g, i) => (
-                                  <span
-                                    key={i}
-                                    className="block text-[10px] text-primary/70 font-bold"
-                                  >
-                                    ⚽ {g.player || "?"} {g.minute}'
-                                  </span>
-                                ))}
+                                {matchEvents.filter(e => e.minute <= liveMinute && e.team === "away" && ["goal","penalty_goal","own_goal","yellow_card","red_card","injury","substitution"].includes(e.type)).map((e, i) => {
+                                  const icon = e.type === "goal" || e.type === "penalty_goal" ? "⚽" : e.type === "own_goal" ? "⚽🔙" : e.type === "yellow_card" ? "🟨" : e.type === "red_card" ? "🟥" : e.type === "injury" ? "🤕" : e.type === "substitution" ? "🔄" : "";
+                                  const name = e.playerName || e.player_name || e.player;
+                                  return (
+                                    <span key={i} className="block text-[10px] text-primary/70 font-bold">
+                                      {icon} {name || "?"} {e.minute}'
+                                    </span>
+                                  );
+                                })}
                               </div>
                             </div>
                           </div>
 
-                          {/* Stats bar */}
-                          <div className="relative grid grid-cols-3 gap-px bg-outline-variant/10 px-4 py-2 text-[10px]">
-                            <div className="text-center">
-                              <span className="text-on-surface-variant/40 uppercase tracking-wider">
-                                Cartões
-                              </span>
-                              <div className="flex items-center justify-center gap-2 mt-0.5">
-                                <span className="font-bold text-on-surface">
-                                  {
-                                    homeCards.filter(
-                                      (c) => c.type === "yellow_card",
-                                    ).length
-                                  }
-                                  🟨{" "}
-                                  {
-                                    homeCards.filter(
-                                      (c) => c.type === "red_card",
-                                    ).length
-                                  }
-                                  🟥
-                                </span>
-                                <span className="text-on-surface-variant/30">
-                                  |
-                                </span>
-                                <span className="font-bold text-on-surface">
-                                  {
-                                    awayCards.filter(
-                                      (c) => c.type === "yellow_card",
-                                    ).length
-                                  }
-                                  🟨{" "}
-                                  {
-                                    awayCards.filter(
-                                      (c) => c.type === "red_card",
-                                    ).length
-                                  }
-                                  🟥
-                                </span>
-                              </div>
-                            </div>
-                            <div className="text-center">
-                              <span className="text-on-surface-variant/40 uppercase tracking-wider">
-                                Público
-                              </span>
-                              <div className="font-bold text-on-surface mt-0.5">
-                                {myMatch.attendance
-                                  ? myMatch.attendance.toLocaleString("pt-PT")
-                                  : "—"}
-                              </div>
-                            </div>
-                            <div className="text-center">
-                              <span className="text-on-surface-variant/40 uppercase tracking-wider">
-                                Golos
-                              </span>
-                              <div className="font-bold text-on-surface mt-0.5">
-                                {homeGoals.length + awayGoals.length}
-                              </div>
-                            </div>
-                          </div>
-
-                          {/* Events timeline */}
-                          {matchEvents.filter(
-                            (e) =>
-                              e.minute <= liveMinute &&
-                              (e.type === "goal" ||
-                                e.type === "yellow_card" ||
-                                e.type === "red_card"),
-                          ).length > 0 && (
-                            <div className="relative h-6 mx-4 mb-3">
-                              <div className="absolute inset-x-0 top-1/2 h-px bg-outline-variant/20" />
-                              <div className="absolute left-0 top-1/2 -translate-y-1/2 text-[8px] text-on-surface-variant/30">
-                                0'
-                              </div>
-                              <div className="absolute right-0 top-1/2 -translate-y-1/2 text-[8px] text-on-surface-variant/30">
-                                90'
-                              </div>
+                          {/* Events log list (all types) - replaces stats bar and old timeline */}
+                          {matchEvents.filter(e => e.minute <= liveMinute && ["goal","penalty_goal","own_goal","yellow_card","red_card","injury","substitution"].includes(e.type)).length > 0 && (
+                            <div className="relative px-4 pb-3 space-y-0.5">
                               {matchEvents
-                                .filter(
-                                  (e) =>
-                                    e.minute <= liveMinute &&
-                                    (e.type === "goal" ||
-                                      e.type === "yellow_card" ||
-                                      e.type === "red_card"),
-                                )
-                                .map((e, i) => (
-                                  <span
-                                    key={i}
-                                    className="absolute top-1/2 -translate-y-1/2 -translate-x-1/2"
-                                    style={{
-                                      left: `${Math.min(98, Math.max(2, (e.minute / 90) * 100))}%`,
-                                    }}
-                                    title={`${e.minute}' ${e.type === "goal" ? "⚽" : e.type === "yellow_card" ? "🟨" : "🟥"} ${e.player || ""}`}
-                                  >
-                                    <span
-                                      className={`block w-2 h-2 rounded-full ${e.type === "goal" ? "bg-primary" : e.type === "yellow_card" ? "bg-yellow-400" : "bg-red-500"}`}
-                                    />
-                                  </span>
-                                ))}
+                                .filter(e => e.minute <= liveMinute && ["goal","penalty_goal","own_goal","yellow_card","red_card","injury","substitution"].includes(e.type))
+                                .sort((a, b) => a.minute - b.minute)
+                                .map((e, i) => {
+                                  const isHome = e.team === "home";
+                                  const icon = e.type === "goal" || e.type === "penalty_goal" ? "⚽" : e.type === "own_goal" ? "⚽🔙" : e.type === "yellow_card" ? "🟨" : e.type === "red_card" ? "🟥" : e.type === "injury" ? "🤕" : e.type === "substitution" ? "🔄" : "";
+                                  const name = e.playerName || e.player_name || e.player || "?";
+                                  return (
+                                    <div key={i} className={`flex items-center gap-1 text-[10px] ${isHome ? "" : "flex-row-reverse"}`}>
+                                      <span className="text-on-surface-variant/40 tabular-nums shrink-0">{e.minute}'</span>
+                                      <span>{icon}</span>
+                                      <span className={`font-bold truncate ${e.type === "goal" || e.type === "penalty_goal" ? "text-primary" : e.type === "own_goal" ? "text-orange-400" : e.type === "red_card" ? "text-red-400" : "text-on-surface-variant/70"}`}>{name}</span>
+                                    </div>
+                                  );
+                                })
+                              }
                             </div>
                           )}
                         </div>
@@ -3425,7 +3368,7 @@ function App() {
                         : "grid grid-cols-1 lg:grid-cols-2 gap-4"
                     }
                   >
-                    {(isCupMatch ? [null] : [1, 2, 3, 4, 5]).map((div) => (
+                    {(isCupMatch ? [null] : [1, 2, 3, 4]).map((div) => (
                       <div key={div ?? "cup"}>
                         {!isCupMatch && (
                           <h3 className="text-[10px] font-black uppercase tracking-widest text-on-surface-variant/40 mb-1.5 mt-2 first:mt-0">
