@@ -380,25 +380,6 @@ function markWelcomeSeenThisSession(coachName, roomCode) {
   }
 }
 
-const playWhistle = () => {
-  try {
-    const ctx = new (window.AudioContext || window.webkitAudioContext)();
-    const osc = ctx.createOscillator();
-    const gain = ctx.createGain();
-    osc.connect(gain);
-    gain.connect(ctx.destination);
-    osc.type = "square";
-    osc.frequency.setValueAtTime(1500, ctx.currentTime);
-    osc.frequency.linearRampToValueAtTime(1200, ctx.currentTime + 0.3);
-    gain.gain.setValueAtTime(0.05, ctx.currentTime);
-    gain.gain.exponentialRampToValueAtTime(0.01, ctx.currentTime + 0.3);
-    osc.start(ctx.currentTime);
-    osc.stop(ctx.currentTime + 0.3);
-  } catch (error) {
-    console.error(error);
-  }
-};
-
 const playNotification = () => {
   try {
     const ctx = new (window.AudioContext || window.webkitAudioContext)();
@@ -517,7 +498,7 @@ function App() {
   const [showCupDrawPopup, setShowCupDrawPopup] = useState(false);
   const [cupDrawRevealIdx, setCupDrawRevealIdx] = useState(0); // how many teams revealed so far
   const [cupRoundResults, setCupRoundResults] = useState(null); // last cup round results
-  const [showCupResults, setShowCupResults] = useState(false);
+  const [, setShowCupResults] = useState(false);
   const [cupPenaltyPopup, setCupPenaltyPopup] = useState(null); // shootout data
   const [cupPenaltyKickIdx, setCupPenaltyKickIdx] = useState(0); // how many kicks revealed
   const [welcomeModal, setWelcomeModal] = useState(null); // { teamName }
@@ -1553,16 +1534,13 @@ function App() {
   };
 
   // ── TACTIC ────────────────────────────────────────────────────────────────
-  const updateTactic = useCallback(
-    (patch) => {
-      setTactic((prev) => {
-        const next = { ...prev, ...patch };
-        socket.emit("setTactic", next);
-        return next;
-      });
-    },
-    [], // eslint-disable-line react-hooks/exhaustive-deps
-  );
+  const updateTactic = useCallback((patch) => {
+    setTactic((prev) => {
+      const next = { ...prev, ...patch };
+      socket.emit("setTactic", next);
+      return next;
+    });
+  }, []);
 
   const handleAutoPick = useCallback(
     (formation) => {
@@ -1577,7 +1555,7 @@ function App() {
         return next;
       });
     },
-    [matchweekCount, mySquad], // eslint-disable-line react-hooks/exhaustive-deps
+    [matchweekCount, mySquad],
   );
 
   // ── SUBSTITUTION SWAP ─────────────────────────────────────────────────────
@@ -1585,7 +1563,7 @@ function App() {
   const handleSelectOut = useCallback((playerId) => {
     setSwapSource((prev) => (prev === playerId ? null : playerId));
     setSwapTarget(null);
-  }, []); // eslint-disable-line react-hooks/exhaustive-deps
+  }, []);
 
   // Step 2: click a Suplente to mark as IN
   const handleSelectIn = useCallback((playerId) => {
@@ -1608,7 +1586,7 @@ function App() {
     setSubsMade((n) => n + 1);
     setSwapSource(null);
     setSwapTarget(null);
-  }, [swapSource, swapTarget, subsMade]); // eslint-disable-line react-hooks/exhaustive-deps
+  }, [swapSource, swapTarget, subsMade]);
 
   // Reset pending selection without applying
   const handleResetSub = useCallback(() => {
@@ -1662,7 +1640,7 @@ function App() {
       setOpenStatusPickerId(null);
     },
     [mySquad, matchweekCount],
-  ); // eslint-disable-line react-hooks/exhaustive-deps
+  );
 
   // ── MARKET ACTIONS ────────────────────────────────────────────────────────
   const buyPlayer = useCallback((playerId) => {
@@ -1740,7 +1718,7 @@ function App() {
       });
       return prev;
     });
-  }, [auctionBid]); // eslint-disable-line react-hooks/exhaustive-deps
+  }, [auctionBid]);
 
   const filteredMarketPlayers = useMemo(() => {
     const marketTeamId = me?.teamId;
@@ -1832,8 +1810,12 @@ function App() {
               Gestão de Futebol Multiplayer
             </p>
             <h1 className="font-headline font-black tracking-tighter leading-none">
-              <span className="text-6xl md:text-8xl text-tertiary">CashBall</span>
-              <span className="block text-3xl md:text-4xl text-primary mt-1">26/27</span>
+              <span className="text-6xl md:text-8xl text-tertiary">
+                CashBall
+              </span>
+              <span className="block text-3xl md:text-4xl text-primary mt-1">
+                26/27
+              </span>
             </h1>
           </div>
 
@@ -2263,15 +2245,6 @@ function App() {
     cupActiveTeamIds.includes(me.teamId) ||
     cupActiveTeamIds.includes(Number(me.teamId)) ||
     cupActiveTeamIds.includes(String(me.teamId));
-  const isDesktopLayout =
-    typeof window !== "undefined" ? window.innerWidth >= 768 : false;
-  const headerStyle =
-    teamInfo?.color_primary || teamInfo?.color_secondary
-      ? {
-          background: teamInfo?.color_primary || "#18181b",
-        }
-      : undefined;
-
   const annotatedSquad = mySquad
     .map((p) => {
       const isOut = activeTab === "live" && subbedOut.includes(p.id);
@@ -2297,8 +2270,6 @@ function App() {
 
   const nextMatchOpponent = nextMatchSummary?.opponent || null;
   const nextMatchReferee = nextMatchSummary?.referee || null;
-  const refereeBalance = nextMatchReferee?.balance ?? 50;
-  const refereePicksTeamA = refereeBalance >= 50;
 
   // ── SEASON / YEAR HELPERS ────────────────────────────────────────────────
   // matchweekCount is the global (cumulative) matchweek counter.
@@ -2363,8 +2334,7 @@ function App() {
               className="text-base font-headline font-black tracking-tighter uppercase"
               style={{ color: teamInfo?.color_secondary || "#e5e2e1" }}
             >
-              CashBall{" "}
-              <span style={{ opacity: 0.55 }}>26/27</span>
+              CashBall <span style={{ opacity: 0.55 }}>26/27</span>
             </h1>
             <span className="hidden md:block text-[10px] font-bold text-on-surface-variant uppercase tracking-[0.2em]">
               {seasonYear} · J{currentJornada} · {me.roomCode}
@@ -2603,7 +2573,9 @@ function App() {
               <span className="material-symbols-outlined text-[20px] shrink-0 leading-none">
                 sports_soccer
               </span>
-              <span className="font-black uppercase tracking-widest flex-1">LIVE</span>
+              <span className="font-black uppercase tracking-widest flex-1">
+                LIVE
+              </span>
               <span className="relative flex h-2 w-2 shrink-0">
                 <span
                   className={`animate-ping absolute inline-flex h-full w-full rounded-full opacity-75 ${activeTab === "live" ? "bg-[#003824]" : "bg-primary"}`}
@@ -4011,7 +3983,9 @@ function App() {
                         </p>
                         <p className="text-on-surface-variant text-xs mt-1">
                           Manager:{" "}
-                          <strong className="text-on-surface">{me?.name}</strong>
+                          <strong className="text-on-surface">
+                            {me?.name}
+                          </strong>
                         </p>
                       </div>
                       <div className="flex flex-col items-end gap-1 shrink-0">
@@ -4038,7 +4012,12 @@ function App() {
                   {/* Own team trophies */}
                   <div className="bg-surface-container rounded-lg shadow-sm p-6">
                     <h2 className="text-xs text-tertiary font-black uppercase tracking-widest mb-4 flex items-center gap-2">
-                      <span className="material-symbols-outlined text-sm" style={{fontVariationSettings: "'FILL' 1"}}>emoji_events</span>
+                      <span
+                        className="material-symbols-outlined text-sm"
+                        style={{ fontVariationSettings: "'FILL' 1" }}
+                      >
+                        emoji_events
+                      </span>
                       Palmarés de {teamInfo?.name}
                     </h2>
                     {palmaresTeamId === me?.teamId &&
@@ -4049,7 +4028,12 @@ function App() {
                             key={idx}
                             className="flex items-center gap-3 px-4 py-3 rounded-md bg-tertiary/8 border border-tertiary/25"
                           >
-                            <span className="material-symbols-outlined text-tertiary text-2xl" style={{fontVariationSettings: "'FILL' 1"}}>emoji_events</span>
+                            <span
+                              className="material-symbols-outlined text-tertiary text-2xl"
+                              style={{ fontVariationSettings: "'FILL' 1" }}
+                            >
+                              emoji_events
+                            </span>
                             <div>
                               <p className="text-tertiary font-black text-sm">
                                 {trophy.achievement}
@@ -4683,196 +4667,6 @@ function App() {
 
               {activeTab === "tactic" && (
                 <div>
-                  {false && (
-                    <div>
-                      {(() => {
-                        const titulares = annotatedSquad.filter(
-                          (p) => p.status === "Titular",
-                        );
-                        const grPlayers = titulares.filter(
-                          (p) => p.position === "GR",
-                        );
-                        const defPlayers = titulares.filter(
-                          (p) => p.position === "DEF",
-                        );
-                        const medPlayers = titulares.filter(
-                          (p) => p.position === "MED",
-                        );
-                        const ataPlayers = titulares.filter(
-                          (p) => p.position === "ATA",
-                        );
-                        const rows = [
-                          ataPlayers,
-                          medPlayers,
-                          defPlayers,
-                          grPlayers,
-                        ];
-                        const rowYs = ["10%", "33%", "59%", "82%"];
-                        const posColors = {
-                          GR: "bg-amber-500 text-zinc-900",
-                          DEF: "bg-sky-500 text-zinc-900",
-                          MED: "bg-primary text-on-primary",
-                          ATA: "bg-red-500 text-white",
-                        };
-                        return (
-                          <div
-                            className="relative w-full rounded-md overflow-hidden border border-outline-variant/20"
-                            style={{
-                              aspectRatio: "3/4",
-                              background:
-                                "linear-gradient(180deg, #05430e 0%, #0b5e1a 50%, #05430e 100%)",
-                            }}
-                          >
-                            <svg
-                              className="absolute inset-0 w-full h-full"
-                              viewBox="0 0 300 400"
-                              preserveAspectRatio="none"
-                              aria-hidden="true"
-                            >
-                              <rect
-                                x="12"
-                                y="12"
-                                width="276"
-                                height="376"
-                                fill="none"
-                                stroke="rgba(255,255,255,0.18)"
-                                strokeWidth="1.5"
-                                rx="2"
-                              />
-                              <line
-                                x1="12"
-                                y1="200"
-                                x2="288"
-                                y2="200"
-                                stroke="rgba(255,255,255,0.15)"
-                                strokeWidth="1"
-                              />
-                              <circle
-                                cx="150"
-                                cy="200"
-                                r="44"
-                                fill="none"
-                                stroke="rgba(255,255,255,0.12)"
-                                strokeWidth="1"
-                              />
-                              <circle
-                                cx="150"
-                                cy="200"
-                                r="3"
-                                fill="rgba(255,255,255,0.18)"
-                              />
-                              <rect
-                                x="90"
-                                y="12"
-                                width="120"
-                                height="56"
-                                fill="none"
-                                stroke="rgba(255,255,255,0.12)"
-                                strokeWidth="1"
-                              />
-                              <rect
-                                x="120"
-                                y="12"
-                                width="60"
-                                height="22"
-                                fill="none"
-                                stroke="rgba(255,255,255,0.1)"
-                                strokeWidth="1"
-                              />
-                              <rect
-                                x="90"
-                                y="332"
-                                width="120"
-                                height="56"
-                                fill="none"
-                                stroke="rgba(255,255,255,0.12)"
-                                strokeWidth="1"
-                              />
-                              <rect
-                                x="120"
-                                y="366"
-                                width="60"
-                                height="22"
-                                fill="none"
-                                stroke="rgba(255,255,255,0.1)"
-                                strokeWidth="1"
-                              />
-                            </svg>
-                            {rows.map((rowPlayers, ri) =>
-                              rowPlayers.length > 0 ? (
-                                <div
-                                  key={ri}
-                                  className="absolute w-full flex justify-evenly items-start px-2"
-                                  style={{ top: rowYs[ri] }}
-                                >
-                                  {rowPlayers.map((player) => (
-                                    <div
-                                      key={player.id}
-                                      className="flex flex-col items-center gap-0.5"
-                                      style={{ maxWidth: "64px" }}
-                                    >
-                                      <div
-                                        className={`w-9 h-9 rounded-full flex items-center justify-center font-black text-xs border-2 border-white/20 shrink-0 relative ${posColors[player.position] || "bg-zinc-500 text-white"} ${player.isUnavailable ? "opacity-50 ring-2 ring-red-500" : ""}`}
-                                      >
-                                        {POSITION_SHORT_LABELS[
-                                          player.position
-                                        ] || "?"}
-                                        {player.isUnavailable && (
-                                          <span className="absolute -top-1 -right-1 text-[9px] leading-none">
-                                            {(player.suspension_until_matchweek ||
-                                              0) > matchweekCount
-                                              ? "🟥"
-                                              : "🩹"}
-                                          </span>
-                                        )}
-                                      </div>
-                                      <span
-                                        className="text-white text-[9px] font-bold text-center leading-tight"
-                                        style={{
-                                          textShadow:
-                                            "0 1px 4px rgba(0,0,0,0.95), 0 0 8px rgba(0,0,0,0.8)",
-                                          maxWidth: "56px",
-                                          display: "block",
-                                          whiteSpace: "nowrap",
-                                          overflow: "hidden",
-                                          textOverflow: "ellipsis",
-                                        }}
-                                      >
-                                        {player.name.split(" ").pop()}
-                                      </span>
-                                      <span
-                                        className="text-[9px] font-black leading-none"
-                                        style={{
-                                          color: "var(--color-primary)",
-                                          textShadow:
-                                            "0 1px 4px rgba(0,0,0,0.95)",
-                                        }}
-                                      >
-                                        {player.skill}
-                                      </span>
-                                    </div>
-                                  ))}
-                                </div>
-                              ) : null,
-                            )}
-                            {!tactic.formation && (
-                              <div className="absolute inset-0 flex items-center justify-center">
-                                <p
-                                  className="text-zinc-400 text-sm font-bold text-center px-8 leading-relaxed"
-                                  style={{
-                                    textShadow: "0 1px 4px rgba(0,0,0,0.9)",
-                                  }}
-                                >
-                                  Escolhe uma formação no painel lateral para
-                                  ver os jogadores em campo
-                                </p>
-                              </div>
-                            )}
-                          </div>
-                        );
-                      })()}
-                    </div>
-                  )}
                   {/* ── COMPACT PLAYER LIST ──────────────────────────── */}
                   <div className="bg-surface-container rounded-lg overflow-hidden">
                     <div className="px-4 py-3 border-b border-outline-variant/20 bg-surface/40 flex items-center justify-between">
