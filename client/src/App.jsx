@@ -5661,6 +5661,19 @@ function App() {
                   A aguardar o resultado do leilão...
                 </p>
               </div>
+            ) : selectedAuctionPlayer.sellerTeamId === me?.teamId ? (
+              // Seller waiting phase
+              <div className="px-5 py-4 bg-linear-to-r from-emerald-600 to-emerald-500 border-t-2 border-emerald-700 text-white">
+                <p className="font-black text-sm uppercase tracking-widest mb-1">
+                  O teu jogador
+                </p>
+                <p className="font-black text-2xl font-mono">
+                  Em Leilão
+                </p>
+                <p className="text-xs text-emerald-200 mt-1 font-medium">
+                  A aguardar as licitações dos outros treinadores...
+                </p>
+              </div>
             ) : (
               // Bidding phase
               <div className="px-5 py-4 bg-linear-to-r from-red-600 to-red-500 border-t-2 border-red-700 text-white">

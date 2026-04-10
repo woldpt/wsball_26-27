@@ -202,6 +202,13 @@ export function createAuctionHelpers(deps: AuctionDeps) {
   ) => {
     const durationMs = 15000;
     const now = Date.now();
+    
+    // If there are no other human managers connected to bid, we skip the waiting time
+    const otherHumans = Object.values(game.playersByName).filter(
+      (p) => p.socketId && p.teamId !== player.team_id
+    );
+    const actualDurationMs = otherHumans.length > 0 ? durationMs : 0;
+
     const existingTimer = game.auctionTimers?.[player.id];
     if (existingTimer) clearTimeout(existingTimer as any);
 
@@ -216,13 +223,13 @@ export function createAuctionHelpers(deps: AuctionDeps) {
           sellerTeamId: player.team_id,
           startingPrice,
           bids: {},
-          endsAt: now + durationMs,
+          endsAt: now + actualDurationMs,
           status: "open",
         };
 
         game.auctionTimers[player.id] = setTimeout(() => {
           finalizeAuction(game, player.id);
-        }, durationMs);
+        }, actualDurationMs);
 
         refreshMarket(game);
         io.to(game.roomCode).emit("auctionStarted", {
@@ -242,7 +249,7 @@ export function createAuctionHelpers(deps: AuctionDeps) {
           aggressiveness: player.aggressiveness ?? 3,
           is_star: player.is_star || 0,
           startingPrice,
-          endsAt: now + durationMs,
+          endsAt: now + actualDurationMs,
         });
 
         scheduleNpcAuctionBids(game, player.id);
