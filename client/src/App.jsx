@@ -2704,9 +2704,12 @@ function App() {
 
       {/* ── MOBILE BOTTOM NAV ────────────────────────────────────────────── */}
       {!isMatchInProgress && (
-        <nav className="lg:hidden fixed bottom-0 left-0 right-0 h-16 bg-surface-container-low/95 backdrop-blur-sm border-t border-outline-variant/30 z-10 flex">
+        <nav className="lg:hidden fixed bottom-0 left-0 right-0 h-16 bg-surface-container-low/95 backdrop-blur-sm border-t border-outline-variant/30 z-10 flex overflow-x-auto [scrollbar-width:none] [-ms-overflow-style:none] [&::-webkit-scrollbar]:hidden">
           {[
+            { key: "club", label: "Clube", icon: "groups_3" },
+            { key: "finances", label: "Finanças", icon: "payments" },
             { key: "standings", label: "Classif.", icon: "leaderboard" },
+            { key: "cup", label: "Taça", icon: "emoji_events" },
             { key: "players", label: "Jogadores", icon: "group" },
             { key: "tactic", label: "Táctica", icon: "strategy" },
             { key: "market", label: "Mercado", icon: "swap_horiz" },
@@ -2715,7 +2718,7 @@ function App() {
             <button
               key={key}
               onClick={() => setActiveTab(key)}
-              className={`flex-1 flex flex-col items-center justify-center gap-0.5 text-[10px] font-bold uppercase tracking-wider transition-colors relative ${
+              className={`flex-1 shrink-0 min-w-[72px] flex flex-col items-center justify-center gap-0.5 text-[10px] font-bold uppercase tracking-wider transition-colors relative ${
                 activeTab === key ? "text-primary" : "text-on-surface-variant"
               }`}
             >
