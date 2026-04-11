@@ -3047,6 +3047,36 @@ function App() {
                           </div>
                         )}
 
+                        {/* ── Mentality selector ── */}
+                        <div className="shrink-0 px-3 py-2 bg-surface-container/60 border-b border-outline-variant/20">
+                          <span className="block text-[9px] font-black uppercase tracking-widest text-zinc-500 mb-1.5">
+                            Mentalidade
+                          </span>
+                          <div className="flex gap-1.5">
+                            {[
+                              { value: "Defensive", label: "Defensivo" },
+                              { value: "Balanced", label: "Equilibrado" },
+                              { value: "Offensive", label: "Ofensivo" },
+                            ].map(({ value, label }) => (
+                              <button
+                                key={value}
+                                onClick={() => updateTactic({ style: value })}
+                                className={`flex-1 py-1.5 rounded text-[10px] font-black uppercase tracking-wide transition-colors ${
+                                  tactic.style === value
+                                    ? value === "Defensive"
+                                      ? "bg-blue-600 text-white"
+                                      : value === "Offensive"
+                                        ? "bg-amber-500 text-zinc-950"
+                                        : "bg-primary text-on-primary"
+                                    : "bg-zinc-800 text-zinc-400 hover:bg-zinc-700 hover:text-zinc-200"
+                                }`}
+                              >
+                                {label}
+                              </button>
+                            ))}
+                          </div>
+                        </div>
+
                         {/* ── Two-column player list ── */}
                         <div className="flex flex-1 min-h-0 overflow-hidden">
                           {/* Em Campo */}
