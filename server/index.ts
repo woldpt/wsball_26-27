@@ -21,6 +21,8 @@ const {
   bindSocket,
   unbindSocket,
   getPlayerList,
+  doesGameExist,
+  generateUniqueRoomCode,
 } = require("./gameManager") as typeof import("./gameManager");
 const {
   generateFixturesForDivision,
@@ -328,6 +330,8 @@ io.on("connection", (socket) => {
     emitAwaitingCoaches,
     runAll,
     buildNextMatchSummary,
+    doesGameExist,
+    generateUniqueRoomCode,
   });
 
   registerCupSocketHandlers(socket, {

@@ -822,6 +822,12 @@ function App() {
         }
       }
     });
+    socket.on("joinGameSuccess", (data) => {
+      const { roomCode, roomName } = data;
+      setRoomCode(roomCode);
+      setMe((prev) => prev ? { ...prev, roomCode, roomName } : null);
+      if (joinTimerRef.current) clearTimeout(joinTimerRef.current);
+    });
     socket.on("joinError", (msg) => {
       setJoinError(msg);
       setJoining(false);
@@ -1118,6 +1124,7 @@ function App() {
       socket.off("auctionClosed");
       socket.off("systemMessage");
       socket.off("teamAssigned");
+      socket.off("joinGameSuccess");
       socket.off("joinError");
       socket.off("teamSquadData");
       socket.off("nextMatchSummary");
@@ -1535,10 +1542,13 @@ function App() {
       socket.emit("joinGame", {
         name,
         password,
-        roomCode: roomCode.toUpperCase(),
+        roomCode: joinMode === "new-game" ? "" : roomCode.toUpperCase(),
+        roomName: joinMode === "new-game" ? roomCode.toUpperCase() : "",
+        joinMode,
       });
-      setMe({ name, password, roomCode: roomCode.toUpperCase() });
-      // Timeout: if no teamId received in 6s, reset and show error
+      // Temporarily set me name/password. roomCode and roomName will be set in joinGameSuccess.
+      setMe({ name, password, roomCode: "" });
+      // Timeout: if no roomCode received in 6s, reset and show error
       joinTimerRef.current = setTimeout(() => {
         setMe((prev) => (prev && !prev.teamId ? null : prev));
         setJoining(false);
@@ -2435,7 +2445,7 @@ function App() {
               CashBall <span style={{ opacity: 0.55 }}>26/27</span>
             </h1>
             <span className="hidden md:block text-[10px] font-bold text-on-surface-variant uppercase tracking-[0.2em]">
-              {seasonYear} · J{currentJornada} · {me.roomCode}
+              {seasonYear} · J{currentJornada} · {me.roomName || me.roomCode}
             </span>
           </div>
           {/* Center: live match timer */}
@@ -2515,9 +2525,14 @@ function App() {
                 {showCoachPanel && (
                   <div className="absolute right-0 top-full mt-2 z-50 w-72 bg-surface-container border border-outline-variant rounded-lg shadow-2xl overflow-hidden">
                     <div className="px-4 py-2.5 border-b border-outline-variant flex items-center justify-between">
-                      <span className="text-[10px] font-black uppercase tracking-widest text-on-surface-variant">
-                        Sala {me.roomCode}
-                      </span>
+                      <div className="flex flex-col">
+                        <span className="text-[10px] font-black uppercase tracking-widest text-on-surface-variant">
+                          Sala {me.roomName || me.roomCode}
+                        </span>
+                        <span className="text-[9px] font-black uppercase tracking-widest text-emerald-400">
+                          Convite: {me.roomCode}
+                        </span>
+                      </div>
                       <span className="text-[10px] font-black uppercase tracking-widest text-on-surface-variant">
                         {players.length} online
                       </span>

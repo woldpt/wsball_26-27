@@ -30,6 +30,8 @@ interface SessionHandlerDeps {
   emitAwaitingCoaches: (game: ActiveGame) => void;
   runAll: RunAll;
   buildNextMatchSummary: (game: ActiveGame, teamId: number) => Promise<any>;
+  doesGameExist: (roomCode: string) => boolean;
+  generateUniqueRoomCode: () => string;
 }
 
 // ─── LEGACY COMPAT HELPERS ───────────────────────────────────────────────────
@@ -75,6 +77,8 @@ export function registerSessionSocketHandlers(
     emitAwaitingCoaches,
     runAll,
     buildNextMatchSummary,
+    doesGameExist,
+    generateUniqueRoomCode,
   } = deps;
 
   function assignPlayer(
@@ -223,7 +227,7 @@ export function registerSessionSocketHandlers(
   }
 
   socket.on("joinGame", async (data) => {
-    const { name, password, roomCode: rawRoom } = data;
+    const { name, password, roomCode: rawRoom, roomName, joinMode } = data;
 
     if (!name || typeof name !== "string" || name.trim().length === 0) {
       return socket.emit("systemMessage", "Nome de treinador inválido.");
@@ -231,11 +235,7 @@ export function registerSessionSocketHandlers(
     if (!password || typeof password !== "string" || password.length === 0) {
       return socket.emit("joinError", "A palavra-passe é obrigatória.");
     }
-    if (!rawRoom || typeof rawRoom !== "string") {
-      return socket.emit("systemMessage", "Código de sala inválido.");
-    }
 
-    const roomCode = rawRoom.toUpperCase();
     const trimmedName = name.trim();
 
     const authResult = await verifyOrCreateManager(trimmedName, password);
@@ -243,14 +243,43 @@ export function registerSessionSocketHandlers(
       return socket.emit("joinError", authResult.error);
     }
 
-    getGame(roomCode, (game, gameErr) => {
+    let finalRoomCode = (rawRoom || "").toUpperCase();
+
+    if (joinMode === "new-game") {
+      finalRoomCode = generateUniqueRoomCode();
+    } else if (joinMode === "friend-room" || joinMode === "saved-game") {
+      if (!doesGameExist(finalRoomCode)) {
+        return socket.emit("joinError", "Sala não encontrada. Verifica o código.");
+      }
+    } else {
+      // Reconnect flow
+      if (!finalRoomCode) {
+        return socket.emit("systemMessage", "Código de sala inválido.");
+      }
+      if (!doesGameExist(finalRoomCode)) {
+        return socket.emit("joinError", "A sala já não existe.");
+      }
+    }
+
+    getGame(finalRoomCode, (game, gameErr) => {
       if (!game || gameErr) {
         return socket.emit(
           "joinError",
           gameErr ? gameErr.message : "Erro ao carregar o jogo. Contacta o administrador.",
         );
       }
-      socket.join(roomCode);
+      
+      if (joinMode === "new-game" && roomName) {
+        game.db.run("INSERT OR REPLACE INTO game_state (key, value) VALUES ('roomName', ?)", [roomName]);
+        (game as any).roomName = roomName;
+      }
+      
+      socket.join(finalRoomCode);
+
+      socket.emit("joinGameSuccess", { 
+        roomCode: finalRoomCode, 
+        roomName: (game as any).roomName || finalRoomCode 
+      });
 
       const connectedCount = Object.values(game.playersByName).filter(
         (player) => player.socketId,
@@ -260,7 +289,7 @@ export function registerSessionSocketHandlers(
         return;
       }
 
-      recordRoomAccess(trimmedName, roomCode);
+      recordRoomAccess(trimmedName, finalRoomCode);
 
       game.db.get(
         "SELECT * FROM managers WHERE name = ?",
@@ -271,8 +300,8 @@ export function registerSessionSocketHandlers(
               "SELECT id, name FROM teams WHERE manager_id = ?",
               [row.id],
               (err2: any, team: any) => {
-                if (team) assignPlayer(game, trimmedName, team, roomCode, false);
-                else generateRandomTeam(game, trimmedName, roomCode, row.id);
+                if (team) assignPlayer(game, trimmedName, team, finalRoomCode, false);
+                else generateRandomTeam(game, trimmedName, finalRoomCode, row.id);
               },
             );
           } else {
@@ -280,7 +309,7 @@ export function registerSessionSocketHandlers(
               "INSERT INTO managers (name) VALUES (?)",
               [trimmedName],
               function (err2: any) {
-                generateRandomTeam(game, trimmedName, roomCode, this.lastID);
+                generateRandomTeam(game, trimmedName, finalRoomCode, this.lastID);
               },
             );
           }

@@ -42,6 +42,23 @@ function resolveDbPaths(roomCode: string) {
   };
 }
 
+function doesGameExist(roomCode: string) {
+  const { dbPath } = resolveDbPaths(roomCode);
+  return fs.existsSync(dbPath);
+}
+
+function generateUniqueRoomCode() {
+  const chars = "ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789";
+  let code;
+  do {
+    code = "";
+    for (let i = 0; i < 6; i++) {
+      code += chars.charAt(Math.floor(Math.random() * chars.length));
+    }
+  } while (doesGameExist(code));
+  return code;
+}
+
 function ensurePlayerSchema(
   db: SqliteDb,
   onDone?: (error: Error | null) => void,
@@ -251,6 +268,7 @@ function getGame(roomCode: string, onReady?: OnReady): ActiveGame | null {
     auctionTimers: {} as Record<string, unknown>,
     pendingAuctionQueue: [],
     initialized: false,
+    roomName: "",
   };
 
   activeGames[roomCode] = game;
@@ -343,6 +361,10 @@ function getGame(roomCode: string, onReady?: OnReady): ActiveGame | null {
             // Phase token
             if (st["phaseToken"]) game.phaseToken = st["phaseToken"];
 
+            if (st["roomName"]) {
+              (game as any).roomName = st["roomName"];
+            }
+
             // Cup team IDs
             if (st["cupTeamIds"]) {
               try {
@@ -425,6 +447,7 @@ function saveGameState(game: ActiveGame): void {
   upsert("cupHalftimePayload", game.cupHalftimePayload ? JSON.stringify(game.cupHalftimePayload) : "null");
   upsert("lastHalftimePayload", game.lastHalftimePayload ? JSON.stringify(game.lastHalftimePayload) : "null");
   upsert("lockedCoaches", JSON.stringify([...game.lockedCoaches]));
+  upsert("roomName", (game as any).roomName || "");
 
   // Persist current fixtures for crash recovery (only serialisable fields)
   if (game.currentFixtures && game.currentFixtures.length > 0) {
@@ -523,4 +546,6 @@ module.exports = {
   unbindSocket,
   getPlayerList,
   activeGames,
+  doesGameExist,
+  generateUniqueRoomCode,
 };
