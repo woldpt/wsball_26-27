@@ -777,8 +777,13 @@ async function simulateMatchSegment(
         };
 
         if (fixture._yellowCards[offenderId] >= 1) {
-          executeRedCard();
-        } else if (Math.random() < 0.04) {
+          // If the player already has a yellow card, there's only a 15% chance this foul results in a second yellow (red).
+          // Otherwise, it's just a warning/foul with no card given.
+          if (Math.random() < 0.15) {
+            executeRedCard();
+          }
+        } else if (Math.random() < 0.005) {
+          // Straight red card chance lowered from 4% to 0.5% (more realistic)
           executeRedCard();
         } else {
           // Cartão amarelo — sem expulsão
@@ -796,8 +801,8 @@ async function simulateMatchSegment(
       }
     };
 
-    const homeCardProb = 0.02 * (1 + (homeAggAvg - 3) * 0.1);
-    const awayCardProb = 0.02 * (1 + (awayAggAvg - 3) * 0.1);
+    const homeCardProb = 0.015 * (1 + (homeAggAvg - 3) * 0.1);
+    const awayCardProb = 0.015 * (1 + (awayAggAvg - 3) * 0.1);
     if (Math.random() < homeCardProb) emitCard(true);
     if (Math.random() < awayCardProb) emitCard(false);
 

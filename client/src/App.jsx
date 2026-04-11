@@ -2922,9 +2922,25 @@ function App() {
                   )}
 
                   {/* BUG-11 FIX: showHalftimePanel (not liveMinute===45) controls this overlay */}
-                  {showHalftimePanel && !isPlayingMatch && (
+                  {showHalftimePanel && !isPlayingMatch && (() => {
+                    const myMatch = matchResults?.results?.find(
+                      (m) =>
+                        m.homeTeamId === me.teamId ||
+                        m.awayTeamId === me.teamId,
+                    );
+                    const hInfo = myMatch ? teams.find(t => t.id === myMatch.homeTeamId) : null;
+                    const aInfo = myMatch ? teams.find(t => t.id === myMatch.awayTeamId) : null;
+                    const matchEvents = myMatch?.events || [];
+                    const homeGoals = matchEvents.filter(
+                      (e) => (e.minute <= 45 || e.minute <= liveMinute) && e.type === "goal" && e.team === "home",
+                    );
+                    const awayGoals = matchEvents.filter(
+                      (e) => (e.minute <= 45 || e.minute <= liveMinute) && e.type === "goal" && e.team === "away",
+                    );
+
+                    return (
                     <div className="absolute inset-0 bg-zinc-950/90 backdrop-blur-sm z-50 flex items-center justify-center p-2">
-                      <div className="w-full max-w-sm max-h-[78vh] flex flex-col overflow-hidden bg-surface-container rounded-lg border border-outline-variant/40 shadow-2xl">
+                      <div className="w-full max-w-sm max-h-[85vh] flex flex-col overflow-hidden bg-surface-container rounded-lg border border-outline-variant/40 shadow-2xl">
                         {/* ── Header ── */}
                         <div className="shrink-0 flex items-center justify-between px-3 py-2 bg-surface-container-high border-b border-outline-variant/20">
                           <div className="flex items-center gap-2.5">
@@ -2953,6 +2969,43 @@ function App() {
                             </span>
                           </div>
                         </div>
+
+                        {/* ── Match Score & Events ── */}
+                        {myMatch && (
+                          <div className="shrink-0 px-3 py-2.5 border-b border-outline-variant/20 bg-surface-container/60 flex flex-col gap-2 relative">
+                             {/* Score */}
+                             <div className="flex items-center justify-center font-black">
+                               <span className="flex-1 text-on-surface truncate text-right text-xs uppercase tracking-wide">{hInfo?.name}</span>
+                               <div className="mx-3 flex items-center gap-1.5 text-lg">
+                                 <span className="text-primary">{homeGoals.length}</span>
+                                 <span className="text-on-surface-variant/30 text-sm">-</span>
+                                 <span className="text-primary">{awayGoals.length}</span>
+                               </div>
+                               <span className="flex-1 text-on-surface truncate text-left text-xs uppercase tracking-wide">{aInfo?.name}</span>
+                             </div>
+                             
+                             {/* Timeline */}
+                             <div className="flex flex-col gap-1 max-h-24 overflow-y-auto px-1 text-[10px]">
+                               {matchEvents
+                                  .filter(e => (e.minute <= 45 || e.minute <= liveMinute) && ["goal","penalty_goal","own_goal","yellow","red","injury"].includes(e.type))
+                                  .sort((a,b) => a.minute - b.minute)
+                                  .map((e, i) => {
+                                      const icon = e.type === "goal" || e.type === "penalty_goal" ? "⚽" : e.type === "own_goal" ? "⚽🔙" : e.type === "yellow" ? "🟨" : e.type === "red" ? "🟥" : e.type === "injury" ? "🤕" : "";
+                                      const isHome = e.team === "home";
+                                      const name = e.playerName || e.player_name || e.player || "?";
+                                      return (
+                                        <div key={i} className={`flex items-center gap-1.5 ${isHome ? "justify-start" : "justify-end text-right"}`}>
+                                           {isHome && <span className="text-on-surface-variant/40 tabular-nums w-4 text-right shrink-0">{e.minute}'</span>}
+                                           {isHome && <span className="shrink-0">{icon}</span>}
+                                           <span className={`truncate max-w-[120px] ${e.type === "goal" || e.type === "penalty_goal" ? "text-primary font-bold" : e.type === "red" ? "text-red-400 font-bold" : "text-on-surface-variant"}`}>{name}</span>
+                                           {!isHome && <span className="shrink-0">{icon}</span>}
+                                           {!isHome && <span className="text-on-surface-variant/40 tabular-nums w-4 text-left shrink-0">{e.minute}'</span>}
+                                        </div>
+                                      )
+                                  })}
+                             </div>
+                          </div>
+                        )}
 
                         {/* ── Confirmed subs strip ── */}
                         {confirmedSubs.length > 0 && (
@@ -3219,7 +3272,8 @@ function App() {
                         })()}
                       </div>
                     </div>
-                  )}
+                    );
+                  })()}
 
                   {/* ── V2 TOP BAR ─────────────────────── */}
                   <div className="flex items-center justify-center mb-4">
