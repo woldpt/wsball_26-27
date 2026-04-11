@@ -514,6 +514,7 @@ function App() {
   const [selectedTeam, setSelectedTeam] = useState(null);
   const [selectedTeamSquad, setSelectedTeamSquad] = useState([]);
   const [selectedTeamLoading, setSelectedTeamLoading] = useState(false);
+  const [transferProposalModal, setTransferProposalModal] = useState(null); // { player, suggestedPrice }
   const [tactic, setTactic] = useState(DEFAULT_TACTIC);
   const [liveMinute, setLiveMinute] = useState(90);
   const [isPlayingMatch, setIsPlayingMatch] = useState(false);
@@ -809,6 +810,10 @@ function App() {
       setPalmaresTeamId(data.teamId);
     });
     socket.on("systemMessage", (msg) => addToast(msg));
+    socket.on("transferProposalResult", ({ ok, message }) => {
+      addToast(message);
+      if (ok) setTransferProposalModal(null);
+    });
     socket.on("teamAssigned", (data) => {
       const currentMe = meRef.current;
       if (!currentMe?.name || !currentMe?.roomCode) return;
@@ -1123,6 +1128,7 @@ function App() {
       socket.off("auctionUpdate");
       socket.off("auctionClosed");
       socket.off("systemMessage");
+      socket.off("transferProposalResult");
       socket.off("teamAssigned");
       socket.off("joinGameSuccess");
       socket.off("joinError");
@@ -5464,105 +5470,195 @@ function App() {
                   A carregar plantel...
                 </div>
               ) : (
-                <table className="w-full min-w-[620px] text-left text-sm border-collapse">
-                  <thead className="sticky top-0 bg-surface text-on-surface-variant uppercase text-[11px] tracking-widest border-b border-outline-variant/20">
-                    <tr>
-                      <th className="px-4 py-3 font-black">Pos</th>
-                      <th className="px-4 py-3 font-black">Nome</th>
-                      <th className="px-4 py-3 font-black text-center">Qual</th>
-                      <th className="px-4 py-3 font-black text-center">Agr.</th>
-                      <th className="px-4 py-3 font-black text-center">
-                        Golos
-                      </th>
-                      <th className="px-4 py-3 font-black text-center">
-                        Vermelhos
-                      </th>
-                      <th className="px-4 py-3 font-black text-center">
-                        Lesões
-                      </th>
-                      <th className="px-4 py-3 font-black text-center">
-                        Susp.
-                      </th>
-                    </tr>
-                  </thead>
-                  <tbody className="divide-y divide-zinc-800/60">
-                    {selectedTeamSquad.length === 0 ? (
-                      <tr>
-                        <td
-                          colSpan="8"
-                          className="px-4 py-8 text-center text-zinc-500 font-bold"
-                        >
-                          Sem jogadores encontrados.
-                        </td>
-                      </tr>
-                    ) : (
-                      selectedTeamSquad.map((player) => (
-                        <tr
-                          key={player.id}
-                          className={`hover:bg-zinc-800/50 transition-colors ${ENABLE_ROW_BG ? POSITION_BG_CLASS[player.position] : ""}`}
-                        >
-                          <td
-                            className={`px-4 py-2.5 font-black text-sm tracking-wider ${POSITION_TEXT_CLASS[player.position] || "text-zinc-300"}`}
-                          >
-                            {player.position}
-                          </td>
-                          <td className="px-4 py-2.5 font-bold text-white">
-                            {player.name}
-                            {!!player.is_star &&
-                              (player.position === "MED" ||
-                                player.position === "ATA") && (
-                                <span
-                                  className="ml-1 text-amber-400 font-black"
-                                  title="Craque"
-                                >
-                                  *
-                                </span>
-                              )}
-                          </td>
-                          <td className="px-4 py-2.5 text-center">
-                            <span className="bg-zinc-950 text-white font-black px-2 py-1.5 rounded text-sm border border-zinc-800">
-                              {player.skill}
-                            </span>
-                            {player.prev_skill !== null &&
-                              player.prev_skill !== undefined &&
-                              player.prev_skill !== player.skill && (
-                                <span
-                                  className={`ml-1 text-xs font-black ${player.skill > player.prev_skill ? "text-emerald-400" : "text-red-400"}`}
-                                >
-                                  {player.skill > player.prev_skill ? "▲" : "▼"}
-                                </span>
-                              )}
-                          </td>
-                          <td className="px-4 py-2.5 text-center">
-                            <AggBadge value={player.aggressiveness} />
-                          </td>
-                          <td className="px-4 py-2.5 text-center font-black text-emerald-400">
-                            {getPlayerStat(player, ["goals"])}{" "}
-                            <span className="text-zinc-500 text-xs font-normal">
-                              ({getPlayerStat(player, ["career_goals"])})
-                            </span>
-                          </td>
-                          <td className="px-4 py-2.5 text-center font-black text-red-400">
-                            {getPlayerStat(player, ["red_cards"])}{" "}
-                            <span className="text-zinc-500 text-xs font-normal">
-                              ({getPlayerStat(player, ["career_reds"])})
-                            </span>
-                          </td>
-                          <td className="px-4 py-2.5 text-center font-black text-orange-400">
-                            {getPlayerStat(player, ["injuries"])}{" "}
-                            <span className="text-zinc-500 text-xs font-normal">
-                              ({getPlayerStat(player, ["career_injuries"])})
-                            </span>
-                          </td>
-                          <td className="px-4 py-2.5 text-center font-black text-amber-400">
-                            {getPlayerStat(player, ["suspension_games"])}
-                          </td>
+                (() => {
+                  const isOwnTeam = isSameTeamId(selectedTeam?.id, me?.teamId);
+                  const isNpcTeam = !isOwnTeam && !players.some((p) => isSameTeamId(p.teamId, selectedTeam?.id));
+                  const showProposalCol = isNpcTeam;
+                  const colCount = showProposalCol ? 10 : 9;
+                  return (
+                    <table className="w-full min-w-[680px] text-left text-sm border-collapse">
+                      <thead className="sticky top-0 bg-surface text-on-surface-variant uppercase text-[11px] tracking-widest border-b border-outline-variant/20">
+                        <tr>
+                          <th className="px-4 py-3 font-black">Pos</th>
+                          <th className="px-4 py-3 font-black">Nome</th>
+                          <th className="px-4 py-3 font-black text-center">Nac.</th>
+                          <th className="px-4 py-3 font-black text-center">Qual</th>
+                          <th className="px-4 py-3 font-black text-center">Agr.</th>
+                          <th className="px-4 py-3 font-black text-center">Golos</th>
+                          <th className="px-4 py-3 font-black text-center">Vermelhos</th>
+                          <th className="px-4 py-3 font-black text-center">Lesões</th>
+                          <th className="px-4 py-3 font-black text-center">Susp.</th>
+                          {showProposalCol && (
+                            <th className="px-4 py-3 font-black text-center">Proposta</th>
+                          )}
                         </tr>
-                      ))
-                    )}
-                  </tbody>
-                </table>
+                      </thead>
+                      <tbody className="divide-y divide-zinc-800/60">
+                        {selectedTeamSquad.length === 0 ? (
+                          <tr>
+                            <td
+                              colSpan={colCount}
+                              className="px-4 py-8 text-center text-zinc-500 font-bold"
+                            >
+                              Sem jogadores encontrados.
+                            </td>
+                          </tr>
+                        ) : (
+                          selectedTeamSquad.map((player) => (
+                            <tr
+                              key={player.id}
+                              className={`hover:bg-zinc-800/50 transition-colors ${ENABLE_ROW_BG ? POSITION_BG_CLASS[player.position] : ""}`}
+                            >
+                              <td
+                                className={`px-4 py-2.5 font-black text-sm tracking-wider ${POSITION_TEXT_CLASS[player.position] || "text-zinc-300"}`}
+                              >
+                                {player.position}
+                              </td>
+                              <td className="px-4 py-2.5 font-bold text-white">
+                                {player.name}
+                                {!!player.is_star &&
+                                  (player.position === "MED" ||
+                                    player.position === "ATA") && (
+                                    <span
+                                      className="ml-1 text-amber-400 font-black"
+                                      title="Craque"
+                                    >
+                                      *
+                                    </span>
+                                  )}
+                              </td>
+                              <td className="px-4 py-2.5 text-center text-lg" title={FLAG_TO_COUNTRY[player.nationality] || player.nationality || "—"}>
+                                {player.nationality || "—"}
+                              </td>
+                              <td className="px-4 py-2.5 text-center">
+                                <span className="bg-zinc-950 text-white font-black px-2 py-1.5 rounded text-sm border border-zinc-800">
+                                  {player.skill}
+                                </span>
+                                {player.prev_skill !== null &&
+                                  player.prev_skill !== undefined &&
+                                  player.prev_skill !== player.skill && (
+                                    <span
+                                      className={`ml-1 text-xs font-black ${player.skill > player.prev_skill ? "text-emerald-400" : "text-red-400"}`}
+                                    >
+                                      {player.skill > player.prev_skill ? "▲" : "▼"}
+                                    </span>
+                                  )}
+                              </td>
+                              <td className="px-4 py-2.5 text-center">
+                                <AggBadge value={player.aggressiveness} />
+                              </td>
+                              <td className="px-4 py-2.5 text-center font-black text-emerald-400">
+                                {getPlayerStat(player, ["goals"])}{" "}
+                                <span className="text-zinc-500 text-xs font-normal">
+                                  ({getPlayerStat(player, ["career_goals"])})
+                                </span>
+                              </td>
+                              <td className="px-4 py-2.5 text-center font-black text-red-400">
+                                {getPlayerStat(player, ["red_cards"])}{" "}
+                                <span className="text-zinc-500 text-xs font-normal">
+                                  ({getPlayerStat(player, ["career_reds"])})
+                                </span>
+                              </td>
+                              <td className="px-4 py-2.5 text-center font-black text-orange-400">
+                                {getPlayerStat(player, ["injuries"])}{" "}
+                                <span className="text-zinc-500 text-xs font-normal">
+                                  ({getPlayerStat(player, ["career_injuries"])})
+                                </span>
+                              </td>
+                              <td className="px-4 py-2.5 text-center font-black text-amber-400">
+                                {getPlayerStat(player, ["suspension_games"])}
+                              </td>
+                              {showProposalCol && (
+                                <td className="px-4 py-2.5 text-center">
+                                  <button
+                                    onClick={() =>
+                                      setTransferProposalModal({
+                                        player,
+                                        suggestedPrice: Math.round((player.value || 0) * 1.35),
+                                      })
+                                    }
+                                    className="px-3 py-1.5 rounded text-xs font-black uppercase bg-emerald-700 hover:bg-emerald-600 text-white border border-emerald-500 transition-colors whitespace-nowrap"
+                                  >
+                                    Proposta
+                                  </button>
+                                </td>
+                              )}
+                            </tr>
+                          ))
+                        )}
+                      </tbody>
+                    </table>
+                  );
+                })()
               )}
+            </div>
+          </div>
+        </div>
+      )}
+
+      {transferProposalModal && (
+        <div
+          className="fixed inset-0 z-130 bg-zinc-950/90 backdrop-blur-sm p-4 md:p-8 flex items-center justify-center"
+          onClick={() => setTransferProposalModal(null)}
+        >
+          <div
+            className="w-full max-w-md bg-surface-container border border-outline-variant/20 rounded-2xl shadow-2xl overflow-hidden"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <div className="px-5 py-4 border-b border-zinc-800 bg-emerald-900/40">
+              <p className="text-xs uppercase tracking-widest font-black text-emerald-400 mb-1">
+                Proposta de Transferência
+              </p>
+              <h3 className="text-xl font-black text-white">
+                {transferProposalModal.player.nationality && (
+                  <span className="mr-2">{transferProposalModal.player.nationality}</span>
+                )}
+                {transferProposalModal.player.name}
+              </h3>
+              <p className="text-sm text-zinc-400 mt-0.5">
+                <span className={`font-black ${POSITION_TEXT_CLASS[transferProposalModal.player.position] || "text-zinc-300"}`}>
+                  {transferProposalModal.player.position}
+                </span>
+                {" · "}
+                <span className="font-black text-white">
+                  Qualidade {transferProposalModal.player.skill}
+                </span>
+                {" · "}
+                <span className="text-zinc-400">
+                  {FLAG_TO_COUNTRY[transferProposalModal.player.nationality] || ""}
+                </span>
+              </p>
+            </div>
+            <div className="px-5 py-5 space-y-4">
+              <div className="bg-zinc-900 rounded-lg p-4 space-y-2 text-sm">
+                <div className="flex justify-between items-center text-zinc-400">
+                  <span>Valor de mercado</span>
+                  <span className="font-bold text-white">{formatCurrency(transferProposalModal.player.value || 0)}</span>
+                </div>
+                <div className="flex justify-between items-center border-t border-zinc-700 pt-2">
+                  <span className="text-zinc-300 font-bold">Proposta sugerida pela IA</span>
+                  <span className="font-black text-emerald-400 text-base">{formatCurrency(transferProposalModal.suggestedPrice)}</span>
+                </div>
+                <p className="text-zinc-500 text-xs pt-1">
+                  A equipa AI aceitará este prémio de +35% sobre o valor de mercado.
+                </p>
+              </div>
+              <div className="flex gap-3">
+                <button
+                  onClick={() => setTransferProposalModal(null)}
+                  className="flex-1 px-4 py-2.5 rounded-lg font-black uppercase text-sm bg-zinc-800 hover:bg-zinc-700 text-zinc-300 border border-zinc-700 transition-colors"
+                >
+                  Cancelar
+                </button>
+                <button
+                  onClick={() => {
+                    socket.emit("makeTransferProposal", { playerId: transferProposalModal.player.id });
+                  }}
+                  className="flex-1 px-4 py-2.5 rounded-lg font-black uppercase text-sm bg-emerald-700 hover:bg-emerald-600 text-white border border-emerald-500 transition-colors"
+                >
+                  Confirmar Proposta
+                </button>
+              </div>
             </div>
           </div>
         </div>

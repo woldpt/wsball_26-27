@@ -1,0 +1,9 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(grep -r \"nationality\\\\|nacionalidade\\\\|proposta\\\\|transfer\" /z/Coding/cashball_26_27/server --include=\"*.js\" ! -path \"*/node_modules/*\" ! -path \"*/dist/*\")",
+      "Bash(grep -r \"requestTeamSquad\\\\|teamSquadData\" /z/Coding/cashball_26_27/server --include=\"*.js\" ! -path \"*/node_modules/*\" ! -path \"*/dist/*\")",
+      "Bash(ls -la /z/Coding/cashball_26_27/server/*.js)"
+    ]
+  }
+}
