@@ -274,4 +274,116 @@ export function registerTransferSocketHandlers(
       },
     );
   });
+
+  socket.on("makeTransferProposal", ({ playerId }) => {
+    const game = getGameBySocket(socket.id);
+    if (!game) return;
+    const playerState = getPlayerBySocket(game, socket.id);
+    if (!playerState) return;
+
+    game.db.get(
+      "SELECT * FROM players WHERE id = ?",
+      [playerId],
+      (err, player) => {
+        if (err || !player) {
+          socket.emit("transferProposalResult", {
+            ok: false,
+            message: "Jogador não encontrado.",
+          });
+          return;
+        }
+        if (Number(player.team_id) === Number(playerState.teamId)) {
+          socket.emit("transferProposalResult", {
+            ok: false,
+            message: "Este jogador já pertence à tua equipa!",
+          });
+          return;
+        }
+        // Only allow proposals to teams without a connected human coach
+        const targetTeamHasHuman = Object.values(game.playersByName).some(
+          (p: any) => Number(p.teamId) === Number(player.team_id) && p.socketId,
+        );
+        if (targetTeamHasHuman) {
+          socket.emit("transferProposalResult", {
+            ok: false,
+            message:
+              "Não podes fazer propostas a equipas controladas por outros treinadores.",
+          });
+          return;
+        }
+        // Premium price: 35% above market value
+        const proposalPrice = Math.round((player.value || 0) * 1.35);
+        game.db.get(
+          "SELECT budget FROM teams WHERE id = ?",
+          [playerState.teamId],
+          (err2, team) => {
+            if (err2 || !team) {
+              socket.emit("transferProposalResult", {
+                ok: false,
+                message: "Erro ao verificar orçamento.",
+              });
+              return;
+            }
+            if ((team as any).budget < proposalPrice) {
+              socket.emit("transferProposalResult", {
+                ok: false,
+                message: `Orçamento insuficiente. São necessários €${proposalPrice.toLocaleString("pt-PT")}.`,
+              });
+              return;
+            }
+            game.db.run(
+              "UPDATE teams SET budget = budget - ? WHERE id = ?",
+              [proposalPrice, playerState.teamId],
+              (errBudget) => {
+                if (errBudget) {
+                  socket.emit("transferProposalResult", {
+                    ok: false,
+                    message: "Erro ao processar transferência.",
+                  });
+                  return;
+                }
+                if (player.team_id) {
+                  game.db.run(
+                    "UPDATE teams SET budget = budget + ? WHERE id = ?",
+                    [proposalPrice, player.team_id],
+                  );
+                }
+                game.db.run(
+                  "UPDATE players SET team_id = ?, contract_until_matchweek = ?, signed_season = ?, transfer_status = 'none', transfer_price = 0, contract_request_pending = 0, contract_requested_wage = 0 WHERE id = ?",
+                  [
+                    playerState.teamId,
+                    getSeasonEndMatchweek(game.matchweek),
+                    Math.ceil(Math.max(1, game.matchweek) / 14),
+                    playerId,
+                  ],
+                  (errPlayer) => {
+                    if (errPlayer) {
+                      socket.emit("transferProposalResult", {
+                        ok: false,
+                        message: "Erro ao registar jogador.",
+                      });
+                      return;
+                    }
+                    refreshMarket(game);
+                    game.db.all("SELECT * FROM teams", (_e1, teams) =>
+                      io.to(game.roomCode).emit("teamsData", teams),
+                    );
+                    game.db.all(
+                      "SELECT * FROM players WHERE team_id = ?",
+                      [playerState.teamId],
+                      (_e2, squad) => socket.emit("mySquad", squad),
+                    );
+                    socket.emit("transferProposalResult", {
+                      ok: true,
+                      message: `Contrataste ${player.name} por €${proposalPrice.toLocaleString("pt-PT")}!`,
+                    });
+                  },
+                );
+              },
+            );
+          },
+        );
+      },
+    );
+  });
 }

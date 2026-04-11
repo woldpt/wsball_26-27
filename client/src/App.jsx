@@ -5636,11 +5636,11 @@ function App() {
                   <span className="font-bold text-white">{formatCurrency(transferProposalModal.player.value || 0)}</span>
                 </div>
                 <div className="flex justify-between items-center border-t border-zinc-700 pt-2">
-                  <span className="text-zinc-300 font-bold">Proposta sugerida pela IA</span>
+                  <span className="text-zinc-300 font-bold">Valor da proposta (+35%)</span>
                   <span className="font-black text-emerald-400 text-base">{formatCurrency(transferProposalModal.suggestedPrice)}</span>
                 </div>
                 <p className="text-zinc-500 text-xs pt-1">
-                  A equipa AI aceitará este prémio de +35% sobre o valor de mercado.
+                  A equipa adversária aceitará este prémio sobre o valor de mercado.
                 </p>
               </div>
               <div className="flex gap-3">
