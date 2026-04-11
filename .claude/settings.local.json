@@ -9,7 +9,8 @@
       "Bash(node_modules/.bin/tsc --noEmit)",
       "Bash(./node_modules/.bin/tsc --noEmit)",
       "Bash(node \"z:/Coding/cashball_26_27/server/node_modules/.bin/tsc\" --version)",
-      "Bash(cmd /c \"cd z:\\\\Coding\\\\cashball_26_27\\\\server && node_modules\\\\.bin\\\\tsc.cmd --noEmit 2>&1\")"
+      "Bash(cmd /c \"cd z:\\\\Coding\\\\cashball_26_27\\\\server && node_modules\\\\.bin\\\\tsc.cmd --noEmit 2>&1\")",
+      "Bash(xargs grep:*)"
     ]
   }
 }

@@ -4026,20 +4026,12 @@ function App() {
                       </div>
                       <div className="p-4 space-y-2">
                         {(cupDraw.fixtures || []).map((fixture, idx) => {
-                          const hInfo = teams.find(
-                            (t) =>
-                              t.id === fixture.homeTeamId ||
-                              t.id === fixture[0],
-                          );
-                          const aInfo = teams.find(
-                            (t) =>
-                              t.id === fixture.awayTeamId ||
-                              t.id === fixture[1],
-                          );
-                          const homeId = fixture.homeTeamId ?? fixture[0];
-                          const awayId = fixture.awayTeamId ?? fixture[1];
-                          const hName = hInfo?.name || homeId;
-                          const aName = aInfo?.name || awayId;
+                          const hInfo = fixture.homeTeam;
+                          const aInfo = fixture.awayTeam;
+                          const homeId = hInfo?.id;
+                          const awayId = aInfo?.id;
+                          const hName = hInfo?.name || "?";
+                          const aName = aInfo?.name || "?";
                           const isMine =
                             homeId === me.teamId || awayId === me.teamId;
                           return (
