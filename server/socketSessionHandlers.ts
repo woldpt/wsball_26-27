@@ -336,6 +336,34 @@ export function registerSessionSocketHandlers(
     }
   });
 
+  socket.on("requestCalendar", async () => {
+    const game = getGameBySocket(socket.id);
+    if (!game) return;
+    try {
+      const leagueMatches = await runAll(
+        game.db,
+        "SELECT id, matchweek, home_team_id, away_team_id, home_score, away_score, attendance FROM matches WHERE played = 1 ORDER BY matchweek, id",
+      );
+      const cupMatches = await runAll(
+        game.db,
+        "SELECT id, round, home_team_id, away_team_id, home_score, away_score, home_et_score, away_et_score, home_penalties, away_penalties, winner_team_id, played FROM cup_matches WHERE season = ? ORDER BY round, id",
+        [game.season],
+      );
+      socket.emit("calendarData", {
+        calendarIndex: game.calendarIndex,
+        season: game.season,
+        year: game.year,
+        matchweek: game.matchweek,
+        gamePhase: game.gamePhase,
+        leagueMatches,
+        cupMatches,
+      });
+    } catch (err) {
+      console.error(`[${game.roomCode}] requestCalendar error:`, err);
+      socket.emit("calendarData", null);
+    }
+  });
+
   socket.on("requestPalmares", async ({ teamId }: { teamId?: number } = {}) => {
     const game = getGameBySocket(socket.id);
     if (!game) return;

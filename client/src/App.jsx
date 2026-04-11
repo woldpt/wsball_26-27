@@ -49,6 +49,52 @@ const POSITION_BG_CLASS = {
 
 const MAX_MATCH_SUBS = 3;
 const ADMIN_SESSION_KEY = "cashballAdminSession";
+
+// ── SEASON CALENDAR ───────────────────────────────────────────────────────────
+const SEASON_CALENDAR = [
+  { type: "league", matchweek: 1,  calendarIndex: 0  },
+  { type: "league", matchweek: 2,  calendarIndex: 1  },
+  { type: "league", matchweek: 3,  calendarIndex: 2  },
+  { type: "cup",    round: 1, roundName: "16 avos de final", calendarIndex: 3  },
+  { type: "league", matchweek: 4,  calendarIndex: 4  },
+  { type: "league", matchweek: 5,  calendarIndex: 5  },
+  { type: "league", matchweek: 6,  calendarIndex: 6  },
+  { type: "cup",    round: 2, roundName: "Oitavos de final", calendarIndex: 7  },
+  { type: "league", matchweek: 7,  calendarIndex: 8  },
+  { type: "league", matchweek: 8,  calendarIndex: 9  },
+  { type: "league", matchweek: 9,  calendarIndex: 10 },
+  { type: "cup",    round: 3, roundName: "Quartos de final", calendarIndex: 11 },
+  { type: "league", matchweek: 10, calendarIndex: 12 },
+  { type: "league", matchweek: 11, calendarIndex: 13 },
+  { type: "cup",    round: 4, roundName: "Meias-finais",     calendarIndex: 14 },
+  { type: "league", matchweek: 12, calendarIndex: 15 },
+  { type: "league", matchweek: 13, calendarIndex: 16 },
+  { type: "league", matchweek: 14, calendarIndex: 17 },
+  { type: "cup",    round: 5, roundName: "Final",            calendarIndex: 18 },
+];
+
+// Round-robin fixture generator (mirrors server engine.ts)
+function generateLeagueFixtures(teamsInDivision, matchweek) {
+  const sorted = [...teamsInDivision].sort((a, b) => a.id - b.id);
+  const n = sorted.length;
+  if (n < 2) return [];
+  const totalRounds = n - 1;
+  const totalMatchweeks = totalRounds * 2;
+  const normMw = ((matchweek - 1) % totalMatchweeks) + 1;
+  const isSecondLeg = normMw > totalRounds;
+  const round = isSecondLeg ? normMw - totalRounds - 1 : normMw - 1;
+  const rotating = sorted.slice(1);
+  const rotated = rotating.map((_, i) => rotating[(i + round) % rotating.length]);
+  const allTeams = [sorted[0], ...rotated];
+  const fixtures = [];
+  for (let i = 0; i < Math.floor(n / 2); i++) {
+    let home = allTeams[i];
+    let away = allTeams[n - 1 - i];
+    if (isSecondLeg) [home, away] = [away, home];
+    fixtures.push({ homeTeamId: home.id, awayTeamId: away.id });
+  }
+  return fixtures;
+}
 const DEFAULT_TACTIC = { formation: "4-4-2", style: "Balanced", positions: {} };
 
 function loadAdminSession() {
@@ -515,6 +561,8 @@ function App() {
   const [selectedTeamSquad, setSelectedTeamSquad] = useState([]);
   const [selectedTeamLoading, setSelectedTeamLoading] = useState(false);
   const [transferProposalModal, setTransferProposalModal] = useState(null); // { player, suggestedPrice }
+  const [calendarData, setCalendarData] = useState(null);
+  const [calendarFilter, setCalendarFilter] = useState("all");
   const [tactic, setTactic] = useState(DEFAULT_TACTIC);
   const [liveMinute, setLiveMinute] = useState(90);
   const [isPlayingMatch, setIsPlayingMatch] = useState(false);
@@ -593,6 +641,7 @@ function App() {
   // BUG-07 FIX: All socket listeners in a single effect with [] dep so they're
   // registered exactly once and cleaned up correctly on unmount.
   useEffect(() => {
+    socket.on("calendarData", (data) => setCalendarData(data));
     socket.on("teamsData", (data) => setTeams(data));
     socket.on("teamForms", (data) => setTeamForms(data || {}));
     socket.on("playerListUpdate", (data) => {
@@ -1630,6 +1679,12 @@ function App() {
     socket.emit("requestPalmares", { teamId: me.teamId });
   }, [activeTab, me?.teamId]);
 
+  // Refresh calendar whenever the tab is opened or a matchweek advances
+  useEffect(() => {
+    if (activeTab !== "calendario") return;
+    socket.emit("requestCalendar");
+  }, [activeTab, matchweekCount]);
+
   // Close status picker when clicking anywhere outside
   useEffect(() => {
     if (!openStatusPickerId) return;
@@ -2642,6 +2697,7 @@ function App() {
                 icon: "leaderboard",
               },
               { key: "cup", label: "Taça", icon: "emoji_events" },
+              { key: "calendario", label: "Calendário", icon: "calendar_month" },
               { key: "market", label: "Mercado", icon: "swap_horiz" },
               { key: "players", label: "Jogadores", icon: "group" },
               { key: "tactic", label: "Táctica", icon: "strategy" },
@@ -2716,6 +2772,7 @@ function App() {
             { key: "finances", label: "Finanças", icon: "payments" },
             { key: "standings", label: "Classif.", icon: "leaderboard" },
             { key: "cup", label: "Taça", icon: "emoji_events" },
+            { key: "calendario", label: "Calendário", icon: "calendar_month" },
             { key: "players", label: "Jogadores", icon: "group" },
             { key: "tactic", label: "Táctica", icon: "strategy" },
             { key: "market", label: "Mercado", icon: "swap_horiz" },
@@ -4066,6 +4123,446 @@ function App() {
                   )}
                 </div>
               )}
+
+              {activeTab === "calendario" && (() => {
+                const cal = calendarData;
+                const curIdx = cal?.calendarIndex ?? 0;
+                const calYear = cal?.year ?? seasonYear;
+                const done = Math.min(curIdx, SEASON_CALENDAR.length);
+                const pct = Math.round((done / SEASON_CALENDAR.length) * 100);
+                const myTeamId = me?.teamId;
+
+                // Per-entry status helpers
+                const getStatus = (entry) => {
+                  if (entry.calendarIndex < curIdx) return "done";
+                  if (entry.calendarIndex === curIdx) return "current";
+                  return "future";
+                };
+
+                const FILTER_TABS = [
+                  { key: "all",  label: "Tudo" },
+                  { key: "mine", label: "Os meus" },
+                  { key: "cup",  label: "Taça" },
+                ];
+
+                return (
+                  <div className="space-y-4">
+                    {/* ── PAGE HEADER ──────────────────────────────────── */}
+                    <div className="flex flex-wrap items-start justify-between gap-3">
+                      <div>
+                        <h2 className="text-lg font-headline font-black text-on-surface">
+                          Calendário
+                        </h2>
+                        <p className="text-xs text-on-surface-variant mt-0.5">
+                          Época {calYear}/{calYear + 1}
+                          {cal ? ` · Temporada ${cal.season}` : ""}
+                        </p>
+                      </div>
+                      {/* Progress pill */}
+                      <div className="flex flex-col items-end gap-1 shrink-0">
+                        <span className="text-[10px] font-black uppercase tracking-widest text-on-surface-variant">
+                          {done} / {SEASON_CALENDAR.length} semanas
+                        </span>
+                        <div className="w-36 h-1.5 bg-outline-variant/30 rounded-full overflow-hidden">
+                          <div
+                            className="h-full bg-primary rounded-full transition-all duration-500"
+                            style={{ width: `${pct}%` }}
+                          />
+                        </div>
+                      </div>
+                    </div>
+
+                    {/* ── FILTER TABS ──────────────────────────────────── */}
+                    <div className="flex gap-1.5 flex-wrap">
+                      {FILTER_TABS.map(({ key, label }) => (
+                        <button
+                          key={key}
+                          onClick={() => setCalendarFilter(key)}
+                          className={`px-3 py-1.5 text-[11px] font-black uppercase tracking-widest rounded transition-colors ${
+                            calendarFilter === key
+                              ? "bg-primary text-on-primary"
+                              : "bg-surface-container text-on-surface-variant hover:bg-surface-bright"
+                          }`}
+                        >
+                          {label}
+                        </button>
+                      ))}
+                    </div>
+
+                    {/* ── LOADING STATE ─────────────────────────────────── */}
+                    {!cal && (
+                      <div className="bg-surface-container rounded-lg p-10 text-center">
+                        <span className="material-symbols-outlined text-4xl text-on-surface-variant/40 block mb-2">
+                          calendar_month
+                        </span>
+                        <p className="text-on-surface-variant font-bold text-sm">
+                          A carregar calendário…
+                        </p>
+                      </div>
+                    )}
+
+                    {/* ── CALENDAR ENTRIES ──────────────────────────────── */}
+                    {cal && (
+                      <div className="space-y-2">
+                        {SEASON_CALENDAR
+                          .filter((entry) => {
+                            if (calendarFilter === "cup") return entry.type === "cup";
+                            return true;
+                          })
+                          .map((entry) => {
+                            const status = getStatus(entry);
+                            const isCurrent = status === "current";
+                            const isDone = status === "done";
+                            const isFuture = status === "future";
+                            const isCupEntry = entry.type === "cup";
+
+                            // ── gather fixtures ─────────────────────────
+                            // For league entries: group by division
+                            const leagueDivisions = !isCupEntry
+                              ? [1, 2, 3, 4].map((div) => {
+                                  const divTeams = teams
+                                    .filter((t) => t.division === div)
+                                    .sort((a, b) => a.id - b.id);
+                                  const fixtures = generateLeagueFixtures(divTeams, entry.matchweek);
+                                  return {
+                                    div,
+                                    fixtures: fixtures.map((f) => {
+                                      const result = isDone
+                                        ? cal.leagueMatches.find(
+                                            (m) =>
+                                              m.matchweek === entry.matchweek &&
+                                              m.home_team_id === f.homeTeamId &&
+                                              m.away_team_id === f.awayTeamId,
+                                          )
+                                        : null;
+                                      return { ...f, result };
+                                    }),
+                                  };
+                                })
+                              : [];
+
+                            // For cup entries: pull from cupMatches
+                            const cupFixtures = isCupEntry
+                              ? cal.cupMatches.filter((m) => m.round === entry.round)
+                              : [];
+                            const cupDrawn = isCupEntry && cupFixtures.length > 0;
+                            const cupPlayed = isCupEntry && cupFixtures.some((m) => m.played);
+
+                            // ── "mine" filter: does my team appear? ─────
+                            const myTeamInLeague =
+                              !isCupEntry &&
+                              leagueDivisions.some((d) =>
+                                d.fixtures.some(
+                                  (f) =>
+                                    f.homeTeamId === myTeamId ||
+                                    f.awayTeamId === myTeamId,
+                                ),
+                              );
+                            const myTeamInCup =
+                              isCupEntry &&
+                              (cupDrawn
+                                ? cupFixtures.some(
+                                    (f) =>
+                                      f.home_team_id === myTeamId ||
+                                      f.away_team_id === myTeamId,
+                                  )
+                                : false);
+
+                            if (
+                              calendarFilter === "mine" &&
+                              isCupEntry &&
+                              !myTeamInCup &&
+                              cupDrawn
+                            )
+                              return null;
+
+                            // ── decide which divisions to show ──────────
+                            const visibleDivisions =
+                              calendarFilter === "mine"
+                                ? leagueDivisions.filter((d) =>
+                                    d.fixtures.some(
+                                      (f) =>
+                                        f.homeTeamId === myTeamId ||
+                                        f.awayTeamId === myTeamId,
+                                    ),
+                                  )
+                                : leagueDivisions;
+
+                            // ── card style per status ───────────────────
+                            const cardClass = isCurrent
+                              ? "bg-primary/8 border border-primary/50 rounded-lg overflow-hidden"
+                              : isDone
+                              ? "bg-surface-container rounded-lg overflow-hidden opacity-80"
+                              : "bg-surface-container rounded-lg overflow-hidden opacity-60";
+
+                            // ── status badge ────────────────────────────
+                            const statusBadge = isDone ? (
+                              <span className="text-[9px] font-black uppercase tracking-widest bg-surface-bright text-on-surface-variant/60 px-2 py-0.5 rounded">
+                                Concluído
+                              </span>
+                            ) : isCurrent ? (
+                              <span className="text-[9px] font-black uppercase tracking-widest bg-primary/20 text-primary px-2 py-0.5 rounded animate-pulse">
+                                Próximo
+                              </span>
+                            ) : isCupEntry && !isCurrent && !isDone ? (
+                              <span className="text-[9px] font-black uppercase tracking-widest bg-amber-500/15 text-amber-400 px-2 py-0.5 rounded">
+                                Aguarda sorteio
+                              </span>
+                            ) : (
+                              <span className="text-[9px] font-black uppercase tracking-widest bg-surface-bright text-on-surface-variant/40 px-2 py-0.5 rounded">
+                                Por jogar
+                              </span>
+                            );
+
+                            return (
+                              <div key={entry.calendarIndex} className={cardClass}>
+                                {/* ── ENTRY HEADER ─────────────────────── */}
+                                <div
+                                  className={`flex items-center justify-between gap-3 px-4 py-2.5 border-b ${
+                                    isCupEntry
+                                      ? "border-amber-800/30 bg-amber-900/15"
+                                      : isCurrent
+                                      ? "border-primary/20 bg-primary/5"
+                                      : "border-outline-variant/20"
+                                  }`}
+                                >
+                                  <div className="flex items-center gap-2 min-w-0">
+                                    {/* Competition badge */}
+                                    <span
+                                      className={`shrink-0 text-[9px] font-black uppercase tracking-widest px-1.5 py-0.5 rounded ${
+                                        isCupEntry
+                                          ? "bg-amber-500/25 text-amber-400"
+                                          : "bg-primary/20 text-primary"
+                                      }`}
+                                    >
+                                      {isCupEntry ? "Taça" : "Liga"}
+                                    </span>
+                                    {/* Round / jornada label */}
+                                    <span className="font-black text-sm text-on-surface truncate">
+                                      {isCupEntry
+                                        ? entry.roundName
+                                        : `Jornada ${entry.matchweek}`}
+                                    </span>
+                                    {isCurrent && (
+                                      <span className="shrink-0 relative flex h-2 w-2">
+                                        <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-primary opacity-75" />
+                                        <span className="relative inline-flex rounded-full h-2 w-2 bg-primary" />
+                                      </span>
+                                    )}
+                                  </div>
+                                  {statusBadge}
+                                </div>
+
+                                {/* ── LEAGUE FIXTURES ──────────────────── */}
+                                {!isCupEntry && (
+                                  <div className="divide-y divide-outline-variant/10">
+                                    {visibleDivisions.map(({ div, fixtures: divFixtures }) => {
+                                      if (divFixtures.length === 0) return null;
+                                      return (
+                                        <div key={div}>
+                                          {/* Division sub-header */}
+                                          <div className="px-4 py-1 bg-surface-dim/40">
+                                            <span className="text-[9px] font-black uppercase tracking-widest text-on-surface-variant/50">
+                                              {DIVISION_NAMES[div] || `Divisão ${div}`}
+                                            </span>
+                                          </div>
+                                          {divFixtures.map((f, fi) => {
+                                            const homeInfo = teams.find((t) => t.id === f.homeTeamId);
+                                            const awayInfo = teams.find((t) => t.id === f.awayTeamId);
+                                            const isMyMatch =
+                                              f.homeTeamId === myTeamId ||
+                                              f.awayTeamId === myTeamId;
+                                            return (
+                                              <div
+                                                key={fi}
+                                                className={`flex items-center px-4 py-1.5 gap-2 border-b border-outline-variant/5 last:border-0 ${
+                                                  isMyMatch ? "bg-primary/8" : ""
+                                                }`}
+                                              >
+                                                {/* Home team */}
+                                                <div className="flex items-center gap-1.5 flex-1 min-w-0 justify-end">
+                                                  {isMyMatch && f.homeTeamId === myTeamId && (
+                                                    <span className="shrink-0 text-[8px] font-black text-primary uppercase tracking-wider">
+                                                      casa
+                                                    </span>
+                                                  )}
+                                                  <span
+                                                    className={`text-[11px] font-bold truncate ${
+                                                      isMyMatch && f.homeTeamId === myTeamId
+                                                        ? "text-primary"
+                                                        : "text-on-surface"
+                                                    }`}
+                                                  >
+                                                    {homeInfo?.name ?? f.homeTeamId}
+                                                  </span>
+                                                  <span
+                                                    className="shrink-0 w-2 h-2 rounded-full"
+                                                    style={{ backgroundColor: homeInfo?.color_primary || "#666" }}
+                                                  />
+                                                </div>
+                                                {/* Score or VS */}
+                                                <div className="shrink-0 w-14 text-center">
+                                                  {f.result ? (
+                                                    <span className="text-xs font-black font-headline text-on-surface bg-surface border border-outline-variant/20 rounded px-2 py-0.5">
+                                                      {f.result.home_score} – {f.result.away_score}
+                                                    </span>
+                                                  ) : (
+                                                    <span className="text-[10px] font-black text-on-surface-variant/40">
+                                                      vs
+                                                    </span>
+                                                  )}
+                                                </div>
+                                                {/* Away team */}
+                                                <div className="flex items-center gap-1.5 flex-1 min-w-0">
+                                                  <span
+                                                    className="shrink-0 w-2 h-2 rounded-full"
+                                                    style={{ backgroundColor: awayInfo?.color_primary || "#666" }}
+                                                  />
+                                                  <span
+                                                    className={`text-[11px] font-bold truncate ${
+                                                      isMyMatch && f.awayTeamId === myTeamId
+                                                        ? "text-primary"
+                                                        : "text-on-surface"
+                                                    }`}
+                                                  >
+                                                    {awayInfo?.name ?? f.awayTeamId}
+                                                  </span>
+                                                  {isMyMatch && f.awayTeamId === myTeamId && (
+                                                    <span className="shrink-0 text-[8px] font-black text-primary uppercase tracking-wider">
+                                                      fora
+                                                    </span>
+                                                  )}
+                                                </div>
+                                              </div>
+                                            );
+                                          })}
+                                        </div>
+                                      );
+                                    })}
+                                  </div>
+                                )}
+
+                                {/* ── CUP FIXTURES ─────────────────────── */}
+                                {isCupEntry && (
+                                  <div>
+                                    {!cupDrawn && (
+                                      <div className="px-4 py-4 flex items-center gap-2 text-on-surface-variant/50">
+                                        <span className="material-symbols-outlined text-base leading-none">
+                                          casino
+                                        </span>
+                                        <span className="text-xs font-bold italic">
+                                          Sorteio por realizar
+                                        </span>
+                                      </div>
+                                    )}
+                                    {cupDrawn &&
+                                      cupFixtures.map((f, fi) => {
+                                        const homeInfo = teams.find((t) => t.id === f.home_team_id);
+                                        const awayInfo = teams.find((t) => t.id === f.away_team_id);
+                                        const winnerInfo = teams.find((t) => t.id === f.winner_team_id);
+                                        const isMyMatch =
+                                          f.home_team_id === myTeamId ||
+                                          f.away_team_id === myTeamId;
+                                        const hasPenalties =
+                                          f.home_penalties > 0 || f.away_penalties > 0;
+                                        const hasET =
+                                          (f.home_et_score > 0 || f.away_et_score > 0) &&
+                                          !hasPenalties;
+                                        if (calendarFilter === "mine" && !isMyMatch) return null;
+                                        return (
+                                          <div
+                                            key={fi}
+                                            className={`flex items-center gap-2 px-4 py-2 border-b border-outline-variant/5 last:border-0 ${
+                                              isMyMatch ? "bg-primary/8" : ""
+                                            }`}
+                                          >
+                                            {/* Home */}
+                                            <div className="flex items-center gap-1.5 flex-1 min-w-0 justify-end">
+                                              <span
+                                                className={`text-[11px] font-bold truncate ${
+                                                  isMyMatch && f.home_team_id === myTeamId
+                                                    ? "text-primary"
+                                                    : f.played && f.winner_team_id !== f.home_team_id
+                                                    ? "text-on-surface-variant/50"
+                                                    : "text-on-surface"
+                                                }`}
+                                              >
+                                                {homeInfo?.name ?? f.home_team_id}
+                                              </span>
+                                              <span
+                                                className="shrink-0 w-2 h-2 rounded-full"
+                                                style={{ backgroundColor: homeInfo?.color_primary || "#666" }}
+                                              />
+                                            </div>
+                                            {/* Score or VS */}
+                                            <div className="shrink-0 w-20 text-center">
+                                              {f.played ? (
+                                                <span className="text-xs font-black font-headline text-on-surface bg-surface border border-outline-variant/20 rounded px-2 py-0.5 whitespace-nowrap">
+                                                  {f.home_score} – {f.away_score}
+                                                  {hasPenalties && (
+                                                    <span className="ml-1 text-[9px] text-amber-400">
+                                                      ({f.home_penalties}–{f.away_penalties} gp)
+                                                    </span>
+                                                  )}
+                                                  {hasET && (
+                                                    <span className="ml-1 text-[9px] text-zinc-500">
+                                                      (p.e.)
+                                                    </span>
+                                                  )}
+                                                </span>
+                                              ) : (
+                                                <span className="text-[10px] font-black text-on-surface-variant/40">
+                                                  vs
+                                                </span>
+                                              )}
+                                            </div>
+                                            {/* Away */}
+                                            <div className="flex items-center gap-1.5 flex-1 min-w-0">
+                                              <span
+                                                className="shrink-0 w-2 h-2 rounded-full"
+                                                style={{ backgroundColor: awayInfo?.color_primary || "#666" }}
+                                              />
+                                              <span
+                                                className={`text-[11px] font-bold truncate ${
+                                                  isMyMatch && f.away_team_id === myTeamId
+                                                    ? "text-primary"
+                                                    : f.played && f.winner_team_id !== f.away_team_id
+                                                    ? "text-on-surface-variant/50"
+                                                    : "text-on-surface"
+                                                }`}
+                                              >
+                                                {awayInfo?.name ?? f.away_team_id}
+                                              </span>
+                                            </div>
+                                          </div>
+                                        );
+                                      })}
+                                    {/* Winner callout */}
+                                    {cupPlayed && entry.round === 5 &&
+                                      (() => {
+                                        const finalMatch = cupFixtures.find((m) => m.played);
+                                        const champ = finalMatch
+                                          ? teams.find((t) => t.id === finalMatch.winner_team_id)
+                                          : null;
+                                        return champ ? (
+                                          <div className="px-4 py-2 border-t border-amber-800/30 bg-amber-900/10 flex items-center gap-2">
+                                            <span className="text-amber-400 text-sm">🏆</span>
+                                            <span className="text-xs font-black text-amber-400 uppercase tracking-widest">
+                                              Vencedor: {champ.name}
+                                            </span>
+                                          </div>
+                                        ) : null;
+                                      })()}
+                                  </div>
+                                )}
+                              </div>
+                            );
+                          })}
+                      </div>
+                    )}
+                  </div>
+                );
+              })()}
 
               {activeTab === "club" && (
                 <div className="space-y-6">
