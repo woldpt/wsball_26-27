@@ -4336,9 +4336,12 @@ function App() {
                                             }`}
                                           >
                                             <div className="flex items-center gap-1.5 flex-1 min-w-0 justify-end">
-                                              <span className={`text-[11px] font-bold truncate ${isMyMatch && f.home_team_id === myTeamId ? "text-primary" : f.played && f.winner_team_id !== f.home_team_id ? "text-on-surface-variant/50" : "text-on-surface"}`}>
+                                              <button
+                                                className={`text-[11px] font-bold truncate text-right ${isMyMatch && f.home_team_id === myTeamId ? "text-primary" : f.played && f.winner_team_id !== f.home_team_id ? "text-on-surface-variant/50" : "text-on-surface hover:underline"}`}
+                                                onClick={(e) => { e.stopPropagation(); if (f.home_team_id !== myTeamId && homeInfo) handleOpenTeamSquad(homeInfo); }}
+                                              >
                                                 {homeInfo?.name ?? f.home_team_id}
-                                              </span>
+                                              </button>
                                               <span className="shrink-0 w-2 h-2 rounded-full" style={{ backgroundColor: homeInfo?.color_primary || "#666" }} />
                                             </div>
                                             <div className="shrink-0 w-20 text-center">
@@ -4354,9 +4357,12 @@ function App() {
                                             </div>
                                             <div className="flex items-center gap-1.5 flex-1 min-w-0">
                                               <span className="shrink-0 w-2 h-2 rounded-full" style={{ backgroundColor: awayInfo?.color_primary || "#666" }} />
-                                              <span className={`text-[11px] font-bold truncate ${isMyMatch && f.away_team_id === myTeamId ? "text-primary" : f.played && f.winner_team_id !== f.away_team_id ? "text-on-surface-variant/50" : "text-on-surface"}`}>
+                                              <button
+                                                className={`text-[11px] font-bold truncate text-left ${isMyMatch && f.away_team_id === myTeamId ? "text-primary" : f.played && f.winner_team_id !== f.away_team_id ? "text-on-surface-variant/50" : "text-on-surface hover:underline"}`}
+                                                onClick={(e) => { e.stopPropagation(); if (f.away_team_id !== myTeamId && awayInfo) handleOpenTeamSquad(awayInfo); }}
+                                              >
                                                 {awayInfo?.name ?? f.away_team_id}
-                                              </span>
+                                              </button>
                                             </div>
                                           </div>
                                         );
@@ -4381,21 +4387,27 @@ function App() {
                             }
 
                             // ── LEAGUE ENTRY ─────────────────────────────
-                            const divFixtures = generateLeagueFixtures(
-                              myDivTeams,
-                              entry.matchweek,
-                              myTeamId,
-                            ).map((f) => {
-                              const result = isDone
-                                ? cal.leagueMatches.find(
+                            // For done matchweeks: use actual DB records as the source
+                            // of truth (home/away and scores).  For future/current:
+                            // use the fixture generator (with swap correction).
+                            const divFixtures = isDone
+                              ? cal.leagueMatches
+                                  .filter(
                                     (m) =>
                                       m.matchweek === entry.matchweek &&
-                                      m.home_team_id === f.homeTeamId &&
-                                      m.away_team_id === f.awayTeamId,
-                                  ) ?? null
-                                : null;
-                              return { ...f, result };
-                            });
+                                      myDivTeams.some((t) => t.id === m.home_team_id) &&
+                                      myDivTeams.some((t) => t.id === m.away_team_id),
+                                  )
+                                  .map((m) => ({
+                                    homeTeamId: m.home_team_id,
+                                    awayTeamId: m.away_team_id,
+                                    result: m,
+                                  }))
+                              : generateLeagueFixtures(
+                                  myDivTeams,
+                                  entry.matchweek,
+                                  myTeamId,
+                                ).map((f) => ({ ...f, result: null }));
 
                             const myFixture = divFixtures.find(
                               (f) =>
@@ -4408,6 +4420,12 @@ function App() {
                               : null;
                             const myAwayInfo = myFixture
                               ? teams.find((t) => t.id === myFixture.awayTeamId)
+                              : null;
+                            const myOpponentId = myFixture
+                              ? (myImHome ? myFixture.awayTeamId : myFixture.homeTeamId)
+                              : null;
+                            const myOpponentInfo = myOpponentId
+                              ? teams.find((t) => t.id === myOpponentId)
                               : null;
 
                             // status badge
@@ -4453,7 +4471,6 @@ function App() {
                                   {/* Our team's match – centered, grows to fill */}
                                   {myFixture ? (
                                     <div className="flex items-center gap-1.5 flex-1 min-w-0 justify-center">
-                                      {/* home/away badge */}
                                       <span className={`shrink-0 text-[8px] font-black uppercase tracking-wider ${myImHome ? "text-emerald-400" : "text-on-surface-variant/50"}`}>
                                         {myImHome ? "casa" : "fora"}
                                       </span>
@@ -4461,7 +4478,6 @@ function App() {
                                       <span className={`text-[11px] font-bold truncate ${myFixture.homeTeamId === myTeamId ? "text-primary" : "text-on-surface"}`}>
                                         {myHomeInfo?.name ?? myFixture.homeTeamId}
                                       </span>
-                                      {/* score or VS */}
                                       <span className="shrink-0 text-xs font-black font-headline text-on-surface-variant/70 mx-0.5">
                                         {myFixture.result
                                           ? `${myFixture.result.home_score}–${myFixture.result.away_score}`
@@ -4506,9 +4522,12 @@ function App() {
                                             {isMyMatch && f.homeTeamId === myTeamId && (
                                               <span className="shrink-0 text-[8px] font-black text-emerald-400 uppercase tracking-wider">casa</span>
                                             )}
-                                            <span className={`text-[11px] font-bold truncate ${isMyMatch && f.homeTeamId === myTeamId ? "text-primary" : "text-on-surface"}`}>
+                                            <button
+                                              className={`text-[11px] font-bold truncate text-left ${isMyMatch && f.homeTeamId === myTeamId ? "text-primary" : "text-on-surface hover:underline"}`}
+                                              onClick={(e) => { e.stopPropagation(); if (f.homeTeamId !== myTeamId && homeInfo) handleOpenTeamSquad(homeInfo); }}
+                                            >
                                               {homeInfo?.name ?? f.homeTeamId}
-                                            </span>
+                                            </button>
                                             <span className="shrink-0 w-2 h-2 rounded-full" style={{ backgroundColor: homeInfo?.color_primary || "#666" }} />
                                           </div>
                                           {/* Score or VS */}
@@ -4524,9 +4543,12 @@ function App() {
                                           {/* Away team */}
                                           <div className="flex items-center gap-1.5 flex-1 min-w-0">
                                             <span className="shrink-0 w-2 h-2 rounded-full" style={{ backgroundColor: awayInfo?.color_primary || "#666" }} />
-                                            <span className={`text-[11px] font-bold truncate ${isMyMatch && f.awayTeamId === myTeamId ? "text-primary" : "text-on-surface"}`}>
+                                            <button
+                                              className={`text-[11px] font-bold truncate text-left ${isMyMatch && f.awayTeamId === myTeamId ? "text-primary" : "text-on-surface hover:underline"}`}
+                                              onClick={(e) => { e.stopPropagation(); if (f.awayTeamId !== myTeamId && awayInfo) handleOpenTeamSquad(awayInfo); }}
+                                            >
                                               {awayInfo?.name ?? f.awayTeamId}
-                                            </span>
+                                            </button>
                                             {isMyMatch && f.awayTeamId === myTeamId && (
                                               <span className="shrink-0 text-[8px] font-black text-on-surface-variant/50 uppercase tracking-wider">fora</span>
                                             )}
