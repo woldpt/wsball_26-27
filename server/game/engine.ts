@@ -92,6 +92,7 @@ async function generateFixturesForDivision(
   db: Db,
   division: number,
   matchweek: number,
+  userTeamId?: number,
 ): Promise<MatchFixture[]> {
   return new Promise<MatchFixture[]>((resolve) => {
     db.all(
@@ -130,6 +131,37 @@ async function generateFixturesForDivision(
             finalAwayGoals: 0,
             events: [],
           });
+        }
+
+        // Ensure home/away alternation for userTeam across the season.
+        // Compute, for each first-leg round, whether a swap is needed so
+        // the user's team never plays two consecutive home (or away) games.
+        if (userTeamId) {
+          const swapMap: Record<number, boolean> = {};
+          let prevCorrectedHome: boolean | null = null;
+          for (let r = 0; r < totalRounds; r++) {
+            const rot = rotating.map((_, i) => rotating[(i + r) % rotating.length]);
+            const all = [teams[0], ...rot];
+            let rawIsHome: boolean | null = null;
+            for (let i = 0; i < Math.floor(n / 2); i++) {
+              if (all[i].id === userTeamId) { rawIsHome = true; break; }
+              if (all[n - 1 - i].id === userTeamId) { rawIsHome = false; break; }
+            }
+            if (rawIsHome === null) continue;
+            const needsSwap = prevCorrectedHome !== null && rawIsHome === prevCorrectedHome;
+            swapMap[r] = needsSwap;
+            prevCorrectedHome = needsSwap ? !rawIsHome : rawIsHome;
+          }
+
+          if (swapMap[round]) {
+            const idx = fixtures.findIndex(
+              (f) => f.homeTeamId === userTeamId || f.awayTeamId === userTeamId,
+            );
+            if (idx >= 0) {
+              const f = fixtures[idx];
+              [f.homeTeamId, f.awayTeamId] = [f.awayTeamId, f.homeTeamId];
+            }
+          }
         }
 
         resolve(fixtures);

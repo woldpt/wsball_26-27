@@ -11,6 +11,7 @@ interface WeeklyFlowDeps {
     db: any,
     division: number,
     matchweek: number,
+    userTeamId?: number,
   ) => Promise<any[]>;
   finalizeAuction: (game: ActiveGame, playerId: number) => void;
   simulateMatchSegment: (...args: any[]) => Promise<void>;
@@ -442,13 +443,17 @@ export function createWeeklyFlowHelpers(deps: WeeklyFlowDeps) {
               }
             }
           } else {
-            // League: generate fixtures now
+            // League: generate fixtures now.
+            // Pass the human player's teamId so the alternation fix applies.
             const mw = (entry as any).matchweek;
+            const userTeamId = Object.values(game.playersByName)
+              .map((p) => p.teamId)
+              .find(Boolean);
             const [f1, f2, f3, f4] = await Promise.all([
-              generateFixturesForDivision(game.db, 1, mw),
-              generateFixturesForDivision(game.db, 2, mw),
-              generateFixturesForDivision(game.db, 3, mw),
-              generateFixturesForDivision(game.db, 4, mw),
+              generateFixturesForDivision(game.db, 1, mw, userTeamId),
+              generateFixturesForDivision(game.db, 2, mw, userTeamId),
+              generateFixturesForDivision(game.db, 3, mw, userTeamId),
+              generateFixturesForDivision(game.db, 4, mw, userTeamId),
             ]);
             game.currentFixtures = [...f1, ...f2, ...f3, ...f4];
           }

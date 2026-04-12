@@ -16,6 +16,7 @@ interface MatchSummaryDeps {
     db: any,
     division: number,
     matchweek: number,
+    userTeamId?: number,
   ) => Promise<any[]>;
   pickRefereeSummary: (
     roomCode: string,
@@ -85,6 +86,7 @@ export function createMatchSummaryHelpers(deps: MatchSummaryDeps) {
       game.db,
       team.division,
       game.matchweek,
+      team.id,
     );
     const fixture = fixtures.find(
       (entry: any) =>
