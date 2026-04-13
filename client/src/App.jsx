@@ -1747,12 +1747,19 @@ function App() {
   // Auto-skip intervalo da taça para utilizador eliminado (sem jogo na ronda)
   useEffect(() => {
     const isCupContext = isCupMatch || cupPreMatch;
-    if (!isCupContext || myTeamInCup) return; // só para eliminados
-    if (!showHalftimePanel || isPlayingMatch) return; // só no intervalo
+    if (!isCupContext) return;
+    if (!showHalftimePanel || isPlayingMatch) return;
+    // Calcular myTeamInCup aqui para evitar referência a variável declarada após early return
+    const teamInCup =
+      cupActiveTeamIds.length === 0 ||
+      cupActiveTeamIds.includes(me?.teamId) ||
+      cupActiveTeamIds.includes(Number(me?.teamId)) ||
+      cupActiveTeamIds.includes(String(me?.teamId));
+    if (teamInCup) return; // só para eliminados
     const isReady = !!players.find((p) => p.name === me?.name)?.ready;
     if (isReady) return;
     socket.emit("setReady", true);
-  }, [showHalftimePanel, isPlayingMatch, isCupMatch, cupPreMatch, myTeamInCup, players, me]);
+  }, [showHalftimePanel, isPlayingMatch, isCupMatch, cupPreMatch, cupActiveTeamIds, players, me]);
 
   // Auto-close draw popup when no human in cup
   useEffect(() => {
