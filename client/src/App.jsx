@@ -1744,6 +1744,16 @@ function App() {
     return () => clearTimeout(timer);
   }, [showCupDrawPopup, cupDraw, cupDrawRevealIdx]);
 
+  // Auto-skip intervalo da taça para utilizador eliminado (sem jogo na ronda)
+  useEffect(() => {
+    const isCupContext = isCupMatch || cupPreMatch;
+    if (!isCupContext || myTeamInCup) return; // só para eliminados
+    if (!showHalftimePanel || isPlayingMatch) return; // só no intervalo
+    const isReady = !!players.find((p) => p.name === me?.name)?.ready;
+    if (isReady) return;
+    socket.emit("setReady", true);
+  }, [showHalftimePanel, isPlayingMatch, isCupMatch, cupPreMatch, myTeamInCup, players, me]);
+
   // Auto-close draw popup when no human in cup
   useEffect(() => {
     if (!showCupDrawPopup || !cupDraw || cupDraw.humanInCup) return;
@@ -6046,8 +6056,12 @@ function App() {
                       (p) => p.name === me.name,
                     )?.ready;
                     const isHalftime = showHalftimePanel && !isPlayingMatch;
-                    const isDisabled =
-                      !isHalftime && !isReady && !isLineupComplete;
+                    // Eliminado da taça: jornada é de taça mas o utilizador não tem jogo
+                    const isEliminatedCupSpectator =
+                      nextMatchSummary?.isCup && !nextMatchOpponent;
+                    const isDisabled = isEliminatedCupSpectator
+                      ? !!isReady
+                      : !isHalftime && !isReady && !isLineupComplete;
                     return (
                       <>
                         <button
@@ -6059,13 +6073,15 @@ function App() {
                         >
                           {isReady
                             ? "A AGUARDAR OUTROS"
-                            : isHalftime && isCupMatch
-                              ? "2ª PARTE — TAÇA"
-                              : isHalftime
-                                ? "2ª PARTE"
-                                : "JOGAR JORNADA"}
+                            : isEliminatedCupSpectator
+                              ? "VER RONDA DA TAÇA"
+                              : isHalftime && isCupMatch
+                                ? "2ª PARTE — TAÇA"
+                                : isHalftime
+                                  ? "2ª PARTE"
+                                  : "JOGAR JORNADA"}
                         </button>
-                        {isDisabled && (
+                        {isDisabled && !isEliminatedCupSpectator && (
                           <p className="text-xs font-bold text-red-400 mt-2 text-center">
                             Escolhe 1 GR + 10 jogadores de campo como Titular
                           </p>
