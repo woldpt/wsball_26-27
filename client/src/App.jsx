@@ -914,6 +914,12 @@ function App() {
       setClubNews(data.news || []);
       setClubNewsTeamId(data.teamId);
     });
+    socket.on("clubNewsUpdated", ({ teamId }) => {
+      // If we have the news for this team and we're viewing the club tab, reload
+      if (teamId === clubNewsTeamId && activeTab === "club" && me?.teamId === teamId) {
+        socket.emit("requestClubNews", { teamId });
+      }
+    });
     socket.on("systemMessage", (msg) => addToast(msg));
     socket.on("transferProposalResult", ({ ok, message }) => {
       addToast(message);

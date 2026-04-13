@@ -45,6 +45,7 @@ function logClubNews(
     amount?: number;
     description?: string;
   },
+  io?: any,
 ) {
   const description = data.description || null;
   game.db.run(
@@ -62,6 +63,12 @@ function logClubNews(
       data.amount || null,
       game.matchweek,
     ],
+    () => {
+      // Notify team coaches that news was updated
+      if (io) {
+        io.to(game.roomCode).emit("clubNewsUpdated", { teamId });
+      }
+    },
   );
 }
 
@@ -142,6 +149,7 @@ export function registerTransferSocketHandlers(
                               amount: price,
                               description: `${player.name} foi contratado por €${price}.`,
                             },
+                            io,
                           );
                           if (player.team_id) {
                             logClubNews(
@@ -157,6 +165,7 @@ export function registerTransferSocketHandlers(
                                 amount: price,
                                 description: `${player.name} foi transferido por €${price}.`,
                               },
+                              io,
                             );
                           }
                         },
@@ -456,6 +465,7 @@ export function registerTransferSocketHandlers(
                                 amount: proposalPrice,
                                 description: `${player.name} foi contratado por €${proposalPrice}.`,
                               },
+                              io,
                             );
                             if (player.team_id) {
                               logClubNews(
@@ -471,6 +481,7 @@ export function registerTransferSocketHandlers(
                                   amount: proposalPrice,
                                   description: `${player.name} foi transferido por €${proposalPrice}.`,
                                 },
+                                io,
                               );
                             }
                           },
