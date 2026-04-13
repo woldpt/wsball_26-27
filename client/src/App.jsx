@@ -2753,6 +2753,7 @@ function App() {
             { key: "calendario", label: "Calendário", icon: "calendar_month" },
             { key: "standings", label: "Classif.", icon: "leaderboard" },
             { key: "market", label: "Mercado", icon: "swap_horiz" },
+            { key: "tactic", label: "Jogar", icon: "strategy" },
           ].map(({ key, label, icon }) => (
             <button
               key={key}
