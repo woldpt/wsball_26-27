@@ -658,7 +658,7 @@ function App() {
           .then((r) => r.json())
           .then((data) => {
             setAvailableSaves(data);
-            if (data.length > 0 && !roomCode) setRoomCode(data[0]);
+            if (data.length > 0 && !roomCode) setRoomCode(data[0].code);
           })
           .catch(() => {});
       }, 400);
@@ -669,7 +669,7 @@ function App() {
         .then((r) => r.json())
         .then((data) => {
           setAvailableSaves(data);
-          if (data.length > 0 && !roomCode) setRoomCode(data[0]);
+          if (data.length > 0 && !roomCode) setRoomCode(data[0].code);
         })
         .catch(() => {});
     }
@@ -2348,28 +2348,33 @@ function App() {
                       <div className="space-y-2">
                         {availableSaves.map((save) => (
                           <div
-                            key={save}
-                            onClick={() => setRoomCode(save)}
+                            key={save.code}
+                            onClick={() => setRoomCode(save.code)}
                             className={`flex items-center justify-between gap-3 px-4 py-3 rounded-xl border cursor-pointer transition-all ${
-                              roomCode === save
+                              roomCode === save.code
                                 ? "border-cyan-500 bg-cyan-500/15 text-white"
                                 : "border-outline-variant/20 bg-surface text-on-surface-variant hover:border-outline-variant hover:text-on-surface"
                             }`}
                           >
-                            <span className="font-black text-sm uppercase tracking-widest">
-                              {save}
-                            </span>
+                            <div className="flex flex-col flex-1 min-w-0">
+                              <span className="font-black text-sm uppercase tracking-widest">
+                                {save.name}
+                              </span>
+                              <span className="text-xs text-on-surface-variant/60">
+                                {save.code}
+                              </span>
+                            </div>
                             <button
                               onClick={(e) => {
                                 e.stopPropagation();
                                 if (
                                   !window.confirm(
-                                    `Apagar a sala "${save}" permanentemente?`,
+                                    `Apagar a sala "${save.name}" permanentemente?`,
                                   )
                                 )
                                   return;
                                 fetch(
-                                  `${backendUrl}/saves/${encodeURIComponent(save)}`,
+                                  `${backendUrl}/saves/${encodeURIComponent(save.code)}`,
                                   {
                                     method: "DELETE",
                                     headers: {
@@ -2382,9 +2387,9 @@ function App() {
                                   .then((data) => {
                                     if (data.ok) {
                                       setAvailableSaves((prev) =>
-                                        prev.filter((s) => s !== save),
+                                        prev.filter((s) => s.code !== save.code),
                                       );
-                                      if (roomCode === save) setRoomCode("");
+                                      if (roomCode === save.code) setRoomCode("");
                                     } else {
                                       alert(
                                         data.error || "Erro ao apagar sala.",

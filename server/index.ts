@@ -81,6 +81,7 @@ const { createCupFlowHelpers } =
 const { createMatchSummaryHelpers } =
   require("./matchSummaryHelpers") as typeof import("./matchSummaryHelpers");
 const adminRoutes = require("./adminRoutes");
+const sqlite3 = require("sqlite3").verbose();
 
 function resolveDbDir() {
   const candidates = [
@@ -93,6 +94,29 @@ function resolveDbDir() {
     candidates.find((dir) => fs.existsSync(dir)) ??
     candidates[0]
   );
+}
+
+function getRoomName(roomCode: string): Promise<string> {
+  return new Promise((resolve) => {
+    const dbPath = path.join(resolveDbDir(), `game_${roomCode}.db`);
+    const db = new sqlite3.Database(dbPath, (err: any) => {
+      if (err) {
+        resolve(roomCode); // fallback to room code if db error
+        return;
+      }
+      db.get(
+        "SELECT value FROM game_state WHERE key = 'roomName'",
+        (err: any, row: any) => {
+          db.close();
+          if (err || !row || !row.value) {
+            resolve(roomCode);
+          } else {
+            resolve(row.value);
+          }
+        },
+      );
+    });
+  });
 }
 
 const app = express();
@@ -121,13 +145,22 @@ app.get("/saves", apiLimiter, async (req, res) => {
       .map((f) => f.replace("game_", "").replace(".db", ""));
 
     const managerName = req.query.name;
-    if (!managerName) {
-      return res.json(allSaves);
+    let roomCodes = allSaves;
+
+    if (managerName) {
+      const mySaves = await getManagerRooms(managerName);
+      roomCodes = mySaves.filter((r) => allSaves.includes(r));
     }
 
-    const mySaves = await getManagerRooms(managerName);
-    const filtered = mySaves.filter((r) => allSaves.includes(r));
-    res.json(filtered);
+    // Load room names for each room
+    const saves = await Promise.all(
+      roomCodes.map(async (roomCode) => ({
+        code: roomCode,
+        name: await getRoomName(roomCode),
+      })),
+    );
+
+    res.json(saves);
   } catch (e) {
     console.error("[/saves] Error:", e.message);
     res.json([]);
