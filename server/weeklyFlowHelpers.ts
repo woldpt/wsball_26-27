@@ -104,6 +104,49 @@ export function createWeeklyFlowHelpers(deps: WeeklyFlowDeps) {
       return { t1, t2 };
     });
 
+    // At the start of the second half, apply halftime tactic changes (substitutions/style)
+    // to the cached squads. fixture._homeSquad/_awaySquad were set during the first half and
+    // won't reflect tactic position changes made during the interval otherwise.
+    if (startMin === 46) {
+      for (let fi = 0; fi < game.currentFixtures.length; fi++) {
+        const fixture = game.currentFixtures[fi];
+        const { t1, t2 } = fixtureTactics[fi];
+
+        const applyHalftimeSubs = (squad: any[] | undefined, tactic: any, fullRoster: any[] | undefined) => {
+          if (!squad || !tactic?.positions || !fullRoster) return;
+          const positions: Record<number, string> = tactic.positions;
+          const currentIds = new Set(squad.map((p: any) => p.id));
+
+          // Players in the current squad who are now marked as Suplente (subbed out at halftime)
+          const toRemoveIds = squad
+            .filter((p: any) => positions[p.id] === "Suplente")
+            .map((p: any) => p.id);
+
+          // Players not in squad who are now marked as Titular (subbed in at halftime)
+          const toAddIds = Object.entries(positions)
+            .filter(([id, status]) => status === "Titular" && !currentIds.has(Number(id)))
+            .map(([id]) => Number(id));
+
+          if (toRemoveIds.length === 0 && toAddIds.length === 0) return;
+
+          // Remove subbed-out players
+          for (const id of toRemoveIds) {
+            const idx = squad.findIndex((p: any) => p.id === id);
+            if (idx > -1) squad.splice(idx, 1);
+          }
+
+          // Add subbed-in players from the full roster
+          for (const id of toAddIds) {
+            const player = fullRoster.find((p: any) => p.id === id);
+            if (player) squad.push(player);
+          }
+        };
+
+        applyHalftimeSubs(fixture._homeSquad, t1, fixture._homeFullRoster);
+        applyHalftimeSubs(fixture._awaySquad, t2, fixture._awayFullRoster);
+      }
+    }
+
     // Emit match segment start so the client can show the match UI immediately
     io.to(game.roomCode).emit("matchSegmentStart", {
       startMin,
