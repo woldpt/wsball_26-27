@@ -797,6 +797,16 @@ function App() {
       setCupPreMatch(false);
       setCupMatchRoundName(data.roundName);
       setCupExtraTimeBadge(false);
+
+      // Se o utilizador não está em nenhuma fixture desta ronda (eliminado),
+      // auto-ready para não bloquear o servidor que espera por todos.
+      const myId = meRef.current?.teamId;
+      const userInMatch = myId != null && (data.fixtures || []).some(
+        (fx) => fx.homeTeam?.id == myId || fx.awayTeam?.id == myId,
+      );
+      if (!userInMatch) {
+        socket.emit("setReady", true);
+      }
     });
     socket.on("cupExtraTimeStart", (data) => {
       // Cup match went to extra time — restart the live clock from 90
@@ -1743,23 +1753,6 @@ function App() {
     const timer = setTimeout(() => setCupDrawRevealIdx((i) => i + 1), delay);
     return () => clearTimeout(timer);
   }, [showCupDrawPopup, cupDraw, cupDrawRevealIdx]);
-
-  // Auto-skip intervalo da taça para utilizador eliminado (sem jogo na ronda)
-  useEffect(() => {
-    const isCupContext = isCupMatch || cupPreMatch;
-    if (!isCupContext) return;
-    if (!showHalftimePanel || isPlayingMatch) return;
-    // Calcular myTeamInCup aqui para evitar referência a variável declarada após early return
-    const teamInCup =
-      cupActiveTeamIds.length === 0 ||
-      cupActiveTeamIds.includes(me?.teamId) ||
-      cupActiveTeamIds.includes(Number(me?.teamId)) ||
-      cupActiveTeamIds.includes(String(me?.teamId));
-    if (teamInCup) return; // só para eliminados
-    const isReady = !!players.find((p) => p.name === me?.name)?.ready;
-    if (isReady) return;
-    socket.emit("setReady", true);
-  }, [showHalftimePanel, isPlayingMatch, isCupMatch, cupPreMatch, cupActiveTeamIds, players, me]);
 
   // Auto-close draw popup when no human in cup
   useEffect(() => {
