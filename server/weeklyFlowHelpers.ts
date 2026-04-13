@@ -549,6 +549,23 @@ export function createWeeklyFlowHelpers(deps: WeeklyFlowDeps) {
       game.phaseToken = makePhaseToken(game);
       saveGameState(game);
 
+      // For cup matches, emit animation before second half starts
+      const entry = game.currentEvent as any;
+      if (entry?.type === "cup") {
+        io.to(game.roomCode).emit("cupSecondHalfStart", {
+          round: entry.round,
+          roundName: entry.roundName,
+          season: game.season,
+          results: game.currentFixtures.map((f) => ({
+            homeTeamId: f.homeTeamId,
+            awayTeamId: f.awayTeamId,
+            finalHomeGoals: f.finalHomeGoals,
+            finalAwayGoals: f.finalAwayGoals,
+            events: f.events,
+          })),
+        });
+      }
+
       try {
         await runMatchSegment(game, 46, 90);
       } finally {

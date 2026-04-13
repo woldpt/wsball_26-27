@@ -295,26 +295,6 @@ export function createCupFlowHelpers(deps: CupFlowDeps) {
     const results: any[] = [];
     let hasAnyET = false;
 
-    // Start 45-90 min animation on client
-    io.to(game.roomCode).emit("cupSecondHalfStart", {
-      round,
-      roundName,
-      season,
-      results: fixtures.map((f: any) => ({
-        homeTeamId: f.homeTeamId,
-        awayTeamId: f.awayTeamId,
-        finalHomeGoals: f.finalHomeGoals,
-        finalAwayGoals: f.finalAwayGoals,
-        events: f.events
-      }))
-    });
-
-    const humanInCup = (Object.values(game.playersByName) as PlayerSession[])
-      .some((p) => p.socketId && game.cupTeamIds.includes(p.teamId));
-    if (humanInCup) {
-      await cupSecondHalfAnimGate(game, 47000); // Wait for 45-90 animation
-    }
-
     for (const fixture of fixtures) {
       const t1 = fixture._t1 || { formation: "4-4-2", style: "Balanced" };
       const t2 = fixture._t2 || { formation: "4-4-2", style: "Balanced" };
