@@ -1,4 +1,5 @@
 import type { ActiveGame } from "./types";
+import { SEASON_CALENDAR } from "./gameConstants";
 
 interface MatchSummaryDeps {
   runAll: <T extends Record<string, any> = Record<string, any>>(
@@ -71,6 +72,60 @@ export function createMatchSummaryHelpers(deps: MatchSummaryDeps) {
     ]);
     if (!team) return null;
 
+    const currentEntry = SEASON_CALENDAR[game.calendarIndex];
+
+    // ── CUP WEEK ────────────────────────────────────────────────────────────
+    if (currentEntry?.type === "cup") {
+      const cupMatch = await runGet(
+        game.db,
+        "SELECT * FROM cup_matches WHERE season = ? AND round = ? AND (home_team_id = ? OR away_team_id = ?) AND played = 0",
+        [game.season, currentEntry.round, teamId, teamId],
+      );
+      if (!cupMatch) return null;
+
+      const isHome = cupMatch.home_team_id === teamId;
+      const opponentId = isHome ? cupMatch.away_team_id : cupMatch.home_team_id;
+      const opponent = await runGet(
+        game.db,
+        "SELECT * FROM teams WHERE id = ?",
+        [opponentId],
+      );
+      if (!opponent) return null;
+
+      const referee = pickRefereeSummary(
+        game.roomCode,
+        team.id,
+        opponent.id,
+        game.matchweek,
+      );
+
+      return {
+        matchweek: game.matchweek,
+        isCup: true,
+        cupRound: currentEntry.round,
+        cupRoundName: currentEntry.roundName,
+        venue: isHome ? "Casa" : "Fora",
+        team: {
+          id: team.id,
+          name: team.name,
+          division: team.division,
+          position: null,
+        },
+        opponent: {
+          id: opponent.id,
+          name: opponent.name,
+          division: opponent.division,
+          position: null,
+          points: opponent.points || 0,
+          goalsFor: opponent.goals_for || 0,
+          goalsAgainst: opponent.goals_against || 0,
+          last5: await getTeamRecentResults(game, opponent.id, 5),
+        },
+        referee,
+      };
+    }
+
+    // ── LEAGUE WEEK ─────────────────────────────────────────────────────────
     const standings = getStandingsRows(
       await runAll(
         game.db,
@@ -110,6 +165,7 @@ export function createMatchSummaryHelpers(deps: MatchSummaryDeps) {
 
     return {
       matchweek: game.matchweek,
+      isCup: false,
       venue: isHome ? "Casa" : "Fora",
       team: {
         id: team.id,
