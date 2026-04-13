@@ -771,41 +771,46 @@ function App() {
       setActiveTab("live");
     });
     socket.on("cupHalfTimeResults", (data) => {
-      setIsMatchActionPending(false);
-      // Treat the cup halftime exactly like a league halftime:
-      // reuse matchResults state so the live tab renders events and score.
-      setMatchResults({
-        matchweek: data.season,
-        results: data.fixtures.map((fx) => ({
-          homeTeamId: fx.homeTeam?.id,
-          awayTeamId: fx.awayTeam?.id,
-          finalHomeGoals: fx.homeGoals,
-          finalAwayGoals: fx.awayGoals,
-          events: fx.events || [],
-          attendance: null,
-        })),
-      });
-      setLiveMinute(0);
-      setSubsMade(0);
-      setSubbedOut([]);
-      setConfirmedSubs([]);
-      setSwapSource(null);
-      setSwapTarget(null);
-      setShowHalftimePanel(true);
-      setIsPlayingMatch(true);
-      setIsCupMatch(true);
-      setCupPreMatch(false);
-      setCupMatchRoundName(data.roundName);
-      setCupExtraTimeBadge(false);
+      try {
+        setIsMatchActionPending(false);
+        // Treat the cup halftime exactly like a league halftime:
+        // reuse matchResults state so the live tab renders events and score.
+        const fixtures = data.fixtures || [];
+        setMatchResults({
+          matchweek: data.season,
+          results: fixtures.map((fx) => ({
+            homeTeamId: fx.homeTeam?.id,
+            awayTeamId: fx.awayTeam?.id,
+            finalHomeGoals: fx.homeGoals,
+            finalAwayGoals: fx.awayGoals,
+            events: fx.events || [],
+            attendance: null,
+          })),
+        });
+        setLiveMinute(0);
+        setSubsMade(0);
+        setSubbedOut([]);
+        setConfirmedSubs([]);
+        setSwapSource(null);
+        setSwapTarget(null);
+        setShowHalftimePanel(true);
+        setIsPlayingMatch(true);
+        setIsCupMatch(true);
+        setCupPreMatch(false);
+        setCupMatchRoundName(data.roundName);
+        setCupExtraTimeBadge(false);
 
-      // Se o utilizador não está em nenhuma fixture desta ronda (eliminado),
-      // auto-ready para não bloquear o servidor que espera por todos.
-      const myId = meRef.current?.teamId;
-      const userInMatch = myId != null && (data.fixtures || []).some(
-        (fx) => fx.homeTeam?.id == myId || fx.awayTeam?.id == myId,
-      );
-      if (!userInMatch) {
-        socket.emit("setReady", true);
+        // Se o utilizador não está em nenhuma fixture desta ronda (eliminado),
+        // auto-ready para não bloquear o servidor que espera por todos.
+        const myId = meRef.current?.teamId;
+        const userInMatch = myId != null && fixtures.some(
+          (fx) => fx.homeTeam?.id == myId || fx.awayTeam?.id == myId,
+        );
+        if (!userInMatch) {
+          socket.emit("setReady", true);
+        }
+      } catch (err) {
+        console.error("Error handling cupHalfTimeResults:", err, "data:", data);
       }
     });
     socket.on("cupExtraTimeStart", (data) => {

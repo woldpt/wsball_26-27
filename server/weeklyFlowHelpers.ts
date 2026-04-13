@@ -264,7 +264,7 @@ export function createWeeklyFlowHelpers(deps: WeeklyFlowDeps) {
             awayTeam: fixture.awayTeam || null,
             homeGoals: fixture.finalHomeGoals,
             awayGoals: fixture.finalAwayGoals,
-            events: fixture.events.slice(),
+            events: (fixture.events || []).slice(),
             homeLineup: fixture.homeLineup || [],
             awayLineup: fixture.awayLineup || [],
             attendance: fixture.attendance || null,
