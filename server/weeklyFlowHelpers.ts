@@ -112,7 +112,12 @@ export function createWeeklyFlowHelpers(deps: WeeklyFlowDeps) {
         const fixture = game.currentFixtures[fi];
         const { t1, t2 } = fixtureTactics[fi];
 
-        const applyHalftimeSubs = (squad: any[] | undefined, tactic: any, fullRoster: any[] | undefined) => {
+        const applyHalftimeSubs = (
+          squad: any[] | undefined,
+          tactic: any,
+          fullRoster: any[] | undefined,
+          teamSide: "home" | "away",
+        ) => {
           if (!squad || !tactic?.positions || !fullRoster) return;
           const positions: Record<number, string> = tactic.positions;
           const currentIds = new Set(squad.map((p: any) => p.id));
@@ -129,6 +134,10 @@ export function createWeeklyFlowHelpers(deps: WeeklyFlowDeps) {
 
           if (toRemoveIds.length === 0 && toAddIds.length === 0) return;
 
+          // Snapshot outgoing/incoming players BEFORE modifying the squad
+          const outPlayers = toRemoveIds.map((id: number) => squad.find((p: any) => p.id === id)).filter(Boolean);
+          const inPlayers = toAddIds.map((id: number) => fullRoster.find((p: any) => p.id === id)).filter(Boolean);
+
           // Remove subbed-out players
           for (const id of toRemoveIds) {
             const idx = squad.findIndex((p: any) => p.id === id);
@@ -136,14 +145,31 @@ export function createWeeklyFlowHelpers(deps: WeeklyFlowDeps) {
           }
 
           // Add subbed-in players from the full roster
-          for (const id of toAddIds) {
-            const player = fullRoster.find((p: any) => p.id === id);
-            if (player) squad.push(player);
+          for (const player of inPlayers) {
+            squad.push(player);
+          }
+
+          // Emit halftime_sub events so the client lineup display reflects the changes
+          const pairs = Math.min(outPlayers.length, inPlayers.length);
+          for (let i = 0; i < pairs; i++) {
+            fixture.events = fixture.events || [];
+            fixture.events.push({
+              minute: 45,
+              type: "halftime_sub",
+              team: teamSide,
+              emoji: "🔁",
+              outPlayerId: outPlayers[i].id,
+              outPlayerName: outPlayers[i].name,
+              playerId: inPlayers[i].id,
+              playerName: inPlayers[i].name,
+              position: inPlayers[i].position,
+              text: `[HT] 🔁 ${outPlayers[i].name} → ${inPlayers[i].name}`,
+            });
           }
         };
 
-        applyHalftimeSubs(fixture._homeSquad, t1, fixture._homeFullRoster);
-        applyHalftimeSubs(fixture._awaySquad, t2, fixture._awayFullRoster);
+        applyHalftimeSubs(fixture._homeSquad, t1, fixture._homeFullRoster, "home");
+        applyHalftimeSubs(fixture._awaySquad, t2, fixture._awayFullRoster, "away");
       }
     }
 

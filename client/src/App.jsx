@@ -355,6 +355,25 @@ function getEffectiveLineup(
         });
       }
     }
+    if (e.type === "halftime_sub") {
+      // Remove outgoing player from active
+      const outIdx = active.findIndex(
+        (p) => p.id === e.outPlayerId || p.name === e.outPlayerName,
+      );
+      if (outIdx !== -1) {
+        offPlayers.push({ ...active[outIdx], reason: "sub" });
+        active.splice(outIdx, 1);
+      }
+      // Add incoming player to subPlayers
+      if (e.playerId && !active.find((p) => p.id === e.playerId)) {
+        subPlayers.push({
+          id: e.playerId,
+          name: e.playerName,
+          position: e.position || null,
+          goals: 0,
+        });
+      }
+    }
   });
 
   return { active, offPlayers, subPlayers };
@@ -3419,7 +3438,7 @@ function App() {
                                   .filter(e => e.minute <= liveMinute && e.team === "home" && ["goal","penalty_goal","own_goal","yellow","red","injury","substitution"].includes(e.type))
                                   .sort((a, b) => a.minute - b.minute)
                                   .map((e, i) => {
-                                    const icon = e.type === "goal" || e.type === "penalty_goal" ? "⚽" : e.type === "own_goal" ? "⚽🔙" : e.type === "yellow" ? "🟨" : e.type === "red" ? "🟥" : e.type === "injury" ? "🤕" : e.type === "substitution" ? "🔄" : "";
+                                    const icon = e.type === "goal" || e.type === "penalty_goal" ? "⚽" : e.type === "own_goal" ? "⚽🔙" : e.type === "yellow" ? "🟨" : e.type === "red" ? "🟥" : e.type === "injury" ? "🤕" : e.type === "substitution" || e.type === "halftime_sub" ? "🔄" : "";
                                     const name = e.playerName || e.player_name || e.player || "?";
                                     return (
                                       <div key={i} className="flex items-center justify-center gap-1 text-[10px] leading-tight w-full">
@@ -3534,7 +3553,7 @@ function App() {
                                   .filter(e => e.minute <= liveMinute && e.team === "away" && ["goal","penalty_goal","own_goal","yellow","red","injury","substitution"].includes(e.type))
                                   .sort((a, b) => a.minute - b.minute)
                                   .map((e, i) => {
-                                    const icon = e.type === "goal" || e.type === "penalty_goal" ? "⚽" : e.type === "own_goal" ? "⚽🔙" : e.type === "yellow" ? "🟨" : e.type === "red" ? "🟥" : e.type === "injury" ? "🤕" : e.type === "substitution" ? "🔄" : "";
+                                    const icon = e.type === "goal" || e.type === "penalty_goal" ? "⚽" : e.type === "own_goal" ? "⚽🔙" : e.type === "yellow" ? "🟨" : e.type === "red" ? "🟥" : e.type === "injury" ? "🤕" : e.type === "substitution" || e.type === "halftime_sub" ? "🔄" : "";
                                     const name = e.playerName || e.player_name || e.player || "?";
                                     return (
                                       <div key={i} className="flex items-center justify-center gap-1 text-[10px] leading-tight w-full">
