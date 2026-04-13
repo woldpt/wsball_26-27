@@ -545,8 +545,6 @@ function App() {
   const [toasts, setToasts] = useState([]);
   const [lockedCoaches, setLockedCoaches] = useState([]);
   const [awaitingCoaches, setAwaitingCoaches] = useState([]);
-  const [showCoachPanel, setShowCoachPanel] = useState(false);
-  const coachPanelRef = React.useRef(null);
   const joinTimerRef = React.useRef(null);
 
   const addToast = (msg) => {
@@ -2574,145 +2572,6 @@ function App() {
                 {teamInfo?.name}
               </span>
             </div>
-            {players.length > 0 && (
-              <div className="relative hidden sm:block" ref={coachPanelRef}>
-                <button
-                  onClick={() => setShowCoachPanel((v) => !v)}
-                  className="flex flex-col items-end gap-0.5 focus:outline-none"
-                  title="Ver estado dos treinadores"
-                >
-                  <div className="flex items-center gap-1">
-                    {players.map((p, i) => (
-                      <div
-                        key={i}
-                        className={`w-2 h-2 rounded-full ${
-                          lockedCoaches.includes(p.name) || p.ready
-                            ? "bg-primary"
-                            : "bg-surface-bright"
-                        }`}
-                      />
-                    ))}
-                    {awaitingCoaches
-                      .filter((n) => !players.some((p) => p.name === n))
-                      .map((_, i) => (
-                        <div
-                          key={`off-${i}`}
-                          className="w-2 h-2 rounded-full bg-surface-container"
-                        />
-                      ))}
-                    <span
-                      className="text-[10px] font-black uppercase tracking-widest ml-1 opacity-70"
-                      style={{ color: teamInfo?.color_secondary || "#e5e2e1" }}
-                    >
-                      {
-                        players.filter(
-                          (p) => lockedCoaches.includes(p.name) || p.ready,
-                        ).length
-                      }
-                      /
-                      {players.length +
-                        awaitingCoaches.filter(
-                          (n) => !players.some((p) => p.name === n),
-                        ).length}
-                    </span>
-                  </div>
-                  {disconnected && (
-                    <span className="text-error text-[10px] font-black uppercase tracking-widest">
-                      ⚠ Desligado
-                    </span>
-                  )}
-                </button>
-
-                {showCoachPanel && (
-                  <div className="absolute right-0 top-full mt-2 z-50 w-72 bg-surface-container border border-outline-variant rounded-lg shadow-2xl overflow-hidden">
-                    <div className="px-4 py-2.5 border-b border-outline-variant flex items-center justify-between">
-                      <div className="flex flex-col">
-                        <span className="text-[10px] font-black uppercase tracking-widest text-on-surface-variant">
-                          Sala {me.roomName || me.roomCode}
-                        </span>
-                        <span className="text-[9px] font-black uppercase tracking-widest text-emerald-400">
-                          Convite: {me.roomCode}
-                        </span>
-                      </div>
-                      <span className="text-[10px] font-black uppercase tracking-widest text-on-surface-variant">
-                        {players.length} online
-                      </span>
-                    </div>
-                    <div className="divide-y divide-outline-variant/30">
-                      {[
-                        ...players.map((p) => ({
-                          name: p.name,
-                          teamId: p.teamId,
-                          online: true,
-                          submitted: lockedCoaches.includes(p.name) || p.ready,
-                        })),
-                        ...awaitingCoaches
-                          .filter((n) => !players.some((p) => p.name === n))
-                          .map((n) => ({
-                            name: n,
-                            teamId: null,
-                            online: false,
-                            submitted: true,
-                          })),
-                      ].map((coach, i) => {
-                        const coachTeam = coach.teamId
-                          ? teams.find((t) => t.id == coach.teamId)
-                          : null;
-                        return (
-                          <div
-                            key={i}
-                            className="flex items-center gap-3 px-4 py-2.5"
-                          >
-                            <span
-                              className={`w-2 h-2 rounded-full shrink-0 ${
-                                coach.online
-                                  ? "bg-primary"
-                                  : "bg-surface-bright"
-                              }`}
-                            />
-                            <div className="flex-1 min-w-0">
-                              <p
-                                className={`text-xs font-black truncate ${
-                                  coach.online
-                                    ? "text-on-surface"
-                                    : "text-on-surface-variant"
-                                }`}
-                              >
-                                {coach.name}
-                                {coach.name === me.name && (
-                                  <span className="ml-1.5 text-[9px] font-bold text-on-surface-variant">
-                                    (tu)
-                                  </span>
-                                )}
-                              </p>
-                              {coachTeam && (
-                                <p
-                                  className="text-[10px] truncate"
-                                  style={{
-                                    color: coachTeam.color_primary || "#71717a",
-                                  }}
-                                >
-                                  {coachTeam.name}
-                                </p>
-                              )}
-                            </div>
-                            {coach.submitted ? (
-                              <span className="shrink-0 text-[10px] font-black text-primary uppercase tracking-wide">
-                                ✓ Ordens
-                              </span>
-                            ) : (
-                              <span className="shrink-0 text-[10px] font-black text-tertiary uppercase tracking-wide">
-                                ⏳ Pendente
-                              </span>
-                            )}
-                          </div>
-                        );
-                      })}
-                    </div>
-                  </div>
-                )}
-              </div>
-            )}
             <button
               onClick={handleLogout}
               title="Terminar sessão"
@@ -2755,49 +2614,105 @@ function App() {
                 <span>{label}</span>
               </button>
             ))}
+            <div className="pt-2">
+              <button
+                onClick={() => setActiveTab("tactic")}
+                className={`w-full flex items-center gap-3 px-4 py-3.5 text-sm font-black uppercase tracking-widest transition-all rounded-sm ${
+                  activeTab === "tactic"
+                    ? "bg-primary text-on-primary shadow-lg"
+                    : "bg-primary/10 text-primary border border-primary/40 hover:bg-primary/20"
+                }`}
+              >
+                <span className="material-symbols-outlined text-[20px] shrink-0 leading-none">
+                  strategy
+                </span>
+                <span className="flex-1 text-left">JOGAR</span>
+                <span className="relative flex h-2 w-2 shrink-0">
+                  <span
+                    className={`animate-ping absolute inline-flex h-full w-full rounded-full opacity-75 ${activeTab === "tactic" ? "bg-on-primary/40" : "bg-primary"}`}
+                  />
+                  <span
+                    className={`relative inline-flex rounded-full h-2 w-2 ${activeTab === "tactic" ? "bg-on-primary/60" : "bg-primary"}`}
+                  />
+                </span>
+              </button>
+            </div>
           </div>
-          <div className="px-3 pb-4 border-t border-outline-variant/20 pt-4 space-y-3">
-            {teamInfo && (
-              <div className="px-4 py-3 bg-surface-container rounded-md">
-                <p className="text-[9px] uppercase tracking-widest text-on-surface-variant font-bold mb-1">
-                  {seasonYear} · J{currentJornada}
-                </p>
-                <div className="flex items-center gap-2">
-                  {teamInfo.color_primary && (
-                    <span
-                      className="w-2 h-2 rounded-full shrink-0"
-                      style={{ backgroundColor: teamInfo.color_primary }}
-                    />
-                  )}
-                  <p className="text-xs font-black text-on-surface truncate">
-                    {teamInfo.name}
-                  </p>
+          <div className="border-t border-outline-variant/20 pt-3 pb-4 px-3">
+            {players.length > 0 && (
+              <div className="bg-surface-container rounded-md overflow-hidden">
+                <div className="px-4 py-2 flex items-center justify-between border-b border-outline-variant/20">
+                  <span className="text-[9px] uppercase tracking-widest font-black text-on-surface-variant">
+                    Sala {me.roomName || me.roomCode}
+                  </span>
+                  <span className="text-[9px] font-black text-emerald-400 uppercase tracking-widest">
+                    {players.length} online
+                  </span>
+                </div>
+                <div className="divide-y divide-outline-variant/10">
+                  {[
+                    ...players.map((p) => ({
+                      name: p.name,
+                      teamId: p.teamId,
+                      online: true,
+                      submitted: lockedCoaches.includes(p.name) || p.ready,
+                    })),
+                    ...awaitingCoaches
+                      .filter((n) => !players.some((p) => p.name === n))
+                      .map((n) => ({
+                        name: n,
+                        teamId: null,
+                        online: false,
+                        submitted: true,
+                      })),
+                  ].map((coach, i) => {
+                    const coachTeam = coach.teamId
+                      ? teams.find((t) => t.id == coach.teamId)
+                      : null;
+                    return (
+                      <div key={i} className="flex items-center gap-3 px-4 py-2">
+                        <span
+                          className={`w-2 h-2 rounded-full shrink-0 ${
+                            coach.online ? "bg-primary" : "bg-surface-bright"
+                          }`}
+                        />
+                        <div className="flex-1 min-w-0">
+                          <p
+                            className={`text-xs font-black truncate ${
+                              coach.online ? "text-on-surface" : "text-on-surface-variant"
+                            }`}
+                          >
+                            {coach.name}
+                            {coach.name === me.name && (
+                              <span className="ml-1.5 text-[9px] font-bold text-on-surface-variant">
+                                (tu)
+                              </span>
+                            )}
+                          </p>
+                          {coachTeam && (
+                            <p
+                              className="text-[10px] truncate"
+                              style={{ color: coachTeam.color_primary || "#71717a" }}
+                            >
+                              {coachTeam.name}
+                            </p>
+                          )}
+                        </div>
+                        {coach.submitted ? (
+                          <span className="shrink-0 text-[10px] font-black text-primary uppercase tracking-wide">
+                            ✓
+                          </span>
+                        ) : (
+                          <span className="shrink-0 text-[10px] font-black text-tertiary uppercase tracking-wide">
+                            ⏳
+                          </span>
+                        )}
+                      </div>
+                    );
+                  })}
                 </div>
               </div>
             )}
-            <button
-              onClick={() => setActiveTab("tactic")}
-              className={`w-full flex items-center gap-3 px-4 py-3 text-sm font-bold transition-all ${
-                activeTab === "tactic"
-                  ? "bg-primary text-on-primary"
-                  : "bg-surface-container text-primary border border-primary/30 hover:bg-primary-container/20"
-              }`}
-            >
-              <span className="material-symbols-outlined text-[20px] shrink-0 leading-none">
-                strategy
-              </span>
-              <span className="font-black uppercase tracking-widest flex-1">
-                JOGAR
-              </span>
-              <span className="relative flex h-2 w-2 shrink-0">
-                <span
-                  className={`animate-ping absolute inline-flex h-full w-full rounded-full opacity-75 ${activeTab === "tactic" ? "bg-[#003824]" : "bg-primary"}`}
-                />
-                <span
-                  className={`relative inline-flex rounded-full h-2 w-2 ${activeTab === "tactic" ? "bg-[#003824]" : "bg-primary"}`}
-                />
-              </span>
-            </button>
           </div>
         </nav>
       )}
