@@ -6246,7 +6246,7 @@ function App() {
                   <span className="font-bold text-white">{formatCurrency(transferProposalModal.player.value || 0)}</span>
                 </div>
                 <div className="flex justify-between items-center border-t border-zinc-700 pt-2">
-                  <span className="text-zinc-300 font-bold">Valor da proposta (+35%)</span>
+                  <span className="text-zinc-300 font-bold">Clausula de Rescisão</span>
                   <span className="font-black text-emerald-400 text-base">{formatCurrency(transferProposalModal.suggestedPrice)}</span>
                 </div>
                 <p className="text-zinc-500 text-xs pt-1">
