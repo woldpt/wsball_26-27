@@ -202,12 +202,7 @@ export function createAuctionHelpers(deps: AuctionDeps) {
   ) => {
     const durationMs = 15000;
     const now = Date.now();
-    
-    // If there are no other human managers connected to bid, we skip the waiting time
-    const otherHumans = Object.values(game.playersByName).filter(
-      (p) => p.socketId && p.teamId !== player.team_id
-    );
-    const actualDurationMs = otherHumans.length > 0 ? durationMs : 0;
+    const actualDurationMs = durationMs;
 
     const existingTimer = game.auctionTimers?.[player.id];
     if (existingTimer) clearTimeout(existingTimer as any);
