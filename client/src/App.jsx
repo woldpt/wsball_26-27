@@ -823,6 +823,28 @@ function App() {
         });
       }
     });
+    socket.on("extraTimeEnded", (data) => {
+      // ET is over, prepare for penalties or declare winner
+      // Update the score if needed
+      if (data) {
+        setMatchResults((prev) => {
+          if (!prev) return prev;
+          return {
+            ...prev,
+            results: (prev.results || []).map((r) =>
+              r.homeTeamId === data.homeTeamId &&
+              r.awayTeamId === data.awayTeamId
+                ? {
+                    ...r,
+                    finalHomeGoals: data.homeGoals,
+                    finalAwayGoals: data.awayGoals,
+                  }
+                : r,
+            ),
+          };
+        });
+      }
+    });
     socket.on("extraTimeHalfTime", (data) => {
       // Indicate extra time half-time in the live tab — no ready gate needed
       setCupExtraTimeBadge(true);
@@ -873,6 +895,7 @@ function App() {
     });
     socket.on("cupRoundResults", (data) => {
       setCupRoundResults(data);
+      setCupPenaltyPopup(null);
       setShowCupResults(false);
       setActiveTab("cup");
       setIsCupMatch(false);
@@ -1258,6 +1281,7 @@ function App() {
       socket.off("cupExtraTimeStart");
       socket.off("extraTimeSecondHalfStart");
       socket.off("extraTimeHalfTime");
+      socket.off("extraTimeEnded");
       socket.off("cupRoundResults");
       socket.off("cupSecondHalfStart");
       socket.off("cupPenaltyShootout");

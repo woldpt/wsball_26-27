@@ -306,15 +306,30 @@ export function createCupFlowHelpers(deps: CupFlowDeps) {
           ? fixture.homeTeamId
           : fixture.awayTeamId;
       } else {
-        hasAnyET = true;
-        io.to(game.roomCode).emit("cupExtraTimeStart", {
+        // Only process ET for fixtures involving human players
+        const humanInFixture = (Object.values(game.playersByName) as PlayerSession[])
+          .some((p) => p.socketId && (p.teamId === fixture.homeTeamId || p.teamId === fixture.awayTeamId));
+
+        if (humanInFixture) {
+          hasAnyET = true;
+          io.to(game.roomCode).emit("cupExtraTimeStart", {
+            homeTeamId: fixture.homeTeamId,
+            awayTeamId: fixture.awayTeamId,
+            homeGoals: fixture.finalHomeGoals,
+            awayGoals: fixture.finalAwayGoals,
+          });
+        }
+
+        game.gamePhase = "match_extra_time";
+        await simulateExtraTime(game.db, fixture, t1, t2, ctx);
+
+        // Notify that ET is over and show final score
+        io.to(game.roomCode).emit("extraTimeEnded", {
           homeTeamId: fixture.homeTeamId,
           awayTeamId: fixture.awayTeamId,
           homeGoals: fixture.finalHomeGoals,
           awayGoals: fixture.finalAwayGoals,
         });
-        game.gamePhase = "match_extra_time";
-        await simulateExtraTime(game.db, fixture, t1, t2, ctx);
 
         if (fixture.finalHomeGoals !== fixture.finalAwayGoals) {
           winnerId = fixture.finalHomeGoals > fixture.finalAwayGoals
@@ -325,12 +340,17 @@ export function createCupFlowHelpers(deps: CupFlowDeps) {
           const awaySquad = await getTeamSquad(game.db, fixture.awayTeamId, t2, game.matchweek);
           const shootout = simulatePenaltyShootout(homeSquad, awaySquad);
 
-          io.to(game.roomCode).emit("cupPenaltyShootout", {
-            round,
-            homeTeamId: fixture.homeTeamId,
-            awayTeamId: fixture.awayTeamId,
-            ...shootout,
-          });
+          // Only emit penalty shootout for fixtures involving human players
+          const humanInFixture = (Object.values(game.playersByName) as PlayerSession[])
+            .some((p) => p.socketId && (p.teamId === fixture.homeTeamId || p.teamId === fixture.awayTeamId));
+          if (humanInFixture) {
+            io.to(game.roomCode).emit("cupPenaltyShootout", {
+              round,
+              homeTeamId: fixture.homeTeamId,
+              awayTeamId: fixture.awayTeamId,
+              ...shootout,
+            });
+          }
 
           fixture._penaltyHomeGoals = shootout.homeGoals;
           fixture._penaltyAwayGoals = shootout.awayGoals;
