@@ -207,8 +207,8 @@ export function createMatchSummaryHelpers(deps: MatchSummaryDeps) {
           () => {
             game.db.run(
               `INSERT INTO matches (
-                matchweek, home_team_id, away_team_id, home_score, away_score, played, narrative, competition, attendance
-              ) VALUES (?, ?, ?, ?, ?, 1, ?, 'League', ?)`,
+                matchweek, home_team_id, away_team_id, home_score, away_score, played, narrative, competition, attendance, home_lineup, away_lineup
+              ) VALUES (?, ?, ?, ?, ?, 1, ?, 'League', ?, ?, ?)`,
               [
                 matchweek,
                 match.homeTeamId,
@@ -217,6 +217,8 @@ export function createMatchSummaryHelpers(deps: MatchSummaryDeps) {
                 match.finalAwayGoals,
                 JSON.stringify(match.events || []),
                 match.attendance || 0,
+                JSON.stringify(match.homeLineup || []),
+                JSON.stringify(match.awayLineup || []),
               ],
               () => {
                 remaining -= 1;

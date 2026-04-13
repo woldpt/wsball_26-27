@@ -342,8 +342,19 @@ export function registerSessionSocketHandlers(
     try {
       const leagueMatches = await runAll(
         game.db,
-        "SELECT id, matchweek, home_team_id, away_team_id, home_score, away_score, attendance FROM matches WHERE played = 1 ORDER BY matchweek, id",
+        "SELECT id, matchweek, home_team_id, away_team_id, home_score, away_score, attendance, home_lineup, away_lineup, narrative FROM matches WHERE played = 1 ORDER BY matchweek, id",
       );
+
+      // Parse JSON fields from database
+      const parsedLeagueMatches = leagueMatches.map((match: any) => ({
+        ...match,
+        finalHomeGoals: match.home_score,
+        finalAwayGoals: match.away_score,
+        events: match.narrative ? JSON.parse(match.narrative) : [],
+        homeLineup: match.home_lineup ? JSON.parse(match.home_lineup) : [],
+        awayLineup: match.away_lineup ? JSON.parse(match.away_lineup) : [],
+      }));
+
       const cupMatches = await runAll(
         game.db,
         "SELECT id, round, home_team_id, away_team_id, home_score, away_score, home_et_score, away_et_score, home_penalties, away_penalties, winner_team_id, played FROM cup_matches WHERE season = ? ORDER BY round, id",
@@ -355,7 +366,7 @@ export function registerSessionSocketHandlers(
         year: game.year,
         matchweek: game.matchweek,
         gamePhase: game.gamePhase,
-        leagueMatches,
+        leagueMatches: parsedLeagueMatches,
         cupMatches,
       });
     } catch (err) {

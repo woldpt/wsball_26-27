@@ -67,6 +67,8 @@ CREATE TABLE IF NOT EXISTS matches (
   narrative TEXT,
   competition TEXT DEFAULT 'League',
   attendance INTEGER DEFAULT 0,
+  home_lineup TEXT,
+  away_lineup TEXT,
   FOREIGN KEY(home_team_id) REFERENCES teams(id),
   FOREIGN KEY(away_team_id) REFERENCES teams(id)
 );
