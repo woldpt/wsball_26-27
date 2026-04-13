@@ -6381,9 +6381,20 @@ function App() {
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-x-6 gap-y-1.5 text-sm">
                 <div className="flex flex-wrap items-baseline gap-x-2 gap-y-0.5">
                   <span className="font-normal text-zinc-700 shrink-0">Equipa</span>
-                  <span className="font-black bg-blue-800 text-white px-2 py-0.5 rounded text-xs leading-tight uppercase">
-                    {selectedAuctionPlayer.team_name || "Sem clube"}
-                  </span>
+                  {(() => {
+                    const sellerTeam = teams.find((t) => t.id === selectedAuctionPlayer.sellerTeamId);
+                    return (
+                      <span
+                        className="font-black px-2 py-0.5 rounded text-xs leading-tight uppercase"
+                        style={{
+                          background: sellerTeam?.color_primary || "#1e3a8a",
+                          color: sellerTeam?.color_secondary || "#ffffff",
+                        }}
+                      >
+                        {selectedAuctionPlayer.team_name || "Sem clube"}
+                      </span>
+                    );
+                  })()}
                 </div>
                 <div className="flex flex-wrap items-baseline gap-x-2 gap-y-0.5">
                   <span className="font-normal text-zinc-700 shrink-0">Nacionalidade</span>
