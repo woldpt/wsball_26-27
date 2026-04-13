@@ -10,7 +10,10 @@
       "Bash(./node_modules/.bin/tsc --noEmit)",
       "Bash(node \"z:/Coding/cashball_26_27/server/node_modules/.bin/tsc\" --version)",
       "Bash(cmd /c \"cd z:\\\\Coding\\\\cashball_26_27\\\\server && node_modules\\\\.bin\\\\tsc.cmd --noEmit 2>&1\")",
-      "Bash(xargs grep:*)"
+      "Bash(xargs grep:*)",
+      "Bash(npm run:*)",
+      "Bash(/usr/bin/env node:*)",
+      "Bash(/usr/bin/env npm:*)"
     ]
   }
 }
