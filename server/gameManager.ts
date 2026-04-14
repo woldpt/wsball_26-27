@@ -279,6 +279,7 @@ function getGame(roomCode: string, onReady?: OnReady): ActiveGame | null {
       ensurePlayerSchema(db, () => {
         const continueAfterMigrations = () => {
           db.run("ALTER TABLE teams ADD COLUMN morale INTEGER DEFAULT 50", () => {});
+          db.run("ALTER TABLE teams ADD COLUMN stadium_name TEXT DEFAULT ''", () => {});
           db.run("ALTER TABLE matches ADD COLUMN attendance INTEGER DEFAULT 0", () => {});
           db.run("ALTER TABLE matches ADD COLUMN home_lineup TEXT", () => {});
           db.run("ALTER TABLE matches ADD COLUMN away_lineup TEXT", () => {});
