@@ -122,13 +122,40 @@ export function createNpcTransferHelpers(deps: NpcTransferDeps) {
           });
         }
 
-        await new Promise((resolve) => {
+        // Conditional UPDATE: only proceed if the player is still on the transfer list.
+        // This prevents a double-sale when two NPC teams share the same marketPlayers snapshot.
+        const changes = await new Promise<number>((resolve) => {
           game.db.run(
-            "UPDATE players SET team_id = ?, transfer_status = 'none', transfer_price = 0, contract_until_matchweek = ?, contract_request_pending = 0, contract_requested_wage = 0 WHERE id = ?",
+            "UPDATE players SET team_id = ?, transfer_status = 'none', transfer_price = 0, contract_until_matchweek = ?, contract_request_pending = 0, contract_requested_wage = 0 WHERE id = ? AND (transfer_status = 'fixed' OR team_id IS NULL)",
             [npcTeam.id, getSeasonEndMatchweek(game.matchweek), player.id],
-            resolve,
+            function (this: any) { resolve(this.changes ?? 0); },
           );
         });
+
+        if (changes === 0) {
+          // Player was already sold to another NPC — roll back the budget deduction
+          await new Promise((resolve) => {
+            game.db.run(
+              "UPDATE teams SET budget = budget + ? WHERE id = ?",
+              [price, npcTeam.id],
+              resolve,
+            );
+          });
+          if (player.team_id) {
+            await new Promise((resolve) => {
+              game.db.run(
+                "UPDATE teams SET budget = budget - ? WHERE id = ?",
+                [price, player.team_id],
+                resolve,
+              );
+            });
+          }
+          continue; // try next player
+        }
+
+        // Remove from in-memory snapshot so no other NPC can re-buy this player
+        const idx = marketPlayers.indexOf(player);
+        if (idx > -1) marketPlayers.splice(idx, 1);
 
         // Log club news for seller (human team) when NPC buys from transfer list
         if (player.team_id && humanTeamIds.has(player.team_id)) {
