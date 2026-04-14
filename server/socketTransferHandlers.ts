@@ -140,7 +140,7 @@ export function registerTransferSocketHandlers(
                           logClubNews(
                             game,
                             "transfer_in",
-                            `${player.name} contratado`,
+                            `${player.name} contratado (Listagem)`,
                             playerState.teamId,
                             {
                               player_name: player.name,
@@ -156,7 +156,7 @@ export function registerTransferSocketHandlers(
                             logClubNews(
                               game,
                               "transfer_out",
-                              `${player.name} transferido`,
+                              `${player.name} vendido (Listagem)`,
                               player.team_id,
                               {
                                 player_name: player.name,
@@ -164,7 +164,7 @@ export function registerTransferSocketHandlers(
                                 related_team_id: playerState.teamId,
                                 related_team_name: buyingTeam?.name,
                                 amount: price,
-                                description: `${player.name} foi transferido por €${price}.`,
+                                description: `${player.name} foi vendido por €${price}.`,
                               },
                               io,
                             );
@@ -456,7 +456,7 @@ export function registerTransferSocketHandlers(
                             logClubNews(
                               game,
                               "transfer_in",
-                              `${player.name} contratado`,
+                              `${player.name} contratado por Cláusula`,
                               playerState.teamId,
                               {
                                 player_name: player.name,
@@ -464,7 +464,7 @@ export function registerTransferSocketHandlers(
                                 related_team_id: player.team_id,
                                 related_team_name: oldTeam?.name,
                                 amount: proposalPrice,
-                                description: `${player.name} foi contratado por €${proposalPrice}.`,
+                                description: `${player.name} foi contratado por cláusula de rescisão por €${proposalPrice}.`,
                               },
                               io,
                             );
@@ -472,7 +472,7 @@ export function registerTransferSocketHandlers(
                               logClubNews(
                                 game,
                                 "transfer_out",
-                                `${player.name} transferido`,
+                                `${player.name} vendido por Cláusula`,
                                 player.team_id,
                                 {
                                   player_name: player.name,

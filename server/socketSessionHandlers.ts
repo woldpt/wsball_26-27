@@ -418,7 +418,7 @@ export function registerSessionSocketHandlers(
     try {
       const news = await runAll(
         game.db,
-        `SELECT id, team_id, type, title, description, player_id, player_name, related_team_id, related_team_name, amount, matchweek, created_at
+        `SELECT id, team_id, type, title, description, player_id, player_name, related_team_id, related_team_name, amount, matchweek, year, created_at
          FROM club_news
          WHERE team_id = ?
          ORDER BY created_at DESC, id DESC

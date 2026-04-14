@@ -4880,9 +4880,16 @@ function App() {
                               {news.type !== "transfer_in" && news.type !== "transfer_out" && (
                                 <span className="text-zinc-500 text-xs shrink-0">•</span>
                               )}
-                              <span className="text-sm text-on-surface truncate">
-                                {news.title}
-                              </span>
+                              <div className="flex flex-col min-w-0">
+                                <span className="text-sm text-on-surface truncate">
+                                  {news.title}
+                                </span>
+                                {news.related_team_name && (news.type === "transfer_in" || news.type === "transfer_out") && (
+                                  <span className="text-[10px] text-on-surface-variant truncate">
+                                    {news.type === "transfer_in" ? "de" : "para"} {news.related_team_name}
+                                  </span>
+                                )}
+                              </div>
                               {news.amount > 0 && (
                                 <span className={`text-xs font-bold shrink-0 ${news.type === "transfer_out" ? "text-emerald-400" : news.type === "transfer_in" ? "text-red-400" : "text-on-surface-variant"}`}>
                                   €{news.amount.toLocaleString("pt-PT")}
@@ -4891,7 +4898,7 @@ function App() {
                             </div>
                             {(news.matchweek || news.year) && (
                               <span className="text-[10px] text-on-surface-variant font-bold shrink-0">
-                                {news.year ? `Ano ${news.year} · ` : ""}J{news.matchweek || "?"}
+                                J{news.matchweek || "?"}{news.year ? ` - ${news.year}` : ""}
                               </span>
                             )}
                           </div>
