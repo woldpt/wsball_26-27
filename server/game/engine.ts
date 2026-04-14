@@ -336,10 +336,10 @@ async function applyInjuryEvent({
     minute: fixture._minute,
     type: "injury",
     team: teamSide,
-    emoji: "❌",
+    emoji: "🚑",
     playerId: injuredPlayer.id,
     playerName: injuredPlayer.name,
-    text: `[${fixture._minute}'] ❌ Lesão! ${injuredPlayer.name}`,
+    text: `[${fixture._minute}'] 🚑 Lesão! ${injuredPlayer.name}`,
     severity: injuryLabel,
   });
 
