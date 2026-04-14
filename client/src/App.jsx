@@ -608,7 +608,6 @@ function App() {
   const [palmares, setPalmares] = useState({ trophies: [], allChampions: [] });
   const [palmaresTeamId, setPalmaresTeamId] = useState(null); // last requested team
   const [clubNews, setClubNews] = useState([]);
-  const [clubNewsTeamId, setClubNewsTeamId] = useState(null);
   const [financeData, setFinanceData] = useState(null); // { totalTicketRevenue, totalTransferIncome, totalTransferExpenses, sponsorRevenue, homeMatchesPlayed }
   const [selectedTeam, setSelectedTeam] = useState(null);
   const [selectedTeamSquad, setSelectedTeamSquad] = useState([]);
@@ -952,7 +951,6 @@ function App() {
     });
     socket.on("clubNewsData", (data) => {
       setClubNews(data.news || []);
-      setClubNewsTeamId(data.teamId);
     });
     socket.on("clubNewsUpdated", ({ teamId }) => {
       // Always refresh club news for the user's own team when updated
@@ -2596,24 +2594,10 @@ function App() {
   // ── FINANCIAL PROJECTIONS ─────────────────────────────────────────────────
   // All values are estimates based on current season data (no historical log).
   const totalWeeklyWage = mySquad.reduce((acc, p) => acc + (p.wage || 0), 0);
-  // Home games: 7 per season (half of 14 matchweeks, balanced schedule)
-  const HOME_GAMES_PER_SEASON = 7;
-  // Rough estimate of home games played so far (completedJornada / 2)
-  const homeGamesPlayed = Math.round(completedJornada / 2);
-  const homeGamesRemaining = Math.max(
-    0,
-    HOME_GAMES_PER_SEASON - homeGamesPlayed,
-  );
-  const matchweeksRemaining = Math.max(0, 14 - completedJornada);
   const capacityRevPerGame = (teamInfo?.stadium_capacity || 10000) * 15;
   const loanAmount = teamInfo?.loan_amount || 0;
   const loanInterestPerWeek = Math.round(loanAmount * 0.025);
   const currentBudget = teamInfo?.budget || 0;
-  const projectedFinalBudget =
-    currentBudget +
-    capacityRevPerGame * homeGamesRemaining -
-    totalWeeklyWage * matchweeksRemaining -
-    loanInterestPerWeek * matchweeksRemaining;
 
   // Oculta o menu e expande a janela de jogo durante a simulação
   const isMatchInProgress =
@@ -4592,12 +4576,6 @@ function App() {
                               : null;
                             const myAwayInfo = myFixture
                               ? teams.find((t) => t.id === myFixture.awayTeamId)
-                              : null;
-                            const myOpponentId = myFixture
-                              ? (myImHome ? myFixture.awayTeamId : myFixture.homeTeamId)
-                              : null;
-                            const myOpponentInfo = myOpponentId
-                              ? teams.find((t) => t.id === myOpponentId)
                               : null;
 
                             // status badge
