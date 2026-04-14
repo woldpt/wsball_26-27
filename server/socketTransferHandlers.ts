@@ -200,7 +200,7 @@ export function registerTransferSocketHandlers(
     );
   });
 
-  socket.on("listPlayerForTransfer", ({ playerId, mode, price }) => {
+  socket.on("listPlayerForTransfer", ({ playerId, mode, price, startingPrice }) => {
     const game = getGameBySocket(socket.id);
     if (!game) return;
     const playerState = getPlayerBySocket(game, socket.id);
@@ -223,7 +223,7 @@ export function registerTransferSocketHandlers(
         const finalPrice = Math.max(
           0,
           Math.round(
-            price || player.value * (finalMode === "auction" ? 0.75 : 1.0),
+            startingPrice || price || player.value * (finalMode === "auction" ? 0.75 : 1.0),
           ),
         );
 

@@ -157,7 +157,7 @@ export function registerSessionSocketHandlers(
     );
 
     game.db.get(
-      "SELECT id, name, division, budget, points, wins, draws, losses, goals_for, goals_against, color_primary, color_secondary, stadium_capacity FROM teams WHERE id = ?",
+      "SELECT id, name, division, budget, points, wins, draws, losses, goals_for, goals_against, color_primary, color_secondary, stadium_capacity, stadium_name FROM teams WHERE id = ?",
       [team.id],
       (err: any, details: any) => {
         if (err) {
@@ -178,6 +178,7 @@ export function registerSessionSocketHandlers(
           colorPrimary: d.color_primary ?? "#888888",
           colorSecondary: d.color_secondary ?? "#ffffff",
           stadiumCapacity: d.stadium_capacity ?? 0,
+          stadiumName: d.stadium_name ?? "",
           isNew,
         });
       },

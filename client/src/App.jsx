@@ -609,6 +609,7 @@ function App() {
   const [palmaresTeamId, setPalmaresTeamId] = useState(null); // last requested team
   const [clubNews, setClubNews] = useState([]);
   const [clubNewsTeamId, setClubNewsTeamId] = useState(null);
+  const [financeData, setFinanceData] = useState(null); // { totalTicketRevenue, totalTransferIncome, totalTransferExpenses, sponsorRevenue, homeMatchesPlayed }
   const [selectedTeam, setSelectedTeam] = useState(null);
   const [selectedTeamSquad, setSelectedTeamSquad] = useState([]);
   const [selectedTeamLoading, setSelectedTeamLoading] = useState(false);
@@ -631,6 +632,7 @@ function App() {
   const [subbedOut, setSubbedOut] = useState([]); // Track players who left the pitch
   const [confirmedSubs, setConfirmedSubs] = useState([]); // [{out: id, in: id}]
   const [openStatusPickerId, setOpenStatusPickerId] = useState(null);
+  const [penaltySuspense, setPenaltySuspense] = useState(null); // { playerName, result, team }
   // Match detail modal (non-blocking overlay during live match)
   const [showMatchDetail, setShowMatchDetail] = useState(false);
   const [matchDetailFixture, setMatchDetailFixture] = useState(null);
@@ -953,11 +955,13 @@ function App() {
       setClubNewsTeamId(data.teamId);
     });
     socket.on("clubNewsUpdated", ({ teamId }) => {
-      // If we have the news for this team and we're viewing the club tab, reload
-      if (teamId === clubNewsTeamId && activeTab === "club" && me?.teamId === teamId) {
+      // Always refresh club news for the user's own team when updated
+      const currentMe = meRef.current;
+      if (currentMe?.teamId === teamId) {
         socket.emit("requestClubNews", { teamId });
       }
     });
+    socket.on("financeData", (data) => setFinanceData(data));
     socket.on("systemMessage", (msg) => addToast(msg));
     socket.on("transferProposalResult", ({ ok, message }) => {
       addToast(message);
@@ -1084,6 +1088,15 @@ function App() {
 
     socket.on("matchMinuteUpdate", (data) => {
       setLiveMinute(data.minute);
+      // Check for penalty suspense events
+      for (const f of (data.fixtures || [])) {
+        for (const e of (f.minuteEvents || [])) {
+          if (e.penaltySuspense) {
+            setPenaltySuspense({ playerName: e.playerName, result: e.penaltyResult, team: e.team });
+            setTimeout(() => setPenaltySuspense(null), 3000);
+          }
+        }
+      }
       setMatchResults((prev) => {
         if (!prev) return prev;
         const updatedResults = (prev.results || []).map((r) => {
@@ -1301,6 +1314,7 @@ function App() {
       socket.off("cupSecondHalfStart");
       socket.off("cupPenaltyShootout");
       socket.off("palmaresData");
+      socket.off("financeData");
       socket.off("matchSegmentStart");
       socket.off("matchMinuteUpdate");
       socket.off("matchResults");
@@ -1781,12 +1795,20 @@ function App() {
     return () => clearTimeout(timer);
   }, [cupPenaltyPopup, cupPenaltyKickIdx]);
 
-  // Load own palmares when Clube tab is opened
+  // Load own palmares when Clube or Classificações tab is opened
   useEffect(() => {
-    if (activeTab !== "club" || !me?.teamId) return;
+    if ((activeTab !== "club" && activeTab !== "standings") || !me?.teamId) return;
     socket.emit("requestPalmares", { teamId: me.teamId });
-    socket.emit("requestClubNews", { teamId: me.teamId });
+    if (activeTab === "club") {
+      socket.emit("requestClubNews", { teamId: me.teamId });
+    }
   }, [activeTab, me?.teamId]);
+
+  // Load finance data when Finanças tab is opened
+  useEffect(() => {
+    if (activeTab !== "finances" || !me?.teamId) return;
+    socket.emit("requestFinanceData", { teamId: me.teamId });
+  }, [activeTab, me?.teamId, matchweekCount]);
 
   // Refresh calendar whenever the tab is opened or a matchweek advances
   useEffect(() => {
@@ -1940,12 +1962,19 @@ function App() {
   }, []);
 
   const listPlayerAuction = useCallback((player) => {
-    if (confirm(`Enviar ${player.name} para leilão imediato?`)) {
-      socket.emit("listPlayerForTransfer", {
-        playerId: player.id,
-        mode: "auction",
-      });
-    }
+    const defaultPrice = Math.round((player.value || 0) * 0.8);
+    const startingPrice = window.prompt(
+      `Valor de licitação base para ${player.name} (€)`,
+      String(defaultPrice),
+    );
+    if (startingPrice === null) return;
+    const price = Number(startingPrice);
+    if (!Number.isFinite(price) || price <= 0) return;
+    socket.emit("listPlayerForTransfer", {
+      playerId: player.id,
+      mode: "auction",
+      startingPrice: price,
+    });
   }, []);
 
   const listPlayerFixed = useCallback((player) => {
@@ -3908,16 +3937,16 @@ function App() {
                             </span>
                             <div className="flex text-[9px] font-bold uppercase tracking-wider text-on-surface-variant/40 shrink-0">
                               <span className="w-5 text-center">J</span>
-                              <span className="w-5 text-center">V</span>
-                              <span className="w-5 text-center">E</span>
+                              <span className="hidden sm:inline w-5 text-center">V</span>
+                              <span className="hidden sm:inline w-5 text-center">E</span>
                               <span className="hidden sm:inline w-5 text-center">D</span>
-                              <span className="w-6 text-center">GM</span>
-                              <span className="w-6 text-center">GS</span>
-                              <span className="w-7 text-center">DG</span>
+                              <span className="hidden sm:inline w-6 text-center">GM</span>
+                              <span className="hidden sm:inline w-6 text-center">GS</span>
+                              <span className="hidden sm:inline w-7 text-center">DG</span>
                               <span className="w-7 text-center text-tertiary/70">
                                 Pts
                               </span>
-                              <span className="hidden sm:inline w-[68px] text-center">
+                              <span className="w-[68px] text-center">
                                 Forma
                               </span>
                             </div>
@@ -3968,23 +3997,23 @@ function App() {
                                   <span className="w-5 text-center text-on-surface-variant/60">
                                     {played}
                                   </span>
-                                  <span className="w-5 text-center text-on-surface-variant/60">
+                                  <span className="hidden sm:inline-block w-5 text-center text-on-surface-variant/60">
                                     {t.wins || 0}
                                   </span>
-                                  <span className="w-5 text-center text-on-surface-variant/60">
+                                  <span className="hidden sm:inline-block w-5 text-center text-on-surface-variant/60">
                                     {t.draws || 0}
                                   </span>
                                   <span className="hidden sm:inline-block w-5 text-center text-on-surface-variant/60">
                                     {t.losses || 0}
                                   </span>
-                                  <span className="w-6 text-center text-on-surface-variant/60">
+                                  <span className="hidden sm:inline-block w-6 text-center text-on-surface-variant/60">
                                     {t.goals_for || 0}
                                   </span>
-                                  <span className="w-6 text-center text-on-surface-variant/60">
+                                  <span className="hidden sm:inline-block w-6 text-center text-on-surface-variant/60">
                                     {t.goals_against || 0}
                                   </span>
                                   <span
-                                    className={`w-7 text-center font-bold ${gd > 0 ? "text-primary" : gd < 0 ? "text-red-400" : "text-on-surface-variant/50"}`}
+                                    className={`hidden sm:inline-block w-7 text-center font-bold ${gd > 0 ? "text-primary" : gd < 0 ? "text-red-400" : "text-on-surface-variant/50"}`}
                                   >
                                     {gd > 0 ? `+${gd}` : gd}
                                   </span>
@@ -3992,7 +4021,7 @@ function App() {
                                     {t.points || 0}
                                   </span>
                                   {/* Form badges */}
-                                  <div className="hidden sm:flex w-[68px] items-center justify-center gap-0.5">
+                                  <div className="flex w-[68px] items-center justify-center gap-0.5">
                                     {form.split("").map((r, ri) => (
                                       <span
                                         key={ri}
@@ -4065,6 +4094,58 @@ function App() {
                             </span>
                           </div>
                         ))}
+                      </div>
+                    </div>
+                  )}
+
+                  {/* All-time champions (Palco de Honra) */}
+                  {palmares.allChampions?.length > 0 && (
+                    <div className="bg-surface-container rounded-lg shadow-sm p-6">
+                      <h2 className="text-xs text-on-surface-variant font-black uppercase tracking-widest mb-4">
+                        🏆 Palco de Honra — Todos os Campeões
+                      </h2>
+                      <div className="space-y-3">
+                        {(() => {
+                          const bySeasons = {};
+                          palmares.allChampions.forEach((c) => {
+                            if (!bySeasons[c.season]) bySeasons[c.season] = [];
+                            bySeasons[c.season].push(c);
+                          });
+                          return Object.keys(bySeasons)
+                            .sort((a, b) => Number(a) - Number(b))
+                            .map((season) => (
+                              <div
+                                key={season}
+                                className="bg-surface border border-outline-variant/15 rounded-md px-5 py-3"
+                              >
+                                <p className="text-xs text-on-surface-variant font-black uppercase tracking-widest mb-2">
+                                  {season}
+                                </p>
+                                <div className="flex flex-wrap gap-2">
+                                  {bySeasons[season].map((c, i) => (
+                                    <span
+                                      key={i}
+                                      className="inline-flex items-center gap-1 px-3 py-1 rounded-sm text-xs font-black bg-surface-bright border border-outline-variant/30"
+                                    >
+                                      <span
+                                        className={
+                                          c.achievement === "Campeão Nacional" ||
+                                          c.achievement === "Vencedor da Taça de Portugal"
+                                            ? "text-tertiary"
+                                            : "text-on-surface"
+                                        }
+                                      >
+                                        {c.team_name}
+                                      </span>
+                                      <span className="text-on-surface-variant">
+                                        — {c.achievement}
+                                      </span>
+                                    </span>
+                                  ))}
+                                </div>
+                              </div>
+                            ));
+                        })()}
                       </div>
                     </div>
                   )}
@@ -4720,6 +4801,36 @@ function App() {
                     </div>
                   </div>
 
+                  {/* Estádio */}
+                  <div className="bg-surface-container p-6 rounded-lg shadow-sm">
+                    <h2 className="text-xs text-on-surface-variant font-black uppercase tracking-widest mb-4">
+                      🏟️ Estádio
+                    </h2>
+                    <div className="flex flex-col gap-3">
+                      {teamInfo?.stadium_name && (
+                        <div className="flex items-center justify-between">
+                          <span className="text-on-surface-variant font-bold text-sm">
+                            Nome
+                          </span>
+                          <span className="text-white font-black text-lg">
+                            {teamInfo.stadium_name}
+                          </span>
+                        </div>
+                      )}
+                      <div className="flex items-center justify-between">
+                        <span className="text-on-surface-variant font-bold text-sm">
+                          Capacidade
+                        </span>
+                        <span className="font-mono text-white font-black text-lg">
+                          {(teamInfo?.stadium_capacity || 10000).toLocaleString(
+                            "pt-PT",
+                          )}{" "}
+                          lugares
+                        </span>
+                      </div>
+                    </div>
+                  </div>
+
                   {/* Own team trophies */}
                   <div className="bg-surface-container rounded-lg shadow-sm p-6">
                     <h2 className="text-xs text-tertiary font-black uppercase tracking-widest mb-4 flex items-center gap-2">
@@ -4763,60 +4874,6 @@ function App() {
                     )}
                   </div>
 
-                  {/* All-time champions by season */}
-                  {palmares.allChampions?.length > 0 && (
-                    <div className="bg-surface-container rounded-lg shadow-sm p-6">
-                      <h2 className="text-xs text-on-surface-variant font-black uppercase tracking-widest mb-4">
-                        Palco de Honra — Todos os Campeões
-                      </h2>
-                      <div className="space-y-3">
-                        {(() => {
-                          const bySeasons = {};
-                          palmares.allChampions.forEach((c) => {
-                            if (!bySeasons[c.season]) bySeasons[c.season] = [];
-                            bySeasons[c.season].push(c);
-                          });
-                          return Object.keys(bySeasons)
-                            .sort((a, b) => Number(a) - Number(b))
-                            .map((season) => (
-                              <div
-                                key={season}
-                                className="bg-surface border border-outline-variant/15 rounded-md px-5 py-3"
-                              >
-                                <p className="text-xs text-on-surface-variant font-black uppercase tracking-widest mb-2">
-                                  {season}
-                                </p>
-                                <div className="flex flex-wrap gap-2">
-                                  {bySeasons[season].map((c, i) => (
-                                    <span
-                                      key={i}
-                                      className="inline-flex items-center gap-1 px-3 py-1 rounded-sm text-xs font-black bg-surface-bright border border-outline-variant/30"
-                                    >
-                                      <span
-                                        className={
-                                          c.achievement ===
-                                            "Campeão Nacional" ||
-                                          c.achievement ===
-                                            "Vencedor da Taça de Portugal"
-                                            ? "text-tertiary"
-                                            : "text-on-surface"
-                                        }
-                                      >
-                                        {c.team_name}
-                                      </span>
-                                      <span className="text-on-surface-variant">
-                                        — {c.achievement}
-                                      </span>
-                                    </span>
-                                  ))}
-                                </div>
-                              </div>
-                            ));
-                        })()}
-                      </div>
-                    </div>
-                  )}
-
                   {/* Club Newspaper */}
                   <div className="bg-surface-container rounded-lg shadow-sm p-6">
                     <h2 className="text-xs text-on-surface-variant font-black uppercase tracking-widest mb-4 flex items-center gap-2">
@@ -4829,70 +4886,36 @@ function App() {
                       Jornal do Clube
                     </h2>
                     {clubNews && clubNews.length > 0 ? (
-                      <div className="space-y-3">
+                      <div className="divide-y divide-outline-variant/10">
                         {clubNews.map((news, idx) => (
                           <div
                             key={news.id || idx}
-                            className="bg-surface border border-outline-variant/15 rounded-md px-4 py-3"
+                            className="flex items-center justify-between gap-3 py-2"
                           >
-                            <div className="flex items-start justify-between gap-3">
-                              <div className="flex-1">
-                                <p className="text-sm font-black text-on-surface">
-                                  {news.title}
-                                </p>
-                                {news.description && (
-                                  <p className="text-xs text-on-surface-variant font-bold mt-1">
-                                    {news.description}
-                                  </p>
-                                )}
-                                {news.type === "transfer_in" && (
-                                  <div className="flex items-center gap-2 mt-2 text-xs">
-                                    <span className="inline-flex items-center gap-1 px-2 py-1 rounded-sm bg-primary/15 text-primary font-black">
-                                      <span
-                                        className="material-symbols-outlined text-xs"
-                                        style={{ fontVariationSettings: "'FILL' 1" }}
-                                      >
-                                        login
-                                      </span>
-                                      Entrada
-                                    </span>
-                                    {news.amount && (
-                                      <span className="text-on-surface-variant font-bold">
-                                        €{news.amount.toLocaleString("pt-PT")}
-                                      </span>
-                                    )}
-                                  </div>
-                                )}
-                                {news.type === "transfer_out" && (
-                                  <div className="flex items-center gap-2 mt-2 text-xs">
-                                    <span className="inline-flex items-center gap-1 px-2 py-1 rounded-sm bg-error/15 text-error font-black">
-                                      <span
-                                        className="material-symbols-outlined text-xs"
-                                        style={{ fontVariationSettings: "'FILL' 1" }}
-                                      >
-                                        logout
-                                      </span>
-                                      Saída
-                                    </span>
-                                    {news.related_team_name && (
-                                      <span className="text-on-surface-variant font-bold">
-                                        {news.related_team_name}
-                                      </span>
-                                    )}
-                                    {news.amount && (
-                                      <span className="text-on-surface-variant font-bold">
-                                        €{news.amount.toLocaleString("pt-PT")}
-                                      </span>
-                                    )}
-                                  </div>
-                                )}
-                              </div>
-                              {news.matchweek && (
-                                <span className="text-xs text-on-surface-variant font-bold shrink-0">
-                                  Jornada {news.matchweek}
+                            <div className="flex items-center gap-2 flex-1 min-w-0">
+                              {news.type === "transfer_in" && (
+                                <span className="text-primary text-xs font-black shrink-0">↙</span>
+                              )}
+                              {news.type === "transfer_out" && (
+                                <span className="text-error text-xs font-black shrink-0">↗</span>
+                              )}
+                              {news.type !== "transfer_in" && news.type !== "transfer_out" && (
+                                <span className="text-zinc-500 text-xs shrink-0">•</span>
+                              )}
+                              <span className="text-sm text-on-surface truncate">
+                                {news.title}
+                              </span>
+                              {news.amount > 0 && (
+                                <span className={`text-xs font-bold shrink-0 ${news.type === "transfer_out" ? "text-emerald-400" : news.type === "transfer_in" ? "text-red-400" : "text-on-surface-variant"}`}>
+                                  €{news.amount.toLocaleString("pt-PT")}
                                 </span>
                               )}
                             </div>
+                            {(news.matchweek || news.year) && (
+                              <span className="text-[10px] text-on-surface-variant font-bold shrink-0">
+                                {news.year ? `Ano ${news.year} · ` : ""}J{news.matchweek || "?"}
+                              </span>
+                            )}
                           </div>
                         ))}
                       </div>
@@ -4901,28 +4924,6 @@ function App() {
                         Nenhuma notícia ainda.
                       </p>
                     )}
-                  </div>
-
-                  {/* Finances section */}
-                  <div className="bg-surface-container p-6 rounded-lg shadow-sm">
-                    <h2 className="text-xs text-on-surface-variant font-black uppercase tracking-widest mb-4">
-                      Estádio
-                    </h2>
-                    <div className="flex flex-col gap-3">
-                      <div className="flex items-center justify-between">
-                        <span className="text-on-surface-variant font-bold text-sm">
-                          Capacidade
-                        </span>
-                        <span className="font-mono text-white font-black text-lg">
-                          🏟️{" "}
-                          {(teamInfo?.stadium_capacity || 10000).toLocaleString(
-                            "pt-PT",
-                          )}{" "}
-                          lugares
-                        </span>
-                      </div>
-
-                    </div>
                   </div>
                 </div>
               )}
@@ -4983,21 +4984,60 @@ function App() {
                               Bilheteiras
                             </p>
                             <p className="text-zinc-500 text-xs">
-                              15€/lugar × lotação — jornadas em casa
+                              15€/bilhete × assistência — {financeData?.homeMatchesPlayed || 0} jogos em casa
                             </p>
                           </div>
                           <div className="text-right">
                             <p className="text-emerald-400 font-mono font-black text-base">
-                              {formatCurrency(capacityRevPerGame)}
+                              {formatCurrency(financeData?.totalTicketRevenue || 0)}
                               <span className="text-zinc-500 text-xs font-normal">
                                 {" "}
-                                /jogo
+                                total
                               </span>
                             </p>
                           </div>
                         </div>
-
                       </div>
+
+                      {/* Patrocinadores */}
+                      <div className="border-t border-zinc-800 pt-4">
+                        <div className="flex items-start justify-between">
+                          <div>
+                            <p className="text-white font-bold text-sm">
+                              Patrocinadores
+                            </p>
+                            <p className="text-zinc-500 text-xs">
+                              Receita anual por divisão
+                            </p>
+                          </div>
+                          <p className="text-emerald-400 font-mono font-black text-base">
+                            {formatCurrency(financeData?.sponsorRevenue || 0)}
+                            <span className="text-zinc-500 text-xs font-normal">
+                              {" "}
+                              /ano
+                            </span>
+                          </p>
+                        </div>
+                      </div>
+
+                      {/* Vendas de Jogadores */}
+                      {(financeData?.totalTransferIncome || 0) > 0 && (
+                        <div className="border-t border-zinc-800 pt-4">
+                          <div className="flex items-start justify-between">
+                            <div>
+                              <p className="text-white font-bold text-sm">
+                                Vendas de Jogadores
+                              </p>
+                              <p className="text-zinc-500 text-xs">
+                                Receitas de transferências
+                              </p>
+                            </div>
+                            <p className="text-emerald-400 font-mono font-black text-base">
+                              {formatCurrency(financeData.totalTransferIncome)}
+                            </p>
+                          </div>
+                        </div>
+                      )}
                     </div>
                   </div>
 
@@ -5052,6 +5092,25 @@ function App() {
                                 </span>
                               </p>
                             </div>
+                          </div>
+                        </div>
+                      )}
+
+                      {/* Compras de Jogadores */}
+                      {(financeData?.totalTransferExpenses || 0) > 0 && (
+                        <div className="border-t border-zinc-800 pt-4">
+                          <div className="flex items-start justify-between">
+                            <div>
+                              <p className="text-white font-bold text-sm">
+                                Compras de Jogadores
+                              </p>
+                              <p className="text-zinc-500 text-xs">
+                                Despesas com transferências
+                              </p>
+                            </div>
+                            <p className="text-red-400 font-mono font-black text-base">
+                              -{formatCurrency(financeData.totalTransferExpenses)}
+                            </p>
                           </div>
                         </div>
                       )}
@@ -5203,6 +5262,9 @@ function App() {
                             POS
                           </th>
                           <th className="px-3 py-3 font-normal">NOME</th>
+                          <th className="px-3 py-3 text-center w-12 font-normal">
+                            NAC
+                          </th>
                           <th className="px-3 py-3 text-center w-14 font-normal">
                             QUAL
                           </th>
@@ -5217,9 +5279,6 @@ function App() {
                           </th>
                           <th className="px-3 py-3 text-center w-12 font-normal">
                             🩹
-                          </th>
-                          <th className="px-3 py-3 text-center w-12 font-normal">
-                            NAC
                           </th>
                           <th className="px-3 py-3 text-center w-24 font-normal">
                             ORDENADO
@@ -5271,6 +5330,16 @@ function App() {
                                   </span>
                                 )}
                             </td>
+                            <td className="px-3 py-2 text-center text-zinc-400 text-sm">
+                              <span
+                                title={
+                                  FLAG_TO_COUNTRY[player.nationality] ||
+                                  player.nationality
+                                }
+                              >
+                                {player.nationality}
+                              </span>
+                            </td>
                             <td className="px-3 py-2 text-center text-zinc-100 font-normal">
                               <span className="inline-flex items-center justify-center bg-surface text-on-surface px-2 py-1 rounded-sm text-sm border border-outline-variant/30 font-headline font-black tabular-nums">
                                 {player.skill}
@@ -5316,16 +5385,6 @@ function App() {
                               ])}{" "}
                               <span className="text-zinc-500 text-xs">
                                 ({getPlayerStat(player, ["career_injuries"])})
-                              </span>
-                            </td>
-                            <td className="px-3 py-2 text-center text-zinc-400 text-sm">
-                              <span
-                                title={
-                                  FLAG_TO_COUNTRY[player.nationality] ||
-                                  player.nationality
-                                }
-                              >
-                                {player.nationality}
                               </span>
                             </td>
                             <td className="px-3 py-2 text-center font-mono text-zinc-300 text-xs md:text-sm">
@@ -6661,6 +6720,23 @@ function App() {
         </div>
       )}
 
+      {/* ── PENALTY SUSPENSE POPUP ───────────────────────────────────────────── */}
+      {penaltySuspense && (
+        <div className="fixed inset-0 z-200 flex items-center justify-center pointer-events-none">
+          <div className="bg-zinc-900/95 border-2 border-amber-500/50 rounded-xl px-8 py-6 text-center shadow-2xl animate-bounce">
+            <p className="text-xs text-amber-400 uppercase font-black tracking-widest mb-2">
+              Penálti
+            </p>
+            <p className="text-zinc-400 text-sm font-bold mb-1">
+              {penaltySuspense.playerName}
+            </p>
+            <p className={`text-3xl font-black ${penaltySuspense.result === "GOLO!!!" ? "text-emerald-400" : "text-red-400"}`}>
+              {penaltySuspense.result}
+            </p>
+          </div>
+        </div>
+      )}
+
       {/* ── CUP DRAW POPUP ──────────────────────────────────────────────────── */}
       {showCupDrawPopup && cupDraw && (
         <div className="fixed inset-0 z-140 bg-zinc-950/90 backdrop-blur-sm flex items-center justify-center p-4">
@@ -6747,80 +6823,107 @@ function App() {
       )}
 
       {/* ── PENALTY SHOOTOUT POPUP ───────────────────────────────────────────── */}
-      {cupPenaltyPopup && (
+      {cupPenaltyPopup && (() => {
+        const kicks = cupPenaltyPopup.kicks || [];
+        const visibleKicks = kicks.slice(0, cupPenaltyKickIdx);
+        const allRevealed = cupPenaltyKickIdx >= kicks.length;
+        const homeTeam = teams.find((t) => t.id === cupPenaltyPopup.homeTeamId);
+        const awayTeam = teams.find((t) => t.id === cupPenaltyPopup.awayTeamId);
+        // Count running score from visible kicks
+        let runningHome = 0;
+        let runningAway = 0;
+        visibleKicks.forEach(k => {
+          if (k.team === "home" && k.scored) runningHome++;
+          if (k.team === "away" && k.scored) runningAway++;
+        });
+        // Group kicks into rounds (pairs of home+away)
+        const rounds = [];
+        for (let i = 0; i < kicks.length; i += 2) {
+          rounds.push({ home: kicks[i], away: kicks[i + 1] || null, roundNum: Math.floor(i / 2) + 1 });
+        }
+        return (
         <div className="fixed inset-0 z-150 bg-zinc-950/92 backdrop-blur-sm flex items-center justify-center p-4">
-          <div className="w-full max-w-sm rounded-lg border border-outline-variant/20 bg-surface-container shadow-2xl overflow-hidden">
-            <div className="bg-zinc-800/60 px-6 py-4 border-b border-zinc-800 text-center">
-              <p className="text-xs text-zinc-400 uppercase font-black tracking-widest">
+          <div className="w-full max-w-md rounded-lg border border-outline-variant/20 bg-surface-container shadow-2xl overflow-hidden">
+            <div className="bg-amber-900/20 px-6 py-4 border-b border-amber-800/30 text-center">
+              <p className="text-[10px] text-amber-400 uppercase font-black tracking-widest">
                 Taça de Portugal
               </p>
-              <h2 className="text-xl font-black text-white mt-1">
+              <h2 className="text-lg font-black text-white mt-1">
                 Grandes Penalidades
               </h2>
               <div className="flex items-center justify-center gap-4 mt-3">
-                <span
-                  className="font-black text-sm"
-                  style={{
-                    color:
-                      teams.find((t) => t.id === cupPenaltyPopup.homeTeamId)
-                        ?.color_primary || "#fff",
-                  }}
-                >
-                  {teams.find((t) => t.id === cupPenaltyPopup.homeTeamId)?.name}
+                <div className="flex items-center gap-2">
+                  <span className="w-3 h-3 rounded-full shrink-0" style={{ backgroundColor: homeTeam?.color_primary || "#666" }} />
+                  <span className="font-black text-sm text-white">{homeTeam?.name}</span>
+                </div>
+                <span className={`text-2xl font-black px-4 py-1 rounded border ${allRevealed ? "text-white bg-surface border-outline-variant/30" : "text-zinc-500 bg-surface border-outline-variant/20 animate-pulse"}`}>
+                  {allRevealed ? `${cupPenaltyPopup.homeGoals} – ${cupPenaltyPopup.awayGoals}` : `${runningHome} – ${runningAway}`}
                 </span>
-                {cupPenaltyKickIdx >= (cupPenaltyPopup.kicks || []).length ? (
-                  <span className="text-2xl font-black text-white px-3 py-1 bg-surface border border-outline-variant/20 rounded">
-                    {cupPenaltyPopup.homeGoals} – {cupPenaltyPopup.awayGoals}
-                  </span>
-                ) : (
-                  <span className="text-2xl font-black text-zinc-500 px-3 py-1 bg-surface border border-outline-variant/20 rounded animate-pulse">
-                    ? – ?
-                  </span>
-                )}
-                <span
-                  className="font-black text-sm"
-                  style={{
-                    color:
-                      teams.find((t) => t.id === cupPenaltyPopup.awayTeamId)
-                        ?.color_primary || "#fff",
-                  }}
-                >
-                  {teams.find((t) => t.id === cupPenaltyPopup.awayTeamId)?.name}
-                </span>
+                <div className="flex items-center gap-2">
+                  <span className="font-black text-sm text-white">{awayTeam?.name}</span>
+                  <span className="w-3 h-3 rounded-full shrink-0" style={{ backgroundColor: awayTeam?.color_primary || "#666" }} />
+                </div>
               </div>
             </div>
-            <div className="p-4 max-h-72 overflow-y-auto space-y-1">
-              {(cupPenaltyPopup.kicks || [])
-                .slice(0, cupPenaltyKickIdx)
-                .map((kick, idx) => (
-                  <div
-                    key={idx}
-                    className={`flex items-center gap-3 text-xs font-bold rounded px-3 py-1.5 transition-all ${kick.team === "home" ? "bg-zinc-800/60" : "bg-zinc-950/60"}`}
-                  >
-                    <span className="text-base">
-                      {kick.scored ? "⚽" : "🚑"}
-                    </span>
-                    <span
-                      className={`${kick.team === "home" ? "text-right flex-1" : "text-left flex-1 order-last"}`}
-                    >
-                      {kick.playerName}
-                    </span>
-                    {kick.suddenDeath && (
-                      <span className="text-amber-400 text-[10px] font-black shrink-0">
-                        SD
-                      </span>
-                    )}
-                  </div>
-                ))}
-              {cupPenaltyKickIdx < (cupPenaltyPopup.kicks || []).length && (
-                <div className="text-center py-2">
+            <div className="p-4 max-h-80 overflow-y-auto">
+              <table className="w-full text-xs">
+                <thead>
+                  <tr className="text-zinc-500 uppercase tracking-wider font-black text-[9px]">
+                    <th className="text-right pb-2 pr-2 w-1/3">{homeTeam?.name?.slice(0, 10)}</th>
+                    <th className="text-center pb-2 w-8">#</th>
+                    <th className="text-left pb-2 pl-2 w-1/3">{awayTeam?.name?.slice(0, 10)}</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {rounds.map((round, ri) => {
+                    const homeVisible = cupPenaltyKickIdx > ri * 2;
+                    const awayVisible = cupPenaltyKickIdx > ri * 2 + 1;
+                    const isSuddenDeath = round.home?.suddenDeath;
+                    return (
+                      <tr key={ri} className={`border-t border-zinc-800/50 ${isSuddenDeath ? "bg-amber-900/10" : ""}`}>
+                        <td className="text-right pr-2 py-1.5">
+                          {homeVisible ? (
+                            <span className="inline-flex items-center gap-1.5 justify-end">
+                              <span className="text-zinc-400 truncate max-w-[100px]">{round.home.playerName}</span>
+                              <span className={`font-black text-sm ${round.home.scored ? "text-emerald-400" : "text-red-400"}`}>
+                                {round.home.scored ? "✓" : "✗"}
+                              </span>
+                            </span>
+                          ) : (
+                            <span className="text-zinc-700">—</span>
+                          )}
+                        </td>
+                        <td className="text-center py-1.5">
+                          <span className={`font-black text-zinc-500 ${isSuddenDeath ? "text-amber-400" : ""}`}>
+                            {isSuddenDeath ? "SD" : round.roundNum}
+                          </span>
+                        </td>
+                        <td className="text-left pl-2 py-1.5">
+                          {awayVisible && round.away ? (
+                            <span className="inline-flex items-center gap-1.5">
+                              <span className={`font-black text-sm ${round.away.scored ? "text-emerald-400" : "text-red-400"}`}>
+                                {round.away.scored ? "✓" : "✗"}
+                              </span>
+                              <span className="text-zinc-400 truncate max-w-[100px]">{round.away.playerName}</span>
+                            </span>
+                          ) : (
+                            <span className="text-zinc-700">—</span>
+                          )}
+                        </td>
+                      </tr>
+                    );
+                  })}
+                </tbody>
+              </table>
+              {!allRevealed && (
+                <div className="text-center py-3">
                   <span className="animate-pulse text-amber-400 text-xs font-black uppercase tracking-widest">
                     A rematar…
                   </span>
                 </div>
               )}
             </div>
-            {cupPenaltyKickIdx >= (cupPenaltyPopup.kicks || []).length && (
+            {allRevealed && (
               <div className="px-6 pb-6 pt-2">
                 <button
                   onClick={() => {
@@ -6835,7 +6938,8 @@ function App() {
             )}
           </div>
         </div>
-      )}
+        );
+      })()}
 
       {/* ── MATCH DETAIL MODAL ───────────────────────────────────────────────── */}
       {showMatchDetail &&

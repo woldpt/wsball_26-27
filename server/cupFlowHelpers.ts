@@ -192,6 +192,7 @@ export function createCupFlowHelpers(deps: CupFlowDeps) {
 
     const updatedTeams = await runAll(game.db, "SELECT * FROM teams");
     io.to(game.roomCode).emit("teamsData", updatedTeams);
+    io.to(game.roomCode).emit("topScorers", []); // Reset top scorers for new season
     io.to(game.roomCode).emit("seasonEnd", {
       season,
       year,
