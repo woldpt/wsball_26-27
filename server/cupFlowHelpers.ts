@@ -331,6 +331,7 @@ export function createCupFlowHelpers(deps: CupFlowDeps) {
     const roundName = CUP_ROUND_NAMES[round] || `Ronda ${round}`;
     const results: any[] = [];
     let hasAnyET = false;
+    const etHumanTeamIds: number[] = [];
 
     // ─── ET halftime gate: pause before ET so coaches can make substitutions ───
     const drawFixtures = fixtures.filter(
@@ -360,7 +361,11 @@ export function createCupFlowHelpers(deps: CupFlowDeps) {
             awayLineup: f.awayLineup || [],
           })),
         });
-        Object.values(game.playersByName).forEach((p) => { p.ready = false; });
+        const drawTeamIds = new Set(drawFixtures.flatMap((f) => [f.homeTeamId, f.awayTeamId]));
+        Object.values(game.playersByName).forEach((p) => {
+          // Auto-ready coaches whose match is already decided — only ET coaches must confirm
+          p.ready = !p.socketId || !drawTeamIds.has(p.teamId);
+        });
         io.to(game.roomCode).emit("playerListUpdate", getPlayerList(game));
         saveGameState(game);
 
@@ -376,6 +381,61 @@ export function createCupFlowHelpers(deps: CupFlowDeps) {
             resolve();
           };
         });
+
+        // Apply ET halftime substitutions for draw fixtures (mirrors halftime sub logic at min 46)
+        const lineupSnapshotET = (squad: any[]) =>
+          squad.map((p: any) => ({ id: p.id, name: p.name, position: p.position, is_star: p.is_star || 0, skill: p.skill }));
+
+        const applyETHalftimeSubs = (
+          fixture: any,
+          squad: any[] | undefined,
+          tactic: any,
+          fullRoster: any[] | undefined,
+          teamSide: "home" | "away",
+        ) => {
+          if (!squad || !tactic?.positions || !fullRoster) return;
+          const positions: Record<number, string> = tactic.positions;
+          const currentIds = new Set(squad.map((p: any) => p.id));
+          const toRemoveIds = squad.filter((p: any) => positions[p.id] === "Suplente").map((p: any) => p.id);
+          const toAddIds = Object.entries(positions)
+            .filter(([id, status]) => status === "Titular" && !currentIds.has(Number(id)))
+            .map(([id]) => Number(id));
+          if (toRemoveIds.length === 0 && toAddIds.length === 0) return;
+          const outPlayers = toRemoveIds.map((id: number) => squad.find((p: any) => p.id === id)).filter(Boolean);
+          const inPlayers = toAddIds.map((id: number) => fullRoster.find((p: any) => p.id === id)).filter(Boolean);
+          for (const id of toRemoveIds) {
+            const idx = squad.findIndex((p: any) => p.id === id);
+            if (idx > -1) squad.splice(idx, 1);
+          }
+          for (const player of inPlayers) squad.push(player);
+          if (teamSide === "home") fixture.homeLineup = lineupSnapshotET(squad);
+          else fixture.awayLineup = lineupSnapshotET(squad);
+          const pairs = Math.min(outPlayers.length, inPlayers.length);
+          for (let i = 0; i < pairs; i++) {
+            fixture.events = fixture.events || [];
+            fixture.events.push({
+              minute: 90,
+              type: "halftime_sub",
+              team: teamSide,
+              emoji: "🔁",
+              outPlayerId: outPlayers[i].id,
+              outPlayerName: outPlayers[i].name,
+              playerId: inPlayers[i].id,
+              playerName: inPlayers[i].name,
+              position: inPlayers[i].position,
+              text: `[ET] 🔁 ${outPlayers[i].name} → ${inPlayers[i].name}`,
+            });
+          }
+        };
+
+        for (const drawFixture of drawFixtures) {
+          const dp1 = Object.values(game.playersByName).find((p: any) => p.teamId === drawFixture.homeTeamId);
+          const dp2 = Object.values(game.playersByName).find((p: any) => p.teamId === drawFixture.awayTeamId);
+          const dt1 = (dp1 as any)?.tactic || drawFixture._t1;
+          const dt2 = (dp2 as any)?.tactic || drawFixture._t2;
+          applyETHalftimeSubs(drawFixture, drawFixture._homeSquad, dt1, drawFixture._homeFullRoster, "home");
+          applyETHalftimeSubs(drawFixture, drawFixture._awaySquad, dt2, drawFixture._awayFullRoster, "away");
+        }
       }
     }
 
@@ -390,6 +450,8 @@ export function createCupFlowHelpers(deps: CupFlowDeps) {
       if (p2) fixture._t2 = t2;
       const ctx = { game, io, matchweek: game.matchweek };
 
+      const goals90Home = fixture.finalHomeGoals;
+      const goals90Away = fixture.finalAwayGoals;
       let winnerId;
       if (fixture.finalHomeGoals !== fixture.finalAwayGoals) {
         winnerId = fixture.finalHomeGoals > fixture.finalAwayGoals
@@ -402,6 +464,7 @@ export function createCupFlowHelpers(deps: CupFlowDeps) {
 
         if (humanInFixture) {
           hasAnyET = true;
+          etHumanTeamIds.push(fixture.homeTeamId, fixture.awayTeamId);
           io.to(game.roomCode).emit("cupExtraTimeStart", {
             homeTeamId: fixture.homeTeamId,
             awayTeamId: fixture.awayTeamId,
@@ -412,6 +475,9 @@ export function createCupFlowHelpers(deps: CupFlowDeps) {
 
         game.gamePhase = "match_extra_time";
         await simulateExtraTime(game.db, fixture, t1, t2, ctx);
+
+        const etGoalsHome = fixture.finalHomeGoals;
+        const etGoalsAway = fixture.finalAwayGoals;
 
         // Notify that ET is over and show final score
         io.to(game.roomCode).emit("extraTimeEnded", {
@@ -465,7 +531,7 @@ export function createCupFlowHelpers(deps: CupFlowDeps) {
         await new Promise((resolve) => {
           game.db.run(
             "UPDATE cup_matches SET home_et_score = ?, away_et_score = ? WHERE season = ? AND round = ? AND home_team_id = ? AND away_team_id = ?",
-            [fixture.finalHomeGoals, fixture.finalAwayGoals, season, round, fixture.homeTeamId, fixture.awayTeamId],
+            [etGoalsHome, etGoalsAway, season, round, fixture.homeTeamId, fixture.awayTeamId],
             resolve,
           );
         });
@@ -476,7 +542,7 @@ export function createCupFlowHelpers(deps: CupFlowDeps) {
       await new Promise((resolve) => {
         game.db.run(
           "UPDATE cup_matches SET home_score = ?, away_score = ?, played = 1, winner_team_id = ? WHERE season = ? AND round = ? AND home_team_id = ? AND away_team_id = ?",
-          [fixture.finalHomeGoals, fixture.finalAwayGoals, winnerId, season, round, fixture.homeTeamId, fixture.awayTeamId],
+          [goals90Home, goals90Away, winnerId, season, round, fixture.homeTeamId, fixture.awayTeamId],
           resolve,
         );
       });
@@ -540,7 +606,7 @@ export function createCupFlowHelpers(deps: CupFlowDeps) {
       const humanInCup = (Object.values(game.playersByName) as PlayerSession[])
         .some((p) => p.socketId && game.cupTeamIds.includes(p.teamId));
       if (humanInCup) {
-        await cupETAnimGate(game, 45000);
+        await cupETAnimGate(game, etHumanTeamIds, 45000);
       }
     }
 
@@ -577,7 +643,7 @@ export function createCupFlowHelpers(deps: CupFlowDeps) {
 
   // ─── ET ANIMATION GATE ───────────────────────────────────────────────────────
 
-  function cupETAnimGate(game: ActiveGame, timeoutMs = 45000): Promise<void> {
+  function cupETAnimGate(game: ActiveGame, etTeamIds: number[], timeoutMs = 45000): Promise<void> {
     return new Promise<void>((resolve) => {
       const acks = new Set<string>();
       const timeout = setTimeout(() => {
@@ -587,8 +653,9 @@ export function createCupFlowHelpers(deps: CupFlowDeps) {
 
       game._cupETAnimHandler = (socketId: string) => {
         acks.add(socketId);
+        // Only wait for coaches whose team was in an ET fixture
         const connected = (Object.values(game.playersByName) as PlayerSession[]).filter(
-          (p) => p.socketId,
+          (p) => p.socketId && etTeamIds.includes(p.teamId),
         );
         if (
           connected.length > 0 &&

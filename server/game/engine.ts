@@ -1082,17 +1082,44 @@ async function simulateExtraTime(
   awayTactic: Tactic | null,
   context: any,
 ) {
-  await simulateMatchSegment(
-    db,
-    fixture,
-    homeTactic,
-    awayTactic,
-    91,
-    105,
-    context,
-  );
+  // Detect whether a human coach is in this fixture so we can match the
+  // real-time speed used by runMatchSegment (1 s/min for human, 100 ms for AI).
+  const humanInFixture =
+    context.game &&
+    Object.values(context.game.playersByName).some(
+      (p: any) =>
+        p.socketId &&
+        (p.teamId === fixture.homeTeamId || p.teamId === fixture.awayTeamId),
+    );
+  const msPerMinute = humanInFixture ? 1000 : 100;
+
+  const emitMinuteUpdate = (minute: number) => {
+    if (!context.io || !context.game) return;
+    context.io.to(context.game.roomCode).emit("matchMinuteUpdate", {
+      minute,
+      fixtures: [
+        {
+          homeTeamId: fixture.homeTeamId,
+          awayTeamId: fixture.awayTeamId,
+          homeGoals: fixture.finalHomeGoals,
+          awayGoals: fixture.finalAwayGoals,
+          minuteEvents: (fixture.events || []).filter(
+            (e: any) => e.minute === minute,
+          ),
+        },
+      ],
+    });
+  };
+
+  // ET first half: minutes 91–105, one minute at a time with real-time delays
+  for (let minute = 91; minute <= 105; minute++) {
+    await simulateMatchSegment(db, fixture, homeTactic, awayTactic, minute, minute, context);
+    emitMinuteUpdate(minute);
+    if (minute < 105) await new Promise((r) => setTimeout(r, msPerMinute));
+  }
+
   const et1Events = fixture.events.filter(
-    (e) => e.minute >= 91 && e.minute <= 105,
+    (e: any) => e.minute >= 91 && e.minute <= 105,
   );
 
   if (context.io && context.game) {
@@ -1117,16 +1144,14 @@ async function simulateExtraTime(
     });
   }
 
-  await simulateMatchSegment(
-    db,
-    fixture,
-    homeTactic,
-    awayTactic,
-    106,
-    120,
-    context,
-  );
-  const et2Events = fixture.events.filter((e) => e.minute >= 106);
+  // ET second half: minutes 106–120, one minute at a time with real-time delays
+  for (let minute = 106; minute <= 120; minute++) {
+    await simulateMatchSegment(db, fixture, homeTactic, awayTactic, minute, minute, context);
+    emitMinuteUpdate(minute);
+    if (minute < 120) await new Promise((r) => setTimeout(r, msPerMinute));
+  }
+
+  const et2Events = fixture.events.filter((e: any) => e.minute >= 106);
 
   return { et1Events, et2Events };
 }
