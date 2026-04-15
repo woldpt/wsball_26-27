@@ -1064,13 +1064,14 @@ function App() {
     socket.on("clubNewsData", (data) => {
       setClubNews(data.news || []);
     });
-    socket.on("clubNewsUpdated", ({ teamId, title, playerId, playerName }) => {
+    socket.on("clubNewsUpdated", ({ teamId, title, playerId, playerName, isAuction }) => {
       // Use meRef (not me) to avoid stale closure — this listener is registered once with [] deps
       const currentMe = meRef.current;
       if (currentMe?.teamId === teamId) {
         socket.emit("requestClubNews", { teamId });
       }
-      if (title) {
+      // Auction transfers are already covered by the auctionClosed handler — skip to avoid duplicates
+      if (title && !isAuction) {
         pushTickerItem(title, playerId || null, playerName || null);
       }
     });
@@ -1368,10 +1369,12 @@ function App() {
     // BUG-11 FIX: matchResults clears showHalftimePanel (2nd half replay)
     socket.on("matchResults", (data) => {
       setIsMatchActionPending(false);
+      const myTeamId = meRef.current?.teamId;
       for (const r of data.results || []) {
-        const home = teamsRef.current.find((t) => t.id === r.homeTeamId)?.name || "?";
-        const away = teamsRef.current.find((t) => t.id === r.awayTeamId)?.name || "?";
-        pushTickerItem(`${home} ${r.homeGoals}-${r.awayGoals} ${away}`);
+        if (r.homeTeamId !== myTeamId && r.awayTeamId !== myTeamId) continue;
+        const home = r.homeTeam?.name || teamsRef.current.find((t) => t.id === r.homeTeamId)?.name || "?";
+        const away = r.awayTeam?.name || teamsRef.current.find((t) => t.id === r.awayTeamId)?.name || "?";
+        pushTickerItem(`${home} ${r.finalHomeGoals ?? r.homeGoals ?? "?"}-${r.finalAwayGoals ?? r.awayGoals ?? "?"} ${away}`);
       }
       setMatchResults(data);
       setMatchweekCount(data.matchweek);
