@@ -800,7 +800,7 @@
       "name": "Bragança",
       "division": 4,
       "colors": { "primary": "#FFD700", "secondary": "#0047AB" },
-      "stadium": { "name": "Estádio Municipal de Bragança", "capacity": 50000 },
+      "stadium": { "name": "Estádio Municipal de Bragança", "capacity": 5000 },
       "manager": { "name": "André Irulegui" },
       "players": [
         { "name": "Zé Pedro", "country": "🇵🇹", "position": "GR" },
