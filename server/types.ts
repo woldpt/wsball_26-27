@@ -14,7 +14,7 @@ export interface Tactic {
 
 export interface PlayerSession {
   name: string;
-  teamId: number;
+  teamId: number | null;
   roomCode: string;
   ready: boolean;
   tactic: Tactic;
@@ -27,13 +27,13 @@ export interface PlayerSession {
  * Transitions are always linear: no concurrent league+cup activity.
  */
 export type GamePhase =
-  | "lobby"                  // Between events: tactics, transfers, squad review
-  | "match_first_half"       // Engine running 1-45 (league OR cup)
-  | "match_halftime"         // Waiting: all humans confirm Ready
-  | "match_second_half"      // Engine running 46-90
-  | "match_extra_time"       // Cup only: ET simulation running (91-120)
-  | "match_finalizing"       // Post-match processing (brief, blocking)
-  | "season_end";            // Season wrap-up: promotions, relegations
+  | "lobby" // Between events: tactics, transfers, squad review
+  | "match_first_half" // Engine running 1-45 (league OR cup)
+  | "match_halftime" // Waiting: all humans confirm Ready
+  | "match_second_half" // Engine running 46-90
+  | "match_extra_time" // Cup only: ET simulation running (91-120)
+  | "match_finalizing" // Post-match processing (brief, blocking)
+  | "season_end"; // Season wrap-up: promotions, relegations
 
 export interface ActiveGame {
   roomCode: string;
@@ -42,17 +42,17 @@ export interface ActiveGame {
   socketToName: Record<string, string>;
 
   // ── Single calendar cursor (replaces matchweek + cupRound as progress trackers) ──
-  calendarIndex: number;    // 0..18 within the season (index into SEASON_CALENDAR)
+  calendarIndex: number; // 0..18 within the season (index into SEASON_CALENDAR)
   season: number;
   year: number;
-  matchweek: number;        // convenience field: updated at end of each league event
+  matchweek: number; // convenience field: updated at end of each league event
 
   // ── Single state machine (replaces matchState + cupState) ──
   gamePhase: GamePhase;
 
   // ── Current event runtime ──
   currentEvent: any | null; // CalendarEntry | null — what we're playing RIGHT NOW
-  currentFixtures: any[];   // active fixture objects (league or cup)
+  currentFixtures: any[]; // active fixture objects (league or cup)
 
   // ── Single phase timer + ack set (replaces 5 separate timeouts + ack sets) ──
   phaseToken: string;
@@ -71,5 +71,18 @@ export interface ActiveGame {
   pendingAuctionQueue: unknown[];
   initialized: boolean;
   lastHalftimePayload?: any;
+
+  // ── Coach dismissal & job offers ──
+  pendingJobOffers: Record<
+    string,
+    {
+      fromTeamId: number;
+      toTeamId: number;
+      expiresAtMatchweek: number;
+    }
+  >;
+  negativeBudgetStreak: Record<number, number>; // teamId → semanas consecutivas com budget < 0
+  dismissedCoachSince: Record<string, { matchweek: number; division: number }>; // coachName → info de despedimento
+
   [key: string]: any;
 }

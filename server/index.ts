@@ -48,12 +48,8 @@ const {
   pickRefereeSummary,
   calculateMatchAttendance,
 } = require("./coreHelpers") as typeof import("./coreHelpers");
-const {
-  DIVISION_NAMES,
-  CUP_ROUND_NAMES,
-  CUP_TEAMS_BY_ROUND,
-  SEASON_CALENDAR,
-} = require("./gameConstants") as typeof import("./gameConstants");
+const { DIVISION_NAMES, CUP_ROUND_NAMES, CUP_TEAMS_BY_ROUND, SEASON_CALENDAR } =
+  require("./gameConstants") as typeof import("./gameConstants");
 const { isMatchInProgress, finalizeAllRunningAuctions } =
   require("./matchFlowHelpers") as typeof import("./matchFlowHelpers");
 const { createAuctionHelpers } =
@@ -80,6 +76,8 @@ const { createCupFlowHelpers } =
   require("./cupFlowHelpers") as typeof import("./cupFlowHelpers");
 const { createMatchSummaryHelpers } =
   require("./matchSummaryHelpers") as typeof import("./matchSummaryHelpers");
+const { createCoachDismissalHelpers } =
+  require("./coachDismissalHelpers") as typeof import("./coachDismissalHelpers");
 const adminRoutes = require("./adminRoutes");
 const sqlite3 = require("sqlite3").verbose();
 
@@ -170,15 +168,20 @@ app.get("/saves", apiLimiter, async (req, res) => {
 app.delete("/saves/:roomCode", apiLimiter, async (req, res) => {
   try {
     const name = typeof req.body?.name === "string" ? req.body.name.trim() : "";
-    const password = typeof req.body?.password === "string" ? req.body.password : "";
+    const password =
+      typeof req.body?.password === "string" ? req.body.password : "";
     const roomCode = (req.params.roomCode || "").toUpperCase();
 
-    if (!name) return res.status(400).json({ error: "Nome de treinador inválido." });
-    if (!password) return res.status(400).json({ error: "A palavra-passe é obrigatória." });
-    if (!roomCode) return res.status(400).json({ error: "Código de sala inválido." });
+    if (!name)
+      return res.status(400).json({ error: "Nome de treinador inválido." });
+    if (!password)
+      return res.status(400).json({ error: "A palavra-passe é obrigatória." });
+    if (!roomCode)
+      return res.status(400).json({ error: "Código de sala inválido." });
 
     const authResult = await verifyManager(name, password);
-    if (!authResult.ok) return res.status(401).json({ error: authResult.error });
+    if (!authResult.ok)
+      return res.status(401).json({ error: authResult.error });
 
     const myRooms = await getManagerRooms(name);
     if (!myRooms.includes(roomCode)) {
@@ -191,7 +194,9 @@ app.delete("/saves/:roomCode", apiLimiter, async (req, res) => {
         (p: any) => p.socketId,
       ).length;
       if (connected > 0) {
-        return res.status(409).json({ error: "Sala tem jogadores ligados. Tenta mais tarde." });
+        return res
+          .status(409)
+          .json({ error: "Sala tem jogadores ligados. Tenta mais tarde." });
       }
     }
 
@@ -211,11 +216,15 @@ app.delete("/saves/:roomCode", apiLimiter, async (req, res) => {
 app.post("/auth/login", apiLimiter, async (req, res) => {
   try {
     const name = typeof req.body?.name === "string" ? req.body.name.trim() : "";
-    const password = typeof req.body?.password === "string" ? req.body.password : "";
-    if (!name) return res.status(400).json({ error: "Nome de treinador inválido." });
-    if (!password) return res.status(400).json({ error: "A palavra-passe é obrigatória." });
+    const password =
+      typeof req.body?.password === "string" ? req.body.password : "";
+    if (!name)
+      return res.status(400).json({ error: "Nome de treinador inválido." });
+    if (!password)
+      return res.status(400).json({ error: "A palavra-passe é obrigatória." });
     const authResult = await verifyManager(name, password);
-    if (!authResult.ok) return res.status(401).json({ error: authResult.error });
+    if (!authResult.ok)
+      return res.status(401).json({ error: authResult.error });
     return res.json({ ok: true, name });
   } catch (error) {
     console.error("[/auth/login] Error:", error.message);
@@ -226,11 +235,15 @@ app.post("/auth/login", apiLimiter, async (req, res) => {
 app.post("/auth/register", apiLimiter, async (req, res) => {
   try {
     const name = typeof req.body?.name === "string" ? req.body.name.trim() : "";
-    const password = typeof req.body?.password === "string" ? req.body.password : "";
-    if (!name) return res.status(400).json({ error: "Nome de treinador inválido." });
-    if (!password) return res.status(400).json({ error: "A palavra-passe é obrigatória." });
+    const password =
+      typeof req.body?.password === "string" ? req.body.password : "";
+    if (!name)
+      return res.status(400).json({ error: "Nome de treinador inválido." });
+    if (!password)
+      return res.status(400).json({ error: "A palavra-passe é obrigatória." });
     const authResult = await createManager(name, password);
-    if (!authResult.ok) return res.status(409).json({ error: authResult.error });
+    if (!authResult.ok)
+      return res.status(409).json({ error: authResult.error });
     return res.json({ ok: true, name });
   } catch (error) {
     console.error("[/auth/register] Error:", error.message);
@@ -292,7 +305,11 @@ const processNpcTransferActivity = (game) =>
   npcTransferHelpers.processNpcTransferActivity(game, listPlayerOnMarket);
 
 function scheduleNpcAuctionBids(game, playerId) {
-  return npcTransferHelpers.scheduleNpcAuctionBids(game, playerId, placeAuctionBid);
+  return npcTransferHelpers.scheduleNpcAuctionBids(
+    game,
+    playerId,
+    placeAuctionBid,
+  );
 }
 
 // ── CUP FLOW ──────────────────────────────────────────────────────────────────
@@ -324,6 +341,16 @@ const ensurePhaseTimeout = cupFlowHelpers.ensurePhaseTimeout;
 
 // ── WEEKLY FLOW ────────────────────────────────────────────────────────────────
 
+const coachDismissalHelpers = createCoachDismissalHelpers({
+  io,
+  runAll,
+  runGet,
+  saveGameState,
+});
+const processCoachEvents = coachDismissalHelpers.processCoachEvents;
+const handleAcceptJobOffer = coachDismissalHelpers.handleAcceptJobOffer;
+const handleDeclineJobOffer = coachDismissalHelpers.handleDeclineJobOffer;
+
 const weeklyFlowHelpers = createWeeklyFlowHelpers({
   io,
   getPlayerList,
@@ -342,6 +369,7 @@ const weeklyFlowHelpers = createWeeklyFlowHelpers({
   processContractExpiries,
   processNpcTransferActivity,
   refreshMarket,
+  processCoachEvents,
 });
 
 const checkAllReady = weeklyFlowHelpers.checkAllReady;
@@ -405,6 +433,8 @@ io.on("connection", (socket) => {
     unbindSocket,
     checkAllReady,
     emitAwaitingCoaches,
+    handleAcceptJobOffer,
+    handleDeclineJobOffer,
   });
 });
 

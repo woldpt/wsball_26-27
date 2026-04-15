@@ -18,7 +18,10 @@
       "Bash(grep -r \"wage\\\\|skill.*70\\\\|skill.*55\\\\|skill.*60\" z:/Coding/cashball_26_27/server/*.ts)",
       "Bash(grep -r \"initial\\\\|budget.*INSERT\\\\|budget.*=.*[0-9]\\\\{6,\\\\}\\\\|attendance.*15\\\\|attendanc.*revenue\" z:/Coding/cashball_26_27/server/*.ts)",
       "Bash(grep -r \"0.4\\\\|0.5\\\\|0.65\\\\|0.75\\\\|0.8\\\\|0.85\\\\|1.2\\\\|1.35\\\\|demandBase\\\\|startingPrice\" z:/Coding/cashball_26_27/server/*.ts)",
-      "Bash(grep -r \"skill\\\\|value\\\\|wage\" /z/Coding/cashball_26_27/server/db/fixtures/*.json)"
+      "Bash(grep -r \"skill\\\\|value\\\\|wage\" /z/Coding/cashball_26_27/server/db/fixtures/*.json)",
+      "Bash(grep -n \"budget\" /z/Coding/cashball_26_27/server/*.ts)",
+      "Bash(grep -n \"loan_amount\" /z/Coding/cashball_26_27/server/*.ts)",
+      "Bash(grep -n \"type:\" /z/Coding/cashball_26_27/server/*.ts)"
     ]
   }
 }

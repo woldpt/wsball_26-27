@@ -11,6 +11,8 @@ interface GameplayHandlerDeps {
   unbindSocket: (game: ActiveGame, socketId: string) => void;
   checkAllReady: (game: ActiveGame) => void | Promise<void>;
   emitAwaitingCoaches: (game: ActiveGame) => void;
+  handleAcceptJobOffer: (game: ActiveGame, coachName: string) => Promise<void>;
+  handleDeclineJobOffer: (game: ActiveGame, coachName: string) => void;
 }
 
 export function registerGameplaySocketHandlers(
@@ -25,6 +27,8 @@ export function registerGameplaySocketHandlers(
     unbindSocket,
     checkAllReady,
     emitAwaitingCoaches,
+    handleAcceptJobOffer,
+    handleDeclineJobOffer,
   } = deps;
 
   socket.on("setTactic", (tactic) => {
@@ -85,5 +89,21 @@ export function registerGameplaySocketHandlers(
       io.to(game.roomCode).emit("playerListUpdate", getPlayerList(game));
       emitAwaitingCoaches(game);
     }
+  });
+
+  socket.on("acceptJobOffer", async () => {
+    const game = getGameBySocket(socket.id);
+    if (!game) return;
+    const name = game.socketToName[socket.id];
+    if (!name) return;
+    await handleAcceptJobOffer(game, name);
+  });
+
+  socket.on("declineJobOffer", () => {
+    const game = getGameBySocket(socket.id);
+    if (!game) return;
+    const name = game.socketToName[socket.id];
+    if (!name) return;
+    handleDeclineJobOffer(game, name);
   });
 }

@@ -132,20 +132,28 @@ function ensurePlayerSchema(
                     )`,
                     (backfillErr) => {
                       if (backfillErr)
-                        console.warn("[gameManager] is_star backfill failed:", backfillErr.message);
+                        console.warn(
+                          "[gameManager] is_star backfill failed:",
+                          backfillErr.message,
+                        );
                       next();
                     },
                   );
                 });
               }
 
-              if (missing.some(([n]: [string, string]) => n === "aggressiveness")) {
+              if (
+                missing.some(([n]: [string, string]) => n === "aggressiveness")
+              ) {
                 backfillSteps.push((next) => {
                   db.run(
                     `UPDATE players SET aggressiveness = 1 + (ABS(RANDOM()) % 5)`,
                     (backfillErr) => {
                       if (backfillErr)
-                        console.warn("[gameManager] aggressiveness backfill failed:", backfillErr.message);
+                        console.warn(
+                          "[gameManager] aggressiveness backfill failed:",
+                          backfillErr.message,
+                        );
                       next();
                     },
                   );
@@ -172,8 +180,17 @@ function ensurePlayerSchema(
  * Derive calendarIndex from legacy DB keys (for rooms saved before the refactor).
  * Maps old matchweek + cupRound/cupState to the new calendarIndex.
  */
-function deriveCalendarIndex(matchweek: number, cupRound: number, cupState: string): number {
-  if (cupState && cupState !== "idle" && cupState !== "done_cup" && cupRound > 0) {
+function deriveCalendarIndex(
+  matchweek: number,
+  cupRound: number,
+  cupState: string,
+): number {
+  if (
+    cupState &&
+    cupState !== "idle" &&
+    cupState !== "done_cup" &&
+    cupRound > 0
+  ) {
     const cupEntry = SEASON_CALENDAR.find(
       (e) => e.type === "cup" && (e as any).round === cupRound,
     );
@@ -269,6 +286,11 @@ function getGame(roomCode: string, onReady?: OnReady): ActiveGame | null {
     pendingAuctionQueue: [],
     initialized: false,
     roomName: "",
+
+    // Coach dismissal & job offers
+    pendingJobOffers: {},
+    negativeBudgetStreak: {},
+    dismissedCoachSince: {},
   };
 
   activeGames[roomCode] = game;
@@ -278,9 +300,18 @@ function getGame(roomCode: string, onReady?: OnReady): ActiveGame | null {
     () => {
       ensurePlayerSchema(db, () => {
         const continueAfterMigrations = () => {
-          db.run("ALTER TABLE teams ADD COLUMN morale INTEGER DEFAULT 50", () => {});
-          db.run("ALTER TABLE teams ADD COLUMN stadium_name TEXT DEFAULT ''", () => {});
-          db.run("ALTER TABLE matches ADD COLUMN attendance INTEGER DEFAULT 0", () => {});
+          db.run(
+            "ALTER TABLE teams ADD COLUMN morale INTEGER DEFAULT 50",
+            () => {},
+          );
+          db.run(
+            "ALTER TABLE teams ADD COLUMN stadium_name TEXT DEFAULT ''",
+            () => {},
+          );
+          db.run(
+            "ALTER TABLE matches ADD COLUMN attendance INTEGER DEFAULT 0",
+            () => {},
+          );
           db.run("ALTER TABLE matches ADD COLUMN home_lineup TEXT", () => {});
           db.run("ALTER TABLE matches ADD COLUMN away_lineup TEXT", () => {});
           db.run(`CREATE TABLE IF NOT EXISTS cup_matches (
@@ -306,118 +337,184 @@ function getGame(roomCode: string, onReady?: OnReady): ActiveGame | null {
           )`);
 
           // ── Read persisted state (flat: one query for all keys) ──────────────
-          db.all("SELECT key, value FROM game_state", (_, stateRows: Array<{ key: string; value: string }> | null) => {
-            const st: Record<string, string> = {};
-            for (const row of stateRows || []) st[row.key] = row.value;
+          db.all(
+            "SELECT key, value FROM game_state",
+            (_, stateRows: Array<{ key: string; value: string }> | null) => {
+              const st: Record<string, string> = {};
+              for (const row of stateRows || []) st[row.key] = row.value;
 
-            // Season / year / matchweek
-            if (st["season"]) game.season = parseInt(st["season"]) || 1;
-            if (st["year"]) {
-              game.year = parseInt(st["year"]) || (2025 + game.season);
-            } else {
-              game.year = 2025 + game.season;
-            }
-            if (st["matchweek"]) game.matchweek = parseInt(st["matchweek"]) || 1;
-
-            // Calendar index (new key first; derive from legacy if absent)
-            if (st["calendarIndex"]) {
-              game.calendarIndex = parseInt(st["calendarIndex"]) || 0;
-            } else {
-              const legacyMW = parseInt(st["matchweek"]) || 1;
-              const legacyCR = parseInt(st["cupRound"]) || 0;
-              const legacyCS = st["cupState"] || "idle";
-              game.calendarIndex = deriveCalendarIndex(legacyMW, legacyCR, legacyCS);
-            }
-
-            // Game phase (new key first; derive from legacy if absent)
-            if (st["gamePhase"]) {
-              const savedPhase = st["gamePhase"] as GamePhase;
-              const transientStates: GamePhase[] = [
-                "match_first_half", "match_second_half",
-                "match_extra_time", "match_finalizing",
-              ];
-              if (transientStates.includes(savedPhase)) {
-                console.warn(`[gameManager] Recovering stuck gamePhase '${savedPhase}' -> 'lobby' for room ${roomCode}`);
-                game.gamePhase = "lobby";
+              // Season / year / matchweek
+              if (st["season"]) game.season = parseInt(st["season"]) || 1;
+              if (st["year"]) {
+                game.year = parseInt(st["year"]) || 2025 + game.season;
               } else {
-                game.gamePhase = savedPhase;
+                game.year = 2025 + game.season;
               }
-            } else {
-              game.gamePhase = deriveGamePhase(st["matchState"] || "idle", st["cupState"] || "idle");
-            }
+              if (st["matchweek"])
+                game.matchweek = parseInt(st["matchweek"]) || 1;
 
-            // Halftime payload (for reconnect during match_halftime)
-            if (game.gamePhase === "match_halftime") {
-              if (st["cupHalftimePayload"]) {
-                try { game.cupHalftimePayload = JSON.parse(st["cupHalftimePayload"]); } catch (_) {}
-                game.lastHalftimePayload = game.cupHalftimePayload;
-              } else if (st["lastHalftimePayload"]) {
-                try { game.lastHalftimePayload = JSON.parse(st["lastHalftimePayload"]); } catch (_) {}
-              } else if (st["cupRuntime"]) {
+              // Calendar index (new key first; derive from legacy if absent)
+              if (st["calendarIndex"]) {
+                game.calendarIndex = parseInt(st["calendarIndex"]) || 0;
+              } else {
+                const legacyMW = parseInt(st["matchweek"]) || 1;
+                const legacyCR = parseInt(st["cupRound"]) || 0;
+                const legacyCS = st["cupState"] || "idle";
+                game.calendarIndex = deriveCalendarIndex(
+                  legacyMW,
+                  legacyCR,
+                  legacyCS,
+                );
+              }
+
+              // Game phase (new key first; derive from legacy if absent)
+              if (st["gamePhase"]) {
+                const savedPhase = st["gamePhase"] as GamePhase;
+                const transientStates: GamePhase[] = [
+                  "match_first_half",
+                  "match_second_half",
+                  "match_extra_time",
+                  "match_finalizing",
+                ];
+                if (transientStates.includes(savedPhase)) {
+                  console.warn(
+                    `[gameManager] Recovering stuck gamePhase '${savedPhase}' -> 'lobby' for room ${roomCode}`,
+                  );
+                  game.gamePhase = "lobby";
+                } else {
+                  game.gamePhase = savedPhase;
+                }
+              } else {
+                game.gamePhase = deriveGamePhase(
+                  st["matchState"] || "idle",
+                  st["cupState"] || "idle",
+                );
+              }
+
+              // Halftime payload (for reconnect during match_halftime)
+              if (game.gamePhase === "match_halftime") {
+                if (st["cupHalftimePayload"]) {
+                  try {
+                    game.cupHalftimePayload = JSON.parse(
+                      st["cupHalftimePayload"],
+                    );
+                  } catch (_) {}
+                  game.lastHalftimePayload = game.cupHalftimePayload;
+                } else if (st["lastHalftimePayload"]) {
+                  try {
+                    game.lastHalftimePayload = JSON.parse(
+                      st["lastHalftimePayload"],
+                    );
+                  } catch (_) {}
+                } else if (st["cupRuntime"]) {
+                  try {
+                    const parsed = JSON.parse(st["cupRuntime"]);
+                    if (parsed?.halftimePayload)
+                      game.lastHalftimePayload = parsed.halftimePayload;
+                  } catch (_) {}
+                }
+              }
+
+              // Phase token
+              if (st["phaseToken"]) game.phaseToken = st["phaseToken"];
+
+              if (st["roomName"]) {
+                (game as any).roomName = st["roomName"];
+              }
+
+              // Cup team IDs
+              if (st["cupTeamIds"]) {
                 try {
-                  const parsed = JSON.parse(st["cupRuntime"]);
-                  if (parsed?.halftimePayload) game.lastHalftimePayload = parsed.halftimePayload;
+                  const parsed = JSON.parse(st["cupTeamIds"]);
+                  if (Array.isArray(parsed)) game.cupTeamIds = parsed;
                 } catch (_) {}
               }
-            }
 
-            // Phase token
-            if (st["phaseToken"]) game.phaseToken = st["phaseToken"];
+              // Current fixtures (for reconnect during match or cup lobby)
+              if (st["currentFixtures"]) {
+                try {
+                  const parsed = JSON.parse(st["currentFixtures"]);
+                  if (Array.isArray(parsed)) game.currentFixtures = parsed;
+                } catch (_) {}
+              }
 
-            if (st["roomName"]) {
-              (game as any).roomName = st["roomName"];
-            }
+              // Locked coaches
+              if (st["lockedCoaches"]) {
+                try {
+                  const names = JSON.parse(st["lockedCoaches"]);
+                  if (Array.isArray(names)) game.lockedCoaches = new Set(names);
+                } catch (_) {}
+              }
 
-            // Cup team IDs
-            if (st["cupTeamIds"]) {
-              try {
-                const parsed = JSON.parse(st["cupTeamIds"]);
-                if (Array.isArray(parsed)) game.cupTeamIds = parsed;
-              } catch (_) {}
-            }
+              // Coach dismissal persistence (transient: pendingJobOffers is never persisted)
+              game.pendingJobOffers = {};
+              if (st["negativeBudgetStreak"]) {
+                try {
+                  const parsed = JSON.parse(st["negativeBudgetStreak"]);
+                  game.negativeBudgetStreak = Object.fromEntries(
+                    Object.entries(parsed).map(([k, v]) => [
+                      Number(k),
+                      Number(v),
+                    ]),
+                  );
+                } catch (_) {}
+              }
+              if (st["dismissedCoachSince"]) {
+                try {
+                  const parsed = JSON.parse(st["dismissedCoachSince"]);
+                  game.dismissedCoachSince = Object.fromEntries(
+                    Object.entries(parsed).map(([k, v]) => [
+                      String(k),
+                      typeof v === "object" && v !== null
+                        ? (v as { matchweek: number; division: number })
+                        : { matchweek: Number(v), division: 4 }, // legacy compat
+                    ]),
+                  );
+                } catch (_) {}
+              }
 
-            // Current fixtures (for reconnect during match or cup lobby)
-            if (st["currentFixtures"]) {
-              try {
-                const parsed = JSON.parse(st["currentFixtures"]);
-                if (Array.isArray(parsed)) game.currentFixtures = parsed;
-              } catch (_) {}
-            }
+              // Set currentEvent from calendarIndex
+              game.currentEvent = SEASON_CALENDAR[game.calendarIndex] ?? null;
 
-            // Locked coaches
-            if (st["lockedCoaches"]) {
-              try {
-                const names = JSON.parse(st["lockedCoaches"]);
-                if (Array.isArray(names)) game.lockedCoaches = new Set(names);
-              } catch (_) {}
-            }
-
-            // Set currentEvent from calendarIndex
-            game.currentEvent = SEASON_CALENDAR[game.calendarIndex] ?? null;
-
-            // Load market
-            db.all(
-              "SELECT * FROM players WHERE team_id IS NULL OR transfer_status != 'none' ORDER BY RANDOM() LIMIT 40",
-              (err7, rows) => {
-                if (!err7 && rows) game.globalMarket = rows;
-                game.initialized = true;
-                if (onReady) onReady(game);
-              },
-            );
-          });
+              // Load market
+              db.all(
+                "SELECT * FROM players WHERE team_id IS NULL OR transfer_status != 'none' ORDER BY RANDOM() LIMIT 40",
+                (err7, rows) => {
+                  if (!err7 && rows) game.globalMarket = rows;
+                  game.initialized = true;
+                  if (onReady) onReady(game);
+                },
+              );
+            },
+          );
         };
 
         // One-time migration: fix aggressiveness if all-default or out-of-range
         db.get(
           "SELECT COUNT(*) AS total, SUM(CASE WHEN aggressiveness = 3 THEN 1 ELSE 0 END) AS allThree, SUM(CASE WHEN aggressiveness < 1 OR aggressiveness > 5 THEN 1 ELSE 0 END) AS outOfRange FROM players",
-          (aggCheckErr: Error | null, aggRow: { total: number; allThree: number; outOfRange: number } | null) => {
-            const needsFix = !aggCheckErr && aggRow && aggRow.total > 0 &&
+          (
+            aggCheckErr: Error | null,
+            aggRow: {
+              total: number;
+              allThree: number;
+              outOfRange: number;
+            } | null,
+          ) => {
+            const needsFix =
+              !aggCheckErr &&
+              aggRow &&
+              aggRow.total > 0 &&
               (aggRow.total === aggRow.allThree || aggRow.outOfRange > 0);
             if (needsFix) {
-              console.log(`[gameManager] Backfilling aggressiveness for room ${roomCode}`);
-              db.run(`UPDATE players SET aggressiveness = 1 + (ABS(RANDOM()) % 5)`, () => {
-                continueAfterMigrations();
-              });
+              console.log(
+                `[gameManager] Backfilling aggressiveness for room ${roomCode}`,
+              );
+              db.run(
+                `UPDATE players SET aggressiveness = 1 + (ABS(RANDOM()) % 5)`,
+                () => {
+                  continueAfterMigrations();
+                },
+              );
             } else {
               continueAfterMigrations();
             }
@@ -435,7 +532,9 @@ function saveGameState(game: ActiveGame): void {
     game.db.run(
       "INSERT OR REPLACE INTO game_state (key, value) VALUES (?, ?)",
       [key, value],
-      (err) => { if (err) console.error(`[gameManager] Error saving ${key}:`, err); },
+      (err) => {
+        if (err) console.error(`[gameManager] Error saving ${key}:`, err);
+      },
     );
   };
 
@@ -447,10 +546,23 @@ function saveGameState(game: ActiveGame): void {
   upsert("year", String(game.year || 2026));
   upsert("matchweek", String(game.matchweek || 1));
   upsert("cupTeamIds", JSON.stringify(game.cupTeamIds || []));
-  upsert("cupHalftimePayload", game.cupHalftimePayload ? JSON.stringify(game.cupHalftimePayload) : "null");
-  upsert("lastHalftimePayload", game.lastHalftimePayload ? JSON.stringify(game.lastHalftimePayload) : "null");
+  upsert(
+    "cupHalftimePayload",
+    game.cupHalftimePayload ? JSON.stringify(game.cupHalftimePayload) : "null",
+  );
+  upsert(
+    "lastHalftimePayload",
+    game.lastHalftimePayload
+      ? JSON.stringify(game.lastHalftimePayload)
+      : "null",
+  );
   upsert("lockedCoaches", JSON.stringify([...game.lockedCoaches]));
   upsert("roomName", (game as any).roomName || "");
+  upsert(
+    "negativeBudgetStreak",
+    JSON.stringify(game.negativeBudgetStreak || {}),
+  );
+  upsert("dismissedCoachSince", JSON.stringify(game.dismissedCoachSince || {}));
 
   // Persist current fixtures for crash recovery (only serialisable fields)
   if (game.currentFixtures && game.currentFixtures.length > 0) {
@@ -477,10 +589,14 @@ function saveGameState(game: ActiveGame): void {
   // Derive legacy values from new state
   const legacyMatchState = (() => {
     switch (game.gamePhase) {
-      case "match_first_half": return "running_first_half";
-      case "match_halftime": return "halftime";
-      case "match_second_half": return "playing_second_half";
-      default: return "idle";
+      case "match_first_half":
+        return "running_first_half";
+      case "match_halftime":
+        return "halftime";
+      case "match_second_half":
+        return "playing_second_half";
+      default:
+        return "idle";
     }
   })();
   const cupEntry = game.currentEvent?.type === "cup" ? game.currentEvent : null;
@@ -488,10 +604,14 @@ function saveGameState(game: ActiveGame): void {
   const legacyCupState = (() => {
     if (!cupEntry) return "idle";
     switch (game.gamePhase) {
-      case "match_first_half": return "playing_first_half";
-      case "match_halftime":   return "halftime";
-      case "match_second_half": return "playing_second_half";
-      default: return "idle";
+      case "match_first_half":
+        return "playing_first_half";
+      case "match_halftime":
+        return "halftime";
+      case "match_second_half":
+        return "playing_second_half";
+      default:
+        return "idle";
     }
   })();
 

@@ -2,7 +2,11 @@ import type { ActiveGame, PlayerSession } from "./types";
 import type { CalendarEntry } from "./gameConstants";
 import { SEASON_CALENDAR } from "./gameConstants";
 import { getAllTeamForms } from "./coreHelpers";
-import { finalizeAllRunningAuctions, clearPhaseTimer, makePhaseToken } from "./matchFlowHelpers";
+import {
+  finalizeAllRunningAuctions,
+  clearPhaseTimer,
+  makePhaseToken,
+} from "./matchFlowHelpers";
 
 interface WeeklyFlowDeps {
   io: any;
@@ -47,6 +51,7 @@ interface WeeklyFlowDeps {
   processContractExpiries: (game: ActiveGame) => Promise<void>;
   processNpcTransferActivity: (game: ActiveGame) => Promise<void>;
   refreshMarket: (game: ActiveGame, emitToRoom?: boolean) => void;
+  processCoachEvents: (game: ActiveGame) => Promise<void>;
 }
 
 export function createWeeklyFlowHelpers(deps: WeeklyFlowDeps) {
@@ -68,6 +73,7 @@ export function createWeeklyFlowHelpers(deps: WeeklyFlowDeps) {
     processContractExpiries,
     processNpcTransferActivity,
     refreshMarket,
+    processCoachEvents,
   } = deps;
 
   // Guard against concurrent match segment execution
@@ -87,7 +93,9 @@ export function createWeeklyFlowHelpers(deps: WeeklyFlowDeps) {
     // Prevent re-running the same segment
     const segmentKey = `${startMin}-${endMin}`;
     if (game._lastCompletedSegment === segmentKey) {
-      console.warn(`[${game.roomCode}] Skipping already-completed segment ${segmentKey}`);
+      console.warn(
+        `[${game.roomCode}] Skipping already-completed segment ${segmentKey}`,
+      );
       return;
     }
 
@@ -96,26 +104,40 @@ export function createWeeklyFlowHelpers(deps: WeeklyFlowDeps) {
     // Calculate attendance only for league first halves
     if (startMin === 1 && entry?.type === "league") {
       for (const fixture of game.currentFixtures) {
-        fixture.attendance = await calculateMatchAttendance(game.db, fixture.homeTeamId);
+        fixture.attendance = await calculateMatchAttendance(
+          game.db,
+          fixture.homeTeamId,
+        );
       }
     }
 
     // Read tactics for all fixtures once at segment start
-    const fixtureTactics: Array<{ t1: any; t2: any }> = game.currentFixtures.map((fixture) => {
-      const p1 = Object.values(game.playersByName).find((p) => p.teamId === fixture.homeTeamId);
-      const p2 = Object.values(game.playersByName).find((p) => p.teamId === fixture.awayTeamId);
-      const t1 = p1 ? p1.tactic : (fixture._t1 || { formation: "4-4-2", style: "Balanced" });
-      const t2 = p2 ? p2.tactic : (fixture._t2 || { formation: "4-4-2", style: "Balanced" });
-      if (p1) fixture._t1 = t1;
-      if (p2) fixture._t2 = t2;
-      return { t1, t2 };
-    });
+    const fixtureTactics: Array<{ t1: any; t2: any }> =
+      game.currentFixtures.map((fixture) => {
+        const p1 = Object.values(game.playersByName).find(
+          (p) => p.teamId === fixture.homeTeamId,
+        );
+        const p2 = Object.values(game.playersByName).find(
+          (p) => p.teamId === fixture.awayTeamId,
+        );
+        const t1 = p1
+          ? p1.tactic
+          : fixture._t1 || { formation: "4-4-2", style: "Balanced" };
+        const t2 = p2
+          ? p2.tactic
+          : fixture._t2 || { formation: "4-4-2", style: "Balanced" };
+        if (p1) fixture._t1 = t1;
+        if (p2) fixture._t2 = t2;
+        return { t1, t2 };
+      });
 
     // Detect if any connected human has a team in the current fixtures
     const humanInFixtures = game.currentFixtures.some((f) =>
       Object.values(game.playersByName).some(
-        (p: any) => p.socketId && (p.teamId === f.homeTeamId || p.teamId === f.awayTeamId)
-      )
+        (p: any) =>
+          p.socketId &&
+          (p.teamId === f.homeTeamId || p.teamId === f.awayTeamId),
+      ),
     );
     const effectiveMsPerMinute = humanInFixtures ? MS_PER_GAME_MINUTE : 100;
 
@@ -156,14 +178,21 @@ export function createWeeklyFlowHelpers(deps: WeeklyFlowDeps) {
 
             // Players not in squad who are now marked as Titular (subbed in at halftime)
             const toAddIds = Object.entries(positions)
-              .filter(([id, status]) => status === "Titular" && !currentIds.has(Number(id)))
+              .filter(
+                ([id, status]) =>
+                  status === "Titular" && !currentIds.has(Number(id)),
+              )
               .map(([id]) => Number(id));
 
             if (toRemoveIds.length === 0 && toAddIds.length === 0) return;
 
             // Snapshot outgoing/incoming players BEFORE modifying the squad
-            const outPlayers = toRemoveIds.map((id: number) => squad.find((p: any) => p.id === id)).filter(Boolean);
-            const inPlayers = toAddIds.map((id: number) => fullRoster.find((p: any) => p.id === id)).filter(Boolean);
+            const outPlayers = toRemoveIds
+              .map((id: number) => squad.find((p: any) => p.id === id))
+              .filter(Boolean);
+            const inPlayers = toAddIds
+              .map((id: number) => fullRoster.find((p: any) => p.id === id))
+              .filter(Boolean);
 
             // Remove subbed-out players
             for (const id of toRemoveIds) {
@@ -202,11 +231,24 @@ export function createWeeklyFlowHelpers(deps: WeeklyFlowDeps) {
             }
           };
 
-          applyHalftimeSubs(fixture._homeSquad, t1, fixture._homeFullRoster, "home");
-          applyHalftimeSubs(fixture._awaySquad, t2, fixture._awayFullRoster, "away");
+          applyHalftimeSubs(
+            fixture._homeSquad,
+            t1,
+            fixture._homeFullRoster,
+            "home",
+          );
+          applyHalftimeSubs(
+            fixture._awaySquad,
+            t2,
+            fixture._awayFullRoster,
+            "away",
+          );
         }
       } catch (err) {
-        console.error(`[${game.roomCode}] Error applying halftime substitutions:`, err);
+        console.error(
+          `[${game.roomCode}] Error applying halftime substitutions:`,
+          err,
+        );
       }
     }
 
@@ -268,7 +310,9 @@ export function createWeeklyFlowHelpers(deps: WeeklyFlowDeps) {
 
     if (endMin === 45) {
       // ── Halftime ─────────────────────────────────────────────────────────
-      console.log(`[${game.roomCode}] Halftime reached. entry=${entry ? `type:${entry.type}` : "null"}, gamePhase=${game.gamePhase}`);
+      console.log(
+        `[${game.roomCode}] Halftime reached. entry=${entry ? `type:${entry.type}` : "null"}, gamePhase=${game.gamePhase}`,
+      );
       game.gamePhase = "match_halftime";
 
       if (entry?.type === "cup") {
@@ -295,7 +339,9 @@ export function createWeeklyFlowHelpers(deps: WeeklyFlowDeps) {
         };
         game.cupHalftimePayload = halftimePayload;
         game.lastHalftimePayload = halftimePayload;
-        console.log(`[${game.roomCode}] Emitting cupHalfTimeResults with ${game.currentFixtures.length} fixtures`);
+        console.log(
+          `[${game.roomCode}] Emitting cupHalfTimeResults with ${game.currentFixtures.length} fixtures`,
+        );
         io.to(game.roomCode).emit("cupHalfTimeResults", halftimePayload);
       } else {
         const halfTimeFixtures = game.currentFixtures.map((fixture) => ({
@@ -307,12 +353,17 @@ export function createWeeklyFlowHelpers(deps: WeeklyFlowDeps) {
             game.matchweek,
           ),
         }));
-        const halftimePayload = { matchweek: game.matchweek, results: halfTimeFixtures };
+        const halftimePayload = {
+          matchweek: game.matchweek,
+          results: halfTimeFixtures,
+        };
         game.lastHalftimePayload = halftimePayload;
         io.to(game.roomCode).emit("halfTimeResults", halftimePayload);
       }
 
-      Object.values(game.playersByName).forEach((p) => { p.ready = false; });
+      Object.values(game.playersByName).forEach((p) => {
+        p.ready = false;
+      });
       io.to(game.roomCode).emit("playerListUpdate", getPlayerList(game));
       saveGameState(game);
       return;
@@ -343,10 +394,28 @@ export function createWeeklyFlowHelpers(deps: WeeklyFlowDeps) {
         for (const match of fixtures) {
           const hG = match.finalHomeGoals;
           const aG = match.finalAwayGoals;
-          let hPts = 0, aPts = 0, hW = 0, hD = 0, hL = 0, aW = 0, aD = 0, aL = 0;
-          if (hG > aG) { hPts = 3; hW = 1; aL = 1; }
-          else if (hG < aG) { aPts = 3; aW = 1; hL = 1; }
-          else { hPts = 1; aPts = 1; hD = 1; aD = 1; }
+          let hPts = 0,
+            aPts = 0,
+            hW = 0,
+            hD = 0,
+            hL = 0,
+            aW = 0,
+            aD = 0,
+            aL = 0;
+          if (hG > aG) {
+            hPts = 3;
+            hW = 1;
+            aL = 1;
+          } else if (hG < aG) {
+            aPts = 3;
+            aW = 1;
+            hL = 1;
+          } else {
+            hPts = 1;
+            aPts = 1;
+            hD = 1;
+            aD = 1;
+          }
 
           game.db.run(
             `UPDATE teams SET points=points+?, wins=wins+?, draws=draws+?, losses=losses+?, goals_for=goals_for+?, goals_against=goals_against+? WHERE id=?`,
@@ -393,7 +462,9 @@ export function createWeeklyFlowHelpers(deps: WeeklyFlowDeps) {
             results: fullTimeFixtures,
           });
 
-          Object.values(game.playersByName).forEach((p) => { p.ready = false; });
+          Object.values(game.playersByName).forEach((p) => {
+            p.ready = false;
+          });
 
           // Advance state
           game.calendarIndex += 1;
@@ -414,7 +485,10 @@ export function createWeeklyFlowHelpers(deps: WeeklyFlowDeps) {
                   try {
                     await applySeasonEnd(game);
                   } catch (seErr) {
-                    console.error(`[${game.roomCode}] Season end error:`, seErr);
+                    console.error(
+                      `[${game.roomCode}] Season end error:`,
+                      seErr,
+                    );
                   }
                   resolveOuter();
                   return;
@@ -422,20 +496,42 @@ export function createWeeklyFlowHelpers(deps: WeeklyFlowDeps) {
 
                 // Drain pending auction queue — skip if next event is a cup round to avoid
                 // the auction modal overlapping the cup draw animation.
-                if (game.pendingAuctionQueue && game.pendingAuctionQueue.length > 0 && game.currentEvent?.type !== "cup") {
+                if (
+                  game.pendingAuctionQueue &&
+                  game.pendingAuctionQueue.length > 0 &&
+                  game.currentEvent?.type !== "cup"
+                ) {
                   const queue = game.pendingAuctionQueue.splice(0) as any[];
                   let qDelay = 500;
                   for (const qEntry of queue) {
                     setTimeout(() => {
-                      listPlayerOnMarket(game, qEntry.playerId, qEntry.mode, qEntry.price, qEntry.callback);
+                      listPlayerOnMarket(
+                        game,
+                        qEntry.playerId,
+                        qEntry.mode,
+                        qEntry.price,
+                        qEntry.callback,
+                      );
                     }, qDelay);
                     qDelay += 18000;
                   }
                 }
 
-                try { await processContractExpiries(game); } catch (_) {}
-                try { await processNpcTransferActivity(game); } catch (_) {}
+                try {
+                  await processContractExpiries(game);
+                } catch (_) {}
+                try {
+                  await processNpcTransferActivity(game);
+                } catch (_) {}
                 refreshMarket(game);
+                try {
+                  await processCoachEvents(game);
+                } catch (coachErr) {
+                  console.error(
+                    `[${game.roomCode}] Coach events error:`,
+                    coachErr,
+                  );
+                }
 
                 // If the next calendar event is a cup round, prepare the draw NOW
                 // so coaches see their opponent and can set tactics in the lobby.
@@ -444,42 +540,60 @@ export function createWeeklyFlowHelpers(deps: WeeklyFlowDeps) {
                     await startCupRound(game, (game.currentEvent as any).round);
                     saveGameState(game);
                   } catch (cupErr) {
-                    console.error(`[${game.roomCode}] Cup draw preparation error:`, cupErr);
+                    console.error(
+                      `[${game.roomCode}] Cup draw preparation error:`,
+                      cupErr,
+                    );
                   }
                 }
 
                 // Broadcast updated standings and squad info
-                game.db.all("SELECT * FROM teams", (err2: any, teams: any[]) => {
-                  if (!err2) io.to(game.roomCode).emit("teamsData", teams);
-                  getAllTeamForms(game.db).then((forms) => {
-                    io.to(game.roomCode).emit("teamForms", forms);
-                  }).catch(() => {});
+                game.db.all(
+                  "SELECT * FROM teams",
+                  (err2: any, teams: any[]) => {
+                    if (!err2) io.to(game.roomCode).emit("teamsData", teams);
+                    getAllTeamForms(game.db)
+                      .then((forms) => {
+                        io.to(game.roomCode).emit("teamForms", forms);
+                      })
+                      .catch(() => {});
 
-                  game.db.all(
-                    "SELECT p.id, p.name, p.position, p.goals, p.team_id, t.name as team_name, t.color_primary, t.color_secondary FROM players p LEFT JOIN teams t ON p.team_id = t.id WHERE p.goals > 0 ORDER BY p.goals DESC, p.skill DESC LIMIT 20",
-                    (err3: any, scorers: any[]) => {
-                      io.to(game.roomCode).emit("topScorers", scorers || []);
+                    game.db.all(
+                      "SELECT p.id, p.name, p.position, p.goals, p.team_id, t.name as team_name, t.color_primary, t.color_secondary FROM players p LEFT JOIN teams t ON p.team_id = t.id WHERE p.goals > 0 ORDER BY p.goals DESC, p.skill DESC LIMIT 20",
+                      (err3: any, scorers: any[]) => {
+                        io.to(game.roomCode).emit("topScorers", scorers || []);
 
-                      const connectedPlayers = getPlayerList(game);
-                      connectedPlayers.forEach((player) => {
-                        if (!player.socketId) return;
-                        game.db.all(
-                          "SELECT * FROM players WHERE team_id = ?",
-                          [player.teamId],
-                          (err4: any, squad: any[]) => {
-                            if (!err4) io.to(player.socketId as string).emit("mySquad", squad || []);
-                          },
+                        const connectedPlayers = getPlayerList(game);
+                        connectedPlayers.forEach((player) => {
+                          if (!player.socketId) return;
+                          game.db.all(
+                            "SELECT * FROM players WHERE team_id = ?",
+                            [player.teamId],
+                            (err4: any, squad: any[]) => {
+                              if (!err4)
+                                io.to(player.socketId as string).emit(
+                                  "mySquad",
+                                  squad || [],
+                                );
+                            },
+                          );
+                        });
+
+                        io.to(game.roomCode).emit(
+                          "playerListUpdate",
+                          getPlayerList(game),
                         );
-                      });
-
-                      io.to(game.roomCode).emit("playerListUpdate", getPlayerList(game));
-                      resolveOuter();
-                    },
-                  );
-                });
+                        resolveOuter();
+                      },
+                    );
+                  },
+                );
               })
               .catch((error: any) => {
-                console.error(`[${game.roomCode}] Post-match evolution error:`, error);
+                console.error(
+                  `[${game.roomCode}] Post-match evolution error:`,
+                  error,
+                );
                 resolveOuter();
               });
           });
@@ -496,7 +610,8 @@ export function createWeeklyFlowHelpers(deps: WeeklyFlowDeps) {
     // ── Standard readiness check (same for cup and league) ──────────────────
     if (game.lockedCoaches.size >= 2) {
       const allReady = [...game.lockedCoaches].every(
-        (name) => game.playersByName[name]?.socketId && game.playersByName[name]?.ready,
+        (name) =>
+          game.playersByName[name]?.socketId && game.playersByName[name]?.ready,
       );
       if (!allReady) return;
     } else {
@@ -515,7 +630,9 @@ export function createWeeklyFlowHelpers(deps: WeeklyFlowDeps) {
 
       const entry = SEASON_CALENDAR[game.calendarIndex];
       if (!entry) {
-        console.warn(`[${game.roomCode}] checkAllReady: calendarIndex ${game.calendarIndex} out of range`);
+        console.warn(
+          `[${game.roomCode}] checkAllReady: calendarIndex ${game.calendarIndex} out of range`,
+        );
         return;
       }
 
@@ -548,7 +665,10 @@ export function createWeeklyFlowHelpers(deps: WeeklyFlowDeps) {
               try {
                 await startCupRound(game, (entry as any).round);
               } catch (cupErr) {
-                console.error(`[${game.roomCode}] Cup draw fallback error:`, cupErr);
+                console.error(
+                  `[${game.roomCode}] Cup draw fallback error:`,
+                  cupErr,
+                );
                 game.gamePhase = "lobby";
                 segmentRunning[game.roomCode] = false;
                 return;
@@ -583,7 +703,9 @@ export function createWeeklyFlowHelpers(deps: WeeklyFlowDeps) {
           if (game.gamePhase === "match_halftime" && entry?.type === "cup") {
             const humanInAnyFixture = game.currentFixtures.some((f) =>
               (Object.values(game.playersByName) as PlayerSession[]).some(
-                (p) => p.socketId && (p.teamId === f.homeTeamId || p.teamId === f.awayTeamId),
+                (p) =>
+                  p.socketId &&
+                  (p.teamId === f.homeTeamId || p.teamId === f.awayTeamId),
               ),
             );
             if (!humanInAnyFixture) {
