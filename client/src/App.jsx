@@ -584,10 +584,18 @@ function App() {
     );
   };
 
-  const pushTickerItem = (text, playerId = null, playerName = null) => {
+  const TICKER_TEAM_COLORS = [
+    "#f87171","#fb923c","#facc15","#4ade80","#34d399","#22d3ee",
+    "#60a5fa","#a78bfa","#e879f9","#f472b6","#94a3b8","#fbbf24",
+    "#86efac","#67e8f9","#c4b5fd","#fda4af","#6ee7b7","#93c5fd",
+  ];
+  const getTeamColor = (teamId) =>
+    teamId ? TICKER_TEAM_COLORS[teamId % TICKER_TEAM_COLORS.length] : "#ef4444";
+
+  const pushTickerItem = (text, playerId = null, playerName = null, teamId = null) => {
     setNewsTickerItems((prev) => [
       ...prev.slice(-49),
-      { id: Date.now() + Math.random(), text, playerId, playerName },
+      { id: Date.now() + Math.random(), text, playerId, playerName, teamId },
     ]);
   };
 
@@ -754,10 +762,10 @@ function App() {
       if (result.sold) {
         pushTickerItem(
           `${result.playerName} transferido para ${result.buyerTeamName} por ${formatCurrency(result.finalBid)}`,
-          result.playerId, result.playerName
+          result.playerId, result.playerName, result.buyerTeamId
         );
       } else {
-        pushTickerItem(`Leilão de ${result.playerName} encerrado sem licitações`, result.playerId, result.playerName);
+        pushTickerItem(`Leilão de ${result.playerName} encerrado sem licitações`, result.playerId, result.playerName, null);
       }
       setSelectedAuctionPlayer((prev) => {
         if (prev && prev.playerId === result.playerId) {
@@ -780,11 +788,11 @@ function App() {
     socket.on("topScorers", (data) => setTopScorers(data));
     socket.on("seasonEnd", (data) => {
       if (data.champion) {
-        pushTickerItem(`Campeão: ${data.champion.name}`);
+        pushTickerItem(`Campeão: ${data.champion.name}`, null, null, data.champion.id);
       }
       for (const p of data.promotions || []) {
         const teamName = teamsRef.current.find((t) => t.id === p.teamId)?.name || `Equipa ${p.teamId}`;
-        pushTickerItem(`${teamName} promovida/descida para divisão ${p.toDiv}`);
+        pushTickerItem(`${teamName} promovida/descida para divisão ${p.toDiv}`, null, null, p.teamId);
       }
     });
     socket.on("teamSquadData", ({ teamId, squad }) => {
@@ -1020,7 +1028,7 @@ function App() {
       for (const r of data.results || []) {
         const homeName = r.homeTeam?.name || teamsRef.current.find((t) => t.id === r.homeTeamId)?.name || "?";
         const awayName = r.awayTeam?.name || teamsRef.current.find((t) => t.id === r.awayTeamId)?.name || "?";
-        pushTickerItem(`Taça: ${homeName} ${r.homeGoals}-${r.awayGoals} ${awayName}`);
+        pushTickerItem(`Taça: ${homeName} ${r.homeGoals}-${r.awayGoals} ${awayName}`, null, null, r.winnerId || r.homeTeamId);
       }
       setCupRoundResults(data);
       setCupPenaltyPopup(null);
@@ -1072,7 +1080,7 @@ function App() {
       }
       // Auction transfers are already covered by the auctionClosed handler — skip to avoid duplicates
       if (title && !isAuction) {
-        pushTickerItem(title, playerId || null, playerName || null);
+        pushTickerItem(title, playerId || null, playerName || null, teamId || null);
       }
     });
     socket.on("playerHistoryData", (data) => setPlayerHistoryModal(data));
@@ -1374,7 +1382,7 @@ function App() {
         if (r.homeTeamId !== myTeamId && r.awayTeamId !== myTeamId) continue;
         const home = r.homeTeam?.name || teamsRef.current.find((t) => t.id === r.homeTeamId)?.name || "?";
         const away = r.awayTeam?.name || teamsRef.current.find((t) => t.id === r.awayTeamId)?.name || "?";
-        pushTickerItem(`${home} ${r.finalHomeGoals ?? r.homeGoals ?? "?"}-${r.finalAwayGoals ?? r.awayGoals ?? "?"} ${away}`);
+        pushTickerItem(`${home} ${r.finalHomeGoals ?? r.homeGoals ?? "?"}-${r.finalAwayGoals ?? r.awayGoals ?? "?"} ${away}`, null, null, myTeamId);
       }
       setMatchResults(data);
       setMatchweekCount(data.matchweek);
@@ -8254,10 +8262,11 @@ function App() {
               style={{ animation: `tickerScroll ${Math.max(15, newsTickerItems.length * 8)}s linear` }}
             >
               {newsTickerItems.map((item) => {
+                const dotColor = getTeamColor(item.teamId);
                 if (!item.playerId || !item.playerName) {
                   return (
                     <span key={item.id}>
-                      <span className="text-red-500 mr-2">◆</span>
+                      <span className="mr-2" style={{ color: dotColor }}>◆</span>
                       {item.text}
                     </span>
                   );
@@ -8265,7 +8274,7 @@ function App() {
                 const parts = item.text.split(item.playerName);
                 return (
                   <span key={item.id}>
-                    <span className="text-red-500 mr-2">◆</span>
+                    <span className="mr-2" style={{ color: dotColor }}>◆</span>
                     {parts[0]}
                     <button
                       type="button"
