@@ -68,7 +68,7 @@
       "name": "Benfica",
       "division": 1,
       "colors": { "primary": "#EF2D2D", "secondary": "#FFFFFF" },
-      "stadium": { "name": "Estádio da Luz", "capacity": 65000 },
+      "stadium": { "name": "Estádio da Luz", "capacity": 50000 },
       "manager": { "name": "José Mourinho" },
       "players": [
         { "name": "Anatoliy Trubin", "country": "🇺🇦", "position": "GR" },
@@ -132,7 +132,7 @@
       "colors": { "primary": "#13273F", "secondary": "#F6C605" },
       "stadium": {
         "name": "Estádio Municipal de Famalicão",
-        "capacity": 10000
+        "capacity": 30000
       },
       "manager": { "name": "Hugo Oliveira" },
       "players": [
@@ -164,7 +164,7 @@
       "name": "Gil Vicente",
       "division": 1,
       "colors": { "primary": "#E30613", "secondary": "#FFFFFF" },
-      "stadium": { "name": "Estádio Cidade de Barcelos", "capacity": 15000 },
+      "stadium": { "name": "Estádio Cidade de Barcelos", "capacity": 30000 },
       "manager": { "name": "César Peixoto" },
       "players": [
         { "name": "André Picornell", "country": "🇸🇪", "position": "GR" },
@@ -197,7 +197,7 @@
       "colors": { "primary": "#FFEE00", "secondary": "#0000FF" },
       "stadium": {
         "name": "Estádio António Coimbra da Mota",
-        "capacity": 10000
+        "capacity": 30000
       },
       "manager": { "name": "Ian Cathro" },
       "players": [
@@ -230,7 +230,7 @@
       "colors": { "primary": "#00A650", "secondary": "#FFFFFF" },
       "stadium": {
         "name": "Estádio C. J. de Almeida Freitas",
-        "capacity": 6150
+        "capacity": 30000
       },
       "manager": { "name": "Vasco Botelho da Costa" },
       "players": [
@@ -264,7 +264,7 @@
       "name": "Marítimo",
       "division": 2,
       "colors": { "primary": "#00A650", "secondary": "#FFFFFF" },
-      "stadium": { "name": "Estádio dos Barreiros", "capacity": 15000 },
+      "stadium": { "name": "Estádio dos Barreiros", "capacity": 20000 },
       "manager": { "name": "Miguel Moita" },
       "players": [
         { "name": "Alfonso Pastor", "country": "🇪🇸", "position": "GR" },
@@ -295,7 +295,7 @@
       "name": "Ac.Viseu",
       "division": 2,
       "colors": { "primary": "#000000", "secondary": "#FFFFFF" },
-      "stadium": { "name": "Estádio do Fontelo", "capacity": 15000 },
+      "stadium": { "name": "Estádio do Fontelo", "capacity": 20000 },
       "manager": { "name": "Sérgio Vieira" },
       "players": [
         { "name": "Gril", "country": "🇵🇹", "position": "GR" },
@@ -329,7 +329,7 @@
       "name": "Torreense",
       "division": 2,
       "colors": { "primary": "#0000FF", "secondary": "#FFFFFF" },
-      "stadium": { "name": "Estádio Manuel Marques", "capacity": 15000 },
+      "stadium": { "name": "Estádio Manuel Marques", "capacity": 20000 },
       "manager": { "name": "Luís Tralhão" },
       "players": [
         { "name": "Lucas Paes", "country": "🇧🇷", "position": "GR" },
@@ -361,7 +361,7 @@
       "name": "U. Leiria",
       "division": 2,
       "colors": { "primary": "#FFFFFF", "secondary": "#000000" },
-      "stadium": { "name": "Estádio Dr. Magalhães Pessoa", "capacity": 25000 },
+      "stadium": { "name": "Estádio Dr. Magalhães Pessoa", "capacity": 20000 },
       "manager": { "name": "Fábio Pereira" },
       "players": [
         { "name": "João Bravim", "country": "🇧🇷", "position": "GR" },
@@ -395,7 +395,7 @@
       "name": "Vizela",
       "division": 2,
       "colors": { "primary": "#0000FF", "secondary": "#FFFFFF" },
-      "stadium": { "name": "Estádio do FC Vizela", "capacity": 10000 },
+      "stadium": { "name": "Estádio do FC Vizela", "capacity": 20000 },
       "manager": { "name": "Nuno Silva" },
       "players": [
         { "name": "Antonio Gomís", "country": "🇪🇸", "position": "GR" },
@@ -429,7 +429,7 @@
       "colors": { "primary": "#008000", "secondary": "#FFFFFF" },
       "stadium": {
         "name": "Estádio do Lusitânia de Lourosa FC",
-        "capacity": 10000
+        "capacity": 20000
       },
       "manager": { "name": "Tiago Fernandes" },
       "players": [
@@ -465,7 +465,7 @@
       "name": "Feirense",
       "division": 2,
       "colors": { "primary": "#0000ff", "secondary": "#ffffff" },
-      "stadium": { "name": "Estádio Marcolino de Castro", "capacity": 10000 },
+      "stadium": { "name": "Estádio Marcolino de Castro", "capacity": 20000 },
       "manager": { "name": "Vítor Martins" },
       "players": [
         { "name": "Pedro Mateus", "country": "🇵🇹", "position": "GR" },
@@ -497,7 +497,7 @@
       "colors": { "primary": "#0033cc", "secondary": "#ff0000" },
       "stadium": {
         "name": "Estádio Municipal Eng. Manuel Branco Teixeira",
-        "capacity": 10000
+        "capacity": 20000
       },
       "manager": { "name": "Vítor Martins" },
       "players": [
@@ -532,7 +532,7 @@
       "name": "Amarante",
       "division": 3,
       "colors": { "primary": "#000000", "secondary": "#ffffff" },
-      "stadium": { "name": "Estádio Municipal de Amarante", "capacity": 5000 },
+      "stadium": { "name": "Estádio Municipal de Amarante", "capacity": 10000 },
       "manager": { "name": "Alex Costa" },
       "players": [
         { "name": "Martim Duarte", "country": "🇵🇹", "position": "GR" },
@@ -564,7 +564,7 @@
       "name": "Belenenses",
       "division": 3,
       "colors": { "primary": "#0000ff", "secondary": "#ffffff" },
-      "stadium": { "name": "Estádio do Restelo", "capacity": 20000 },
+      "stadium": { "name": "Estádio do Restelo", "capacity": 10000 },
       "manager": { "name": "Tiago Zorro" },
       "players": [
         { "name": "Gonçalo Pinto", "country": "🇵🇹", "position": "GR" },
@@ -597,7 +597,7 @@
       "name": "Académica",
       "division": 3,
       "colors": { "primary": "#000000", "secondary": "#ffffff" },
-      "stadium": { "name": "Estádio Cidade de Coimbra", "capacity": 30000 },
+      "stadium": { "name": "Estádio Cidade de Coimbra", "capacity": 10000 },
       "manager": { "name": "António Barbosa" },
       "players": [
         { "name": "Nuno Macedo", "country": "🇵🇹", "position": "GR" },
@@ -665,7 +665,7 @@
       "name": "Mafra",
       "division": 3,
       "colors": { "primary": "#009933", "secondary": "#ffffff" },
-      "stadium": { "name": "Estádio Municipal de Mafra", "capacity": 5000 },
+      "stadium": { "name": "Estádio Municipal de Mafra", "capacity": 10000 },
       "manager": { "name": "Orest Shala" },
       "players": [
         { "name": "Francisco Lemos", "country": "🇵🇹", "position": "GR" },
@@ -699,7 +699,7 @@
       "name": "U. Santarém",
       "division": 3,
       "colors": { "primary": "#ff0000", "secondary": "#ffffff" },
-      "stadium": { "name": "Campo Chã das Padeiras", "capacity": 5000 },
+      "stadium": { "name": "Campo Chã das Padeiras", "capacity": 10000 },
       "manager": { "name": "Carlos Fernandes" },
       "players": [
         { "name": "Afonso Teodósio", "country": "🇵🇹", "position": "GR" },
@@ -732,7 +732,7 @@
       "name": "Trofense",
       "division": 3,
       "colors": { "primary": "#ffcc00", "secondary": "#000000" },
-      "stadium": { "name": "Estádio do CD Trofense", "capacity": 5000 },
+      "stadium": { "name": "Estádio do CD Trofense", "capacity": 10000 },
       "manager": { "name": "Renato Coimbra" },
       "players": [
         { "name": "João Teopisto", "country": "🇵🇹", "position": "GR" },
@@ -800,7 +800,7 @@
       "name": "Bragança",
       "division": 4,
       "colors": { "primary": "#FFD700", "secondary": "#0047AB" },
-      "stadium": { "name": "Estádio Municipal de Bragança", "capacity": 10000 },
+      "stadium": { "name": "Estádio Municipal de Bragança", "capacity": 50000 },
       "manager": { "name": "André Irulegui" },
       "players": [
         { "name": "Zé Pedro", "country": "🇵🇹", "position": "GR" },
@@ -870,7 +870,7 @@
       "colors": { "primary": "#1565C0", "secondary": "#ffffff" },
       "stadium": {
         "name": "Complexo Desportivo de Azevedo",
-        "capacity": 10000
+        "capacity": 5000
       },
       "manager": { "name": "Vítor Gamito" },
       "players": [
@@ -977,7 +977,7 @@
       "colors": { "primary": "#009900", "secondary": "#ffffff" },
       "stadium": {
         "name": "Estádio Municipal José Bento Pessoa",
-        "capacity": 10000
+        "capacity": 5000
       },
       "manager": { "name": "Carlos Neves" },
       "players": [
@@ -1013,7 +1013,7 @@
       "name": "Louletano",
       "division": 4,
       "colors": { "primary": "#CC0000", "secondary": "#ffffff" },
-      "stadium": { "name": "Estádio Municipal de Loulé", "capacity": 10000 },
+      "stadium": { "name": "Estádio Municipal de Loulé", "capacity": 5000 },
       "manager": { "name": "Nuno Vaz" },
       "players": [
         { "name": "Diogo Silva", "country": "🇵🇹", "position": "GR" },
