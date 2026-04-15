@@ -21,7 +21,11 @@
       "Bash(grep -r \"skill\\\\|value\\\\|wage\" /z/Coding/cashball_26_27/server/db/fixtures/*.json)",
       "Bash(grep -n \"budget\" /z/Coding/cashball_26_27/server/*.ts)",
       "Bash(grep -n \"loan_amount\" /z/Coding/cashball_26_27/server/*.ts)",
-      "Bash(grep -n \"type:\" /z/Coding/cashball_26_27/server/*.ts)"
+      "Bash(grep -n \"type:\" /z/Coding/cashball_26_27/server/*.ts)",
+      "Bash(/usr/local/bin/node_modules/.bin/tsc --noEmit)",
+      "Bash(/home/woldpt/git/wsball_26-27/server/node_modules/.bin/tsc -p /home/woldpt/git/wsball_26-27/server/tsconfig.json --noEmit)",
+      "Read(//usr/local/lib/node_modules/typescript/bin/**)",
+      "Read(//home/woldpt/.local/lib/node_modules/typescript/bin/**)"
     ]
   }
 }

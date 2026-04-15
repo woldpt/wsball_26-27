@@ -644,6 +644,12 @@ export function createWeeklyFlowHelpers(deps: WeeklyFlowDeps) {
       game.phaseToken = makePhaseToken(game);
       game._lastCompletedSegment = null;
 
+      // Weekly base income by division (keeps lower-division teams viable)
+      const WEEKLY_BASE_INCOME: Record<number, number> = { 1: 80000, 2: 50000, 3: 30000, 4: 15000, 5: 5000 };
+      for (const [div, income] of Object.entries(WEEKLY_BASE_INCOME)) {
+        game.db.run("UPDATE teams SET budget = budget + ? WHERE division = ?", [income, Number(div)]);
+      }
+
       // Deduct weekly wages + loan interest (same for cup and league weeks)
       game.db.run(
         `UPDATE teams SET budget = budget
