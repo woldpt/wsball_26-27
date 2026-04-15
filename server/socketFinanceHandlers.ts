@@ -76,7 +76,7 @@ export function registerFinanceSocketHandlers(
             );
             socket.emit(
               "systemMessage",
-              "Empréstimo de 500.000€ aprovado (Juro 2,5%/Semana).",
+              "Empréstimo de 500.000€ aprovado (Juro 1,5%/Semana).",
             );
           },
         );

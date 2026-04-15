@@ -529,7 +529,7 @@ export function createWeeklyFlowHelpers(deps: WeeklyFlowDeps) {
       // Deduct weekly wages + loan interest (same for cup and league weeks)
       game.db.run(
         `UPDATE teams SET budget = budget
-          - CAST((loan_amount * 0.025) AS INTEGER)
+          - CAST((loan_amount * 0.015) AS INTEGER)
           - (SELECT COALESCE(SUM(wage), 0) FROM players WHERE players.team_id = teams.id)`,
         async (err: any) => {
           if (err) {

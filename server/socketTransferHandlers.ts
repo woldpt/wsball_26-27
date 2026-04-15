@@ -286,7 +286,7 @@ export function registerTransferSocketHandlers(
 
         const demandedWage = Math.max(
           Math.round((player.skill || 0) * 70),
-          Math.round((player.wage || 0) * 1.15),
+          Math.round((player.wage || 0) * 1.05),
         );
         const acceptedWage = Math.max(0, Math.round(offeredWage || 0));
         const seasonEnd = getSeasonEndMatchweek(game.matchweek);

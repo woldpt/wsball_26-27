@@ -130,7 +130,8 @@ db.serialize(() => {
       capacity: 10000,
     };
     const stadiumCapacity = stadium.capacity || 10000;
-    const budget = 1500000; // default budget for all
+    const BUDGET_BY_DIVISION = { 1: 2500000, 2: 2000000, 3: 1500000, 4: 1000000, 5: 500000 };
+    const budget = BUDGET_BY_DIVISION[teamData.division || 4] ?? 1000000;
 
     const stadiumName = stadium.name || "";
 

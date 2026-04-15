@@ -189,7 +189,7 @@ export function createAuctionHelpers(deps: AuctionDeps) {
                       "UPDATE players SET team_id = ?, wage = ?, contract_until_matchweek = ?, signed_season = ?, transfer_status = 'none', transfer_price = 0, contract_request_pending = 0, contract_requested_wage = 0 WHERE id = ?",
                       [
                         buyerTeamId,
-                        Math.max(player.wage || 0, Math.round(finalBid * 0.06)),
+                        Math.max(player.wage || 0, Math.round((player.skill || 0) * 300)),
                         getSeasonEndMatchweek(game.matchweek),
                         Math.ceil(Math.max(1, game.matchweek) / 14),
                         playerId,
