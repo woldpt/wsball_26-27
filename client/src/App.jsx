@@ -25,7 +25,6 @@ import { AuctionNotification } from "./components/ui/AuctionNotification.jsx";
 import { NewsTicker } from "./components/ui/NewsTicker.jsx";
 import { LeagueStandings } from "./components/ui/LeagueStandings.jsx";
 import { ChatWidget } from "./components/chat/ChatWidget.jsx";
-import { TransferHub } from "./components/ui/TransferHub.jsx";
 
 const FLAG_TO_COUNTRY = {};
 COUNTRY_FLAGS.forEach(({ flag, label }) => {
@@ -3058,7 +3057,7 @@ function App() {
         ))}
       </div>
       <header
-        className="fixed top-0 left-0 right-0 h-14 z-20 flex items-center"
+        className={`fixed top-0 left-0 right-0 h-14 z-20 flex items-center${isMatchInProgress ? " hidden" : ""}`}
         style={{
           background: teamInfo?.color_primary || "#131313",
           borderBottom: "1px solid #201f1f",
@@ -3114,207 +3113,192 @@ function App() {
       </header>
 
       {/* ── LEFT SIDEBAR ─────────────────────────────────────────────────── */}
-      <nav className="hidden lg:flex fixed left-0 top-14 bottom-0 w-64 bg-surface-container-low flex-col z-10">
-        <div className="flex-1 px-3 py-4 space-y-0.5 overflow-y-auto">
-          {isMatchInProgress && (
-            <div className="flex items-center gap-2 px-4 py-2 mb-1 rounded bg-primary/10 border border-primary/20">
-              <span className="w-2 h-2 rounded-full bg-red-500 animate-pulse shrink-0" />
-              <span className="text-[10px] font-black uppercase tracking-widest text-primary">
-                Em Jogo
-              </span>
+      {!isMatchInProgress && (
+        <nav className="hidden lg:flex fixed left-0 top-14 bottom-0 w-64 bg-surface-container-low flex-col z-10">
+          <div className="flex-1 px-3 py-4 space-y-0.5 overflow-y-auto">
+            {[
+              { key: "club", label: "Clube", icon: "groups_3" },
+              { key: "finances", label: "Finanças", icon: "payments" },
+              { key: "players", label: "Plantel", icon: "group" },
+              {
+                key: "calendario",
+                label: "Calendário",
+                icon: "calendar_month",
+              },
+              {
+                key: "standings",
+                label: "Classificações",
+                icon: "leaderboard",
+              },
+              { key: "market", label: "Mercado", icon: "swap_horiz" },
+            ].map(({ key, label, icon }) => (
+              <button
+                key={key}
+                onClick={() => {
+                  setActiveTab(key);
+                  window.scrollTo(0, 0);
+                }}
+                className={`w-full flex items-center gap-3 px-4 py-3 text-sm font-bold transition-all text-left ${
+                  activeTab === key
+                    ? "bg-primary-container/20 text-primary border-l-4 border-primary"
+                    : "text-on-surface-variant hover:bg-surface-bright hover:text-on-surface"
+                }`}
+              >
+                <span className="material-symbols-outlined text-[20px] shrink-0 leading-none">
+                  {icon}
+                </span>
+                <span>{label}</span>
+              </button>
+            ))}
+            <div className="pt-2">
+              <button
+                onClick={() => {
+                  setActiveTab("tactic");
+                  window.scrollTo(0, 0);
+                }}
+                className={`w-full flex items-center gap-3 px-4 py-3.5 text-sm font-black uppercase tracking-widest transition-all rounded-sm ${
+                  activeTab === "tactic"
+                    ? "bg-primary text-on-primary shadow-lg"
+                    : "bg-primary/10 text-primary border border-primary/40 hover:bg-primary/20"
+                }`}
+              >
+                <span className="material-symbols-outlined text-[20px] shrink-0 leading-none">
+                  strategy
+                </span>
+                <span className="flex-1 text-left">JOGAR</span>
+                <span className="relative flex h-2 w-2 shrink-0">
+                  <span
+                    className={`animate-ping absolute inline-flex h-full w-full rounded-full opacity-75 ${activeTab === "tactic" ? "bg-on-primary/40" : "bg-primary"}`}
+                  />
+                  <span
+                    className={`relative inline-flex rounded-full h-2 w-2 ${activeTab === "tactic" ? "bg-on-primary/60" : "bg-primary"}`}
+                  />
+                </span>
+              </button>
             </div>
-          )}
+          </div>
+          <div className="border-t border-outline-variant/20 pt-3 pb-4 px-3">
+            {players.length > 0 && (
+              <div className="bg-surface-container rounded-md overflow-hidden">
+                <div className="px-4 py-2 flex items-center justify-between border-b border-outline-variant/20">
+                  <span className="text-[9px] uppercase tracking-widest font-black text-on-surface-variant">
+                    Sala {me.roomName || me.roomCode}
+                  </span>
+                  <span className="text-[9px] font-black text-emerald-400 uppercase tracking-widest">
+                    {players.length} online
+                  </span>
+                </div>
+                <div className="divide-y divide-outline-variant/10">
+                  {[
+                    ...players.map((p) => ({
+                      name: p.name,
+                      teamId: p.teamId,
+                      online: true,
+                      submitted: lockedCoaches.includes(p.name) || p.ready,
+                    })),
+                    ...awaitingCoaches
+                      .filter((n) => !players.some((p) => p.name === n))
+                      .map((n) => ({
+                        name: n,
+                        teamId: null,
+                        online: false,
+                        submitted: true,
+                      })),
+                  ].map((coach, i) => {
+                    const coachTeam = coach.teamId
+                      ? teams.find((t) => t.id == coach.teamId)
+                      : null;
+                    return (
+                      <div
+                        key={i}
+                        className="flex items-center gap-3 px-4 py-2"
+                      >
+                        <span
+                          className={`w-2 h-2 rounded-full shrink-0 ${
+                            coach.online ? "bg-primary" : "bg-surface-bright"
+                          }`}
+                        />
+                        <div className="flex-1 min-w-0">
+                          <p
+                            className={`text-xs font-black truncate ${
+                              coach.online
+                                ? "text-on-surface"
+                                : "text-on-surface-variant"
+                            }`}
+                          >
+                            {coach.name}
+                            {coach.name === me.name && (
+                              <span className="ml-1.5 text-[9px] font-bold text-on-surface-variant">
+                                (tu)
+                              </span>
+                            )}
+                          </p>
+                          {coachTeam && (
+                            <p
+                              className="text-[10px] truncate"
+                              style={{
+                                color: coachTeam.color_primary || "#71717a",
+                              }}
+                            >
+                              {coachTeam.name}
+                            </p>
+                          )}
+                        </div>
+                        {coach.submitted ? (
+                          <span className="shrink-0 text-[10px] font-black text-primary uppercase tracking-wide">
+                            ✓
+                          </span>
+                        ) : (
+                          <span className="shrink-0 text-[10px] font-black text-tertiary uppercase tracking-wide">
+                            ⏳
+                          </span>
+                        )}
+                      </div>
+                    );
+                  })}
+                </div>
+              </div>
+            )}
+          </div>
+        </nav>
+      )}
+
+      {/* ── MOBILE BOTTOM NAV ────────────────────────────────────────────── */}
+      {!isMatchInProgress && (
+        <nav className="lg:hidden fixed bottom-0 left-0 right-0 h-16 bg-surface-container-low/95 backdrop-blur-sm border-t border-outline-variant/30 z-10 flex overflow-x-auto [scrollbar-width:none] [-ms-overflow-style:none] [&::-webkit-scrollbar]:hidden">
           {[
             { key: "club", label: "Clube", icon: "groups_3" },
             { key: "finances", label: "Finanças", icon: "payments" },
             { key: "players", label: "Plantel", icon: "group" },
-            {
-              key: "calendario",
-              label: "Calendário",
-              icon: "calendar_month",
-            },
-            {
-              key: "standings",
-              label: "Classificações",
-              icon: "leaderboard",
-            },
+            { key: "calendario", label: "Calendário", icon: "calendar_month" },
+            { key: "standings", label: "Classif.", icon: "leaderboard" },
             { key: "market", label: "Mercado", icon: "swap_horiz" },
+            { key: "tactic", label: "Jogar", icon: "strategy" },
           ].map(({ key, label, icon }) => (
             <button
               key={key}
               onClick={() => {
-                if (isMatchInProgress) return;
                 setActiveTab(key);
                 window.scrollTo(0, 0);
               }}
-              disabled={isMatchInProgress}
-              className={`w-full flex items-center gap-3 px-4 py-3 text-sm font-bold transition-all text-left ${
-                isMatchInProgress
-                  ? "text-on-surface-variant/30 cursor-not-allowed"
-                  : activeTab === key
-                    ? "bg-primary-container/20 text-primary border-l-4 border-primary"
-                    : "text-on-surface-variant hover:bg-surface-bright hover:text-on-surface"
+              className={`flex-1 shrink-0 min-w-[72px] flex flex-col items-center justify-center gap-0.5 text-[10px] font-bold uppercase tracking-wider transition-colors relative ${
+                activeTab === key ? "text-primary" : "text-on-surface-variant"
               }`}
             >
-              <span className="material-symbols-outlined text-[20px] shrink-0 leading-none">
+              {activeTab === key && (
+                <span className="absolute top-0 left-1/2 -translate-x-1/2 w-8 h-0.5 bg-primary rounded-b-full" />
+              )}
+              <span className="material-symbols-outlined text-[22px] leading-none">
                 {icon}
               </span>
               <span>{label}</span>
             </button>
           ))}
-          <div className="pt-2">
-            <button
-              onClick={() => {
-                if (isMatchInProgress) return;
-                setActiveTab("tactic");
-                window.scrollTo(0, 0);
-              }}
-              disabled={isMatchInProgress}
-              className={`w-full flex items-center gap-3 px-4 py-3.5 text-sm font-black uppercase tracking-widest transition-all rounded-sm ${
-                isMatchInProgress
-                  ? "bg-primary/5 text-primary/30 cursor-not-allowed border border-primary/10"
-                  : activeTab === "tactic"
-                    ? "bg-primary text-on-primary shadow-lg"
-                    : "bg-primary/10 text-primary border border-primary/40 hover:bg-primary/20"
-              }`}
-            >
-              <span className="material-symbols-outlined text-[20px] shrink-0 leading-none">
-                strategy
-              </span>
-              <span className="flex-1 text-left">JOGAR</span>
-              <span className="relative flex h-2 w-2 shrink-0">
-                <span
-                  className={`animate-ping absolute inline-flex h-full w-full rounded-full opacity-75 ${activeTab === "tactic" ? "bg-on-primary/40" : "bg-primary"}`}
-                />
-                <span
-                  className={`relative inline-flex rounded-full h-2 w-2 ${activeTab === "tactic" ? "bg-on-primary/60" : "bg-primary"}`}
-                />
-              </span>
-            </button>
-          </div>
-        </div>
-        <div className="border-t border-outline-variant/20 pt-3 pb-4 px-3">
-          {players.length > 0 && (
-            <div className="bg-surface-container rounded-md overflow-hidden">
-              <div className="px-4 py-2 flex items-center justify-between border-b border-outline-variant/20">
-                <span className="text-[9px] uppercase tracking-widest font-black text-on-surface-variant">
-                  Sala {me.roomName || me.roomCode}
-                </span>
-                <span className="text-[9px] font-black text-emerald-400 uppercase tracking-widest">
-                  {players.length} online
-                </span>
-              </div>
-              <div className="divide-y divide-outline-variant/10">
-                {[
-                  ...players.map((p) => ({
-                    name: p.name,
-                    teamId: p.teamId,
-                    online: true,
-                    submitted: lockedCoaches.includes(p.name) || p.ready,
-                  })),
-                  ...awaitingCoaches
-                    .filter((n) => !players.some((p) => p.name === n))
-                    .map((n) => ({
-                      name: n,
-                      teamId: null,
-                      online: false,
-                      submitted: true,
-                    })),
-                ].map((coach, i) => {
-                  const coachTeam = coach.teamId
-                    ? teams.find((t) => t.id == coach.teamId)
-                    : null;
-                  return (
-                    <div key={i} className="flex items-center gap-3 px-4 py-2">
-                      <span
-                        className={`w-2 h-2 rounded-full shrink-0 ${
-                          coach.online ? "bg-primary" : "bg-surface-bright"
-                        }`}
-                      />
-                      <div className="flex-1 min-w-0">
-                        <p
-                          className={`text-xs font-black truncate ${
-                            coach.online
-                              ? "text-on-surface"
-                              : "text-on-surface-variant"
-                          }`}
-                        >
-                          {coach.name}
-                          {coach.name === me.name && (
-                            <span className="ml-1.5 text-[9px] font-bold text-on-surface-variant">
-                              (tu)
-                            </span>
-                          )}
-                        </p>
-                        {coachTeam && (
-                          <p
-                            className="text-[10px] truncate"
-                            style={{
-                              color: coachTeam.color_primary || "#71717a",
-                            }}
-                          >
-                            {coachTeam.name}
-                          </p>
-                        )}
-                      </div>
-                      {coach.submitted ? (
-                        <span className="shrink-0 text-[10px] font-black text-primary uppercase tracking-wide">
-                          ✓
-                        </span>
-                      ) : (
-                        <span className="shrink-0 text-[10px] font-black text-tertiary uppercase tracking-wide">
-                          ⏳
-                        </span>
-                      )}
-                    </div>
-                  );
-                })}
-              </div>
-            </div>
-          )}
-        </div>
-      </nav>
-
-      {/* ── MOBILE BOTTOM NAV ────────────────────────────────────────────── */}
-      <nav className="lg:hidden fixed bottom-0 left-0 right-0 h-16 bg-surface-container-low/95 backdrop-blur-sm border-t border-outline-variant/30 z-10 flex overflow-x-auto [scrollbar-width:none] [-ms-overflow-style:none] [&::-webkit-scrollbar]:hidden">
-        {[
-          { key: "club", label: "Clube", icon: "groups_3" },
-          { key: "finances", label: "Finanças", icon: "payments" },
-          { key: "players", label: "Plantel", icon: "group" },
-          { key: "calendario", label: "Calendário", icon: "calendar_month" },
-          { key: "standings", label: "Classif.", icon: "leaderboard" },
-          { key: "market", label: "Mercado", icon: "swap_horiz" },
-          { key: "tactic", label: "Jogar", icon: "strategy" },
-        ].map(({ key, label, icon }) => (
-          <button
-            key={key}
-            onClick={() => {
-              if (isMatchInProgress) return;
-              setActiveTab(key);
-              window.scrollTo(0, 0);
-            }}
-            disabled={isMatchInProgress}
-            className={`flex-1 shrink-0 min-w-[72px] flex flex-col items-center justify-center gap-0.5 text-[10px] font-bold uppercase tracking-wider transition-colors relative ${
-              isMatchInProgress
-                ? "text-on-surface-variant/25 cursor-not-allowed"
-                : activeTab === key
-                  ? "text-primary"
-                  : "text-on-surface-variant"
-            }`}
-          >
-            {activeTab === key && !isMatchInProgress && (
-              <span className="absolute top-0 left-1/2 -translate-x-1/2 w-8 h-0.5 bg-primary rounded-b-full" />
-            )}
-            <span className="material-symbols-outlined text-[22px] leading-none">
-              {icon}
-            </span>
-            <span>{label}</span>
-          </button>
-        ))}
-      </nav>
+        </nav>
+      )}
 
       <main
-        className={`pt-14 lg:pb-12${newsTickerItems.length > 0 ? " pb-28" : " pb-20"} lg:ml-64`}
+        className={`pt-14 lg:pb-12${newsTickerItems.length > 0 ? " pb-28" : " pb-20"}${!isMatchInProgress ? " lg:ml-64" : ""}`}
       >
         <div className="p-4 lg:p-6">
           {/* ─── TACTIC: HORIZONTAL ADVERSARY BANNER ──────────────────── */}
@@ -3441,7 +3425,9 @@ function App() {
           >
             <div>
               {activeTab === "live" && (matchResults || matchAction) && (
-                <div className="bg-surface-container text-on-surface font-body p-6 border border-outline-variant/20 shadow-sm relative overflow-hidden min-h-150 rounded-lg">
+                <div
+                  className={`bg-surface-container text-on-surface font-body p-6 border border-outline-variant/20 shadow-sm relative overflow-hidden${isMatchInProgress ? " fixed inset-0 z-30 overflow-y-auto rounded-none" : " min-h-150 rounded-lg"}`}
+                >
                   {matchAction && (
                     <div className="fixed inset-0 z-[150] bg-surface/95 backdrop-blur-sm p-6 flex flex-col justify-center">
                       <h2 className="text-3xl font-black text-amber-500 mb-2 tracking-widest text-center uppercase">
@@ -3525,17 +3511,6 @@ function App() {
                         ? teams.find((t) => t.id === myMatch.awayTeamId)
                         : null;
                       const matchEvents = myMatch?.events || [];
-                      const htEvents = matchEvents.filter(
-                        (e) =>
-                          (e.minute <= 45 || e.minute <= liveMinute) &&
-                          [
-                            "goal",
-                            "penalty_goal",
-                            "own_goal",
-                            "yellow",
-                            "red",
-                          ].includes(e.type),
-                      );
                       const homeGoals = matchEvents.filter(
                         (e) =>
                           (e.minute <= 45 || e.minute <= liveMinute) &&
@@ -3549,493 +3524,278 @@ function App() {
                           e.team === "away",
                       );
 
-                      // Build formation rows: ATA → MED → DEF → GR
-                      const onFieldPlayers = annotatedSquad.filter(
-                        (p) =>
-                          tactic.positions[p.id] === "Titular" &&
-                          !subbedOut.includes(p.id) &&
-                          !redCardedHalftimeIds.has(p.id),
-                      );
-                      const fmParts = tactic.formation.split("-").map(Number);
-                      const pitchRows = [
-                        onFieldPlayers
-                          .filter((p) => p.position === "ATA")
-                          .slice(0, fmParts[2] || 2),
-                        onFieldPlayers
-                          .filter((p) => p.position === "MED")
-                          .slice(0, fmParts[1] || 4),
-                        onFieldPlayers
-                          .filter((p) => p.position === "DEF")
-                          .slice(0, fmParts[0] || 4),
-                        onFieldPlayers
-                          .filter((p) => p.position === "GR")
-                          .slice(0, 1),
-                      ];
-
-                      // BUG-06 FIX: Use handleHalftimeReady which always sends true
-                      // BUG: only gate on myTeamInCup when it's actually a cup match
-                      const isCupContext = isCupMatch || cupPreMatch;
-                      const canContinue = !isCupContext || myTeamInCup;
-                      const isReady = !!players.find((p) => p.name === me.name)
-                        ?.ready;
-
                       return (
-                        <div className="fixed inset-0 bg-zinc-950/95 backdrop-blur-sm z-[100] flex flex-col overflow-hidden">
-                          {/* ── Top bar ── */}
-                          <div className="shrink-0 flex items-center justify-between px-5 py-3 bg-surface-container border-b border-outline-variant/20">
-                            <div className="flex items-center gap-3">
-                              <span className="text-[10px] font-black uppercase tracking-widest text-tertiary">
-                                {cupPreMatch
-                                  ? "PRÉ-JOGO"
-                                  : liveMinute >= 90
-                                    ? "ANTES DO TEMPO EXTRA"
-                                    : "INTERVALO"}
-                              </span>
-                              <div className="h-3 w-px bg-outline-variant/30" />
-                              <span className="text-[10px] font-bold text-on-surface-variant">
-                                {isCupMatch
-                                  ? `🏆 ${cupMatchRoundName}`
-                                  : `Jornada ${matchResults?.matchweek ?? "—"}`}
-                              </span>
-                            </div>
-                            <div className="flex items-center gap-1.5">
-                              {Array.from({ length: MAX_MATCH_SUBS }).map(
-                                (_, i) => (
-                                  <span
-                                    key={i}
-                                    className={`w-2 h-2 rounded-full transition-colors ${i < subsMade ? "bg-primary" : "bg-surface-bright"}`}
-                                  />
-                                ),
-                              )}
-                              <span className="ml-1 text-[10px] font-bold text-on-surface-variant tabular-nums">
-                                {MAX_MATCH_SUBS - subsMade}/{MAX_MATCH_SUBS}{" "}
-                                subs
-                              </span>
-                            </div>
-                          </div>
-
-                          {/* ── 3-column grid ── */}
-                          <div className="flex-1 overflow-hidden grid grid-cols-1 lg:grid-cols-[280px_1fr_280px]">
-                            {/* ── LEFT: score + events + mentality ── */}
-                            <div className="hidden lg:flex flex-col bg-surface-container-low border-r border-outline-variant/15 overflow-hidden">
-                              {myMatch && (
-                                <div className="p-5 border-b border-outline-variant/15 relative overflow-hidden">
-                                  <div className="absolute top-0 left-0 w-1 h-full bg-tertiary" />
-                                  <div className="flex justify-between items-center mb-5">
-                                    <div className="text-center flex-1">
-                                      <p className="text-[9px] text-on-surface-variant uppercase font-bold tracking-widest mb-1">
-                                        Casa
-                                      </p>
-                                      <h2
-                                        className="text-2xl font-black font-headline leading-none"
-                                        style={{
-                                          color:
-                                            hInfo?.color_primary || "#e5e2e1",
-                                        }}
-                                      >
-                                        {(hInfo?.name || "")
-                                          .slice(0, 4)
-                                          .toUpperCase()}
-                                      </h2>
-                                    </div>
-                                    <div className="px-4 py-2 rounded-full bg-surface-bright flex items-center gap-3 shrink-0">
-                                      <span className="text-3xl font-black font-headline text-tertiary">
-                                        {homeGoals.length}
-                                      </span>
-                                      <span className="text-on-surface-variant font-bold">
-                                        -
-                                      </span>
-                                      <span className="text-3xl font-black font-headline">
-                                        {awayGoals.length}
-                                      </span>
-                                    </div>
-                                    <div className="text-center flex-1">
-                                      <p className="text-[9px] text-on-surface-variant uppercase font-bold tracking-widest mb-1">
-                                        Fora
-                                      </p>
-                                      <h2
-                                        className="text-2xl font-black font-headline leading-none opacity-60"
-                                        style={{
-                                          color:
-                                            aInfo?.color_primary || "#e5e2e1",
-                                        }}
-                                      >
-                                        {(aInfo?.name || "")
-                                          .slice(0, 4)
-                                          .toUpperCase()}
-                                      </h2>
-                                    </div>
-                                  </div>
-                                  {/* Events */}
-                                  <div className="space-y-2 max-h-36 overflow-y-auto">
-                                    {htEvents
-                                      .sort((a, b) => a.minute - b.minute)
-                                      .map((e, i) => {
-                                        const icon =
-                                          e.type === "goal" ||
-                                          e.type === "penalty_goal"
-                                            ? "⚽"
-                                            : e.type === "own_goal"
-                                              ? "⚽🔙"
-                                              : e.type === "yellow"
-                                                ? "🟨"
-                                                : "🟥";
-                                        const name =
-                                          e.playerName || e.player_name || "?";
-                                        return (
-                                          <div
-                                            key={i}
-                                            className="flex items-center gap-2 text-xs"
-                                          >
-                                            <span className="text-on-surface-variant font-bold w-6 shrink-0 tabular-nums">
-                                              {e.minute}'
-                                            </span>
-                                            <span className="shrink-0">
-                                              {icon}
-                                            </span>
-                                            <span
-                                              className={`font-medium truncate flex-1 ${e.type === "goal" || e.type === "penalty_goal" ? "text-primary" : e.type === "red" ? "text-red-400" : "text-on-surface-variant"}`}
-                                            >
-                                              <PlayerLink playerId={e.playerId}>
-                                                {name}
-                                              </PlayerLink>
-                                            </span>
-                                            <span className="text-[9px] text-on-surface-variant/40 shrink-0">
-                                              {e.team === "home"
-                                                ? hInfo?.name?.slice(0, 3)
-                                                : aInfo?.name?.slice(0, 3)}
-                                            </span>
-                                          </div>
-                                        );
-                                      })}
-                                    {htEvents.length === 0 && (
-                                      <p className="text-[10px] text-on-surface-variant/40 font-bold">
-                                        Sem eventos até ao intervalo
-                                      </p>
-                                    )}
-                                  </div>
-                                </div>
-                              )}
-
-                              {/* Mentality */}
-                              <div className="p-4 border-b border-outline-variant/15">
-                                <span className="block text-[9px] font-black uppercase tracking-widest text-on-surface-variant mb-2">
-                                  Mentalidade
+                        <div className="absolute inset-0 bg-zinc-950/90 backdrop-blur-sm z-50 flex items-center justify-center p-2">
+                          <div className="w-full max-w-sm max-h-[85vh] flex flex-col overflow-hidden bg-surface-container rounded-lg border border-outline-variant/40 shadow-2xl">
+                            {/* ── Header ── */}
+                            <div className="shrink-0 flex items-center justify-between px-3 py-2 bg-surface-container-high border-b border-outline-variant/20">
+                              <div className="flex items-center gap-2.5">
+                                <span className="text-amber-500 font-black text-lg tabular-nums leading-none">
+                                  {liveMinute}'
                                 </span>
-                                <div className="flex gap-1.5">
-                                  {[
-                                    { value: "Defensive", label: "Defensivo" },
-                                    { value: "Balanced", label: "Equilibrado" },
-                                    { value: "Offensive", label: "Ofensivo" },
-                                  ].map(({ value, label }) => (
-                                    <button
-                                      key={value}
-                                      onClick={() =>
-                                        updateTactic({ style: value })
-                                      }
-                                      className={`flex-1 py-1.5 rounded text-[10px] font-black uppercase tracking-wide transition-colors ${
-                                        tactic.style === value
-                                          ? value === "Defensive"
-                                            ? "bg-blue-600 text-white"
-                                            : value === "Offensive"
-                                              ? "bg-amber-500 text-zinc-950"
-                                              : "bg-primary text-on-primary"
-                                          : "bg-surface-bright text-on-surface-variant hover:text-on-surface"
-                                      }`}
-                                    >
-                                      {label}
-                                    </button>
-                                  ))}
-                                </div>
+                                <span className="text-[9px] font-black uppercase tracking-widest text-zinc-500 bg-zinc-800 px-2 py-0.5 rounded-full">
+                                  {cupPreMatch
+                                    ? "Pré-Jogo"
+                                    : liveMinute >= 90
+                                      ? "Antes do Tempo Extra · Taça"
+                                      : isCupMatch
+                                        ? "Intervalo · Taça"
+                                        : "Intervalo"}
+                                </span>
                               </div>
+                              <div className="flex items-center gap-1.5">
+                                {Array.from({ length: MAX_MATCH_SUBS }).map(
+                                  (_, i) => (
+                                    <span
+                                      key={i}
+                                      className={`w-2 h-2 rounded-full transition-colors ${i < subsMade ? "bg-primary" : "bg-surface-container-high"}`}
+                                    />
+                                  ),
+                                )}
+                                <span className="ml-1 text-[10px] font-bold text-zinc-500 tabular-nums">
+                                  {MAX_MATCH_SUBS - subsMade}/{MAX_MATCH_SUBS}
+                                </span>
+                              </div>
+                            </div>
 
-                              {/* Confirmed subs */}
-                              {confirmedSubs.length > 0 && (
-                                <div className="p-4 border-b border-outline-variant/15">
-                                  <span className="block text-[9px] font-black uppercase tracking-widest text-on-surface-variant mb-2">
-                                    Substituições
+                            {/* ── Match Score & Events ── */}
+                            {myMatch && (
+                              <div className="shrink-0 px-3 py-2.5 border-b border-outline-variant/20 bg-surface-container/60 flex flex-col gap-2 relative">
+                                {/* Score */}
+                                <div className="flex items-center justify-center font-black">
+                                  <span className="flex-1 text-on-surface truncate text-right text-xs uppercase tracking-wide">
+                                    {hInfo?.name}
                                   </span>
-                                  <div className="space-y-1.5">
-                                    {confirmedSubs.map((sub, i) => {
-                                      const outP = mySquad.find(
-                                        (p) => p.id === sub.out,
-                                      );
-                                      const inP = mySquad.find(
-                                        (p) => p.id === sub.in,
-                                      );
+                                  <div className="mx-3 flex items-center gap-1.5 text-lg">
+                                    <span className="text-primary">
+                                      {homeGoals.length}
+                                    </span>
+                                    <span className="text-on-surface-variant/30 text-sm">
+                                      -
+                                    </span>
+                                    <span className="text-primary">
+                                      {awayGoals.length}
+                                    </span>
+                                  </div>
+                                  <span className="flex-1 text-on-surface truncate text-left text-xs uppercase tracking-wide">
+                                    {aInfo?.name}
+                                  </span>
+                                </div>
+
+                                {/* Timeline */}
+                                <div className="flex flex-col gap-1 max-h-24 overflow-y-auto px-1 text-[10px]">
+                                  {matchEvents
+                                    .filter(
+                                      (e) =>
+                                        (e.minute <= 45 ||
+                                          e.minute <= liveMinute) &&
+                                        [
+                                          "goal",
+                                          "penalty_goal",
+                                          "own_goal",
+                                          "yellow",
+                                          "red",
+                                          "injury",
+                                        ].includes(e.type),
+                                    )
+                                    .sort((a, b) => a.minute - b.minute)
+                                    .map((e, i) => {
+                                      const icon =
+                                        e.type === "goal" ||
+                                        e.type === "penalty_goal"
+                                          ? "⚽"
+                                          : e.type === "own_goal"
+                                            ? "⚽🔙"
+                                            : e.type === "yellow"
+                                              ? "🟨"
+                                              : e.type === "red"
+                                                ? "🟥"
+                                                : e.type === "injury"
+                                                  ? "🤕"
+                                                  : "";
+                                      const isHome = e.team === "home";
+                                      const name =
+                                        e.playerName ||
+                                        e.player_name ||
+                                        e.player ||
+                                        "?";
                                       return (
                                         <div
                                           key={i}
-                                          className="flex items-center gap-1.5 text-[11px] font-bold"
+                                          className={`flex items-center gap-1.5 ${isHome ? "justify-start" : "justify-end text-right"}`}
                                         >
-                                          <span className="text-red-400 truncate">
-                                            {outP?.name ?? "?"}
-                                          </span>
-                                          <span className="text-zinc-500 shrink-0">
-                                            →
-                                          </span>
-                                          <span className="text-emerald-400 truncate">
-                                            {inP?.name ?? "?"}
-                                          </span>
-                                        </div>
-                                      );
-                                    })}
-                                  </div>
-                                </div>
-                              )}
-
-                              <div className="flex-1" />
-                            </div>
-
-                            {/* ── CENTER: formation pitch ── */}
-                            <div className="flex flex-col overflow-hidden bg-surface">
-                              {/* Pitch area */}
-                              <div className="flex-1 relative overflow-hidden p-4">
-                                <div
-                                  className="absolute inset-0 pointer-events-none opacity-10"
-                                  style={{
-                                    backgroundImage:
-                                      "repeating-linear-gradient(90deg, transparent, transparent 10%, rgba(149,212,179,0.12) 10%, rgba(149,212,179,0.12) 20%)",
-                                  }}
-                                />
-                                <div className="absolute inset-4 border border-on-surface-variant/10 rounded-sm pointer-events-none" />
-                                <div className="absolute top-1/2 left-0 w-full h-px bg-on-surface-variant/10 pointer-events-none" />
-                                <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-24 h-24 border border-on-surface-variant/10 rounded-full pointer-events-none" />
-
-                                <div className="relative h-full flex flex-col justify-around py-2">
-                                  {pitchRows.map((group, rowIdx) => (
-                                    <div
-                                      key={rowIdx}
-                                      className="flex justify-center items-center gap-3 md:gap-6"
-                                    >
-                                      {group.map((p) => (
-                                        <div
-                                          key={p.id}
-                                          className="relative flex flex-col items-center gap-1"
-                                        >
-                                          <button
-                                            onClick={() =>
-                                              subsMade < MAX_MATCH_SUBS &&
-                                              handleSelectOut(p.id)
-                                            }
-                                            className={`w-10 h-10 md:w-12 md:h-12 rounded-full border-2 flex flex-col items-center justify-center transition-all hover:scale-110 shadow-lg ${
-                                              swapSource === p.id
-                                                ? "border-red-500 bg-red-500/20 scale-110"
-                                                : p.position === "GR"
-                                                  ? "border-tertiary bg-surface-bright"
-                                                  : "border-primary/60 bg-surface-bright"
-                                            } ${subsMade < MAX_MATCH_SUBS ? "cursor-pointer" : "cursor-not-allowed opacity-60"}`}
-                                          >
-                                            <span className="text-[8px] font-black text-tertiary leading-none">
-                                              {p.skill}
+                                          {isHome && (
+                                            <span className="text-on-surface-variant/40 tabular-nums w-4 text-right shrink-0">
+                                              {e.minute}'
                                             </span>
-                                            <span
-                                              className={`text-[8px] font-black leading-none ${POSITION_TEXT_CLASS[p.position]}`}
-                                            >
-                                              {
-                                                POSITION_SHORT_LABELS[
-                                                  p.position
-                                                ]
-                                              }
+                                          )}
+                                          {isHome && (
+                                            <span className="shrink-0">
+                                              {icon}
                                             </span>
-                                          </button>
-                                          <span className="text-[8px] font-bold text-on-surface-variant bg-surface-container px-1.5 py-0.5 rounded whitespace-nowrap max-w-16 truncate text-center">
-                                            {p.name.split(" ").pop()}
-                                          </span>
-                                        </div>
-                                      ))}
-                                    </div>
-                                  ))}
-                                </div>
-                              </div>
-
-                              {/* Mobile: mentality */}
-                              <div className="lg:hidden shrink-0 px-4 py-2 bg-surface-container border-t border-outline-variant/15">
-                                <div className="flex gap-1.5">
-                                  {[
-                                    { value: "Defensive", label: "Def." },
-                                    { value: "Balanced", label: "Equil." },
-                                    { value: "Offensive", label: "Ofens." },
-                                  ].map(({ value, label }) => (
-                                    <button
-                                      key={value}
-                                      onClick={() =>
-                                        updateTactic({ style: value })
-                                      }
-                                      className={`flex-1 py-1.5 rounded text-[10px] font-black uppercase tracking-wide transition-colors ${
-                                        tactic.style === value
-                                          ? value === "Defensive"
-                                            ? "bg-blue-600 text-white"
-                                            : value === "Offensive"
-                                              ? "bg-amber-500 text-zinc-950"
-                                              : "bg-primary text-on-primary"
-                                          : "bg-surface-bright text-on-surface-variant"
-                                      }`}
-                                    >
-                                      {label}
-                                    </button>
-                                  ))}
-                                </div>
-                              </div>
-
-                              {/* CTA bar */}
-                              <div className="shrink-0 p-4 bg-surface border-t border-outline-variant/15">
-                                {swapSource && (
-                                  <div className="flex items-center gap-2 mb-3 p-2 rounded bg-surface-container border border-outline-variant/20">
-                                    <div className="flex-1 flex items-center gap-2 min-w-0">
-                                      <span className="bg-red-950 text-red-300 border border-red-800/60 text-[10px] font-black px-2 py-0.5 rounded truncate">
-                                        {annotatedSquad.find(
-                                          (p) => p.id === swapSource,
-                                        )?.name ?? "?"}
-                                      </span>
-                                      <span className="text-zinc-500 font-black shrink-0">
-                                        →
-                                      </span>
-                                      {swapTarget ? (
-                                        <span className="bg-emerald-950 text-emerald-300 border border-emerald-800/60 text-[10px] font-black px-2 py-0.5 rounded truncate">
-                                          {annotatedSquad.find(
-                                            (p) => p.id === swapTarget,
-                                          )?.name ?? "?"}
-                                        </span>
-                                      ) : (
-                                        <span className="text-zinc-600 text-[10px] italic">
-                                          escolhe do banco →
-                                        </span>
-                                      )}
-                                    </div>
-                                    <button
-                                      onClick={handleResetSub}
-                                      className="shrink-0 w-6 h-6 rounded-full bg-zinc-800 hover:bg-zinc-700 text-[10px] text-zinc-500 hover:text-white flex items-center justify-center transition-colors"
-                                    >
-                                      ✕
-                                    </button>
-                                    <button
-                                      onClick={handleConfirmSub}
-                                      disabled={!swapTarget}
-                                      className={`shrink-0 px-3 py-1.5 rounded text-[10px] font-black uppercase tracking-wide transition-colors ${swapTarget ? "bg-emerald-600 hover:bg-emerald-500 text-white" : "bg-zinc-800 text-zinc-600 cursor-not-allowed"}`}
-                                    >
-                                      Substituir
-                                    </button>
-                                  </div>
-                                )}
-                                {!swapSource && subsMade < MAX_MATCH_SUBS && (
-                                  <p className="text-[9px] text-zinc-700 font-bold uppercase tracking-wide text-center mb-2">
-                                    Clica num jogador em campo para substituir
-                                  </p>
-                                )}
-                                <button
-                                  onClick={
-                                    canContinue
-                                      ? handleHalftimeReady
-                                      : undefined
-                                  }
-                                  disabled={!canContinue || isReady}
-                                  className={`w-full py-4 text-sm font-black uppercase tracking-widest transition-all rounded flex items-center justify-center gap-3 ${
-                                    !canContinue
-                                      ? "bg-zinc-800 text-zinc-500 cursor-not-allowed"
-                                      : isReady
-                                        ? "bg-zinc-800 text-zinc-500"
-                                        : cupPreMatch
-                                          ? "bg-green-600 hover:bg-green-500 text-zinc-950"
-                                          : "bg-primary hover:brightness-110 text-on-primary"
-                                  }`}
-                                >
-                                  {!canContinue
-                                    ? "⏳ A aguardar jogo da Taça…"
-                                    : isReady
-                                      ? "⏳ A aguardar…"
-                                      : cupPreMatch
-                                        ? "▶ Iniciar jogo — Taça"
-                                        : isCupMatch
-                                          ? "▶ 2.ª Parte — Taça"
-                                          : "▶ Iniciar 2.ª Parte"}
-                                </button>
-                              </div>
-                            </div>
-
-                            {/* ── RIGHT: squad + bench ── */}
-                            <div className="hidden lg:flex flex-col border-l border-outline-variant/15 bg-surface-container-low overflow-hidden">
-                              <div className="px-4 py-3 border-b border-outline-variant/15 flex items-center justify-between shrink-0">
-                                <span className="text-[10px] font-black uppercase tracking-widest text-on-surface-variant">
-                                  Em Campo
-                                </span>
-                                <span className="bg-primary/10 text-primary text-[10px] px-2 py-0.5 rounded font-bold">
-                                  {onFieldPlayers.length} activos
-                                </span>
-                              </div>
-                              <div className="flex-1 overflow-y-auto divide-y divide-outline-variant/10">
-                                {annotatedSquad
-                                  .filter(
-                                    (p) =>
-                                      tactic.positions[p.id] === "Titular" &&
-                                      !subbedOut.includes(p.id) &&
-                                      !redCardedHalftimeIds.has(p.id),
-                                  )
-                                  .map((p) => (
-                                    <div
-                                      key={p.id}
-                                      onClick={() =>
-                                        subsMade < MAX_MATCH_SUBS &&
-                                        handleSelectOut(p.id)
-                                      }
-                                      className={`px-4 py-3 transition-colors ${
-                                        swapSource === p.id
-                                          ? "bg-red-500/10"
-                                          : subsMade < MAX_MATCH_SUBS
-                                            ? "hover:bg-surface-bright cursor-pointer"
-                                            : "opacity-50 cursor-not-allowed"
-                                      }`}
-                                    >
-                                      <div className="flex items-center justify-between mb-1.5">
-                                        <div className="flex items-center gap-2">
+                                          )}
                                           <span
-                                            className={`text-[10px] font-bold w-4 ${POSITION_TEXT_CLASS[p.position]}`}
+                                            className={`truncate max-w-[120px] ${e.type === "goal" || e.type === "penalty_goal" ? "text-primary font-bold" : e.type === "red" ? "text-red-400 font-bold" : "text-on-surface-variant"}`}
                                           >
-                                            {POSITION_SHORT_LABELS[p.position]}
+                                            <PlayerLink playerId={e.playerId}>
+                                              {name}
+                                            </PlayerLink>
                                           </span>
-                                          <span className="text-sm font-bold truncate max-w-28">
-                                            {p.name}
-                                          </span>
-                                          {!!p.is_star && (
-                                            <span className="text-amber-400 text-[10px]">
-                                              ★
+                                          {!isHome && (
+                                            <span className="shrink-0">
+                                              {icon}
+                                            </span>
+                                          )}
+                                          {!isHome && (
+                                            <span className="text-on-surface-variant/40 tabular-nums w-4 text-left shrink-0">
+                                              {e.minute}'
                                             </span>
                                           )}
                                         </div>
-                                        <div className="text-[10px] font-black px-2 py-0.5 rounded bg-primary/20 text-primary">
-                                          {p.skill}
-                                        </div>
-                                      </div>
-                                      <div className="flex items-center justify-between">
-                                        <div className="flex items-center gap-1.5 flex-1 max-w-28">
-                                          <div className="h-1 flex-1 bg-surface-bright rounded-full overflow-hidden">
-                                            <div
-                                              className="h-full bg-primary"
-                                              style={{
-                                                width: `${Math.min(100, (p.form || 5) * 10)}%`,
-                                              }}
-                                            />
-                                          </div>
-                                          <span className="text-[9px] font-bold text-on-surface-variant shrink-0 tabular-nums">
-                                            {p.form ?? "—"}
-                                          </span>
-                                        </div>
-                                        {subsMade < MAX_MATCH_SUBS && (
-                                          <span className="text-[9px] font-black uppercase tracking-widest text-on-surface-variant group-hover:text-primary border border-outline-variant/30 px-2 py-0.5 rounded ml-2">
-                                            Trocar
-                                          </span>
-                                        )}
-                                      </div>
+                                      );
+                                    })}
+                                </div>
+                              </div>
+                            )}
+
+                            {/* ── Confirmed subs strip ── */}
+                            {confirmedSubs.length > 0 && (
+                              <div className="shrink-0 px-3 py-2 bg-surface-container/60 border-b border-outline-variant/20 flex flex-wrap gap-1.5">
+                                {confirmedSubs.map((sub, i) => {
+                                  const outP = mySquad.find(
+                                    (p) => p.id === sub.out,
+                                  );
+                                  const inP = mySquad.find(
+                                    (p) => p.id === sub.in,
+                                  );
+                                  return (
+                                    <div
+                                      key={i}
+                                      className="flex items-center gap-1 bg-zinc-800 rounded-full pl-2 pr-2.5 py-0.5 text-[10px] font-bold"
+                                    >
+                                      <span className="text-zinc-600 shrink-0">
+                                        🔄
+                                      </span>
+                                      <span className="text-red-400 truncate max-w-[5.5rem]">
+                                        {outP?.name ?? "?"}
+                                      </span>
+                                      <span className="text-zinc-600 shrink-0 mx-0.5">
+                                        →
+                                      </span>
+                                      <span className="text-emerald-400 truncate max-w-[5.5rem]">
+                                        {inP?.name ?? "?"}
+                                      </span>
                                     </div>
-                                  ))}
+                                  );
+                                })}
+                              </div>
+                            )}
+
+                            {/* ── Mentality selector ── */}
+                            <div className="shrink-0 px-3 py-2 bg-surface-container/60 border-b border-outline-variant/20">
+                              <span className="block text-[9px] font-black uppercase tracking-widest text-zinc-500 mb-1.5">
+                                Mentalidade
+                              </span>
+                              <div className="flex gap-1.5">
+                                {[
+                                  { value: "Defensive", label: "Defensivo" },
+                                  { value: "Balanced", label: "Equilibrado" },
+                                  { value: "Offensive", label: "Ofensivo" },
+                                ].map(({ value, label }) => (
+                                  <button
+                                    key={value}
+                                    onClick={() =>
+                                      updateTactic({ style: value })
+                                    }
+                                    className={`flex-1 py-1.5 rounded text-[10px] font-black uppercase tracking-wide transition-colors ${
+                                      tactic.style === value
+                                        ? value === "Defensive"
+                                          ? "bg-blue-600 text-white"
+                                          : value === "Offensive"
+                                            ? "bg-amber-500 text-zinc-950"
+                                            : "bg-primary text-on-primary"
+                                        : "bg-zinc-800 text-zinc-400 hover:bg-zinc-700 hover:text-zinc-200"
+                                    }`}
+                                  >
+                                    {label}
+                                  </button>
+                                ))}
+                              </div>
+                            </div>
+
+                            {/* ── Two-column player list ── */}
+                            <div className="flex flex-1 min-h-0 overflow-hidden">
+                              {/* Em Campo */}
+                              <div className="flex-1 flex flex-col min-w-0 overflow-hidden border-r border-zinc-800">
+                                <div className="shrink-0 flex items-center gap-1.5 px-3 py-1.5 bg-surface-container/40 border-b border-outline-variant/20">
+                                  <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 shrink-0" />
+                                  <span className="text-[9px] font-black uppercase tracking-widest text-emerald-500">
+                                    Em Campo
+                                  </span>
+                                </div>
+                                <div className="flex-1 overflow-y-auto">
+                                  {annotatedSquad
+                                    .filter(
+                                      (p) =>
+                                        tactic.positions[p.id] === "Titular" &&
+                                        !subbedOut.includes(p.id) &&
+                                        !redCardedHalftimeIds.has(p.id),
+                                    )
+                                    .map((p) => (
+                                      <div
+                                        key={p.id}
+                                        onClick={() =>
+                                          subsMade < MAX_MATCH_SUBS &&
+                                          handleSelectOut(p.id)
+                                        }
+                                        className={`flex items-center gap-2 px-2 py-1.5 border-b border-zinc-800/40 select-none transition-all border-l-2 ${
+                                          swapSource === p.id
+                                            ? "bg-red-500/15 border-l-red-500"
+                                            : subsMade < MAX_MATCH_SUBS
+                                              ? "cursor-pointer hover:bg-zinc-800/50 border-l-transparent"
+                                              : "opacity-40 cursor-not-allowed border-l-transparent"
+                                        }`}
+                                      >
+                                        <span
+                                          className={`w-4 h-4 rounded-sm shrink-0 flex items-center justify-center text-[8px] font-black ${
+                                            swapSource === p.id
+                                              ? "bg-red-500/25 text-red-300"
+                                              : `bg-zinc-800 ${POSITION_TEXT_CLASS[p.position]}`
+                                          }`}
+                                        >
+                                          {POSITION_SHORT_LABELS[p.position]}
+                                        </span>
+                                        <span
+                                          className={`flex-1 truncate text-[11px] font-bold ${swapSource === p.id ? "text-red-200" : "text-zinc-200"}`}
+                                        >
+                                          {p.name}
+                                          {!!p.is_star &&
+                                            (p.position === "MED" ||
+                                              p.position === "ATA") && (
+                                              <span className="ml-0.5 text-amber-400 font-black">
+                                                *
+                                              </span>
+                                            )}
+                                        </span>
+                                        <span
+                                          className={`shrink-0 text-[10px] font-black tabular-nums ${swapSource === p.id ? "text-red-400" : "text-zinc-600"}`}
+                                        >
+                                          {p.skill}
+                                        </span>
+                                      </div>
+                                    ))}
+                                </div>
                               </div>
 
-                              {/* Bench */}
-                              <div className="shrink-0 bg-surface-container p-4 border-t border-outline-variant/15">
-                                <h5 className="text-[9px] font-black uppercase tracking-widest text-tertiary mb-2">
-                                  Banco
-                                </h5>
-                                <div className="space-y-2">
+                              {/* Banco */}
+                              <div className="flex-1 flex flex-col min-w-0 overflow-hidden">
+                                <div className="shrink-0 flex items-center gap-1.5 px-3 py-1.5 bg-surface-container/40 border-b border-outline-variant/20">
+                                  <span className="w-1.5 h-1.5 rounded-full bg-zinc-600 shrink-0" />
+                                  <span className="text-[9px] font-black uppercase tracking-widest text-zinc-500">
+                                    Banco
+                                  </span>
+                                </div>
+                                <div className="flex-1 overflow-y-auto">
                                   {annotatedSquad
                                     .filter(
                                       (p) =>
@@ -4055,34 +3815,54 @@ function App() {
                                           onClick={() =>
                                             !disabled && handleSelectIn(p.id)
                                           }
-                                          className={`flex items-center justify-between gap-2 text-xs transition-colors ${
+                                          className={`flex items-center gap-2 px-2 py-1.5 border-b border-zinc-800/40 select-none transition-all border-l-2 ${
                                             alreadyUsed
-                                              ? "opacity-25 cursor-not-allowed"
+                                              ? "opacity-20 cursor-not-allowed border-l-transparent"
                                               : swapTarget === p.id
-                                                ? "text-emerald-400 cursor-pointer"
+                                                ? "bg-emerald-500/15 border-l-emerald-500 cursor-pointer"
                                                 : disabled
-                                                  ? "opacity-50 cursor-not-allowed"
-                                                  : "hover:text-on-surface cursor-pointer text-on-surface-variant"
+                                                  ? "opacity-40 cursor-not-allowed border-l-transparent"
+                                                  : "cursor-pointer hover:bg-zinc-800/50 border-l-transparent"
                                           }`}
                                         >
-                                          <div className="flex items-center gap-2 min-w-0">
-                                            <span
-                                              className={`text-[9px] font-bold w-4 shrink-0 ${POSITION_TEXT_CLASS[p.position]}`}
-                                            >
-                                              {
-                                                POSITION_SHORT_LABELS[
-                                                  p.position
-                                                ]
-                                              }
-                                            </span>
-                                            <span
-                                              className={`font-medium truncate ${alreadyUsed ? "line-through text-zinc-700" : ""}`}
-                                            >
-                                              {p.name}
-                                            </span>
-                                          </div>
                                           <span
-                                            className={`text-[9px] font-bold shrink-0 ${swapTarget === p.id ? "text-emerald-400" : ""}`}
+                                            className={`w-4 h-4 rounded-sm shrink-0 flex items-center justify-center text-[8px] font-black ${
+                                              alreadyUsed
+                                                ? "bg-zinc-800/50 text-zinc-700"
+                                                : swapTarget === p.id
+                                                  ? "bg-emerald-500/25 text-emerald-300"
+                                                  : `bg-zinc-800 ${POSITION_TEXT_CLASS[p.position]}`
+                                            }`}
+                                          >
+                                            {POSITION_SHORT_LABELS[p.position]}
+                                          </span>
+                                          <span
+                                            className={`flex-1 truncate text-[11px] font-bold ${
+                                              alreadyUsed
+                                                ? "text-zinc-700 line-through"
+                                                : swapTarget === p.id
+                                                  ? "text-emerald-200"
+                                                  : "text-zinc-200"
+                                            }`}
+                                          >
+                                            {p.name}
+                                            {!alreadyUsed &&
+                                              !!p.is_star &&
+                                              (p.position === "MED" ||
+                                                p.position === "ATA") && (
+                                                <span className="ml-0.5 text-amber-400 font-black">
+                                                  *
+                                                </span>
+                                              )}
+                                          </span>
+                                          <span
+                                            className={`shrink-0 text-[10px] font-black tabular-nums ${
+                                              alreadyUsed
+                                                ? "text-zinc-700"
+                                                : swapTarget === p.id
+                                                  ? "text-emerald-400"
+                                                  : "text-zinc-600"
+                                            }`}
                                           >
                                             {alreadyUsed ? "—" : p.skill}
                                           </span>
@@ -4092,100 +3872,95 @@ function App() {
                                 </div>
                               </div>
                             </div>
-                          </div>
 
-                          {/* ── Mobile: vertical player list ── */}
-                          <div
-                            className="lg:hidden shrink-0 overflow-y-auto border-t border-outline-variant/15 bg-surface-container"
-                            style={{ maxHeight: "40vh" }}
-                          >
-                            {/* Em Campo */}
-                            <div className="px-3 py-1.5 bg-surface-container sticky top-0 z-10 flex items-center gap-1.5 border-b border-zinc-800">
-                              <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 shrink-0" />
-                              <span className="text-[9px] font-black uppercase tracking-widest text-emerald-500">
-                                Em Campo
-                              </span>
-                            </div>
-                            {annotatedSquad
-                              .filter(
-                                (p) =>
-                                  tactic.positions[p.id] === "Titular" &&
-                                  !subbedOut.includes(p.id) &&
-                                  !redCardedHalftimeIds.has(p.id),
-                              )
-                              .map((p) => (
-                                <div
-                                  key={p.id}
-                                  onClick={() =>
-                                    subsMade < MAX_MATCH_SUBS &&
-                                    handleSelectOut(p.id)
-                                  }
-                                  className={`flex items-center gap-2 px-3 py-2 border-b border-zinc-800/40 ${swapSource === p.id ? "bg-red-500/15" : subsMade < MAX_MATCH_SUBS ? "cursor-pointer active:bg-zinc-800/60" : "opacity-40"}`}
-                                >
-                                  <span
-                                    className={`w-5 h-5 rounded shrink-0 flex items-center justify-center text-[9px] font-black bg-zinc-800 ${POSITION_TEXT_CLASS[p.position]}`}
-                                  >
-                                    {POSITION_SHORT_LABELS[p.position]}
+                            {/* ── Swap action bar ── */}
+                            {swapSource ? (
+                              <div className="shrink-0 flex items-center gap-2 px-3 py-2.5 border-t border-outline-variant/30 bg-surface-container">
+                                <div className="flex-1 flex items-center gap-2 min-w-0">
+                                  <span className="bg-red-950 text-red-300 border border-red-800/60 text-[10px] font-black px-2 py-0.5 rounded truncate max-w-[40%]">
+                                    {annotatedSquad.find(
+                                      (p) => p.id === swapSource,
+                                    )?.name ?? "?"}
                                   </span>
-                                  <span className="flex-1 text-[13px] font-bold text-zinc-200 leading-tight">
-                                    {p.name}
+                                  <span className="text-zinc-500 shrink-0 font-black text-sm">
+                                    →
                                   </span>
-                                  <span className="shrink-0 text-xs font-black text-zinc-500 ml-auto">
-                                    {p.skill}
-                                  </span>
-                                  {swapSource === p.id && (
-                                    <span className="shrink-0 text-[9px] font-black uppercase text-red-400 bg-red-500/10 px-1.5 py-0.5 rounded">
-                                      sai
+                                  {swapTarget ? (
+                                    <span className="bg-emerald-950 text-emerald-300 border border-emerald-800/60 text-[10px] font-black px-2 py-0.5 rounded truncate max-w-[40%]">
+                                      {annotatedSquad.find(
+                                        (p) => p.id === swapTarget,
+                                      )?.name ?? "?"}
+                                    </span>
+                                  ) : (
+                                    <span className="text-zinc-600 text-[10px] italic">
+                                      escolhe do banco…
                                     </span>
                                   )}
                                 </div>
-                              ))}
-                            {/* Banco */}
-                            <div className="px-3 py-1.5 bg-surface-container sticky top-0 z-10 flex items-center gap-1.5 border-b border-zinc-800 border-t border-t-zinc-700">
-                              <span className="w-1.5 h-1.5 rounded-full bg-zinc-600 shrink-0" />
-                              <span className="text-[9px] font-black uppercase tracking-widest text-zinc-500">
-                                Banco
-                              </span>
-                            </div>
-                            {annotatedSquad
-                              .filter(
-                                (p) => tactic.positions[p.id] === "Suplente",
-                              )
-                              .map((p) => {
-                                const alreadyUsed = subbedOut.includes(p.id);
-                                const disabled =
-                                  alreadyUsed ||
-                                  !swapSource ||
-                                  subsMade >= MAX_MATCH_SUBS;
-                                return (
-                                  <div
-                                    key={p.id}
-                                    onClick={() =>
-                                      !disabled && handleSelectIn(p.id)
-                                    }
-                                    className={`flex items-center gap-2 px-3 py-2 border-b border-zinc-800/40 ${alreadyUsed ? "opacity-20 cursor-not-allowed" : swapTarget === p.id ? "bg-emerald-500/15 cursor-pointer" : disabled ? "opacity-40 cursor-not-allowed" : "cursor-pointer active:bg-zinc-800/60"}`}
-                                  >
-                                    <span
-                                      className={`w-5 h-5 rounded shrink-0 flex items-center justify-center text-[9px] font-black bg-zinc-800 ${POSITION_TEXT_CLASS[p.position]}`}
-                                    >
-                                      {POSITION_SHORT_LABELS[p.position]}
-                                    </span>
-                                    <span
-                                      className={`flex-1 text-[13px] font-bold leading-tight ${alreadyUsed ? "text-zinc-700 line-through" : "text-zinc-200"}`}
-                                    >
-                                      {p.name}
-                                    </span>
-                                    <span className="shrink-0 text-xs font-black text-zinc-500 ml-auto">
-                                      {alreadyUsed ? "—" : p.skill}
-                                    </span>
-                                    {swapTarget === p.id && (
-                                      <span className="shrink-0 text-[9px] font-black uppercase text-emerald-400 bg-emerald-500/10 px-1.5 py-0.5 rounded">
-                                        entra
-                                      </span>
-                                    )}
-                                  </div>
-                                );
-                              })}
+                                <button
+                                  onClick={handleResetSub}
+                                  className="shrink-0 w-6 h-6 rounded-full bg-zinc-800 hover:bg-zinc-700 text-zinc-500 hover:text-white text-[10px] flex items-center justify-center transition-colors"
+                                >
+                                  ✕
+                                </button>
+                                <button
+                                  onClick={handleConfirmSub}
+                                  disabled={!swapTarget}
+                                  className={`shrink-0 px-3 py-1.5 rounded text-[10px] font-black uppercase tracking-wide transition-colors ${
+                                    swapTarget
+                                      ? "bg-emerald-600 hover:bg-emerald-500 text-white"
+                                      : "bg-zinc-800 text-zinc-600 cursor-not-allowed"
+                                  }`}
+                                >
+                                  Substituir
+                                </button>
+                              </div>
+                            ) : subsMade < MAX_MATCH_SUBS ? (
+                              <div className="shrink-0 border-t border-zinc-800/60 px-4 py-1.5 text-center">
+                                <span className="text-[9px] text-zinc-700 font-bold uppercase tracking-wide">
+                                  Toca num jogador em campo para substituir
+                                </span>
+                              </div>
+                            ) : null}
+
+                            {/* BUG-06 FIX: Use handleHalftimeReady which always sends true */}
+                            {/* BUG: only gate on myTeamInCup when it's actually a cup match */}
+                            {(() => {
+                              const isCupContext = isCupMatch || cupPreMatch;
+                              const canContinue = !isCupContext || myTeamInCup;
+                              const isReady = !!players.find(
+                                (p) => p.name === me.name,
+                              )?.ready;
+                              return (
+                                <button
+                                  onClick={
+                                    canContinue
+                                      ? handleHalftimeReady
+                                      : undefined
+                                  }
+                                  disabled={!canContinue || isReady}
+                                  className={`shrink-0 w-full py-3.5 text-sm font-black uppercase tracking-widest transition-all ${
+                                    !canContinue
+                                      ? "bg-zinc-800 text-zinc-500 cursor-not-allowed"
+                                      : isReady
+                                        ? "bg-zinc-800 text-zinc-500"
+                                        : cupPreMatch
+                                          ? "bg-green-600 hover:bg-green-500 text-zinc-950"
+                                          : "bg-primary hover:brightness-110 text-on-primary"
+                                  }`}
+                                >
+                                  {!canContinue
+                                    ? "⏳ A AGUARDAR JOGO DA TAÇA..."
+                                    : isReady
+                                      ? "⏳ A AGUARDAR..."
+                                      : cupPreMatch
+                                        ? "▶ INICIAR JOGO — TAÇA"
+                                        : isCupMatch
+                                          ? "▶ 2ª PARTE — TAÇA"
+                                          : "▶ INICIAR 2ª PARTE"}
+                                </button>
+                              );
+                            })()}
                           </div>
                         </div>
                       );
@@ -6502,428 +6277,229 @@ function App() {
                   );
                 })()}
 
-              {activeTab === "players" &&
-                (() => {
-                  const currentSeason = Math.ceil((matchweekCount + 1) / 14);
-                  const expiringPlayers = mySquad.filter(
-                    (p) =>
-                      p.contract_until_matchweek > 0 &&
-                      p.contract_until_matchweek <= matchweekCount + 3,
-                  );
-                  const POSITION_BORDER = {
-                    GR: "border-yellow-500",
-                    DEF: "border-blue-500",
-                    MED: "border-emerald-500",
-                    ATA: "border-rose-500",
-                  };
-                  const POSITION_BAR_COLOR = {
-                    GR: "bg-yellow-500",
-                    DEF: "bg-blue-500",
-                    MED: "bg-emerald-500",
-                    ATA: "bg-rose-500",
-                  };
-                  const filteredSquad = annotatedSquad.filter(
-                    (p) =>
-                      playersPositionFilter === "all" ||
-                      p.position === playersPositionFilter,
-                  );
-                  const wageByPos = ["GR", "DEF", "MED", "ATA"].map((pos) => ({
-                    pos,
-                    total: mySquad
-                      .filter((p) => p.position === pos)
-                      .reduce((s, p) => s + (p.wage || 0), 0),
-                    count: mySquad.filter((p) => p.position === pos).length,
-                  }));
-                  const maxPosWage = Math.max(
-                    ...wageByPos.map((w) => w.total),
-                    1,
-                  );
-                  return (
-                    <div className="space-y-5">
-                      {/* ── SUMMARY WIDGETS ──────────────────────────────── */}
-                      <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                        {/* Massa Salarial */}
-                        <div className="bg-surface-container-low p-5 rounded-md flex flex-col justify-between h-28 border-l-4 border-primary">
-                          <span className="text-[10px] font-black uppercase tracking-widest text-on-surface-variant">
-                            Massa Salarial / Semana
-                          </span>
-                          <div className="flex items-baseline gap-2">
-                            <span className="text-3xl font-headline font-black tracking-tighter text-on-surface">
-                              {formatCurrency(totalWeeklyWage)}
-                            </span>
-                            <span className="text-[10px] text-on-surface-variant">
-                              {mySquad.length} jogadores
-                            </span>
-                          </div>
-                        </div>
-                        {/* Saldo Disponível */}
-                        <div className="bg-surface-container-low p-5 rounded-md flex flex-col justify-between h-28 border-l-4 border-tertiary">
-                          <span className="text-[10px] font-black uppercase tracking-widest text-on-surface-variant">
-                            Saldo Disponível
-                          </span>
-                          <div className="flex items-baseline gap-2">
-                            <span
-                              className={`text-3xl font-headline font-black tracking-tighter ${currentBudget >= 0 ? "text-tertiary" : "text-error"}`}
+              {activeTab === "players" && (
+                <div className="space-y-6">
+                  <div className="bg-surface-container rounded-lg shadow-sm overflow-x-auto">
+                    <table className="w-full min-w-[720px] text-left text-sm font-normal">
+                      <thead>
+                        <tr className="bg-surface/50 text-on-surface-variant uppercase text-[11px] tracking-widest border-b border-outline-variant/20 font-normal">
+                          <th className="px-3 py-3 text-center w-12 font-normal">
+                            POS
+                          </th>
+                          <th className="px-3 py-3 font-normal">NOME</th>
+                          <th className="px-3 py-3 text-center w-12 font-normal">
+                            NAC
+                          </th>
+                          <th className="px-3 py-3 text-center w-14 font-normal">
+                            QUAL
+                          </th>
+                          <th className="px-3 py-3 text-center font-normal">
+                            AGR
+                          </th>
+                          <th className="px-3 py-3 text-center w-12 font-normal">
+                            ⚽
+                          </th>
+                          <th className="px-3 py-3 text-center w-12 font-normal">
+                            🟥
+                          </th>
+                          <th className="px-3 py-3 text-center w-12 font-normal">
+                            🩹
+                          </th>
+                          <th className="px-3 py-3 text-center w-24 font-normal">
+                            ORDENADO
+                          </th>
+                          <th className="px-3 py-3 text-center w-24 font-normal">
+                            AÇÕES
+                          </th>
+                        </tr>
+                      </thead>
+                      <tbody className="divide-y divide-outline-variant/10 font-normal">
+                        {annotatedSquad.map((player) => (
+                          <tr
+                            key={player.id}
+                            className={`transition-colors group select-none ${ENABLE_ROW_BG ? POSITION_BG_CLASS[player.position] : ""} hover:bg-zinc-800/50 ${player.isUnavailable ? "opacity-50" : ""}`}
+                          >
+                            <td
+                              className={`px-3 py-2 text-center text-sm tracking-wider ${POSITION_TEXT_CLASS[player.position] || "text-zinc-300"}`}
                             >
-                              {formatCurrency(currentBudget)}
-                            </span>
-                            {loanAmount > 0 && (
-                              <span className="text-[10px] text-error font-black">
-                                Dívida: {formatCurrency(loanAmount)}
-                              </span>
-                            )}
-                          </div>
-                        </div>
-                        {/* Contratos a Expirar */}
-                        <div
-                          className={`bg-surface-container-low p-5 rounded-md flex flex-col justify-between h-28 border-l-4 ${expiringPlayers.length > 0 ? "border-error" : "border-outline-variant"}`}
-                        >
-                          <span className="text-[10px] font-black uppercase tracking-widest text-on-surface-variant">
-                            Contratos a Expirar
-                          </span>
-                          <div className="flex items-baseline gap-2">
-                            <span className="text-3xl font-headline font-black tracking-tighter text-on-surface">
-                              {String(expiringPlayers.length).padStart(2, "0")}
-                            </span>
-                            {expiringPlayers.length > 0 ? (
-                              <span className="text-xs text-error font-black">
-                                Ação necessária
-                              </span>
-                            ) : (
-                              <span className="text-xs text-primary font-black">
-                                Tudo OK
-                              </span>
-                            )}
-                          </div>
-                        </div>
-                      </div>
-
-                      {/* ── SQUAD CONTRACT TABLE ──────────────────────────── */}
-                      <div className="bg-surface-container rounded-md overflow-hidden">
-                        {/* Table header */}
-                        <div className="px-5 py-4 flex flex-wrap gap-3 justify-between items-center bg-surface-container-high/50">
-                          <h2 className="text-base font-headline font-black tracking-tight text-tertiary uppercase">
-                            Plantel — Gestão Contratual
-                          </h2>
-                          <div className="flex gap-2 items-center flex-wrap">
-                            <select
-                              className="bg-surface-container-lowest border border-outline-variant/20 px-3 py-1.5 rounded-sm text-[10px] font-black uppercase text-on-surface focus:outline-none"
-                              value={playersPositionFilter}
-                              onChange={(e) =>
-                                setPlayersPositionFilter(e.target.value)
-                              }
-                            >
-                              <option value="all">Todas as posições</option>
-                              <option value="GR">Guarda-Redes</option>
-                              <option value="DEF">Defesa</option>
-                              <option value="MED">Médio</option>
-                              <option value="ATA">Avançado</option>
-                            </select>
-                            {expiringPlayers.length > 0 && (
-                              <button
-                                onClick={() =>
-                                  expiringPlayers.forEach((p) =>
-                                    renewPlayerContract(p),
-                                  )
-                                }
-                                className="px-3 py-1.5 bg-tertiary text-on-tertiary-container text-[10px] font-black uppercase tracking-widest rounded-sm hover:brightness-110 transition-all"
-                              >
-                                Renovar todos a expirar
-                              </button>
-                            )}
-                          </div>
-                        </div>
-                        {/* Table */}
-                        <div className="overflow-x-auto">
-                          <table className="w-full text-left border-separate border-spacing-y-0.75 px-3 pb-3">
-                            <thead>
-                              <tr className="text-[10px] uppercase tracking-widest text-on-surface-variant font-black">
-                                <th className="py-3 px-3">Jogador</th>
-                                <th className="py-3 px-3">Pos</th>
-                                <th className="py-3 px-3 text-center">Qual</th>
-                                <th className="py-3 px-3">Ordenado/sem</th>
-                                <th className="py-3 px-3">Contrato até</th>
-                                <th className="py-3 px-3">Estado</th>
-                                <th className="py-3 px-3 text-right">Ações</th>
-                              </tr>
-                            </thead>
-                            <tbody>
-                              {filteredSquad.map((player) => {
-                                const isExpiringSoon =
-                                  player.contract_until_matchweek > 0 &&
-                                  player.contract_until_matchweek <=
-                                    matchweekCount + 3;
-                                const wantsRaise =
-                                  !!player.contract_request_pending;
-                                const canManage =
-                                  player.signed_season !== currentSeason;
-                                const isStar =
-                                  !!player.is_star &&
-                                  (player.position === "MED" ||
-                                    player.position === "ATA");
-
-                                let statusColor = "text-primary";
-                                let dotClass = "bg-primary";
-                                let statusLabel = "Estável";
-                                if (isExpiringSoon) {
-                                  statusColor = "text-error";
-                                  dotClass = "bg-error animate-pulse";
-                                  statusLabel = "A Expirar";
-                                } else if (wantsRaise) {
-                                  statusColor = "text-tertiary";
-                                  dotClass = "bg-tertiary";
-                                  statusLabel = "Quer Aumento";
-                                }
-
-                                let playerLabel = "Jogador do plantel";
-                                if (isStar) playerLabel = "Craque";
-                                else if (player.skill >= 80)
-                                  playerLabel = "Titular indiscutível";
-                                else if (player.skill >= 65)
-                                  playerLabel = "Rotação";
-
-                                const positionBorderClass =
-                                  POSITION_BORDER[player.position] ||
-                                  "border-primary";
-                                const contractMw =
-                                  player.contract_until_matchweek;
-                                let contractLabel = "—";
-                                if (contractMw > 0) {
-                                  const cSeason =
-                                    2026 + Math.floor((contractMw - 1) / 14);
-                                  const cJornada = ((contractMw - 1) % 14) + 1;
-                                  contractLabel = `J${cJornada} — ${cSeason}/${cSeason + 1}`;
-                                }
-
-                                return (
-                                  <tr
-                                    key={player.id}
-                                    className={`bg-surface-container-low hover:bg-primary-container/20 transition-all ${player.isUnavailable ? "opacity-60" : ""}`}
+                              {POSITION_SHORT_LABELS[player.position] ||
+                                player.position}
+                            </td>
+                            <td className="px-3 py-2 text-white text-sm md:text-base whitespace-nowrap">
+                              <PlayerLink playerId={player.id}>
+                                {player.name}
+                              </PlayerLink>
+                              {!!player.is_star &&
+                                (player.position === "MED" ||
+                                  player.position === "ATA") && (
+                                  <span
+                                    className="ml-1 text-amber-400 font-black"
+                                    title="Craque"
                                   >
-                                    {/* Jogador */}
-                                    <td className="py-2.5 px-3">
-                                      <div
-                                        className={`font-headline font-bold text-sm tracking-tight uppercase ${isExpiringSoon ? "text-error" : isStar ? "text-tertiary" : "text-on-surface"}`}
-                                      >
-                                        <PlayerLink playerId={player.id}>
-                                          {player.name}
-                                        </PlayerLink>
-                                        {player.isUnavailable &&
-                                          (() => {
-                                            const isSusp =
-                                              (player.suspension_until_matchweek ||
-                                                0) > matchweekCount;
-                                            const gamesLeft = isSusp
-                                              ? (player.suspension_until_matchweek ||
-                                                  0) - matchweekCount
-                                              : (player.injury_until_matchweek ||
-                                                  0) - matchweekCount;
-                                            return (
-                                              <span className="ml-2 text-[10px] font-black text-red-400 inline-flex items-center gap-0.5">
-                                                {isSusp ? "🟥" : "🩹"}
-                                                <span className="tabular-nums">
-                                                  {gamesLeft}
-                                                </span>
-                                              </span>
-                                            );
-                                          })()}
-                                        {player.transfer_status &&
-                                          player.transfer_status !== "none" && (
-                                            <span className="ml-2 text-[10px] font-black px-1.5 py-0.5 rounded-sm bg-emerald-500/20 text-emerald-400 border border-emerald-500/30 normal-case tracking-normal">
-                                              À venda
-                                            </span>
-                                          )}
-                                      </div>
-                                      <div className="text-[10px] text-on-surface-variant uppercase tracking-wide mt-0.5">
-                                        <span
-                                          title={
-                                            FLAG_TO_COUNTRY[
-                                              player.nationality
-                                            ] || player.nationality
-                                          }
-                                        >
-                                          {player.nationality}
-                                        </span>
-                                        {" · "}
-                                        {playerLabel}
-                                      </div>
-                                    </td>
-                                    {/* Posição */}
-                                    <td className="py-2.5 px-3">
-                                      <span
-                                        className={`px-2 py-0.5 bg-surface-bright rounded-sm text-[10px] font-black border-l-2 ${positionBorderClass} ${POSITION_TEXT_CLASS[player.position] || ""}`}
-                                      >
-                                        {POSITION_SHORT_LABELS[
-                                          player.position
-                                        ] || player.position}
-                                      </span>
-                                    </td>
-                                    {/* Qualidade */}
-                                    <td className="py-2.5 px-3 text-center">
-                                      <span className="inline-flex items-center justify-center bg-surface text-on-surface px-2 py-0.5 rounded-sm text-sm border border-outline-variant/30 font-headline font-black tabular-nums">
-                                        {player.skill}
-                                      </span>
-                                      {player.prev_skill != null &&
-                                        player.prev_skill !== player.skill && (
-                                          <span
-                                            className={`ml-1 text-[10px] font-black ${player.skill > player.prev_skill ? "text-emerald-400" : "text-red-400"}`}
-                                          >
-                                            {player.skill > player.prev_skill
-                                              ? "▲"
-                                              : "▼"}
-                                          </span>
-                                        )}
-                                    </td>
-                                    {/* Ordenado */}
-                                    <td className="py-2.5 px-3 font-mono text-sm text-on-surface">
-                                      {formatCurrency(player.wage || 0)}
-                                      <span className="text-[10px] text-on-surface-variant/40 ml-1">
-                                        /sem
-                                      </span>
-                                      {wantsRaise &&
-                                        player.contract_requested_wage > 0 && (
-                                          <div className="text-[10px] text-tertiary font-black mt-0.5">
-                                            Pede{" "}
-                                            {formatCurrency(
-                                              player.contract_requested_wage,
-                                            )}
-                                          </div>
-                                        )}
-                                    </td>
-                                    {/* Contrato até */}
-                                    <td
-                                      className={`py-2.5 px-3 text-sm font-bold ${isExpiringSoon ? "text-error italic" : "text-on-surface"}`}
+                                    *
+                                  </span>
+                                )}
+                              {player.isUnavailable &&
+                                (() => {
+                                  const susp =
+                                    player.suspension_until_matchweek || 0;
+                                  const inj =
+                                    player.injury_until_matchweek || 0;
+                                  const isSuspended = susp > matchweekCount;
+                                  const gamesLeft = isSuspended
+                                    ? susp - matchweekCount
+                                    : inj - matchweekCount;
+                                  return (
+                                    <span
+                                      className="ml-2 text-xs font-bold text-red-400 inline-flex items-center gap-0.5"
+                                      title={`Indisponível até jornada ${Math.max(inj, susp) + 1}`}
                                     >
-                                      {contractLabel}
-                                    </td>
-                                    {/* Estado */}
-                                    <td className="py-2.5 px-3">
-                                      <div
-                                        className={`flex items-center gap-1.5 ${statusColor}`}
-                                      >
-                                        <span
-                                          className={`w-1.5 h-1.5 rounded-full shrink-0 ${dotClass}`}
-                                        />
-                                        <span className="text-[10px] uppercase font-black">
-                                          {statusLabel}
-                                        </span>
-                                      </div>
-                                    </td>
-                                    {/* Ações */}
-                                    <td className="py-2.5 px-3 text-right">
-                                      {canManage ? (
-                                        <div className="flex justify-end gap-1.5 flex-wrap">
-                                          <button
-                                            onClick={(e) => {
-                                              e.stopPropagation();
-                                              renewPlayerContract(player);
-                                            }}
-                                            className="px-3 py-1.5 bg-primary text-on-primary hover:brightness-110 text-[10px] uppercase font-black rounded-sm transition-all"
-                                          >
-                                            Renovar
-                                          </button>
-                                          <button
-                                            onClick={(e) => {
-                                              e.stopPropagation();
-                                              listPlayerAuction(player);
-                                            }}
-                                            disabled={
-                                              isPlayingMatch ||
-                                              showHalftimePanel
-                                            }
-                                            title={
-                                              isPlayingMatch ||
-                                              showHalftimePanel
-                                                ? "Disponível após as partidas"
-                                                : "Vender em Leilão"
-                                            }
-                                            className="px-3 py-1.5 bg-secondary-container hover:bg-surface-bright disabled:opacity-30 text-on-surface text-[10px] uppercase font-black rounded-sm transition-all"
-                                          >
-                                            Leilão
-                                          </button>
-                                          {player.transfer_status ===
-                                          "fixed" ? (
-                                            <button
-                                              onClick={(e) => {
-                                                e.stopPropagation();
-                                                removeFromTransferList(player);
-                                              }}
-                                              className="px-3 py-1.5 bg-error-container text-on-error-container hover:brightness-110 text-[10px] uppercase font-black rounded-sm transition-all"
-                                            >
-                                              Retirar
-                                            </button>
-                                          ) : (
-                                            <button
-                                              onClick={(e) => {
-                                                e.stopPropagation();
-                                                listPlayerFixed(player);
-                                              }}
-                                              className="px-3 py-1.5 bg-surface-bright hover:brightness-110 text-on-surface text-[10px] uppercase font-black rounded-sm transition-all border border-outline-variant/30"
-                                            >
-                                              Listar
-                                            </button>
-                                          )}
-                                        </div>
-                                      ) : (
-                                        <span className="text-[10px] text-on-surface-variant/40 uppercase font-bold">
-                                          Recente
-                                        </span>
-                                      )}
-                                    </td>
-                                  </tr>
-                                );
-                              })}
-                            </tbody>
-                          </table>
-                        </div>
-                      </div>
-
-                      {/* ── WAGE STRUCTURE BAR CHART ──────────────────────── */}
-                      <div className="bg-surface-container-low p-5 rounded-md">
-                        <h3 className="text-[10px] font-black uppercase tracking-widest text-primary mb-5">
-                          Distribuição Salarial por Posição
-                        </h3>
-                        <div className="flex items-end gap-3 h-20 mb-3">
-                          {wageByPos.map(({ pos, total }) => {
-                            const pct = Math.round((total / maxPosWage) * 100);
-                            const barColor =
-                              POSITION_BAR_COLOR[pos] || "bg-primary";
-                            return (
-                              <div
-                                key={pos}
-                                className="flex-1 flex flex-col items-center gap-1"
+                                      {isSuspended ? "🟥" : "🩹"}
+                                      <span className="tabular-nums">
+                                        {gamesLeft}
+                                      </span>
+                                    </span>
+                                  );
+                                })()}
+                              {player.transfer_status &&
+                                player.transfer_status !== "none" && (
+                                  <span className="ml-2 text-[10px] font-black uppercase px-1.5 py-0.5 rounded bg-emerald-500/20 text-emerald-400 border border-emerald-500/30">
+                                    À venda
+                                  </span>
+                                )}
+                            </td>
+                            <td className="px-3 py-2 text-center text-zinc-400 text-sm">
+                              <span
+                                title={
+                                  FLAG_TO_COUNTRY[player.nationality] ||
+                                  player.nationality
+                                }
                               >
-                                <span className="text-[9px] font-black text-on-surface-variant text-center leading-tight">
-                                  {total > 0 ? formatCurrency(total) : "—"}
-                                </span>
-                                <div className="w-full bg-surface-container-high/60 rounded-t-sm relative h-12">
-                                  <div
-                                    className={`absolute bottom-0 inset-x-0 rounded-t-sm ${barColor} opacity-75 transition-all`}
-                                    style={{ height: `${Math.max(pct, 4)}%` }}
-                                  />
+                                {player.nationality}
+                              </span>
+                            </td>
+                            <td className="px-3 py-2 text-center text-zinc-100 font-normal">
+                              <span className="inline-flex items-center justify-center bg-surface text-on-surface px-2 py-1 rounded-sm text-sm border border-outline-variant/30 font-headline font-black tabular-nums">
+                                {player.skill}
+                              </span>
+                              {player.prev_skill !== null &&
+                                player.prev_skill !== undefined &&
+                                player.prev_skill !== player.skill && (
+                                  <span
+                                    className={`ml-1 text-xs font-black ${player.skill > player.prev_skill ? "text-emerald-400" : "text-red-400"}`}
+                                  >
+                                    {player.skill > player.prev_skill
+                                      ? "▲"
+                                      : "▼"}
+                                  </span>
+                                )}
+                            </td>
+                            <td className="px-3 py-2 text-center font-normal">
+                              <AggBadge value={player.aggressiveness} />
+                            </td>
+                            <td className="px-3 py-2 text-center text-emerald-400 font-normal">
+                              {getPlayerStat(player, ["goals"])}{" "}
+                              <span className="text-zinc-500 text-xs">
+                                ({getPlayerStat(player, ["career_goals"])})
+                              </span>
+                            </td>
+                            <td className="px-3 py-2 text-center text-red-400 font-normal">
+                              {getPlayerStat(player, [
+                                "reds",
+                                "red_cards",
+                                "reds_count",
+                                "expulsions",
+                              ])}{" "}
+                              <span className="text-zinc-500 text-xs">
+                                ({getPlayerStat(player, ["career_reds"])})
+                              </span>
+                            </td>
+                            <td className="px-3 py-2 text-center text-orange-400 font-normal">
+                              {getPlayerStat(player, [
+                                "injuries",
+                                "injury_count",
+                                "lesoes",
+                                "lesions",
+                              ])}{" "}
+                              <span className="text-zinc-500 text-xs">
+                                ({getPlayerStat(player, ["career_injuries"])})
+                              </span>
+                            </td>
+                            <td className="px-3 py-2 text-center font-mono text-zinc-300 text-xs md:text-sm">
+                              {formatCurrency(player.wage || 0)}
+                            </td>
+                            <td className="px-3 py-2 text-center">
+                              {player.signed_season !==
+                              Math.ceil((matchweekCount + 1) / 14) ? (
+                                <div className="flex flex-nowrap justify-center gap-1">
+                                  <button
+                                    onClick={(e) => {
+                                      e.stopPropagation();
+                                      renewPlayerContract(player);
+                                    }}
+                                    title="Renovar"
+                                    aria-label="Renovar"
+                                    className="px-2 py-1 rounded-md bg-emerald-600 hover:bg-emerald-500 text-white text-[10px] font-black uppercase leading-none tracking-wide"
+                                  >
+                                    R
+                                  </button>
+                                  <button
+                                    onClick={(e) => {
+                                      e.stopPropagation();
+                                      listPlayerAuction(player);
+                                    }}
+                                    disabled={
+                                      isPlayingMatch || showHalftimePanel
+                                    }
+                                    title={
+                                      isPlayingMatch || showHalftimePanel
+                                        ? "Disponível após as partidas"
+                                        : "Vender em Leilão"
+                                    }
+                                    aria-label="Vender em Leilão"
+                                    className="px-2 py-1 rounded-md bg-primary hover:brightness-110 disabled:opacity-30 disabled:hover:bg-primary text-on-primary text-[10px] font-black uppercase leading-none tracking-wide"
+                                  >
+                                    V
+                                  </button>
+                                  {player.transfer_status === "fixed" ? (
+                                    <button
+                                      onClick={(e) => {
+                                        e.stopPropagation();
+                                        removeFromTransferList(player);
+                                      }}
+                                      title="Retirar da lista de transferências"
+                                      aria-label="Retirar da lista"
+                                      className="px-2 py-1 rounded-md bg-red-700 hover:bg-red-600 text-white text-[10px] font-black uppercase leading-none tracking-wide"
+                                    >
+                                      ✕
+                                    </button>
+                                  ) : (
+                                    <button
+                                      onClick={(e) => {
+                                        e.stopPropagation();
+                                        listPlayerFixed(player);
+                                      }}
+                                      title="Listar no Mercado"
+                                      aria-label="Listar no Mercado"
+                                      className="px-2 py-1 rounded-md bg-secondary-container hover:bg-surface-bright text-on-surface text-[10px] font-black uppercase leading-none tracking-wide"
+                                    >
+                                      L
+                                    </button>
+                                  )}
                                 </div>
-                              </div>
-                            );
-                          })}
-                        </div>
-                        <div className="flex gap-3">
-                          {wageByPos.map(({ pos, count }) => (
-                            <div key={pos} className="flex-1 text-center">
-                              <div
-                                className={`text-[10px] font-black uppercase ${POSITION_TEXT_CLASS[pos] || "text-on-surface-variant"}`}
-                              >
-                                {pos}
-                              </div>
-                              <div className="text-[9px] text-on-surface-variant/50">
-                                {count} jog.
-                              </div>
-                            </div>
-                          ))}
-                        </div>
-                      </div>
-                    </div>
-                  );
-                })()}
+                              ) : (
+                                <span className="text-xs text-zinc-600 font-normal uppercase">
+                                  —
+                                </span>
+                              )}
+                            </td>
+                          </tr>
+                        ))}
+                      </tbody>
+                    </table>
+                  </div>
+                </div>
+              )}
 
               {activeTab === "tactic" && (
                 <div>
@@ -7081,21 +6657,6 @@ function App() {
               )}
 
               {activeTab === "market" && (
-                <TransferHub
-                  players={filteredMarketPlayers}
-                  budget={teamInfo?.budget ?? 0}
-                  me={me}
-                  teams={teams}
-                  marketPositionFilter={marketPositionFilter}
-                  setMarketPositionFilter={setMarketPositionFilter}
-                  marketSort={marketSort}
-                  setMarketSort={setMarketSort}
-                  isSameTeamId={isSameTeamId}
-                  buyPlayer={buyPlayer}
-                  openAuctionBid={openAuctionBid}
-                />
-              )}
-              {activeTab === "market_old_DISABLED" && (
                 <div className="bg-surface-container rounded-lg shadow-sm overflow-hidden">
                   <div className="border-b border-outline-variant/20 bg-surface/40 p-4 md:p-5">
                     <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
