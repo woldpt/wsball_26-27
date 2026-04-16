@@ -5762,7 +5762,7 @@ function App() {
                             </span>
                             <span className="w-1 h-1 bg-outline-variant rounded-full" />
                             <span className="text-on-surface-variant text-sm">
-                              Época {seasonYear}/{seasonYear + 1}
+                              {seasonYear}
                             </span>
                           </div>
                           {/* Moral bar */}
@@ -5933,9 +5933,7 @@ function App() {
                             Divisão
                           </p>
                           <p className="font-headline font-black text-primary text-sm leading-tight mt-0.5">
-                            {DIVISION_NAMES[teamInfo?.division]?.split(
-                              " ",
-                            )[0] || "Liga"}
+                            {DIVISION_NAMES[teamInfo?.division] || "Liga"}
                           </p>
                         </div>
                       </div>
