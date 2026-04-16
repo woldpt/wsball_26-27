@@ -25,6 +25,7 @@ import { AuctionNotification } from "./components/ui/AuctionNotification.jsx";
 import { NewsTicker } from "./components/ui/NewsTicker.jsx";
 import { LeagueStandings } from "./components/ui/LeagueStandings.jsx";
 import { ChatWidget } from "./components/chat/ChatWidget.jsx";
+import { TransferHub } from "./components/ui/TransferHub.jsx";
 
 const FLAG_TO_COUNTRY = {};
 COUNTRY_FLAGS.forEach(({ flag, label }) => {
@@ -7080,6 +7081,21 @@ function App() {
               )}
 
               {activeTab === "market" && (
+                <TransferHub
+                  players={filteredMarketPlayers}
+                  budget={teamInfo?.budget ?? 0}
+                  me={me}
+                  teams={teams}
+                  marketPositionFilter={marketPositionFilter}
+                  setMarketPositionFilter={setMarketPositionFilter}
+                  marketSort={marketSort}
+                  setMarketSort={setMarketSort}
+                  isSameTeamId={isSameTeamId}
+                  buyPlayer={buyPlayer}
+                  openAuctionBid={openAuctionBid}
+                />
+              )}
+              {activeTab === "market_old_DISABLED" && (
                 <div className="bg-surface-container rounded-lg shadow-sm overflow-hidden">
                   <div className="border-b border-outline-variant/20 bg-surface/40 p-4 md:p-5">
                     <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
