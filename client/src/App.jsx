@@ -6085,335 +6085,425 @@ function App() {
                 </div>
               )}
 
-              {activeTab === "finances" && (
-                <div className="space-y-6">
-                  {/* ── KPI CARDS ─────────────────────────────────────────────────── */}
-                  <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-                    {/* Saldo Actual */}
-                    <div className="bg-surface-container rounded-lg p-5 flex flex-col gap-1">
-                      <span className="text-zinc-500 font-black uppercase text-[10px] tracking-widest">
-                        Saldo Actual
-                      </span>
-                      <span
-                        className={`font-mono text-xl font-black ${currentBudget >= 0 ? "text-white" : "text-red-400"}`}
-                      >
-                        {formatCurrency(currentBudget)}
-                      </span>
-                      <span className="text-zinc-600 text-[10px]">
-                        época {seasonYear}/{seasonYear + 1}
-                      </span>
-                    </div>
-                    {/* Progresso do Ano Fiscal */}
-                    <div className="bg-surface-container rounded-lg p-5 flex flex-col gap-2">
-                      <span className="text-zinc-500 font-black uppercase text-[10px] tracking-widest">
-                        Ano Fiscal
-                      </span>
-                      <span className="text-white font-black text-xl">
-                        {completedJornada}{" "}
-                        <span className="text-zinc-500 font-normal text-sm">
-                          / 14 jornadas
-                        </span>
-                      </span>
-                      <div className="w-full h-1.5 bg-surface-bright rounded-full overflow-hidden">
-                        <div
-                          className="h-full bg-primary rounded-full transition-all"
-                          style={{ width: `${(completedJornada / 14) * 100}%` }}
-                        />
-                      </div>
-                    </div>
-                  </div>
-
-                  {/* ── RECEITAS ──────────────────────────────────────────────────── */}
-                  <div className="bg-surface-container rounded-lg shadow-sm overflow-hidden">
-                    <div className="px-6 py-4 border-b border-outline-variant/20 flex items-center gap-3">
-                      <span className="text-lg">💰</span>
-                      <h2 className="text-xs font-black uppercase tracking-widest text-emerald-400">
-                        Receitas
-                      </h2>
-                    </div>
-                    <div className="p-6 space-y-5">
-                      {/* Bilheteiras */}
-                      <div>
-                        <div className="flex items-start justify-between mb-2">
+              {activeTab === "finances" &&
+                (() => {
+                  const totalSeasonIncome =
+                    (financeData?.totalTicketRevenue || 0) +
+                    (financeData?.sponsorRevenue || 0) +
+                    (financeData?.totalTransferIncome || 0);
+                  const totalSeasonExpenses =
+                    totalWeeklyWage * completedJornada +
+                    loanInterestPerWeek * completedJornada +
+                    (financeData?.totalTransferExpenses || 0);
+                  const seasonResult = totalSeasonIncome - totalSeasonExpenses;
+                  const loanPct = Math.min(100, (loanAmount / 2500000) * 100);
+                  const wageSharePct =
+                    totalSeasonIncome > 0
+                      ? Math.min(
+                          100,
+                          Math.round(
+                            ((totalWeeklyWage * completedJornada) /
+                              totalSeasonIncome) *
+                              100,
+                          ),
+                        )
+                      : 0;
+                  return (
+                    <div className="space-y-4">
+                      {/* ── HERO ──────────────────────────────────────────────────────── */}
+                      <div className="grid grid-cols-1 md:grid-cols-3 gap-0.5 bg-outline-variant/10 overflow-hidden rounded-xl">
+                        {/* Saldo Actual */}
+                        <div className="bg-surface-container p-6 flex flex-col justify-between relative overflow-hidden">
+                          <div className="absolute top-0 right-0 p-4 opacity-5 pointer-events-none select-none">
+                            <span className="material-symbols-outlined text-8xl">
+                              payments
+                            </span>
+                          </div>
                           <div>
-                            <p className="text-white font-bold text-sm">
-                              Bilheteiras
+                            <p className="text-[10px] uppercase tracking-widest text-on-surface-variant mb-1 font-label">
+                              Saldo Actual
                             </p>
-                            <p className="text-zinc-500 text-xs">
-                              15€/bilhete × assistência —{" "}
-                              {financeData?.homeMatchesPlayed || 0} jogos em
-                              casa
+                            <h2
+                              className={`font-headline text-4xl font-bold tracking-tighter ${currentBudget >= 0 ? "text-primary" : "text-error"}`}
+                            >
+                              {formatCurrency(currentBudget)}
+                            </h2>
+                          </div>
+                          <div className="mt-6 flex items-end gap-2">
+                            <div className="flex gap-1 h-8 items-end">
+                              <div className="w-1 bg-primary/20 h-2 rounded-t-sm" />
+                              <div className="w-1 bg-primary/40 h-4 rounded-t-sm" />
+                              <div className="w-1 bg-primary/60 h-3 rounded-t-sm" />
+                              <div className="w-1 bg-primary/80 h-6 rounded-t-sm" />
+                              <div className="w-1 bg-primary h-8 rounded-t-sm" />
+                            </div>
+                            <span className="text-[10px] text-primary font-bold font-label">
+                              época {seasonYear}/{seasonYear + 1}
+                            </span>
+                          </div>
+                        </div>
+                        {/* Resultado da Época */}
+                        <div className="bg-surface-container p-6 flex flex-col justify-between">
+                          <div>
+                            <p className="text-[10px] uppercase tracking-widest text-on-surface-variant mb-1 font-label">
+                              Resultado da Época
+                            </p>
+                            <h2
+                              className={`font-headline text-4xl font-bold tracking-tighter ${seasonResult >= 0 ? "text-tertiary" : "text-error"}`}
+                            >
+                              {seasonResult >= 0 ? "+" : ""}
+                              {formatCurrency(seasonResult)}
+                            </h2>
+                          </div>
+                          <div className="mt-6 flex items-center gap-2">
+                            <span
+                              className={`material-symbols-outlined text-sm ${seasonResult >= 0 ? "text-tertiary" : "text-error"}`}
+                            >
+                              {seasonResult >= 0
+                                ? "trending_up"
+                                : "trending_down"}
+                            </span>
+                            <span className="text-[10px] text-on-surface-variant font-medium font-label uppercase">
+                              {completedJornada} / 14 jornadas concluídas
+                            </span>
+                          </div>
+                        </div>
+                        {/* Estádio */}
+                        <div className="bg-surface-container p-6 flex flex-col justify-between relative overflow-hidden">
+                          <div className="absolute top-0 right-0 p-4 opacity-5 pointer-events-none select-none">
+                            <span className="material-symbols-outlined text-8xl">
+                              stadium
+                            </span>
+                          </div>
+                          <div>
+                            <p className="text-[10px] uppercase tracking-widest text-on-surface-variant mb-1 font-label">
+                              Estádio
+                            </p>
+                            <h2 className="font-headline text-3xl font-bold tracking-tighter text-on-surface">
+                              {(
+                                teamInfo?.stadium_capacity || 10000
+                              ).toLocaleString("pt-PT")}{" "}
+                              lug.
+                            </h2>
+                          </div>
+                          <div className="mt-6">
+                            <p className="text-[10px] text-on-surface-variant uppercase mb-1">
+                              Receita máx./jogo em casa
+                            </p>
+                            <p className="font-headline text-lg font-bold text-primary">
+                              {formatCurrency(capacityRevPerGame)}
                             </p>
                           </div>
-                          <div className="text-right">
-                            <p className="text-emerald-400 font-mono font-black text-base">
-                              {formatCurrency(
-                                financeData?.totalTicketRevenue || 0,
-                              )}
-                              <span className="text-zinc-500 text-xs font-normal">
-                                {" "}
-                                total
+                        </div>
+                      </div>
+
+                      {/* ── RECEITAS / DESPESAS / CONTROLO ────────────────────────────── */}
+                      <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
+                        {/* Receitas */}
+                        <div className="bg-surface-container-low rounded-lg p-5 flex flex-col space-y-3">
+                          <div className="flex justify-between items-center pb-2 border-b border-outline-variant/15">
+                            <h3 className="font-headline text-base uppercase tracking-tight flex items-center gap-2">
+                              <span className="material-symbols-outlined text-primary text-base">
+                                arrow_downward
                               </span>
-                            </p>
-                          </div>
-                        </div>
-                      </div>
-
-                      {/* Patrocinadores */}
-                      <div className="border-t border-zinc-800 pt-4">
-                        <div className="flex items-start justify-between">
-                          <div>
-                            <p className="text-white font-bold text-sm">
-                              Patrocinadores
-                            </p>
-                            <p className="text-zinc-500 text-xs">
-                              Receita anual por divisão
-                            </p>
-                          </div>
-                          <p className="text-emerald-400 font-mono font-black text-base">
-                            {formatCurrency(financeData?.sponsorRevenue || 0)}
-                            <span className="text-zinc-500 text-xs font-normal">
-                              {" "}
-                              /ano
+                              Receitas
+                            </h3>
+                            <span className="font-headline text-primary font-bold text-sm">
+                              {formatCurrency(totalSeasonIncome)}
                             </span>
-                          </p>
-                        </div>
-                      </div>
-
-                      {/* Vendas de Jogadores */}
-                      {(financeData?.totalTransferIncome || 0) > 0 && (
-                        <div className="border-t border-zinc-800 pt-4">
-                          <div className="flex items-start justify-between">
-                            <div>
-                              <p className="text-white font-bold text-sm">
-                                Vendas de Jogadores
-                              </p>
-                              <p className="text-zinc-500 text-xs">
-                                Receitas de transferências
-                              </p>
-                            </div>
-                            <p className="text-emerald-400 font-mono font-black text-base">
-                              {formatCurrency(financeData.totalTransferIncome)}
-                            </p>
                           </div>
-                        </div>
-                      )}
-                    </div>
-                  </div>
-
-                  {/* ── DESPESAS ──────────────────────────────────────────────────── */}
-                  <div className="bg-surface-container rounded-lg shadow-sm overflow-hidden">
-                    <div className="px-6 py-4 border-b border-outline-variant/20 flex items-center gap-3">
-                      <span className="text-lg">📤</span>
-                      <h2 className="text-xs font-black uppercase tracking-widest text-red-400">
-                        Despesas
-                      </h2>
-                    </div>
-                    <div className="p-6 space-y-5">
-                      {/* Folha Salarial */}
-                      <div>
-                        <div className="flex items-start justify-between">
-                          <div>
-                            <p className="text-white font-bold text-sm">
-                              Folha Salarial
-                            </p>
-                            <p className="text-zinc-500 text-xs">
-                              Pago por jornada · {mySquad.length} atletas
-                            </p>
-                          </div>
-                          <p className="text-red-400 font-mono font-black text-base">
-                            -{formatCurrency(totalWeeklyWage)}
-                            <span className="text-zinc-500 text-xs font-normal">
-                              {" "}
-                              /jornada
-                            </span>
-                          </p>
-                        </div>
-                      </div>
-
-                      {/* Juros Bancários — só mostra se houver dívida */}
-                      {loanAmount > 0 && (
-                        <div className="border-t border-zinc-800 pt-4">
-                          <div className="flex items-start justify-between">
-                            <div>
-                              <p className="text-white font-bold text-sm">
-                                Juros Bancários
-                              </p>
-                              <p className="text-zinc-500 text-xs">
-                                2,5% da dívida por jornada
-                              </p>
-                            </div>
-                            <div className="text-right">
-                              <p className="text-red-400 font-mono font-black text-base">
-                                -{formatCurrency(loanInterestPerWeek)}
-                                <span className="text-zinc-500 text-xs font-normal">
-                                  {" "}
-                                  /jornada
+                          <ul className="space-y-3">
+                            <li className="flex justify-between items-center">
+                              <div>
+                                <p className="text-sm text-on-surface-variant">
+                                  Bilheteiras
+                                </p>
+                                <p className="text-[10px] opacity-40 uppercase">
+                                  {financeData?.homeMatchesPlayed || 0} jogos em
+                                  casa
+                                </p>
+                              </div>
+                              <span className="font-headline text-sm font-bold">
+                                {formatCurrency(
+                                  financeData?.totalTicketRevenue || 0,
+                                )}
+                              </span>
+                            </li>
+                            <li className="flex justify-between items-center">
+                              <div>
+                                <p className="text-sm text-on-surface-variant">
+                                  Patrocinadores
+                                </p>
+                                <p className="text-[10px] opacity-40 uppercase">
+                                  Receita anual por divisão
+                                </p>
+                              </div>
+                              <span className="font-headline text-sm font-bold">
+                                {formatCurrency(
+                                  financeData?.sponsorRevenue || 0,
+                                )}
+                              </span>
+                            </li>
+                            {(financeData?.totalTransferIncome || 0) > 0 && (
+                              <li className="flex justify-between items-center">
+                                <div>
+                                  <p className="text-sm text-on-surface-variant">
+                                    Vendas de Jogadores
+                                  </p>
+                                  <p className="text-[10px] opacity-40 uppercase">
+                                    Receitas de transferências
+                                  </p>
+                                </div>
+                                <span className="font-headline text-sm font-bold">
+                                  {formatCurrency(
+                                    financeData.totalTransferIncome,
+                                  )}
                                 </span>
-                              </p>
-                            </div>
-                          </div>
+                              </li>
+                            )}
+                          </ul>
                         </div>
-                      )}
 
-                      {/* Compras de Jogadores */}
-                      {(financeData?.totalTransferExpenses || 0) > 0 && (
-                        <div className="border-t border-zinc-800 pt-4">
-                          <div className="flex items-start justify-between">
-                            <div>
-                              <p className="text-white font-bold text-sm">
-                                Compras de Jogadores
-                              </p>
-                              <p className="text-zinc-500 text-xs">
-                                Despesas com transferências
-                              </p>
-                            </div>
-                            <p className="text-red-400 font-mono font-black text-base">
-                              -
-                              {formatCurrency(
-                                financeData.totalTransferExpenses,
-                              )}
-                            </p>
+                        {/* Despesas */}
+                        <div className="bg-surface-container-low rounded-lg p-5 flex flex-col space-y-3">
+                          <div className="flex justify-between items-center pb-2 border-b border-outline-variant/15">
+                            <h3 className="font-headline text-base uppercase tracking-tight flex items-center gap-2">
+                              <span className="material-symbols-outlined text-error text-base">
+                                arrow_upward
+                              </span>
+                              Despesas
+                            </h3>
+                            <span className="font-headline text-error font-bold text-sm">
+                              {formatCurrency(totalSeasonExpenses)}
+                            </span>
                           </div>
+                          <ul className="space-y-3">
+                            <li className="flex justify-between items-center">
+                              <div>
+                                <p className="text-sm text-on-surface-variant">
+                                  Folha Salarial
+                                </p>
+                                <p className="text-[10px] opacity-40 uppercase">
+                                  {mySquad.length} atletas · pago por jornada
+                                </p>
+                              </div>
+                              <span className="font-headline text-sm font-bold">
+                                {formatCurrency(
+                                  totalWeeklyWage * completedJornada,
+                                )}
+                              </span>
+                            </li>
+                            {loanAmount > 0 && (
+                              <li className="flex justify-between items-center">
+                                <div>
+                                  <p className="text-sm text-on-surface-variant">
+                                    Juros Bancários
+                                  </p>
+                                  <p className="text-[10px] opacity-40 uppercase">
+                                    2,5% da dívida / jornada
+                                  </p>
+                                </div>
+                                <span className="font-headline text-sm font-bold">
+                                  {formatCurrency(
+                                    loanInterestPerWeek * completedJornada,
+                                  )}
+                                </span>
+                              </li>
+                            )}
+                            {(financeData?.totalTransferExpenses || 0) > 0 && (
+                              <li className="flex justify-between items-center">
+                                <div>
+                                  <p className="text-sm text-on-surface-variant">
+                                    Compras de Jogadores
+                                  </p>
+                                  <p className="text-[10px] opacity-40 uppercase">
+                                    Despesas com transferências
+                                  </p>
+                                </div>
+                                <span className="font-headline text-sm font-bold">
+                                  {formatCurrency(
+                                    financeData.totalTransferExpenses,
+                                  )}
+                                </span>
+                              </li>
+                            )}
+                          </ul>
                         </div>
-                      )}
-                    </div>
-                  </div>
 
-                  {/* ── DÍVIDA BANCÁRIA ───────────────────────────────────────────── */}
-                  <div className="bg-surface-container rounded-lg shadow-sm overflow-hidden">
-                    <div className="px-6 py-4 border-b border-outline-variant/20 flex items-center gap-3">
-                      <span className="text-lg">🏦</span>
-                      <h2 className="text-xs font-black uppercase tracking-widest text-orange-400">
-                        Empréstimos
-                      </h2>
-                    </div>
-                    <div className="p-6 space-y-4">
-                      <div className="flex items-start justify-between">
-                        <div>
-                          <p className="text-white font-bold">Dívida Actual</p>
-                          <p className="text-zinc-500 text-xs">
-                            Taxa de juro: 2,5% / jornada
-                          </p>
-                        </div>
-                        <p
-                          className={`font-mono text-xl font-black ${loanAmount > 0 ? "text-red-400" : "text-emerald-400"}`}
-                        >
-                          {formatCurrency(loanAmount)}
-                        </p>
-                      </div>
-                      {/* Debt gauge */}
-                      <div>
-                        <div className="flex justify-between text-[10px] text-zinc-600 mb-1 font-bold">
-                          <span>0€</span>
-                          <span>Máximo: 2.500.000€</span>
-                        </div>
-                        <div className="w-full h-2 bg-surface-bright rounded-full overflow-hidden">
+                        {/* Centro de Controlo */}
+                        <div className="space-y-4">
+                          {/* Folha Salarial */}
                           <div
-                            className={`h-full rounded-full transition-all ${loanAmount / 2500000 > 0.75 ? "bg-red-500" : loanAmount / 2500000 > 0.4 ? "bg-orange-500" : "bg-amber-400"}`}
-                            style={{
-                              width: `${Math.min(100, (loanAmount / 2500000) * 100)}%`,
-                            }}
-                          />
-                        </div>
-                        <p className="text-zinc-600 text-[10px] text-right mt-1">
-                          {((loanAmount / 2500000) * 100).toFixed(0)}% do limite
-                        </p>
-                      </div>
-
-                      <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 pt-2">
-                        <div className="bg-surface p-4 rounded-md border border-error/20 flex flex-col gap-2">
-                          <p className="text-xs font-black text-error uppercase tracking-widest">
-                            Pedir Empréstimo
-                          </p>
-                          <p className="text-on-surface-variant text-[10px]">
-                            +500.000€ → {formatCurrency(loanAmount + 500000)}{" "}
-                            dívida
-                          </p>
-                          <button
-                            onClick={() => socket.emit("takeLoan")}
-                            disabled={loanAmount >= 2500000}
-                            className="w-full bg-error-container hover:bg-red-900 disabled:opacity-40 disabled:cursor-not-allowed text-white font-black py-2.5 rounded-md text-xs transition-all uppercase tracking-wider"
+                            className={`bg-surface-container rounded-lg p-5 border-l-4 ${wageSharePct > 75 ? "border-error" : wageSharePct > 50 ? "border-tertiary" : "border-primary"} relative overflow-hidden`}
                           >
-                            Pedir +500K
-                          </button>
+                            <div className="flex justify-between items-start mb-3">
+                              <div>
+                                <h3 className="font-headline text-xs uppercase tracking-widest text-on-surface-variant">
+                                  Folha Salarial
+                                </h3>
+                                <p className="font-headline text-xl font-bold mt-1">
+                                  {formatCurrency(totalWeeklyWage)}{" "}
+                                  <span className="text-xs font-normal opacity-50">
+                                    / jornada
+                                  </span>
+                                </p>
+                              </div>
+                              {wageSharePct > 75 && (
+                                <span
+                                  className="material-symbols-outlined text-error"
+                                  style={{ fontVariationSettings: "'FILL' 1" }}
+                                >
+                                  warning
+                                </span>
+                              )}
+                            </div>
+                            <div className="space-y-1.5">
+                              <div className="flex justify-between text-[10px] font-bold uppercase tracking-wider">
+                                <span>% das receitas</span>
+                                <span
+                                  className={
+                                    wageSharePct > 75
+                                      ? "text-error"
+                                      : wageSharePct > 50
+                                        ? "text-tertiary"
+                                        : "text-primary"
+                                  }
+                                >
+                                  {wageSharePct}%
+                                </span>
+                              </div>
+                              <div className="h-2 w-full bg-surface-bright rounded-full overflow-hidden">
+                                <div
+                                  className={`h-full rounded-full transition-all ${wageSharePct > 75 ? "bg-error" : wageSharePct > 50 ? "bg-tertiary" : "bg-primary"}`}
+                                  style={{ width: `${wageSharePct}%` }}
+                                />
+                              </div>
+                              <div className="flex justify-between text-[10px] opacity-50 uppercase">
+                                <span>
+                                  {formatCurrency(totalWeeklyWage)}/jornada
+                                </span>
+                                <span>{mySquad.length} atletas</span>
+                              </div>
+                            </div>
+                          </div>
+
+                          {/* Dívida Bancária */}
+                          <div className="bg-surface-container rounded-lg p-5 border-t border-outline-variant/10">
+                            <h3 className="font-headline text-xs uppercase tracking-widest text-on-surface-variant mb-3">
+                              Empréstimos
+                            </h3>
+                            <div className="mb-4">
+                              <p className="text-[10px] opacity-50 uppercase mb-0.5">
+                                Dívida Actual
+                              </p>
+                              <p
+                                className={`font-headline text-2xl font-bold tracking-tight ${loanAmount > 0 ? "text-error" : "text-primary"}`}
+                              >
+                                {formatCurrency(loanAmount)}
+                              </p>
+                              {loanAmount > 0 && (
+                                <p className="text-[10px] text-error font-medium mt-0.5">
+                                  JUROS: 2,5% / JORNADA
+                                </p>
+                              )}
+                              <div className="mt-2 h-1.5 w-full bg-surface-bright rounded-full overflow-hidden">
+                                <div
+                                  className={`h-full rounded-full transition-all ${loanPct > 75 ? "bg-error" : loanPct > 40 ? "bg-tertiary" : "bg-amber-400"}`}
+                                  style={{ width: `${loanPct}%` }}
+                                />
+                              </div>
+                              <p className="text-[10px] opacity-40 text-right mt-0.5">
+                                {loanPct.toFixed(0)}% de 2.500.000€
+                              </p>
+                            </div>
+                            <div className="grid grid-cols-2 gap-2">
+                              <button
+                                onClick={() => socket.emit("payLoan")}
+                                disabled={
+                                  loanAmount < 500000 || currentBudget < 500000
+                                }
+                                className="bg-surface-container-high py-2 text-xs font-headline font-bold uppercase tracking-wider rounded hover:bg-surface-bright disabled:opacity-40 disabled:cursor-not-allowed transition-all"
+                              >
+                                Pagar -500K
+                              </button>
+                              <button
+                                onClick={() => socket.emit("takeLoan")}
+                                disabled={loanAmount >= 2500000}
+                                className="bg-surface-bright py-2 text-xs font-headline font-bold uppercase tracking-wider rounded hover:brightness-110 disabled:opacity-40 disabled:cursor-not-allowed transition-all border border-outline-variant/30"
+                              >
+                                Pedir +500K
+                              </button>
+                            </div>
+                          </div>
                         </div>
-                        <div className="bg-surface p-4 rounded-md border border-primary/20 flex flex-col gap-2">
-                          <p className="text-xs font-black text-primary uppercase tracking-widest">
-                            Pagar Dívida
-                          </p>
-                          <p className="text-on-surface-variant text-[10px]">
-                            -500.000€ →{" "}
-                            {formatCurrency(Math.max(0, loanAmount - 500000))}{" "}
-                            dívida
-                          </p>
+                      </div>
+
+                      {/* ── ESTÁDIO ───────────────────────────────────────────────────── */}
+                      <div className="bg-surface-container-low rounded-lg overflow-hidden">
+                        <div className="px-6 py-4 border-b border-outline-variant/10 flex justify-between items-center">
+                          <h3 className="font-headline text-xs uppercase tracking-widest flex items-center gap-2">
+                            <span className="material-symbols-outlined text-tertiary text-base">
+                              stadium
+                            </span>
+                            Expansão do Estádio
+                          </h3>
+                        </div>
+                        <div className="p-6">
+                          <div className="grid grid-cols-2 md:grid-cols-3 gap-4 mb-6">
+                            <div className="bg-surface rounded-md border border-outline-variant/15 p-4 flex flex-col gap-1">
+                              <span className="text-on-surface-variant text-[10px] font-black uppercase tracking-wider">
+                                Capacidade Actual
+                              </span>
+                              <span className="text-on-surface font-headline font-bold text-2xl">
+                                {(
+                                  teamInfo?.stadium_capacity || 10000
+                                ).toLocaleString("pt-PT")}
+                              </span>
+                              <span className="text-on-surface-variant text-[10px]">
+                                lugares
+                              </span>
+                            </div>
+                            <div className="bg-surface rounded-md border border-outline-variant/15 p-4 flex flex-col gap-1">
+                              <span className="text-on-surface-variant text-[10px] font-black uppercase tracking-wider">
+                                Receita máx./jogo
+                              </span>
+                              <span className="text-primary font-headline font-bold text-xl">
+                                {formatCurrency(capacityRevPerGame)}
+                              </span>
+                              <span className="text-on-surface-variant text-[10px]">
+                                15€ × lotação
+                              </span>
+                            </div>
+                            <div className="bg-surface rounded-md border border-outline-variant/15 p-4 flex flex-col gap-1 col-span-2 md:col-span-1">
+                              <span className="text-on-surface-variant text-[10px] font-black uppercase tracking-wider">
+                                Custo de Expansão
+                              </span>
+                              <span className="text-tertiary font-headline font-bold text-xl">
+                                300.000€
+                              </span>
+                              <span className="text-on-surface-variant text-[10px]">
+                                +1 000 lugares por obra
+                              </span>
+                            </div>
+                          </div>
                           <button
-                            onClick={() => socket.emit("payLoan")}
-                            disabled={
-                              loanAmount < 500000 || currentBudget < 500000
-                            }
-                            className="w-full bg-primary-container hover:bg-primary/20 disabled:opacity-40 disabled:cursor-not-allowed text-primary font-black py-2.5 rounded-md text-xs transition-all uppercase tracking-wider"
+                            onClick={() => socket.emit("buildStadium")}
+                            disabled={currentBudget < 300000}
+                            className="w-full bg-primary hover:brightness-110 disabled:opacity-40 disabled:cursor-not-allowed text-on-primary font-headline font-bold py-3 rounded text-sm transition-all uppercase tracking-wide"
                           >
-                            Pagar -500K
+                            Expandir Estádio — 300.000€
                           </button>
+                          {currentBudget < 300000 && (
+                            <p className="text-on-surface-variant text-[10px] text-center mt-2 uppercase tracking-wider opacity-60">
+                              Saldo insuficiente · faltam{" "}
+                              {formatCurrency(300000 - currentBudget)}
+                            </p>
+                          )}
                         </div>
                       </div>
                     </div>
-                  </div>
-
-                  {/* ── ESTÁDIO ───────────────────────────────────────────────────── */}
-                  <div className="bg-surface-container rounded-lg shadow-sm overflow-hidden">
-                    <div className="px-6 py-4 border-b border-outline-variant/20 flex items-center gap-3">
-                      <span className="text-lg">🏟️</span>
-                      <h2 className="text-xs font-black uppercase tracking-widest text-amber-400">
-                        Estádio
-                      </h2>
-                    </div>
-                    <div className="p-6 space-y-4">
-                      <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                        <div className="bg-surface rounded-md border border-outline-variant/15 p-4 flex flex-col gap-1">
-                          <span className="text-on-surface-variant text-[10px] font-black uppercase tracking-wider">
-                            Capacidade Actual
-                          </span>
-                          <span className="text-on-surface font-headline font-black text-2xl">
-                            {(
-                              teamInfo?.stadium_capacity || 10000
-                            ).toLocaleString("pt-PT")}
-                          </span>
-                          <span className="text-on-surface-variant text-[10px]">
-                            lugares
-                          </span>
-                        </div>
-                        <div className="bg-surface rounded-md border border-outline-variant/15 p-4 flex flex-col gap-1">
-                          <span className="text-on-surface-variant text-[10px] font-black uppercase tracking-wider">
-                            Receita/Jogo em Casa
-                          </span>
-                          <span className="text-primary font-mono font-black text-xl">
-                            {formatCurrency(capacityRevPerGame)}
-                          </span>
-                          <span className="text-on-surface-variant text-[10px]">
-                            15€ × lotação (máx.)
-                          </span>
-                        </div>
-                      </div>
-
-                      <button
-                        onClick={() => socket.emit("buildStadium")}
-                        disabled={currentBudget < 300000}
-                        className="w-full bg-primary hover:brightness-110 disabled:opacity-40 disabled:cursor-not-allowed text-on-primary font-black py-3 rounded text-sm transition-all uppercase tracking-wide"
-                      >
-                        Expandir Estádio — 300.000€
-                      </button>
-                      {currentBudget < 300000 && (
-                        <p className="text-zinc-600 text-xs text-center">
-                          Saldo insuficiente. Precisa de mais{" "}
-                          {formatCurrency(300000 - currentBudget)}.
-                        </p>
-                      )}
-                    </div>
-                  </div>
-                </div>
-              )}
+                  );
+                })()}
 
               {activeTab === "players" && (
                 <div className="space-y-6">
