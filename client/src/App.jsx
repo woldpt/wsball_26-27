@@ -683,6 +683,9 @@ function App() {
   const [unreadGlobal, setUnreadGlobal] = useState(0);
   const [chatInput, setChatInput] = useState("");
   const chatMessagesRef = React.useRef(null);
+  // Online players dropdown (header widget)
+  const [showOnlineDropdown, setShowOnlineDropdown] = useState(false);
+  const onlineDropdownRef = React.useRef(null);
 
   const meRef = React.useRef(null);
   const isPlayingMatchRef = React.useRef(false);
@@ -2124,6 +2127,21 @@ function App() {
     return () => document.removeEventListener("click", close);
   }, [openStatusPickerId]);
 
+  // Close online dropdown when clicking outside
+  useEffect(() => {
+    if (!showOnlineDropdown) return;
+    const close = (e) => {
+      if (
+        onlineDropdownRef.current &&
+        !onlineDropdownRef.current.contains(e.target)
+      ) {
+        setShowOnlineDropdown(false);
+      }
+    };
+    document.addEventListener("mousedown", close);
+    return () => document.removeEventListener("mousedown", close);
+  }, [showOnlineDropdown]);
+
   const handleResolveMatchAction = (playerId) => {
     if (!matchAction) return;
     socket.emit("resolveMatchAction", {
@@ -3086,9 +3104,10 @@ function App() {
               {Math.min(liveMinute, 120)}'
             </p>
           )}
-          {/* Right: manager info + coach panel + logout */}
-          <div className="flex items-center gap-3">
-            <div className="hidden lg:flex flex-col items-end">
+          {/* Right: unified widget — sala + chat + sair */}
+          <div className="flex items-center gap-1" ref={onlineDropdownRef}>
+            {/* Manager identity (lg only) */}
+            <div className="hidden lg:flex flex-col items-end mr-2">
               <span
                 className="text-sm font-bold leading-tight"
                 style={{ color: teamInfo?.color_secondary || "#e5e2e1" }}
@@ -3096,18 +3115,160 @@ function App() {
                 {me.name}
               </span>
               <span
-                className="text-xs leading-tight"
+                className="text-xs leading-tight opacity-70"
                 style={{ color: teamInfo?.color_secondary || "#e5e2e1" }}
               >
                 {teamInfo?.name}
               </span>
             </div>
+
+            {/* Online players button */}
+            <div className="relative">
+              <button
+                onClick={() => setShowOnlineDropdown((v) => !v)}
+                title="Jogadores online"
+                className="relative flex items-center justify-center w-9 h-9 rounded-lg hover:bg-white/10 transition-colors"
+              >
+                <span
+                  className="material-symbols-outlined text-[20px] leading-none"
+                  style={{ color: teamInfo?.color_secondary || "#e5e2e1" }}
+                >
+                  groups
+                </span>
+                {players.length > 0 && (
+                  <span className="absolute -top-0.5 -right-0.5 min-w-4 h-4 rounded-full bg-emerald-500 text-white text-[9px] font-black leading-none flex items-center justify-center px-1">
+                    {players.length}
+                  </span>
+                )}
+              </button>
+
+              {/* Dropdown panel */}
+              {showOnlineDropdown && (
+                <div
+                  className="absolute top-full right-0 mt-2 w-64 rounded-xl shadow-2xl border border-outline-variant/30 overflow-hidden z-50"
+                  style={{ background: "#1a1a1a" }}
+                >
+                  <div
+                    className="px-4 py-2.5 flex items-center justify-between border-b border-outline-variant/20"
+                    style={{ background: "#111" }}
+                  >
+                    <span className="text-[10px] uppercase tracking-widest font-black text-on-surface-variant">
+                      Sala {me.roomName || me.roomCode}
+                    </span>
+                    <span className="text-[10px] font-black text-emerald-400 uppercase tracking-widest">
+                      {players.length} online
+                    </span>
+                  </div>
+                  <div className="divide-y divide-outline-variant/10 max-h-80 overflow-y-auto">
+                    {[
+                      ...players.map((p) => ({
+                        name: p.name,
+                        teamId: p.teamId,
+                        online: true,
+                        submitted: lockedCoaches.includes(p.name) || p.ready,
+                      })),
+                      ...awaitingCoaches
+                        .filter((n) => !players.some((p) => p.name === n))
+                        .map((n) => ({
+                          name: n,
+                          teamId: null,
+                          online: false,
+                          submitted: true,
+                        })),
+                    ].map((coach, i) => {
+                      const coachTeam = coach.teamId
+                        ? teams.find((t) => t.id == coach.teamId)
+                        : null;
+                      return (
+                        <div
+                          key={i}
+                          className="flex items-center gap-3 px-4 py-2.5"
+                        >
+                          <span
+                            className={`w-2 h-2 rounded-full shrink-0 ${
+                              coach.online
+                                ? "bg-emerald-400"
+                                : "bg-surface-bright"
+                            }`}
+                          />
+                          <div className="flex-1 min-w-0">
+                            <p
+                              className={`text-xs font-black truncate ${
+                                coach.online
+                                  ? "text-on-surface"
+                                  : "text-on-surface-variant"
+                              }`}
+                            >
+                              {coach.name}
+                              {coach.name === me.name && (
+                                <span className="ml-1.5 text-[9px] font-bold text-on-surface-variant">
+                                  (tu)
+                                </span>
+                              )}
+                            </p>
+                            {coachTeam && (
+                              <p
+                                className="text-[10px] truncate"
+                                style={{
+                                  color: coachTeam.color_primary || "#71717a",
+                                }}
+                              >
+                                {coachTeam.name}
+                              </p>
+                            )}
+                          </div>
+                          {coach.submitted ? (
+                            <span className="shrink-0 text-[10px] font-black text-primary uppercase tracking-wide">
+                              ✓
+                            </span>
+                          ) : (
+                            <span className="shrink-0 text-[10px] font-black text-tertiary uppercase tracking-wide">
+                              ⏳
+                            </span>
+                          )}
+                        </div>
+                      );
+                    })}
+                  </div>
+                </div>
+              )}
+            </div>
+
+            {/* Chat button */}
+            <button
+              onClick={() => setChatOpen((v) => !v)}
+              title="Chat"
+              className="relative flex items-center justify-center w-9 h-9 rounded-lg hover:bg-white/10 transition-colors"
+            >
+              <span
+                className="material-symbols-outlined text-[20px] leading-none"
+                style={{ color: teamInfo?.color_secondary || "#e5e2e1" }}
+              >
+                chat
+              </span>
+              {unreadRoom + unreadGlobal > 0 && (
+                <span className="absolute -top-0.5 -right-0.5 min-w-4 h-4 rounded-full bg-rose-500 text-white text-[9px] font-black leading-none flex items-center justify-center px-1">
+                  {unreadRoom + unreadGlobal > 9
+                    ? "9+"
+                    : unreadRoom + unreadGlobal}
+                </span>
+              )}
+            </button>
+
+            {/* Divider */}
+            <div className="w-px h-5 bg-white/15 mx-1" />
+
+            {/* SAIR */}
             <button
               onClick={handleLogout}
               title="Terminar sessão"
-              className="text-on-surface-variant hover:text-on-surface hover:bg-surface-bright transition-colors rounded px-3 py-2 text-xs font-black uppercase tracking-widest"
+              className="flex items-center gap-1.5 hover:bg-white/10 transition-colors rounded-lg px-2 py-2 text-xs font-black uppercase tracking-widest"
+              style={{ color: teamInfo?.color_secondary || "#e5e2e1" }}
             >
-              Sair
+              <span className="material-symbols-outlined text-[18px] leading-none">
+                logout
+              </span>
+              <span className="hidden md:block">Sair</span>
             </button>
           </div>
         </div>
@@ -3194,89 +3355,6 @@ function App() {
                 </span>
               </button>
             </div>
-          </div>
-          <div className="border-t border-outline-variant/20 pt-3 pb-4 px-3">
-            {players.length > 0 && (
-              <div className="bg-surface-container rounded-md overflow-hidden">
-                <div className="px-4 py-2 flex items-center justify-between border-b border-outline-variant/20">
-                  <span className="text-[9px] uppercase tracking-widest font-black text-on-surface-variant">
-                    Sala {me.roomName || me.roomCode}
-                  </span>
-                  <span className="text-[9px] font-black text-emerald-400 uppercase tracking-widest">
-                    {players.length} online
-                  </span>
-                </div>
-                <div className="divide-y divide-outline-variant/10">
-                  {[
-                    ...players.map((p) => ({
-                      name: p.name,
-                      teamId: p.teamId,
-                      online: true,
-                      submitted: lockedCoaches.includes(p.name) || p.ready,
-                    })),
-                    ...awaitingCoaches
-                      .filter((n) => !players.some((p) => p.name === n))
-                      .map((n) => ({
-                        name: n,
-                        teamId: null,
-                        online: false,
-                        submitted: true,
-                      })),
-                  ].map((coach, i) => {
-                    const coachTeam = coach.teamId
-                      ? teams.find((t) => t.id == coach.teamId)
-                      : null;
-                    return (
-                      <div
-                        key={i}
-                        className="flex items-center gap-3 px-4 py-2"
-                      >
-                        <span
-                          className={`w-2 h-2 rounded-full shrink-0 ${
-                            coach.online ? "bg-primary" : "bg-surface-bright"
-                          }`}
-                        />
-                        <div className="flex-1 min-w-0">
-                          <p
-                            className={`text-xs font-black truncate ${
-                              coach.online
-                                ? "text-on-surface"
-                                : "text-on-surface-variant"
-                            }`}
-                          >
-                            {coach.name}
-                            {coach.name === me.name && (
-                              <span className="ml-1.5 text-[9px] font-bold text-on-surface-variant">
-                                (tu)
-                              </span>
-                            )}
-                          </p>
-                          {coachTeam && (
-                            <p
-                              className="text-[10px] truncate"
-                              style={{
-                                color: coachTeam.color_primary || "#71717a",
-                              }}
-                            >
-                              {coachTeam.name}
-                            </p>
-                          )}
-                        </div>
-                        {coach.submitted ? (
-                          <span className="shrink-0 text-[10px] font-black text-primary uppercase tracking-wide">
-                            ✓
-                          </span>
-                        ) : (
-                          <span className="shrink-0 text-[10px] font-black text-tertiary uppercase tracking-wide">
-                            ⏳
-                          </span>
-                        )}
-                      </div>
-                    );
-                  })}
-                </div>
-              </div>
-            )}
           </div>
         </nav>
       )}

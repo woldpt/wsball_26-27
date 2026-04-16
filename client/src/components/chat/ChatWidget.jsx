@@ -61,7 +61,11 @@ export function ChatWidget({
       {chatOpen && (
         <div
           className="flex flex-col rounded-xl shadow-2xl overflow-hidden border border-outline-variant/40"
-          style={{ width: 340, height: 430, background: "#1a1a1a" }}
+          style={{
+            width: "min(340px, calc(100vw - 2rem))",
+            height: 430,
+            background: "#1a1a1a",
+          }}
         >
           {/* Header */}
           <div
