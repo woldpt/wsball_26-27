@@ -1,11 +1,60 @@
+import { useState, useEffect, useCallback } from "react";
 import { socket } from "../../socket.js";
 import { getTeamColor } from "../../utils/teamHelpers.js";
+import rawLol from "./LOL.md?raw";
+import rawCmtv from "./CMTV.md?raw";
+import rawRedcarpet from "./REDCARPET.md?raw";
+
+const parseLines = (raw) =>
+  raw
+    .split(/\n\n+/)
+    .map((s) => s.trim())
+    .filter(Boolean);
+
+const LOL_LINES = parseLines(rawLol);
+const CMTV_LINES = parseLines(rawCmtv);
+const REDCARPET_LINES = parseLines(rawRedcarpet);
+
+const pickFillerItem = () => {
+  const sources = [
+    { lines: LOL_LINES, prefix: "" },
+    { lines: CMTV_LINES, prefix: "ALERTA CM: " },
+    { lines: REDCARPET_LINES, prefix: "" },
+  ];
+  const src = sources[Math.floor(Math.random() * sources.length)];
+  const line = src.lines[Math.floor(Math.random() * src.lines.length)];
+  return {
+    id: Date.now() + Math.random(),
+    text: src.prefix + line,
+    playerId: null,
+    playerName: null,
+    teamId: null,
+  };
+};
 
 /**
  * @param {{ newsTickerItems: Array }} props
  */
 export function NewsTicker({ newsTickerItems }) {
-  if (!newsTickerItems.length) return null;
+  const [loopKey, setLoopKey] = useState(0);
+  const [extraItems, setExtraItems] = useState([]);
+
+  // When real news changes, restart from scratch (no filler yet)
+  useEffect(() => {
+    setExtraItems([]);
+    setLoopKey((k) => k + 1);
+  }, [newsTickerItems]);
+
+  const handleAnimationEnd = useCallback(() => {
+    setExtraItems([pickFillerItem()]);
+    setLoopKey((k) => k + 1);
+  }, []);
+
+  const allItems = [...newsTickerItems, ...extraItems];
+
+  if (!allItems.length) return null;
+
+  const duration = Math.max(15, allItems.length * 8);
 
   return (
     <div className="fixed bottom-16 lg:bottom-0 left-0 right-0 z-50 h-8 flex items-stretch bg-zinc-950 border-t border-zinc-700 overflow-hidden">
@@ -15,13 +64,12 @@ export function NewsTicker({ newsTickerItems }) {
       <div className="overflow-hidden flex-1 relative">
         <style>{`@keyframes tickerScroll { 0% { transform: translateX(100vw); } 100% { transform: translateX(-100%); } }`}</style>
         <div
-          key={newsTickerItems.length}
+          key={loopKey}
           className="absolute whitespace-nowrap flex items-center h-full gap-8 text-xs text-zinc-200"
-          style={{
-            animation: `tickerScroll ${Math.max(15, newsTickerItems.length * 8)}s linear`,
-          }}
+          style={{ animation: `tickerScroll ${duration}s linear` }}
+          onAnimationEnd={handleAnimationEnd}
         >
-          {newsTickerItems.map((item) => {
+          {allItems.map((item) => {
             const dotColor = getTeamColor(item.teamId);
             if (!item.playerId || !item.playerName) {
               return (

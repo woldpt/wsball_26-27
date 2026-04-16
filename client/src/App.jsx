@@ -1146,6 +1146,19 @@ function App() {
     );
     socket.on("playerHistoryData", (data) => setPlayerHistoryModal(data));
     socket.on("financeData", (data) => setFinanceData(data));
+    socket.on("stadiumBuilt", ({ teamId, teamName, newCapacity }) => {
+      pushTickerItem(
+        `🏟️ ${teamName} ampliou o estádio para ${newCapacity.toLocaleString("pt-PT")} lugares!`,
+        null,
+        null,
+        teamId,
+      );
+      // Re-pedir financeData se somos o clube em questão
+      const currentMe = meRef.current;
+      if (currentMe?.teamId && Number(currentMe.teamId) === Number(teamId)) {
+        socket.emit("requestFinanceData", { teamId: currentMe.teamId });
+      }
+    });
     socket.on("systemMessage", (msg) => addToast(msg));
     socket.on("transferProposalResult", ({ ok, message }) => {
       addToast(message);
@@ -1579,6 +1592,7 @@ function App() {
       socket.off("cupPenaltyShootout");
       socket.off("palmaresData");
       socket.off("financeData");
+      socket.off("stadiumBuilt");
       socket.off("matchSegmentStart");
       socket.off("matchMinuteUpdate");
       socket.off("matchResults");
@@ -6094,7 +6108,8 @@ function App() {
                   const totalSeasonExpenses =
                     totalWeeklyWage * completedJornada +
                     loanInterestPerWeek * completedJornada +
-                    (financeData?.totalTransferExpenses || 0);
+                    (financeData?.totalTransferExpenses || 0) +
+                    (financeData?.totalStadiumExpenses || 0);
                   const seasonResult = totalSeasonIncome - totalSeasonExpenses;
                   const loanPct = Math.min(100, (loanAmount / 2500000) * 100);
                   const wageSharePct =
@@ -6327,6 +6342,28 @@ function App() {
                                 </span>
                               </li>
                             )}
+                            {(financeData?.totalStadiumExpenses || 0) > 0 && (
+                              <li className="flex justify-between items-center">
+                                <div>
+                                  <p className="text-sm text-on-surface-variant">
+                                    Obras no Estádio
+                                  </p>
+                                  <p className="text-[10px] opacity-40 uppercase">
+                                    300.000€ ×{" "}
+                                    {Math.round(
+                                      (financeData.totalStadiumExpenses || 0) /
+                                        300000,
+                                    )}{" "}
+                                    obra(s)
+                                  </p>
+                                </div>
+                                <span className="font-headline text-sm font-bold">
+                                  {formatCurrency(
+                                    financeData.totalStadiumExpenses,
+                                  )}
+                                </span>
+                              </li>
+                            )}
                           </ul>
                         </div>
 
@@ -6482,7 +6519,7 @@ function App() {
                                 300.000€
                               </span>
                               <span className="text-on-surface-variant text-[10px]">
-                                +1 000 lugares por obra
+                                +5.000 lugares por obra
                               </span>
                             </div>
                           </div>

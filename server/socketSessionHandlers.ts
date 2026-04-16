@@ -29,7 +29,10 @@ interface SessionHandlerDeps {
   ) => ActiveGame | null;
   recordRoomAccess: (name: string, roomCode: string) => void;
   getGameBySocket: (socketId: string) => ActiveGame | null;
-  getPlayerBySocket: (game: ActiveGame, socketId: string) => PlayerSession | null;
+  getPlayerBySocket: (
+    game: ActiveGame,
+    socketId: string,
+  ) => PlayerSession | null;
   bindSocket: (game: ActiveGame, name: string, socketId: string) => void;
   getPlayerList: (game: ActiveGame) => PlayerSession[];
   saveGameState: (game: ActiveGame) => void;
@@ -50,21 +53,29 @@ interface SessionHandlerDeps {
 
 function legacyMatchState(gamePhase: GamePhase): string {
   switch (gamePhase) {
-    case "match_first_half": return "running_first_half";
-    case "match_halftime":   return "halftime";
-    case "match_second_half": return "playing_second_half";
-    default: return "idle";
+    case "match_first_half":
+      return "running_first_half";
+    case "match_halftime":
+      return "halftime";
+    case "match_second_half":
+      return "playing_second_half";
+    default:
+      return "idle";
   }
 }
 
 function legacyCupState(game: ActiveGame): string {
   if (!game.currentEvent || game.currentEvent.type !== "cup") return "idle";
   switch (game.gamePhase) {
-    case "match_first_half":  return "playing_first_half";
-    case "match_halftime":    return "halftime";
+    case "match_first_half":
+      return "playing_first_half";
+    case "match_halftime":
+      return "halftime";
     case "match_second_half":
-    case "match_extra_time":  return "playing_second_half";
-    default: return "idle";
+    case "match_extra_time":
+      return "playing_second_half";
+    default:
+      return "idle";
   }
 }
 
@@ -119,9 +130,11 @@ export function registerSessionSocketHandlers(
 
     game.db.all("SELECT * FROM teams", (err: any, teams: any[]) => {
       socket.emit("teamsData", teams);
-      getAllTeamForms(game.db, game.season).then((forms) => {
-        socket.emit("teamForms", forms);
-      }).catch(() => {});
+      getAllTeamForms(game.db, game.season)
+        .then((forms) => {
+          socket.emit("teamForms", forms);
+        })
+        .catch(() => {});
     });
     game.db.all(
       "SELECT * FROM players WHERE team_id = ?",
@@ -140,11 +153,17 @@ export function registerSessionSocketHandlers(
       matchweek: game.matchweek,
       matchState: legacyMatchState(game.gamePhase),
       cupState: legacyCupState(game),
-      cupRound: game.currentEvent?.type === "cup" ? (game.currentEvent as any).round : 0,
+      cupRound:
+        game.currentEvent?.type === "cup"
+          ? (game.currentEvent as any).round
+          : 0,
       year: game.year,
       tactic: game.playersByName[name]?.tactic || null,
       lockedCoaches: [...game.lockedCoaches],
-      lastHalfTimePayload: game.gamePhase === "match_halftime" ? game.lastHalftimePayload || null : null,
+      lastHalfTimePayload:
+        game.gamePhase === "match_halftime"
+          ? game.lastHalftimePayload || null
+          : null,
     });
 
     emitCurrentPhaseToSocket(game, socket);
@@ -164,7 +183,10 @@ export function registerSessionSocketHandlers(
       [team.id],
       (err: any, details: any) => {
         if (err) {
-          console.error(`[${roomCode}] assignPlayer: failed to fetch team details for id=${team.id}:`, err);
+          console.error(
+            `[${roomCode}] assignPlayer: failed to fetch team details for id=${team.id}:`,
+            err,
+          );
         }
         const d = details || team;
         socket.emit("teamAssigned", {
@@ -196,8 +218,12 @@ export function registerSessionSocketHandlers(
       },
     );
     getGlobalMessages(50)
-      .then((messages) => socket.emit("chatHistory", { channel: "global", messages }))
-      .catch(() => socket.emit("chatHistory", { channel: "global", messages: [] }));
+      .then((messages) =>
+        socket.emit("chatHistory", { channel: "global", messages }),
+      )
+      .catch(() =>
+        socket.emit("chatHistory", { channel: "global", messages: [] }),
+      );
   }
 
   function generateRandomTeam(
@@ -231,7 +257,10 @@ export function registerSessionSocketHandlers(
 
         game.db.get(fallbackQuery, fallbackParams, (err2: any, team2: any) => {
           if (err2 || !team2) {
-            socket.emit("systemMessage", "Nenhuma equipa disponível na Divisão 4.");
+            socket.emit(
+              "systemMessage",
+              "Nenhuma equipa disponível na Divisão 4.",
+            );
             return;
           }
           game.db.run(
@@ -273,7 +302,10 @@ export function registerSessionSocketHandlers(
       finalRoomCode = generateUniqueRoomCode();
     } else if (joinMode === "friend-room" || joinMode === "saved-game") {
       if (!doesGameExist(finalRoomCode)) {
-        return socket.emit("joinError", "Sala não encontrada. Verifica o código.");
+        return socket.emit(
+          "joinError",
+          "Sala não encontrada. Verifica o código.",
+        );
       }
     } else {
       // Reconnect flow
@@ -289,21 +321,26 @@ export function registerSessionSocketHandlers(
       if (!game || gameErr) {
         return socket.emit(
           "joinError",
-          gameErr ? gameErr.message : "Erro ao carregar o jogo. Contacta o administrador.",
+          gameErr
+            ? gameErr.message
+            : "Erro ao carregar o jogo. Contacta o administrador.",
         );
       }
-      
+
       if (joinMode === "new-game" && roomName) {
-        game.db.run("INSERT OR REPLACE INTO game_state (key, value) VALUES ('roomName', ?)", [roomName]);
+        game.db.run(
+          "INSERT OR REPLACE INTO game_state (key, value) VALUES ('roomName', ?)",
+          [roomName],
+        );
         (game as any).roomName = roomName;
       }
-      
+
       socket.join(finalRoomCode);
       socket.join("__global__");
 
-      socket.emit("joinGameSuccess", { 
-        roomCode: finalRoomCode, 
-        roomName: (game as any).roomName || finalRoomCode 
+      socket.emit("joinGameSuccess", {
+        roomCode: finalRoomCode,
+        roomName: (game as any).roomName || finalRoomCode,
       });
 
       const connectedCount = Object.values(game.playersByName).filter(
@@ -325,8 +362,10 @@ export function registerSessionSocketHandlers(
               "SELECT id, name FROM teams WHERE manager_id = ?",
               [row.id],
               (err2: any, team: any) => {
-                if (team) assignPlayer(game, trimmedName, team, finalRoomCode, false);
-                else generateRandomTeam(game, trimmedName, finalRoomCode, row.id);
+                if (team)
+                  assignPlayer(game, trimmedName, team, finalRoomCode, false);
+                else
+                  generateRandomTeam(game, trimmedName, finalRoomCode, row.id);
               },
             );
           } else {
@@ -334,7 +373,12 @@ export function registerSessionSocketHandlers(
               "INSERT INTO managers (name) VALUES (?)",
               [trimmedName],
               function (err2: any) {
-                generateRandomTeam(game, trimmedName, finalRoomCode, this.lastID);
+                generateRandomTeam(
+                  game,
+                  trimmedName,
+                  finalRoomCode,
+                  this.lastID,
+                );
               },
             );
           }
@@ -447,22 +491,27 @@ export function registerSessionSocketHandlers(
     }
   });
 
-  socket.on("requestPlayerHistory", async ({ playerId }: { playerId?: number } = {}) => {
-    const game = getGameBySocket(socket.id);
-    if (!game || !playerId) return;
-    try {
-      const player = await runGet(
-        game.db,
-        `SELECT p.*, t.name as team_name
+  socket.on(
+    "requestPlayerHistory",
+    async ({ playerId }: { playerId?: number } = {}) => {
+      const game = getGameBySocket(socket.id);
+      if (!game || !playerId) return;
+      try {
+        const player = await runGet(
+          game.db,
+          `SELECT p.*, t.name as team_name
          FROM players p
          LEFT JOIN teams t ON t.id = p.team_id
          WHERE p.id = ?`,
-        [playerId],
-      );
-      if (!player) { socket.emit("playerHistoryData", null); return; }
-      const transfers = await runAll(
-        game.db,
-        `SELECT cn.year, cn.matchweek, cn.title, cn.amount,
+          [playerId],
+        );
+        if (!player) {
+          socket.emit("playerHistoryData", null);
+          return;
+        }
+        const transfers = await runAll(
+          game.db,
+          `SELECT cn.year, cn.matchweek, cn.title, cn.amount,
                 cn.team_id, t.name as team_name,
                 cn.related_team_id, cn.related_team_name, cn.type
          FROM club_news cn
@@ -470,60 +519,92 @@ export function registerSessionSocketHandlers(
          WHERE cn.player_id = ?
            AND cn.type IN ('transfer_in', 'auction_won')
          ORDER BY cn.year ASC, cn.matchweek ASC`,
-        [playerId],
-      );
-      socket.emit("playerHistoryData", { player, transfers: transfers || [] });
-    } catch (err) {
-      console.error(`[${game.roomCode}] requestPlayerHistory error:`, err);
-      socket.emit("playerHistoryData", null);
-    }
-  });
+          [playerId],
+        );
+        socket.emit("playerHistoryData", {
+          player,
+          transfers: transfers || [],
+        });
+      } catch (err) {
+        console.error(`[${game.roomCode}] requestPlayerHistory error:`, err);
+        socket.emit("playerHistoryData", null);
+      }
+    },
+  );
 
-  socket.on("requestFinanceData", async ({ teamId }: { teamId?: number } = {}) => {
-    const game = getGameBySocket(socket.id);
-    if (!game || !teamId) return;
-    try {
-      const homeMatches = await runAll(
-        game.db,
-        "SELECT attendance FROM matches WHERE home_team_id = ? AND played = 1",
-        [teamId],
-      );
-      const totalTicketRevenue = homeMatches.reduce((sum, m) => sum + (m.attendance || 0) * 15, 0);
+  socket.on(
+    "requestFinanceData",
+    async ({ teamId }: { teamId?: number } = {}) => {
+      const game = getGameBySocket(socket.id);
+      if (!game || !teamId) return;
+      try {
+        const homeMatches = await runAll(
+          game.db,
+          "SELECT attendance FROM matches WHERE home_team_id = ? AND played = 1",
+          [teamId],
+        );
+        const totalTicketRevenue = homeMatches.reduce(
+          (sum, m) => sum + (m.attendance || 0) * 15,
+          0,
+        );
 
-      const transferIn = await runAll(
-        game.db,
-        "SELECT amount FROM club_news WHERE team_id = ? AND type = 'transfer_in' AND amount > 0",
-        [teamId],
-      );
-      const transferOut = await runAll(
-        game.db,
-        "SELECT amount FROM club_news WHERE team_id = ? AND type = 'transfer_out' AND amount > 0",
-        [teamId],
-      );
-      const totalTransferIncome = transferOut.reduce((sum, n) => sum + (n.amount || 0), 0);
-      const totalTransferExpenses = transferIn.reduce((sum, n) => sum + (n.amount || 0), 0);
+        const transferIn = await runAll(
+          game.db,
+          "SELECT amount FROM club_news WHERE team_id = ? AND type = 'transfer_in' AND amount > 0",
+          [teamId],
+        );
+        const transferOut = await runAll(
+          game.db,
+          "SELECT amount FROM club_news WHERE team_id = ? AND type = 'transfer_out' AND amount > 0",
+          [teamId],
+        );
+        const stadiumBuilds = await runAll(
+          game.db,
+          "SELECT amount FROM club_news WHERE team_id = ? AND type = 'stadium_build' AND amount > 0",
+          [teamId],
+        );
+        const totalTransferIncome = transferOut.reduce(
+          (sum, n) => sum + (n.amount || 0),
+          0,
+        );
+        const totalTransferExpenses = transferIn.reduce(
+          (sum, n) => sum + (n.amount || 0),
+          0,
+        );
+        const totalStadiumExpenses = stadiumBuilds.reduce(
+          (sum, n) => sum + (n.amount || 0),
+          0,
+        );
 
-      const team = await runGet(game.db, "SELECT division FROM teams WHERE id = ?", [teamId]);
-      const sponsorRevenue = SPONSOR_REVENUE_BY_DIVISION[team?.division || 4] || 0;
+        const team = await runGet(
+          game.db,
+          "SELECT division FROM teams WHERE id = ?",
+          [teamId],
+        );
+        const sponsorRevenue =
+          SPONSOR_REVENUE_BY_DIVISION[team?.division || 4] || 0;
 
-      socket.emit("financeData", {
-        teamId,
-        totalTicketRevenue,
-        totalTransferIncome,
-        totalTransferExpenses,
-        sponsorRevenue,
-        homeMatchesPlayed: homeMatches.length,
-      });
-    } catch (err) {
-      console.error(`[${game.roomCode}] requestFinanceData error:`, err);
-      socket.emit("financeData", {
-        teamId,
-        totalTicketRevenue: 0,
-        totalTransferIncome: 0,
-        totalTransferExpenses: 0,
-        sponsorRevenue: 0,
-        homeMatchesPlayed: 0,
-      });
-    }
-  });
+        socket.emit("financeData", {
+          teamId,
+          totalTicketRevenue,
+          totalTransferIncome,
+          totalTransferExpenses,
+          totalStadiumExpenses,
+          sponsorRevenue,
+          homeMatchesPlayed: homeMatches.length,
+        });
+      } catch (err) {
+        console.error(`[${game.roomCode}] requestFinanceData error:`, err);
+        socket.emit("financeData", {
+          teamId,
+          totalTicketRevenue: 0,
+          totalTransferIncome: 0,
+          totalTransferExpenses: 0,
+          totalStadiumExpenses: 0,
+          sponsorRevenue: 0,
+          homeMatchesPlayed: 0,
+        });
+      }
+    },
+  );
 }

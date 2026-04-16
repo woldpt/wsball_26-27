@@ -28,7 +28,10 @@ export function registerFinanceSocketHandlers(
         const cost = 300000;
         const maxCapacity = 120000;
         if (team && team.stadium_capacity >= maxCapacity) {
-          socket.emit("systemMessage", "Capacidade máxima atingida (120.000 lugares)!");
+          socket.emit(
+            "systemMessage",
+            "Capacidade máxima atingida (120.000 lugares)!",
+          );
           return;
         }
         if (team && team.budget >= cost) {
@@ -36,8 +39,28 @@ export function registerFinanceSocketHandlers(
             "UPDATE teams SET budget = budget - ?, stadium_capacity = MIN(stadium_capacity + 5000, ?) WHERE id = ?",
             [cost, maxCapacity, playerState.teamId],
             () => {
-              game.db.all("SELECT * FROM teams", (err2, teams) =>
-                io.to(game.roomCode).emit("teamsData", teams),
+              // Registar obra nas notícias do clube
+              const matchweek = game.matchweek || 1;
+              game.db.run(
+                "INSERT INTO club_news (team_id, type, title, description, amount, matchweek) VALUES (?, 'stadium_build', 'Expansão do Estádio', '+5000 lugares construídos', ?, ?)",
+                [playerState.teamId, cost, matchweek],
+              );
+              // Emitir teamsData para toda a sala (actualiza budget e capacity)
+              game.db.all("SELECT * FROM teams", (err2, teams) => {
+                io.to(game.roomCode).emit("teamsData", teams);
+              });
+              // Emitir evento dedicado para ticker e refresh de finanças
+              const updatedTeam = (data: any) => {
+                io.to(game.roomCode).emit("stadiumBuilt", {
+                  teamId: playerState.teamId,
+                  teamName: data?.name || "",
+                  newCapacity: (team.stadium_capacity || 10000) + 5000,
+                });
+              };
+              game.db.get(
+                "SELECT name FROM teams WHERE id = ?",
+                [playerState.teamId],
+                (_e: any, row: any) => updatedTeam(row),
               );
               socket.emit("systemMessage", "+5000 Lugares Construídos!");
             },
