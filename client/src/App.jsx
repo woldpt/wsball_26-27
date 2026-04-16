@@ -4093,92 +4093,98 @@ function App() {
                             </div>
                           </div>
 
-                          {/* ── Mobile: 2-col player list ── */}
-                          <div className="lg:hidden shrink-0 max-h-44 overflow-y-auto border-t border-outline-variant/15 bg-surface-container">
-                            <div className="flex">
-                              <div className="flex-1 border-r border-zinc-800 overflow-hidden">
-                                <div className="px-3 py-1.5 bg-surface-container/60 flex items-center gap-1.5 sticky top-0">
-                                  <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 shrink-0" />
-                                  <span className="text-[9px] font-black uppercase tracking-widest text-emerald-500">
-                                    Em Campo
-                                  </span>
-                                </div>
-                                {annotatedSquad
-                                  .filter(
-                                    (p) =>
-                                      tactic.positions[p.id] === "Titular" &&
-                                      !subbedOut.includes(p.id) &&
-                                      !redCardedHalftimeIds.has(p.id),
-                                  )
-                                  .map((p) => (
-                                    <div
-                                      key={p.id}
-                                      onClick={() =>
-                                        subsMade < MAX_MATCH_SUBS &&
-                                        handleSelectOut(p.id)
-                                      }
-                                      className={`flex items-center gap-1.5 px-2 py-1.5 border-b border-zinc-800/40 ${swapSource === p.id ? "bg-red-500/15" : subsMade < MAX_MATCH_SUBS ? "cursor-pointer hover:bg-zinc-800/50" : "opacity-40"}`}
-                                    >
-                                      <span
-                                        className={`w-4 h-4 rounded-sm shrink-0 flex items-center justify-center text-[8px] font-black bg-zinc-800 ${POSITION_TEXT_CLASS[p.position]}`}
-                                      >
-                                        {POSITION_SHORT_LABELS[p.position]}
-                                      </span>
-                                      <span className="flex-1 truncate text-[11px] font-bold text-zinc-200">
-                                        {p.name}
-                                      </span>
-                                      <span className="shrink-0 text-[10px] font-black text-zinc-600">
-                                        {p.skill}
-                                      </span>
-                                    </div>
-                                  ))}
-                              </div>
-                              <div className="flex-1 overflow-hidden">
-                                <div className="px-3 py-1.5 bg-surface-container/60 flex items-center gap-1.5 sticky top-0">
-                                  <span className="w-1.5 h-1.5 rounded-full bg-zinc-600 shrink-0" />
-                                  <span className="text-[9px] font-black uppercase tracking-widest text-zinc-500">
-                                    Banco
-                                  </span>
-                                </div>
-                                {annotatedSquad
-                                  .filter(
-                                    (p) =>
-                                      tactic.positions[p.id] === "Suplente",
-                                  )
-                                  .map((p) => {
-                                    const alreadyUsed = subbedOut.includes(
-                                      p.id,
-                                    );
-                                    const disabled =
-                                      alreadyUsed ||
-                                      !swapSource ||
-                                      subsMade >= MAX_MATCH_SUBS;
-                                    return (
-                                      <div
-                                        key={p.id}
-                                        onClick={() =>
-                                          !disabled && handleSelectIn(p.id)
-                                        }
-                                        className={`flex items-center gap-1.5 px-2 py-1.5 border-b border-zinc-800/40 ${alreadyUsed ? "opacity-20 cursor-not-allowed" : swapTarget === p.id ? "bg-emerald-500/15 cursor-pointer" : disabled ? "opacity-40 cursor-not-allowed" : "cursor-pointer hover:bg-zinc-800/50"}`}
-                                      >
-                                        <span
-                                          className={`w-4 h-4 rounded-sm shrink-0 flex items-center justify-center text-[8px] font-black bg-zinc-800 ${POSITION_TEXT_CLASS[p.position]}`}
-                                        >
-                                          {POSITION_SHORT_LABELS[p.position]}
-                                        </span>
-                                        <span
-                                          className={`flex-1 truncate text-[11px] font-bold ${alreadyUsed ? "text-zinc-700 line-through" : "text-zinc-200"}`}
-                                        >
-                                          {p.name}
-                                        </span>
-                                        <span className="shrink-0 text-[10px] font-black text-zinc-600">
-                                          {alreadyUsed ? "—" : p.skill}
-                                        </span>
-                                      </div>
-                                    );
-                                  })}
-                              </div>
+                          {/* ── Mobile: vertical player list ── */}
+                          <div
+                            className="lg:hidden shrink-0 overflow-y-auto border-t border-outline-variant/15 bg-surface-container"
+                            style={{ maxHeight: "40vh" }}
+                          >
+                            {/* Em Campo */}
+                            <div className="px-3 py-1.5 bg-surface-container sticky top-0 z-10 flex items-center gap-1.5 border-b border-zinc-800">
+                              <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 shrink-0" />
+                              <span className="text-[9px] font-black uppercase tracking-widest text-emerald-500">
+                                Em Campo
+                              </span>
                             </div>
+                            {annotatedSquad
+                              .filter(
+                                (p) =>
+                                  tactic.positions[p.id] === "Titular" &&
+                                  !subbedOut.includes(p.id) &&
+                                  !redCardedHalftimeIds.has(p.id),
+                              )
+                              .map((p) => (
+                                <div
+                                  key={p.id}
+                                  onClick={() =>
+                                    subsMade < MAX_MATCH_SUBS &&
+                                    handleSelectOut(p.id)
+                                  }
+                                  className={`flex items-center gap-2 px-3 py-2 border-b border-zinc-800/40 ${swapSource === p.id ? "bg-red-500/15" : subsMade < MAX_MATCH_SUBS ? "cursor-pointer active:bg-zinc-800/60" : "opacity-40"}`}
+                                >
+                                  <span
+                                    className={`w-5 h-5 rounded shrink-0 flex items-center justify-center text-[9px] font-black bg-zinc-800 ${POSITION_TEXT_CLASS[p.position]}`}
+                                  >
+                                    {POSITION_SHORT_LABELS[p.position]}
+                                  </span>
+                                  <span className="flex-1 text-[13px] font-bold text-zinc-200 leading-tight">
+                                    {p.name}
+                                  </span>
+                                  <span className="shrink-0 text-xs font-black text-zinc-500 ml-auto">
+                                    {p.skill}
+                                  </span>
+                                  {swapSource === p.id && (
+                                    <span className="shrink-0 text-[9px] font-black uppercase text-red-400 bg-red-500/10 px-1.5 py-0.5 rounded">
+                                      sai
+                                    </span>
+                                  )}
+                                </div>
+                              ))}
+                            {/* Banco */}
+                            <div className="px-3 py-1.5 bg-surface-container sticky top-0 z-10 flex items-center gap-1.5 border-b border-zinc-800 border-t border-t-zinc-700">
+                              <span className="w-1.5 h-1.5 rounded-full bg-zinc-600 shrink-0" />
+                              <span className="text-[9px] font-black uppercase tracking-widest text-zinc-500">
+                                Banco
+                              </span>
+                            </div>
+                            {annotatedSquad
+                              .filter(
+                                (p) => tactic.positions[p.id] === "Suplente",
+                              )
+                              .map((p) => {
+                                const alreadyUsed = subbedOut.includes(p.id);
+                                const disabled =
+                                  alreadyUsed ||
+                                  !swapSource ||
+                                  subsMade >= MAX_MATCH_SUBS;
+                                return (
+                                  <div
+                                    key={p.id}
+                                    onClick={() =>
+                                      !disabled && handleSelectIn(p.id)
+                                    }
+                                    className={`flex items-center gap-2 px-3 py-2 border-b border-zinc-800/40 ${alreadyUsed ? "opacity-20 cursor-not-allowed" : swapTarget === p.id ? "bg-emerald-500/15 cursor-pointer" : disabled ? "opacity-40 cursor-not-allowed" : "cursor-pointer active:bg-zinc-800/60"}`}
+                                  >
+                                    <span
+                                      className={`w-5 h-5 rounded shrink-0 flex items-center justify-center text-[9px] font-black bg-zinc-800 ${POSITION_TEXT_CLASS[p.position]}`}
+                                    >
+                                      {POSITION_SHORT_LABELS[p.position]}
+                                    </span>
+                                    <span
+                                      className={`flex-1 text-[13px] font-bold leading-tight ${alreadyUsed ? "text-zinc-700 line-through" : "text-zinc-200"}`}
+                                    >
+                                      {p.name}
+                                    </span>
+                                    <span className="shrink-0 text-xs font-black text-zinc-500 ml-auto">
+                                      {alreadyUsed ? "—" : p.skill}
+                                    </span>
+                                    {swapTarget === p.id && (
+                                      <span className="shrink-0 text-[9px] font-black uppercase text-emerald-400 bg-emerald-500/10 px-1.5 py-0.5 rounded">
+                                        entra
+                                      </span>
+                                    )}
+                                  </div>
+                                );
+                              })}
                           </div>
                         </div>
                       );
