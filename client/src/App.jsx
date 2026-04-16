@@ -2438,565 +2438,573 @@ function App() {
 
     return (
       <>
-      <div className="min-h-screen bg-surface text-on-surface flex flex-col relative overflow-hidden pb-16">
-        {/* Background layer */}
-        <div className="pointer-events-none fixed inset-0 z-0">
-          <div className="absolute inset-0 grid-lines"></div>
-          <div className="absolute inset-0 pitch-glow"></div>
-          <div className="absolute inset-0 bg-linear-to-b from-transparent via-surface/20 to-surface/70"></div>
-        </div>
+        <div className="min-h-screen bg-surface text-on-surface flex flex-col relative overflow-hidden pb-16">
+          {/* Background layer */}
+          <div className="pointer-events-none fixed inset-0 z-0">
+            <div className="absolute inset-0 grid-lines"></div>
+            <div className="absolute inset-0 pitch-glow"></div>
+            <div className="absolute inset-0 bg-linear-to-b from-transparent via-surface/20 to-surface/70"></div>
+          </div>
 
-        {/* Sticky header */}
-        <header className="z-10 w-full border-b border-outline-variant/25 bg-surface/80 backdrop-blur-md sticky top-0">
-          <div className="max-w-7xl mx-auto px-6 lg:px-10 h-16 flex items-center justify-between">
-            <div className="flex items-center gap-2.5">
-              <span className="text-2xl">⚽</span>
-              <span className="font-headline font-black text-xl tracking-tighter">
-                Cash<span className="text-tertiary">Ball</span>
-                <span className="text-on-surface-variant font-bold ml-2 text-sm">
-                  26/27
+          {/* Sticky header */}
+          <header className="z-10 w-full border-b border-outline-variant/25 bg-surface/80 backdrop-blur-md sticky top-0">
+            <div className="max-w-7xl mx-auto px-6 lg:px-10 h-16 flex items-center justify-between">
+              <div className="flex items-center gap-2.5">
+                <span className="text-2xl">⚽</span>
+                <span className="font-headline font-black text-xl tracking-tighter">
+                  Cash<span className="text-tertiary">Ball</span>
+                  <span className="text-on-surface-variant font-bold ml-2 text-sm">
+                    26/27
+                  </span>
                 </span>
-              </span>
+              </div>
+              <div className="flex items-center gap-2 bg-primary/10 border border-primary/20 px-3 py-1.5 rounded-full">
+                <span className="w-1.5 h-1.5 rounded-full bg-primary animate-pulse"></span>
+                <span className="text-[10px] font-black uppercase tracking-[0.3em] text-primary hidden sm:block">
+                  Época 26/27 · Activa
+                </span>
+              </div>
             </div>
-            <div className="flex items-center gap-2 bg-primary/10 border border-primary/20 px-3 py-1.5 rounded-full">
-              <span className="w-1.5 h-1.5 rounded-full bg-primary animate-pulse"></span>
-              <span className="text-[10px] font-black uppercase tracking-[0.3em] text-primary hidden sm:block">
-                Época 26/27 · Activa
-              </span>
-            </div>
-          </div>
-        </header>
+          </header>
 
-        {/* Hero + Auth card */}
-        <div className="relative z-10 flex-1 flex flex-col lg:flex-row items-center justify-center gap-12 lg:gap-16 px-6 sm:px-10 lg:px-16 py-14 max-w-7xl mx-auto w-full">
-          {/* Left: Hero copy */}
-          <div className="w-full lg:w-1/2 flex flex-col items-start text-left">
-            <div className="inline-flex items-center gap-2 border border-outline-variant/40 bg-surface-container px-3 py-1 rounded-full mb-8">
-              <span className="text-[10px] font-black uppercase tracking-[0.35em] text-on-surface-variant">
-                Gestão de Futebol Multiplayer
-              </span>
-            </div>
-            <h1 className="font-headline font-black leading-none tracking-tighter mb-8">
-              <span className="block text-6xl sm:text-7xl lg:text-[5.5rem] text-on-surface">
-                TREINA.
-              </span>
-              <span className="block text-6xl sm:text-7xl lg:text-[5.5rem] text-tertiary drop-shadow-[0_0_32px_rgba(233,195,73,0.2)]">
-                PROSPERA.
-              </span>
-              <span className="block text-6xl sm:text-7xl lg:text-[5.5rem] text-on-surface">
-                REPETE.
-              </span>
-            </h1>
-            <p className="text-base text-on-surface-variant leading-relaxed mb-10 max-w-md">
-              A evolução moderna da gestão de futebol clássica. Controla as
-              tácticas, as finanças e o destino do teu clube em ligas
-              multiplayer com até 8 treinadores.
-            </p>
-            <div className="flex flex-wrap gap-3">
-              {[
-                { icon: "🏆", label: "Divisões", value: "4 Ligas" },
-                { icon: "👥", label: "Treinadores", value: "Até 8" },
-                { icon: "⚡", label: "Simulação", value: "Ao vivo" },
-              ].map(({ icon, label, value }) => (
-                <div
-                  key={label}
-                  className="flex items-center gap-2.5 bg-surface-container border border-outline-variant/30 px-4 py-2.5 rounded-lg"
-                >
-                  <span className="text-lg">{icon}</span>
-                  <div>
-                    <p className="text-[9px] uppercase tracking-wider text-on-surface-variant font-bold leading-none mb-0.5">
-                      {label}
-                    </p>
-                    <p className="text-sm font-black text-on-surface leading-none">
-                      {value}
-                    </p>
-                  </div>
-                </div>
-              ))}
-            </div>
-          </div>
-
-          {/* Right: Auth glass card */}
-          <div className="w-full lg:w-1/2 flex justify-center lg:justify-end">
-            <div className="glass-card rounded-2xl w-full max-w-md relative overflow-hidden shadow-2xl">
-              {/* Corner accents */}
-              <div className="absolute top-2 right-2 w-12 h-12 border-t border-r border-primary/25 rounded-tr-xl pointer-events-none"></div>
-              <div className="absolute bottom-2 left-2 w-12 h-12 border-b border-l border-primary/25 rounded-bl-xl pointer-events-none"></div>
-              {/* Top accent bar */}
-              <div className="absolute top-0 inset-x-0 h-0.5 bg-linear-to-r from-primary/40 via-primary to-primary/40"></div>
-
-              {/* ─── LOGIN PHASE ───────────────────────── */}
-              {authPhase === "login" && (
-                <div className="p-8 space-y-5">
-                  <div className="space-y-1 text-center mb-4">
-                    <p className="text-[10px] text-on-surface-variant uppercase font-black tracking-[0.4em]">
-                      Painel do Treinador
-                    </p>
-                    <h2 className="text-2xl font-headline font-black text-on-surface tracking-tight">
-                      Acede à tua conta
-                    </h2>
-                    <p className="text-xs text-on-surface-variant">
-                      Depois escolhes novo jogo, época guardada ou amigos.
-                    </p>
-                  </div>
-                  <div>
-                    <label className="block text-[10px] uppercase text-on-surface-variant mb-2 font-bold tracking-wider">
-                      Nome de Treinador
-                    </label>
-                    <input
-                      type="text"
-                      className="w-full bg-surface border border-outline-variant p-4 rounded-sm text-on-surface text-lg font-black outline-none transition-all placeholder:text-on-surface-variant/40 focus:ring-2 focus:ring-primary"
-                      value={name}
-                      placeholder="Ex: Amorim"
-                      onChange={(e) => {
-                        setName(e.target.value);
-                        setAuthError("");
-                      }}
-                    />
-                  </div>
-                  <div>
-                    <label className="block text-[10px] uppercase text-on-surface-variant mb-2 font-bold tracking-wider">
-                      Palavra-passe
-                    </label>
-                    <input
-                      type="password"
-                      className="w-full bg-surface border border-outline-variant p-4 rounded-sm text-on-surface text-lg font-black outline-none transition-all placeholder:text-on-surface-variant/40 focus:ring-2 focus:ring-primary"
-                      value={password}
-                      placeholder="••••••••"
-                      onChange={(e) => {
-                        setPassword(e.target.value);
-                        setAuthError("");
-                      }}
-                      onKeyDown={(e) => {
-                        if (e.key === "Enter") handleAuthenticate("login");
-                      }}
-                    />
-                  </div>
-                  <button
-                    onClick={() => handleAuthenticate("login")}
-                    disabled={!name.trim() || !password || authSubmitting}
-                    className="w-full bg-primary hover:brightness-110 disabled:bg-surface-bright disabled:text-on-surface-variant text-on-primary py-4 rounded font-black text-base uppercase tracking-[0.2em] transition-all active:scale-95"
+          {/* Hero + Auth card */}
+          <div className="relative z-10 flex-1 flex flex-col lg:flex-row items-center justify-center gap-12 lg:gap-16 px-6 sm:px-10 lg:px-16 py-14 max-w-7xl mx-auto w-full">
+            {/* Left: Hero copy */}
+            <div className="w-full lg:w-1/2 flex flex-col items-start text-left">
+              <div className="inline-flex items-center gap-2 border border-outline-variant/40 bg-surface-container px-3 py-1 rounded-full mb-8">
+                <span className="text-[10px] font-black uppercase tracking-[0.35em] text-on-surface-variant">
+                  Gestão de Futebol Multiplayer
+                </span>
+              </div>
+              <h1 className="font-headline font-black leading-none tracking-tighter mb-8">
+                <span className="block text-6xl sm:text-7xl lg:text-[5.5rem] text-on-surface">
+                  TREINA.
+                </span>
+                <span className="block text-6xl sm:text-7xl lg:text-[5.5rem] text-tertiary drop-shadow-[0_0_32px_rgba(233,195,73,0.2)]">
+                  PROSPERA.
+                </span>
+                <span className="block text-6xl sm:text-7xl lg:text-[5.5rem] text-on-surface">
+                  REPETE.
+                </span>
+              </h1>
+              <p className="text-base text-on-surface-variant leading-relaxed mb-10 max-w-md">
+                A evolução moderna da gestão de futebol clássica. Controla as
+                tácticas, as finanças e o destino do teu clube em ligas
+                multiplayer com até 8 treinadores.
+              </p>
+              <div className="flex flex-wrap gap-3">
+                {[
+                  { icon: "🏆", label: "Divisões", value: "4 Ligas" },
+                  { icon: "👥", label: "Treinadores", value: "Até 8" },
+                  { icon: "⚡", label: "Simulação", value: "Ao vivo" },
+                ].map(({ icon, label, value }) => (
+                  <div
+                    key={label}
+                    className="flex items-center gap-2.5 bg-surface-container border border-outline-variant/30 px-4 py-2.5 rounded-lg"
                   >
-                    {authSubmitting ? "A VALIDAR..." : "ENTRAR"}
-                  </button>
-                  <div className="grid grid-cols-2 gap-3">
+                    <span className="text-lg">{icon}</span>
+                    <div>
+                      <p className="text-[9px] uppercase tracking-wider text-on-surface-variant font-bold leading-none mb-0.5">
+                        {label}
+                      </p>
+                      <p className="text-sm font-black text-on-surface leading-none">
+                        {value}
+                      </p>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </div>
+
+            {/* Right: Auth glass card */}
+            <div className="w-full lg:w-1/2 flex justify-center lg:justify-end">
+              <div className="glass-card rounded-2xl w-full max-w-md relative overflow-hidden shadow-2xl">
+                {/* Corner accents */}
+                <div className="absolute top-2 right-2 w-12 h-12 border-t border-r border-primary/25 rounded-tr-xl pointer-events-none"></div>
+                <div className="absolute bottom-2 left-2 w-12 h-12 border-b border-l border-primary/25 rounded-bl-xl pointer-events-none"></div>
+                {/* Top accent bar */}
+                <div className="absolute top-0 inset-x-0 h-0.5 bg-linear-to-r from-primary/40 via-primary to-primary/40"></div>
+
+                {/* ─── LOGIN PHASE ───────────────────────── */}
+                {authPhase === "login" && (
+                  <div className="p-8 space-y-5">
+                    <div className="space-y-1 text-center mb-4">
+                      <p className="text-[10px] text-on-surface-variant uppercase font-black tracking-[0.4em]">
+                        Painel do Treinador
+                      </p>
+                      <h2 className="text-2xl font-headline font-black text-on-surface tracking-tight">
+                        Acede à tua conta
+                      </h2>
+                      <p className="text-xs text-on-surface-variant">
+                        Depois escolhes novo jogo, época guardada ou amigos.
+                      </p>
+                    </div>
+                    <div>
+                      <label className="block text-[10px] uppercase text-on-surface-variant mb-2 font-bold tracking-wider">
+                        Nome de Treinador
+                      </label>
+                      <input
+                        type="text"
+                        className="w-full bg-surface border border-outline-variant p-4 rounded-sm text-on-surface text-lg font-black outline-none transition-all placeholder:text-on-surface-variant/40 focus:ring-2 focus:ring-primary"
+                        value={name}
+                        placeholder="Ex: Amorim"
+                        onChange={(e) => {
+                          setName(e.target.value);
+                          setAuthError("");
+                        }}
+                      />
+                    </div>
+                    <div>
+                      <label className="block text-[10px] uppercase text-on-surface-variant mb-2 font-bold tracking-wider">
+                        Palavra-passe
+                      </label>
+                      <input
+                        type="password"
+                        className="w-full bg-surface border border-outline-variant p-4 rounded-sm text-on-surface text-lg font-black outline-none transition-all placeholder:text-on-surface-variant/40 focus:ring-2 focus:ring-primary"
+                        value={password}
+                        placeholder="••••••••"
+                        onChange={(e) => {
+                          setPassword(e.target.value);
+                          setAuthError("");
+                        }}
+                        onKeyDown={(e) => {
+                          if (e.key === "Enter") handleAuthenticate("login");
+                        }}
+                      />
+                    </div>
                     <button
-                      onClick={handleAdminAuthenticate}
+                      onClick={() => handleAuthenticate("login")}
                       disabled={!name.trim() || !password || authSubmitting}
-                      className="border border-cyan-500/30 bg-cyan-500/10 hover:bg-cyan-500/20 disabled:bg-surface-container disabled:text-on-surface-variant text-cyan-100 py-3 rounded font-black text-xs uppercase tracking-[0.2em] transition-all"
+                      className="w-full bg-primary hover:brightness-110 disabled:bg-surface-bright disabled:text-on-surface-variant text-on-primary py-4 rounded font-black text-base uppercase tracking-[0.2em] transition-all active:scale-95"
                     >
-                      Admin
+                      {authSubmitting ? "A VALIDAR..." : "ENTRAR"}
                     </button>
-                    <button
-                      onClick={() => {
-                        setConfirmPassword("");
-                        setAuthError("");
-                        setJoinError("");
-                        setAuthPhase("register");
-                      }}
-                      className="border border-outline-variant/60 bg-surface-container hover:border-primary/40 text-on-surface py-3 rounded font-black text-xs uppercase tracking-[0.2em] transition-all"
-                    >
-                      Criar conta
-                    </button>
-                  </div>
-                  {authError && (
-                    <p className="text-red-400 text-sm text-center font-bold">
-                      ⚠️ {authError}
-                    </p>
-                  )}
-                  {!authError && disconnected && (
-                    <p className="text-red-400 text-sm text-center font-bold">
-                      ⚠️ Sem ligação ao servidor. Tenta novamente.
-                    </p>
-                  )}
-                </div>
-              )}
-
-              {/* ─── REGISTER PHASE ────────────────────── */}
-              {authPhase === "register" && (
-                <div className="p-8 space-y-5">
-                  <button
-                    onClick={resetAuthFlow}
-                    className="text-xs text-zinc-500 hover:text-zinc-300 font-black uppercase tracking-widest flex items-center gap-1"
-                  >
-                    ← Voltar
-                  </button>
-                  <div className="space-y-1 text-center">
-                    <p className="text-[10px] text-on-surface-variant uppercase font-black tracking-[0.4em]">
-                      Nova conta
-                    </p>
-                    <h2 className="text-2xl font-headline font-black text-on-surface tracking-tight">
-                      Cria a tua conta de treinador
-                    </h2>
-                  </div>
-                  <div>
-                    <label className="block text-[10px] uppercase text-on-surface-variant mb-2 font-bold tracking-wider">
-                      Nome de Treinador
-                    </label>
-                    <input
-                      type="text"
-                      className="w-full bg-surface border border-outline-variant p-4 rounded-sm text-on-surface text-lg font-black outline-none transition-all placeholder:text-on-surface-variant/40 focus:ring-2 focus:ring-primary"
-                      value={name}
-                      placeholder="Ex: Amorim"
-                      onChange={(e) => {
-                        setName(e.target.value);
-                        setAuthError("");
-                      }}
-                    />
-                  </div>
-                  <div>
-                    <label className="block text-[10px] uppercase text-on-surface-variant mb-2 font-bold tracking-wider">
-                      Palavra-passe
-                    </label>
-                    <input
-                      type="password"
-                      className="w-full bg-surface border border-outline-variant p-4 rounded-sm text-on-surface text-lg font-black outline-none transition-all placeholder:text-on-surface-variant/40 focus:ring-2 focus:ring-primary"
-                      value={password}
-                      placeholder="••••••••"
-                      onChange={(e) => {
-                        setPassword(e.target.value);
-                        setAuthError("");
-                      }}
-                    />
-                  </div>
-                  <div>
-                    <label className="block text-[10px] uppercase text-on-surface-variant mb-2 font-bold tracking-wider">
-                      Confirmar Palavra-passe
-                    </label>
-                    <input
-                      type="password"
-                      className={`w-full bg-surface border p-4 rounded-sm text-on-surface text-lg font-black outline-none transition-all placeholder:text-on-surface-variant/40 focus:ring-2 ${registerPasswordMismatch ? "border-red-500 focus:ring-red-500" : "border-outline-variant focus:ring-primary"}`}
-                      value={confirmPassword}
-                      placeholder="••••••••"
-                      onChange={(e) => {
-                        setConfirmPassword(e.target.value);
-                        setAuthError("");
-                      }}
-                      onKeyDown={(e) => {
-                        if (e.key === "Enter" && !registerPasswordMismatch) {
-                          handleAuthenticate("register");
-                        }
-                      }}
-                    />
-                    {registerPasswordMismatch && (
-                      <p className="text-red-400 text-xs mt-1 font-bold">
-                        As palavras-passe não coincidem.
+                    <div className="grid grid-cols-2 gap-3">
+                      <button
+                        onClick={handleAdminAuthenticate}
+                        disabled={!name.trim() || !password || authSubmitting}
+                        className="border border-cyan-500/30 bg-cyan-500/10 hover:bg-cyan-500/20 disabled:bg-surface-container disabled:text-on-surface-variant text-cyan-100 py-3 rounded font-black text-xs uppercase tracking-[0.2em] transition-all"
+                      >
+                        Admin
+                      </button>
+                      <button
+                        onClick={() => {
+                          setConfirmPassword("");
+                          setAuthError("");
+                          setJoinError("");
+                          setAuthPhase("register");
+                        }}
+                        className="border border-outline-variant/60 bg-surface-container hover:border-primary/40 text-on-surface py-3 rounded font-black text-xs uppercase tracking-[0.2em] transition-all"
+                      >
+                        Criar conta
+                      </button>
+                    </div>
+                    {authError && (
+                      <p className="text-red-400 text-sm text-center font-bold">
+                        ⚠️ {authError}
+                      </p>
+                    )}
+                    {!authError && disconnected && (
+                      <p className="text-red-400 text-sm text-center font-bold">
+                        ⚠️ Sem ligação ao servidor. Tenta novamente.
                       </p>
                     )}
                   </div>
-                  <button
-                    onClick={() => handleAuthenticate("register")}
-                    disabled={
-                      !name.trim() ||
-                      !password ||
-                      authSubmitting ||
-                      registerPasswordMismatch
-                    }
-                    className="w-full bg-primary hover:brightness-110 disabled:bg-surface-container disabled:text-on-surface-variant text-on-primary py-4 rounded font-black text-base uppercase tracking-[0.2em] transition-all active:scale-95"
-                  >
-                    {authSubmitting ? "A CRIAR CONTA..." : "CRIAR CONTA"}
-                  </button>
-                  {authError && (
-                    <p className="text-red-400 text-sm text-center font-bold">
-                      ⚠️ {authError}
-                    </p>
-                  )}
-                  {!authError && disconnected && (
-                    <p className="text-red-400 text-sm text-center font-bold">
-                      ⚠️ Sem ligação ao servidor. Tenta novamente.
-                    </p>
-                  )}
-                </div>
-              )}
+                )}
 
-              {/* ─── MODE PHASE ────────────────────────── */}
-              {authPhase === "mode" && (
-                <div className="p-8 space-y-5">
-                  <div className="flex items-start justify-between gap-4">
-                    <div>
-                      <p className="text-[10px] text-on-surface-variant uppercase font-black tracking-[0.4em] mb-1">
-                        Sessão autenticada
-                      </p>
-                      <h2 className="text-2xl font-headline font-black text-on-surface tracking-tight">
-                        Escolhe como jogar
-                      </h2>
-                      <p className="text-sm text-zinc-400 font-medium mt-1">
-                        {name} já está autenticado.
-                      </p>
-                    </div>
+                {/* ─── REGISTER PHASE ────────────────────── */}
+                {authPhase === "register" && (
+                  <div className="p-8 space-y-5">
                     <button
                       onClick={resetAuthFlow}
-                      className="shrink-0 text-xs text-on-surface-variant hover:text-on-surface font-black uppercase tracking-widest"
+                      className="text-xs text-zinc-500 hover:text-zinc-300 font-black uppercase tracking-widest flex items-center gap-1"
                     >
-                      Trocar conta
+                      ← Voltar
                     </button>
-                  </div>
-
-                  <div className="grid gap-3 sm:grid-cols-3">
-                    <button
-                      onClick={() => selectJoinMode("new-game")}
-                      className={`rounded-lg border p-4 text-left transition-all ${joinMode === "new-game" ? "border-primary bg-primary/10" : "border-outline-variant/20 bg-surface hover:border-outline-variant"}`}
-                    >
-                      <div className="mb-3 inline-flex h-9 w-9 items-center justify-center rounded bg-primary/15 text-primary">
-                        ✦
-                      </div>
-                      <p className="text-[10px] uppercase tracking-[0.3em] text-primary font-black mb-0.5">
-                        Novo jogo
+                    <div className="space-y-1 text-center">
+                      <p className="text-[10px] text-on-surface-variant uppercase font-black tracking-[0.4em]">
+                        Nova conta
                       </p>
-                      <p className="text-sm font-black text-white">Novo jogo</p>
-                      <p className="mt-1 text-xs text-on-surface-variant leading-relaxed">
-                        Começa do zero e recebe uma nova sala.
-                      </p>
-                    </button>
-
-                    <button
-                      onClick={() => selectJoinMode("saved-game")}
-                      className={`rounded-lg border p-4 text-left transition-all ${joinMode === "saved-game" ? "border-primary bg-primary/10" : "border-outline-variant/20 bg-surface hover:border-outline-variant"}`}
-                    >
-                      <div className="mb-3 inline-flex h-9 w-9 items-center justify-center rounded bg-primary/15 text-primary">
-                        ⟲
-                      </div>
-                      <p className="text-[10px] uppercase tracking-[0.3em] text-primary font-black mb-0.5">
-                        Save
-                      </p>
-                      <p className="text-sm font-black text-white">
-                        Continuar jogo
-                      </p>
-                      <p className="mt-1 text-xs text-on-surface-variant leading-relaxed">
-                        Reabre uma época guardada.
-                      </p>
-                    </button>
-
-                    <button
-                      onClick={() => selectJoinMode("friend-room")}
-                      className={`rounded-lg border p-4 text-left transition-all ${joinMode === "friend-room" ? "border-primary bg-primary/10" : "border-outline-variant/20 bg-surface hover:border-outline-variant"}`}
-                    >
-                      <div className="mb-3 inline-flex h-9 w-9 items-center justify-center rounded bg-primary/15 text-primary">
-                        ↗
-                      </div>
-                      <p className="text-[10px] uppercase tracking-[0.3em] text-primary font-black mb-0.5">
-                        Amigos
-                      </p>
-                      <p className="text-sm font-black text-white">
-                        Juntar a amigos
-                      </p>
-                      <p className="mt-1 text-xs text-on-surface-variant leading-relaxed">
-                        Junta-te com um código de sala.
-                      </p>
-                    </button>
-                  </div>
-
-                  {joinMode === "new-game" && (
-                    <div className="space-y-3 rounded-lg border border-primary/30 bg-primary/8 p-4">
-                      <label className="block text-[10px] uppercase text-on-surface-variant mb-2 font-bold tracking-[0.3em]">
-                        Nome do novo jogo
+                      <h2 className="text-2xl font-headline font-black text-on-surface tracking-tight">
+                        Cria a tua conta de treinador
+                      </h2>
+                    </div>
+                    <div>
+                      <label className="block text-[10px] uppercase text-on-surface-variant mb-2 font-bold tracking-wider">
+                        Nome de Treinador
                       </label>
                       <input
                         type="text"
-                        className="w-full bg-surface border border-outline-variant p-4 rounded-sm text-on-surface text-lg font-black outline-none transition-all placeholder:text-on-surface-variant/40 focus:ring-2 focus:ring-primary uppercase"
-                        value={roomCode}
-                        placeholder="INVERNO"
-                        onChange={(e) =>
-                          setRoomCode(e.target.value.toUpperCase())
-                        }
-                        onKeyDown={(e) => {
-                          if (e.key === "Enter") handleJoin();
+                        className="w-full bg-surface border border-outline-variant p-4 rounded-sm text-on-surface text-lg font-black outline-none transition-all placeholder:text-on-surface-variant/40 focus:ring-2 focus:ring-primary"
+                        value={name}
+                        placeholder="Ex: Amorim"
+                        onChange={(e) => {
+                          setName(e.target.value);
+                          setAuthError("");
                         }}
                       />
-                      <p className="text-sm font-bold text-on-surface-variant/80">
-                        Ficarás com um clube mágico da 4ª Divisão.
-                      </p>
                     </div>
-                  )}
-
-                  {joinMode === "saved-game" && (
-                    <div className="space-y-3 rounded-lg border border-primary/20 bg-surface-container p-4">
-                      <label className="block text-[10px] uppercase text-cyan-300 mb-2 font-bold tracking-[0.3em]">
-                        As tuas Salas Gravadas
+                    <div>
+                      <label className="block text-[10px] uppercase text-on-surface-variant mb-2 font-bold tracking-wider">
+                        Palavra-passe
                       </label>
-                      {availableSaves.length === 0 ? (
-                        <p className="text-on-surface-variant text-sm mt-2">
-                          Nenhum save encontrado para este treinador.
+                      <input
+                        type="password"
+                        className="w-full bg-surface border border-outline-variant p-4 rounded-sm text-on-surface text-lg font-black outline-none transition-all placeholder:text-on-surface-variant/40 focus:ring-2 focus:ring-primary"
+                        value={password}
+                        placeholder="••••••••"
+                        onChange={(e) => {
+                          setPassword(e.target.value);
+                          setAuthError("");
+                        }}
+                      />
+                    </div>
+                    <div>
+                      <label className="block text-[10px] uppercase text-on-surface-variant mb-2 font-bold tracking-wider">
+                        Confirmar Palavra-passe
+                      </label>
+                      <input
+                        type="password"
+                        className={`w-full bg-surface border p-4 rounded-sm text-on-surface text-lg font-black outline-none transition-all placeholder:text-on-surface-variant/40 focus:ring-2 ${registerPasswordMismatch ? "border-red-500 focus:ring-red-500" : "border-outline-variant focus:ring-primary"}`}
+                        value={confirmPassword}
+                        placeholder="••••••••"
+                        onChange={(e) => {
+                          setConfirmPassword(e.target.value);
+                          setAuthError("");
+                        }}
+                        onKeyDown={(e) => {
+                          if (e.key === "Enter" && !registerPasswordMismatch) {
+                            handleAuthenticate("register");
+                          }
+                        }}
+                      />
+                      {registerPasswordMismatch && (
+                        <p className="text-red-400 text-xs mt-1 font-bold">
+                          As palavras-passe não coincidem.
                         </p>
-                      ) : (
-                        <div className="space-y-2">
-                          {availableSaves.map((save) => (
-                            <div
-                              key={save.code}
-                              onClick={() => setRoomCode(save.code)}
-                              className={`flex items-center justify-between gap-3 px-4 py-3 rounded-xl border cursor-pointer transition-all ${
-                                roomCode === save.code
-                                  ? "border-cyan-500 bg-cyan-500/15 text-white"
-                                  : "border-outline-variant/20 bg-surface text-on-surface-variant hover:border-outline-variant hover:text-on-surface"
-                              }`}
-                            >
-                              <div className="flex flex-col flex-1 min-w-0">
-                                <span className="font-black text-sm uppercase tracking-widest">
-                                  {save.name}
-                                </span>
-                                <span className="text-xs text-on-surface-variant/60">
-                                  {save.code}
-                                </span>
-                              </div>
-                              <button
-                                onClick={(e) => {
-                                  e.stopPropagation();
-                                  if (
-                                    !window.confirm(
-                                      `Apagar a sala "${save.name}" permanentemente?`,
-                                    )
-                                  )
-                                    return;
-                                  fetch(
-                                    `${backendUrl}/saves/${encodeURIComponent(save.code)}`,
-                                    {
-                                      method: "DELETE",
-                                      headers: {
-                                        "Content-Type": "application/json",
-                                      },
-                                      body: JSON.stringify({ name, password }),
-                                    },
-                                  )
-                                    .then((r) => r.json())
-                                    .then((data) => {
-                                      if (data.ok) {
-                                        setAvailableSaves((prev) =>
-                                          prev.filter(
-                                            (s) => s.code !== save.code,
-                                          ),
-                                        );
-                                        if (roomCode === save.code)
-                                          setRoomCode("");
-                                      } else {
-                                        alert(
-                                          data.error || "Erro ao apagar sala.",
-                                        );
-                                      }
-                                    })
-                                    .catch(() =>
-                                      alert("Erro de ligação ao servidor."),
-                                    );
-                                }}
-                                className="shrink-0 text-on-surface-variant/50 hover:text-error transition-colors p-1"
-                                title="Apagar sala"
-                              >
-                                🗑️
-                              </button>
-                            </div>
-                          ))}
-                        </div>
                       )}
                     </div>
-                  )}
-
-                  {joinMode === "friend-room" && (
-                    <div className="space-y-3 rounded-lg border border-primary/20 bg-surface-container p-4">
-                      <label className="block text-[10px] uppercase text-emerald-300 mb-2 font-bold tracking-[0.3em]">
-                        Código da Sala do Amigo
-                      </label>
-                      <input
-                        type="text"
-                        className="w-full bg-surface border border-outline-variant p-4 rounded-sm text-on-surface text-lg font-black outline-none transition-all placeholder:text-on-surface-variant/40 focus:ring-2 focus:ring-primary uppercase"
-                        value={roomCode}
-                        placeholder="INVERNO"
-                        onChange={(e) =>
-                          setRoomCode(e.target.value.toUpperCase())
-                        }
-                        onKeyDown={(e) => {
-                          if (e.key === "Enter") handleJoin();
-                        }}
-                      />
-                    </div>
-                  )}
-
-                  {joinMode && (
                     <button
-                      onClick={handleJoin}
-                      disabled={!roomCode || joining}
-                      className={`w-full disabled:bg-surface-container disabled:text-on-surface-variant py-4 rounded font-black text-base uppercase tracking-[0.2em] transition-all active:scale-95 ${joinMode === "new-game" ? "bg-primary hover:brightness-110 text-on-primary" : joinMode === "saved-game" ? "bg-cyan-500 hover:bg-cyan-400 text-zinc-950" : "bg-primary hover:brightness-110 text-on-primary"}`}
+                      onClick={() => handleAuthenticate("register")}
+                      disabled={
+                        !name.trim() ||
+                        !password ||
+                        authSubmitting ||
+                        registerPasswordMismatch
+                      }
+                      className="w-full bg-primary hover:brightness-110 disabled:bg-surface-container disabled:text-on-surface-variant text-on-primary py-4 rounded font-black text-base uppercase tracking-[0.2em] transition-all active:scale-95"
                     >
-                      {joining
-                        ? "A GERAR CONTRATO..."
-                        : joinMode === "new-game"
-                          ? "CRIAR JOGO"
-                          : joinMode === "saved-game"
-                            ? "CONTINUAR JOGO"
-                            : "JUNTAR A AMIGOS"}
+                      {authSubmitting ? "A CRIAR CONTA..." : "CRIAR CONTA"}
                     </button>
-                  )}
-                  {joinError && (
-                    <p className="text-red-400 text-sm text-center font-bold">
-                      ⚠️ {joinError}
-                    </p>
-                  )}
-                  {!joinError && disconnected && (
-                    <p className="text-red-400 text-sm text-center font-bold">
-                      ⚠️ Sem ligação ao servidor. Tenta novamente.
-                    </p>
-                  )}
-                </div>
-              )}
-            </div>
-          </div>
-        </div>
-
-        {/* Features strip */}
-        <div className="relative z-10 w-full border-t border-outline-variant/20 bg-surface-container/50 backdrop-blur-sm">
-          <div className="max-w-7xl mx-auto px-6 lg:px-10 py-10">
-            <div className="grid grid-cols-2 lg:grid-cols-4 gap-5">
-              {[
-                {
-                  icon: "🌍",
-                  label: "4 Divisões",
-                  desc: "Primeira Liga, Segunda, Liga 3 e Campeonato de Portugal com promoção e descida.",
-                },
-                {
-                  icon: "👥",
-                  label: "Até 8 Treinadores",
-                  desc: "Multiplayer assíncrono — submete as tácticas quando quiseres, simula em grupo.",
-                },
-                {
-                  icon: "💰",
-                  label: "Finanças & Contratos",
-                  desc: "Gere o orçamento, renegocia contratos e evita a falência do clube.",
-                },
-                {
-                  icon: "⚡",
-                  label: "Simulação ao Vivo",
-                  desc: "Eventos em tempo real. Acompanhe os jogos e notícias à medida que acontecem.",
-                },
-              ].map(({ icon, label, desc }) => (
-                <div
-                  key={label}
-                  className="bg-surface border border-outline-variant/20 hover:border-tertiary/30 rounded-xl p-5 transition-all group"
-                >
-                  <div className="w-10 h-10 flex items-center justify-center text-xl bg-surface-container-high rounded-lg mb-4 group-hover:bg-tertiary/10 transition-colors">
-                    {icon}
+                    {authError && (
+                      <p className="text-red-400 text-sm text-center font-bold">
+                        ⚠️ {authError}
+                      </p>
+                    )}
+                    {!authError && disconnected && (
+                      <p className="text-red-400 text-sm text-center font-bold">
+                        ⚠️ Sem ligação ao servidor. Tenta novamente.
+                      </p>
+                    )}
                   </div>
-                  <p className="font-headline font-black text-sm text-on-surface mb-1.5 tracking-tight">
-                    {label}
-                  </p>
-                  <p className="text-xs text-on-surface-variant leading-relaxed">
-                    {desc}
-                  </p>
-                </div>
-              ))}
+                )}
+
+                {/* ─── MODE PHASE ────────────────────────── */}
+                {authPhase === "mode" && (
+                  <div className="p-8 space-y-5">
+                    <div className="flex items-start justify-between gap-4">
+                      <div>
+                        <p className="text-[10px] text-on-surface-variant uppercase font-black tracking-[0.4em] mb-1">
+                          Sessão autenticada
+                        </p>
+                        <h2 className="text-2xl font-headline font-black text-on-surface tracking-tight">
+                          Escolhe como jogar
+                        </h2>
+                        <p className="text-sm text-zinc-400 font-medium mt-1">
+                          {name} já está autenticado.
+                        </p>
+                      </div>
+                      <button
+                        onClick={resetAuthFlow}
+                        className="shrink-0 text-xs text-on-surface-variant hover:text-on-surface font-black uppercase tracking-widest"
+                      >
+                        Trocar conta
+                      </button>
+                    </div>
+
+                    <div className="grid gap-3 sm:grid-cols-3">
+                      <button
+                        onClick={() => selectJoinMode("new-game")}
+                        className={`rounded-lg border p-4 text-left transition-all ${joinMode === "new-game" ? "border-primary bg-primary/10" : "border-outline-variant/20 bg-surface hover:border-outline-variant"}`}
+                      >
+                        <div className="mb-3 inline-flex h-9 w-9 items-center justify-center rounded bg-primary/15 text-primary">
+                          ✦
+                        </div>
+                        <p className="text-[10px] uppercase tracking-[0.3em] text-primary font-black mb-0.5">
+                          Novo jogo
+                        </p>
+                        <p className="text-sm font-black text-white">
+                          Novo jogo
+                        </p>
+                        <p className="mt-1 text-xs text-on-surface-variant leading-relaxed">
+                          Começa do zero e recebe uma nova sala.
+                        </p>
+                      </button>
+
+                      <button
+                        onClick={() => selectJoinMode("saved-game")}
+                        className={`rounded-lg border p-4 text-left transition-all ${joinMode === "saved-game" ? "border-primary bg-primary/10" : "border-outline-variant/20 bg-surface hover:border-outline-variant"}`}
+                      >
+                        <div className="mb-3 inline-flex h-9 w-9 items-center justify-center rounded bg-primary/15 text-primary">
+                          ⟲
+                        </div>
+                        <p className="text-[10px] uppercase tracking-[0.3em] text-primary font-black mb-0.5">
+                          Save
+                        </p>
+                        <p className="text-sm font-black text-white">
+                          Continuar jogo
+                        </p>
+                        <p className="mt-1 text-xs text-on-surface-variant leading-relaxed">
+                          Reabre uma época guardada.
+                        </p>
+                      </button>
+
+                      <button
+                        onClick={() => selectJoinMode("friend-room")}
+                        className={`rounded-lg border p-4 text-left transition-all ${joinMode === "friend-room" ? "border-primary bg-primary/10" : "border-outline-variant/20 bg-surface hover:border-outline-variant"}`}
+                      >
+                        <div className="mb-3 inline-flex h-9 w-9 items-center justify-center rounded bg-primary/15 text-primary">
+                          ↗
+                        </div>
+                        <p className="text-[10px] uppercase tracking-[0.3em] text-primary font-black mb-0.5">
+                          Amigos
+                        </p>
+                        <p className="text-sm font-black text-white">
+                          Juntar a amigos
+                        </p>
+                        <p className="mt-1 text-xs text-on-surface-variant leading-relaxed">
+                          Junta-te com um código de sala.
+                        </p>
+                      </button>
+                    </div>
+
+                    {joinMode === "new-game" && (
+                      <div className="space-y-3 rounded-lg border border-primary/30 bg-primary/8 p-4">
+                        <label className="block text-[10px] uppercase text-on-surface-variant mb-2 font-bold tracking-[0.3em]">
+                          Nome do novo jogo
+                        </label>
+                        <input
+                          type="text"
+                          className="w-full bg-surface border border-outline-variant p-4 rounded-sm text-on-surface text-lg font-black outline-none transition-all placeholder:text-on-surface-variant/40 focus:ring-2 focus:ring-primary uppercase"
+                          value={roomCode}
+                          placeholder="INVERNO"
+                          onChange={(e) =>
+                            setRoomCode(e.target.value.toUpperCase())
+                          }
+                          onKeyDown={(e) => {
+                            if (e.key === "Enter") handleJoin();
+                          }}
+                        />
+                        <p className="text-sm font-bold text-on-surface-variant/80">
+                          Ficarás com um clube mágico da 4ª Divisão.
+                        </p>
+                      </div>
+                    )}
+
+                    {joinMode === "saved-game" && (
+                      <div className="space-y-3 rounded-lg border border-primary/20 bg-surface-container p-4">
+                        <label className="block text-[10px] uppercase text-cyan-300 mb-2 font-bold tracking-[0.3em]">
+                          As tuas Salas Gravadas
+                        </label>
+                        {availableSaves.length === 0 ? (
+                          <p className="text-on-surface-variant text-sm mt-2">
+                            Nenhum save encontrado para este treinador.
+                          </p>
+                        ) : (
+                          <div className="space-y-2">
+                            {availableSaves.map((save) => (
+                              <div
+                                key={save.code}
+                                onClick={() => setRoomCode(save.code)}
+                                className={`flex items-center justify-between gap-3 px-4 py-3 rounded-xl border cursor-pointer transition-all ${
+                                  roomCode === save.code
+                                    ? "border-cyan-500 bg-cyan-500/15 text-white"
+                                    : "border-outline-variant/20 bg-surface text-on-surface-variant hover:border-outline-variant hover:text-on-surface"
+                                }`}
+                              >
+                                <div className="flex flex-col flex-1 min-w-0">
+                                  <span className="font-black text-sm uppercase tracking-widest">
+                                    {save.name}
+                                  </span>
+                                  <span className="text-xs text-on-surface-variant/60">
+                                    {save.code}
+                                  </span>
+                                </div>
+                                <button
+                                  onClick={(e) => {
+                                    e.stopPropagation();
+                                    if (
+                                      !window.confirm(
+                                        `Apagar a sala "${save.name}" permanentemente?`,
+                                      )
+                                    )
+                                      return;
+                                    fetch(
+                                      `${backendUrl}/saves/${encodeURIComponent(save.code)}`,
+                                      {
+                                        method: "DELETE",
+                                        headers: {
+                                          "Content-Type": "application/json",
+                                        },
+                                        body: JSON.stringify({
+                                          name,
+                                          password,
+                                        }),
+                                      },
+                                    )
+                                      .then((r) => r.json())
+                                      .then((data) => {
+                                        if (data.ok) {
+                                          setAvailableSaves((prev) =>
+                                            prev.filter(
+                                              (s) => s.code !== save.code,
+                                            ),
+                                          );
+                                          if (roomCode === save.code)
+                                            setRoomCode("");
+                                        } else {
+                                          alert(
+                                            data.error ||
+                                              "Erro ao apagar sala.",
+                                          );
+                                        }
+                                      })
+                                      .catch(() =>
+                                        alert("Erro de ligação ao servidor."),
+                                      );
+                                  }}
+                                  className="shrink-0 text-on-surface-variant/50 hover:text-error transition-colors p-1"
+                                  title="Apagar sala"
+                                >
+                                  🗑️
+                                </button>
+                              </div>
+                            ))}
+                          </div>
+                        )}
+                      </div>
+                    )}
+
+                    {joinMode === "friend-room" && (
+                      <div className="space-y-3 rounded-lg border border-primary/20 bg-surface-container p-4">
+                        <label className="block text-[10px] uppercase text-emerald-300 mb-2 font-bold tracking-[0.3em]">
+                          Código da Sala do Amigo
+                        </label>
+                        <input
+                          type="text"
+                          className="w-full bg-surface border border-outline-variant p-4 rounded-sm text-on-surface text-lg font-black outline-none transition-all placeholder:text-on-surface-variant/40 focus:ring-2 focus:ring-primary uppercase"
+                          value={roomCode}
+                          placeholder="INVERNO"
+                          onChange={(e) =>
+                            setRoomCode(e.target.value.toUpperCase())
+                          }
+                          onKeyDown={(e) => {
+                            if (e.key === "Enter") handleJoin();
+                          }}
+                        />
+                      </div>
+                    )}
+
+                    {joinMode && (
+                      <button
+                        onClick={handleJoin}
+                        disabled={!roomCode || joining}
+                        className={`w-full disabled:bg-surface-container disabled:text-on-surface-variant py-4 rounded font-black text-base uppercase tracking-[0.2em] transition-all active:scale-95 ${joinMode === "new-game" ? "bg-primary hover:brightness-110 text-on-primary" : joinMode === "saved-game" ? "bg-cyan-500 hover:bg-cyan-400 text-zinc-950" : "bg-primary hover:brightness-110 text-on-primary"}`}
+                      >
+                        {joining
+                          ? "A GERAR CONTRATO..."
+                          : joinMode === "new-game"
+                            ? "CRIAR JOGO"
+                            : joinMode === "saved-game"
+                              ? "CONTINUAR JOGO"
+                              : "JUNTAR A AMIGOS"}
+                      </button>
+                    )}
+                    {joinError && (
+                      <p className="text-red-400 text-sm text-center font-bold">
+                        ⚠️ {joinError}
+                      </p>
+                    )}
+                    {!joinError && disconnected && (
+                      <p className="text-red-400 text-sm text-center font-bold">
+                        ⚠️ Sem ligação ao servidor. Tenta novamente.
+                      </p>
+                    )}
+                  </div>
+                )}
+              </div>
             </div>
           </div>
-        </div>
 
-        {/* Footer */}
-        <footer className="relative z-10 border-t border-outline-variant/20 bg-surface py-5">
-          <div className="max-w-7xl mx-auto px-6 lg:px-10 flex items-center justify-between">
-            <span className="text-xs text-on-surface-variant font-bold">
-              ⚽ CashBall 26/27
-            </span>
-            <span className="text-xs text-on-surface-variant/40">
-              v1.0a © 2026 by Fábio Silva
-            </span>
+          {/* Features strip */}
+          <div className="relative z-10 w-full border-t border-outline-variant/20 bg-surface-container/50 backdrop-blur-sm">
+            <div className="max-w-7xl mx-auto px-6 lg:px-10 py-10">
+              <div className="grid grid-cols-2 lg:grid-cols-4 gap-5">
+                {[
+                  {
+                    icon: "🌍",
+                    label: "4 Divisões",
+                    desc: "Primeira Liga, Segunda, Liga 3 e Campeonato de Portugal com promoção e descida.",
+                  },
+                  {
+                    icon: "👥",
+                    label: "Até 8 Treinadores",
+                    desc: "Multiplayer assíncrono — submete as tácticas quando quiseres, simula em grupo.",
+                  },
+                  {
+                    icon: "💰",
+                    label: "Finanças & Contratos",
+                    desc: "Gere o orçamento, renegocia contratos e evita a falência do clube.",
+                  },
+                  {
+                    icon: "⚡",
+                    label: "Simulação ao Vivo",
+                    desc: "Eventos em tempo real. Acompanhe os jogos e notícias à medida que acontecem.",
+                  },
+                ].map(({ icon, label, desc }) => (
+                  <div
+                    key={label}
+                    className="bg-surface border border-outline-variant/20 hover:border-tertiary/30 rounded-xl p-5 transition-all group"
+                  >
+                    <div className="w-10 h-10 flex items-center justify-center text-xl bg-surface-container-high rounded-lg mb-4 group-hover:bg-tertiary/10 transition-colors">
+                      {icon}
+                    </div>
+                    <p className="font-headline font-black text-sm text-on-surface mb-1.5 tracking-tight">
+                      {label}
+                    </p>
+                    <p className="text-xs text-on-surface-variant leading-relaxed">
+                      {desc}
+                    </p>
+                  </div>
+                ))}
+              </div>
+            </div>
           </div>
-        </footer>
-      </div>
+
+          {/* Footer */}
+          <footer className="relative z-10 border-t border-outline-variant/20 bg-surface py-5">
+            <div className="max-w-7xl mx-auto px-6 lg:px-10 flex items-center justify-between">
+              <span className="text-xs text-on-surface-variant font-bold">
+                ⚽ CashBall 26/27
+              </span>
+              <span className="text-xs text-on-surface-variant/40">
+                v1.0a © 2026 by Fábio Silva
+              </span>
+            </div>
+          </footer>
+        </div>
+        <NewsTicker newsTickerItems={[]} />
+      </>
     );
   }
 
@@ -3421,14 +3429,14 @@ function App() {
             <span className="material-symbols-outlined text-[22px] leading-none">
               {isMatchInProgress && key === "tactic" ? "sensors" : icon}
             </span>
-            <span>{isMatchInProgress && key === "tactic" ? "LIVE" : label}</span>
+            <span>
+              {isMatchInProgress && key === "tactic" ? "LIVE" : label}
+            </span>
           </motion.button>
         ))}
       </nav>
 
-      <main
-        className="pt-14 pb-28 lg:pb-12 lg:ml-64"
-      >
+      <main className="pt-14 pb-28 lg:pb-12 lg:ml-64">
         <div className="p-4 lg:p-6">
           {/* ─── TACTIC: HORIZONTAL ADVERSARY BANNER ──────────────────── */}
           {activeTab === "tactic" && (
@@ -6505,231 +6513,422 @@ function App() {
                       );
                     })()}
 
-                  {activeTab === "players" && (
-                    <div className="space-y-6">
-                      <div className="bg-surface-container rounded-lg shadow-sm overflow-x-auto">
-                        <table className="w-full min-w-[720px] text-left text-sm font-normal">
-                          <thead>
-                            <tr className="bg-surface/50 text-on-surface-variant uppercase text-[11px] tracking-widest border-b border-outline-variant/20 font-normal">
-                              <th className="px-3 py-3 text-center w-12 font-normal">
-                                POS
-                              </th>
-                              <th className="px-3 py-3 font-normal">NOME</th>
-                              <th className="px-3 py-3 text-center w-12 font-normal">
-                                NAC
-                              </th>
-                              <th className="px-3 py-3 text-center w-14 font-normal">
-                                QUAL
-                              </th>
-                              <th className="px-3 py-3 text-center font-normal">
-                                AGR
-                              </th>
-                              <th className="px-3 py-3 text-center w-12 font-normal">
-                                ⚽
-                              </th>
-                              <th className="px-3 py-3 text-center w-12 font-normal">
-                                🟥
-                              </th>
-                              <th className="px-3 py-3 text-center w-12 font-normal">
-                                🩹
-                              </th>
-                              <th className="px-3 py-3 text-center w-24 font-normal">
-                                ORDENADO
-                              </th>
-                              <th className="px-3 py-3 text-center w-24 font-normal">
-                                AÇÕES
-                              </th>
-                            </tr>
-                          </thead>
-                          <tbody className="divide-y divide-outline-variant/10 font-normal">
-                            {annotatedSquad.map((player) => (
-                              <tr
-                                key={player.id}
-                                className={`transition-colors group select-none ${ENABLE_ROW_BG ? POSITION_BG_CLASS[player.position] : ""} hover:bg-zinc-800/50 ${player.isUnavailable ? "opacity-50" : ""}`}
+                  {activeTab === "players" &&
+                    (() => {
+                      const expiringCount = mySquad.filter((p) => {
+                        const cu = p.contract_until_matchweek || 0;
+                        return cu > 0 && cu <= matchweekCount + 4;
+                      }).length;
+                      const wageByPos = { GR: 0, DEF: 0, MED: 0, ATA: 0 };
+                      mySquad.forEach((p) => {
+                        if (wageByPos[p.position] !== undefined)
+                          wageByPos[p.position] += p.wage || 0;
+                      });
+                      const maxPosWage = Math.max(
+                        ...Object.values(wageByPos),
+                        1,
+                      );
+                      const posColorHex = {
+                        GR: "#eab308",
+                        DEF: "#3b82f6",
+                        MED: "#10b981",
+                        ATA: "#f43f5e",
+                      };
+                      const posLabelMap = {
+                        GR: "GR",
+                        DEF: "DEF",
+                        MED: "MED",
+                        ATA: "ATA",
+                      };
+                      const posBorderClass = {
+                        GR: "border-yellow-500",
+                        DEF: "border-blue-500",
+                        MED: "border-emerald-500",
+                        ATA: "border-rose-500",
+                      };
+
+                      const getContractStatus = (player) => {
+                        if ((player.contract_request_pending || 0) > 0)
+                          return "wants_raise";
+                        const cu = player.contract_until_matchweek || 0;
+                        if (cu > 0 && cu <= matchweekCount + 4)
+                          return "expiring";
+                        return "stable";
+                      };
+
+                      const formatExpiry = (mw) => {
+                        if (!mw) return "—";
+                        const idx = Math.floor(mw / 14);
+                        const y1 = 2026 + idx;
+                        return `${y1}/${String(y1 + 1).slice(2)}`;
+                      };
+
+                      return (
+                        <div className="space-y-4">
+                          {/* ── Summary widgets ── */}
+                          <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+                            <div className="bg-surface-container-low p-5 rounded-md flex flex-col justify-between h-28 border-l-4 border-primary">
+                              <span className="text-[10px] font-black uppercase tracking-widest text-on-surface-variant">
+                                Massa Salarial Semanal
+                              </span>
+                              <span className="text-3xl font-black font-headline tracking-tighter text-on-surface">
+                                {formatCurrency(totalWeeklyWage)}
+                              </span>
+                            </div>
+                            <div
+                              className={`bg-surface-container-low p-5 rounded-md flex flex-col justify-between h-28 border-l-4 ${currentBudget >= 0 ? "border-tertiary" : "border-error"}`}
+                            >
+                              <span className="text-[10px] font-black uppercase tracking-widest text-on-surface-variant">
+                                Orçamento Disponível
+                              </span>
+                              <span
+                                className={`text-3xl font-black font-headline tracking-tighter ${currentBudget >= 0 ? "text-tertiary" : "text-error"}`}
                               >
-                                <td
-                                  className={`px-3 py-2 text-center text-sm tracking-wider ${POSITION_TEXT_CLASS[player.position] || "text-zinc-300"}`}
-                                >
-                                  {POSITION_SHORT_LABELS[player.position] ||
-                                    player.position}
-                                </td>
-                                <td className="px-3 py-2 text-white text-sm md:text-base whitespace-nowrap">
-                                  <PlayerLink playerId={player.id}>
-                                    {player.name}
-                                  </PlayerLink>
-                                  {!!player.is_star &&
-                                    (player.position === "MED" ||
-                                      player.position === "ATA") && (
-                                      <span
-                                        className="ml-1 text-amber-400 font-black"
-                                        title="Craque"
+                                {formatCurrency(currentBudget)}
+                              </span>
+                            </div>
+                            <div className="bg-surface-container-low p-5 rounded-md flex flex-col justify-between h-28 border-l-4 border-error">
+                              <span className="text-[10px] font-black uppercase tracking-widest text-on-surface-variant">
+                                Contratos a Expirar
+                              </span>
+                              <div className="flex items-baseline gap-2">
+                                <span className="text-3xl font-black font-headline tracking-tighter text-on-surface">
+                                  {String(expiringCount).padStart(2, "0")}
+                                </span>
+                                {expiringCount > 0 && (
+                                  <span className="text-[10px] font-black text-error uppercase tracking-widest">
+                                    Acção Necessária
+                                  </span>
+                                )}
+                              </div>
+                            </div>
+                          </div>
+
+                          {/* ── Contract table ── */}
+                          <div className="bg-surface-container rounded-md overflow-hidden">
+                            <div className="px-5 py-4 flex items-center justify-between bg-surface-container-high/50">
+                              <h2 className="text-base font-black font-headline tracking-tight text-tertiary uppercase">
+                                Gestão Contratual do Plantel
+                              </h2>
+                              <span className="text-[10px] text-on-surface-variant font-black uppercase tracking-widest">
+                                {mySquad.length} jogadores
+                              </span>
+                            </div>
+                            <div className="overflow-x-auto">
+                              <table className="w-full min-w-[700px] text-left border-separate border-spacing-y-0.5 px-2 pb-2">
+                                <thead>
+                                  <tr className="text-[10px] uppercase tracking-widest text-on-surface-variant font-black">
+                                    <th className="py-3 px-3">Jogador</th>
+                                    <th className="py-3 px-3 text-center w-14">
+                                      Pos
+                                    </th>
+                                    <th className="py-3 px-3 text-center w-16">
+                                      Qual
+                                    </th>
+                                    <th className="py-3 px-3 text-center w-14">
+                                      Idade
+                                    </th>
+                                    <th className="py-3 px-3 text-center">
+                                      Ordenado/sem
+                                    </th>
+                                    <th className="py-3 px-3 text-center">
+                                      Expira
+                                    </th>
+                                    <th className="py-3 px-3 text-center">
+                                      Estado
+                                    </th>
+                                    <th className="py-3 px-3 text-right">
+                                      Ações
+                                    </th>
+                                  </tr>
+                                </thead>
+                                <tbody className="text-sm font-medium">
+                                  {annotatedSquad.map((player) => {
+                                    const contractStatus =
+                                      getContractStatus(player);
+                                    const canAct =
+                                      player.signed_season !==
+                                      Math.ceil((matchweekCount + 1) / 14);
+                                    return (
+                                      <tr
+                                        key={player.id}
+                                        className={`bg-surface-container-low hover:bg-primary-container/15 transition-all ${player.isUnavailable ? "opacity-60" : ""}`}
                                       >
-                                        *
-                                      </span>
-                                    )}
-                                  {player.isUnavailable &&
-                                    (() => {
-                                      const susp =
-                                        player.suspension_until_matchweek || 0;
-                                      const inj =
-                                        player.injury_until_matchweek || 0;
-                                      const isSuspended = susp > matchweekCount;
-                                      const gamesLeft = isSuspended
-                                        ? susp - matchweekCount
-                                        : inj - matchweekCount;
-                                      return (
-                                        <span
-                                          className="ml-2 text-xs font-bold text-red-400 inline-flex items-center gap-0.5"
-                                          title={`Indisponível até jornada ${Math.max(inj, susp) + 1}`}
-                                        >
-                                          {isSuspended ? "🟥" : "🩹"}
-                                          <span className="tabular-nums">
-                                            {gamesLeft}
+                                        {/* Jogador */}
+                                        <td className="py-2.5 px-3">
+                                          <div className="flex flex-col">
+                                            <div className="flex items-center gap-1.5">
+                                              <span className="font-black font-headline text-sm tracking-tight uppercase text-on-surface">
+                                                <PlayerLink
+                                                  playerId={player.id}
+                                                >
+                                                  {player.name}
+                                                </PlayerLink>
+                                              </span>
+                                              {!!player.is_star &&
+                                                (player.position === "MED" ||
+                                                  player.position ===
+                                                    "ATA") && (
+                                                  <span
+                                                    className="text-amber-400 font-black text-xs"
+                                                    title="Craque"
+                                                  >
+                                                    ★
+                                                  </span>
+                                                )}
+                                              {player.transfer_status &&
+                                                player.transfer_status !==
+                                                  "none" && (
+                                                  <span className="text-[9px] font-black uppercase px-1.5 py-0.5 rounded bg-emerald-500/20 text-emerald-400 border border-emerald-500/30">
+                                                    À venda
+                                                  </span>
+                                                )}
+                                            </div>
+                                            <div className="flex items-center gap-1.5 text-[10px] text-on-surface-variant uppercase font-bold">
+                                              <span
+                                                title={
+                                                  FLAG_TO_COUNTRY[
+                                                    player.nationality
+                                                  ] || player.nationality
+                                                }
+                                              >
+                                                {player.nationality}
+                                              </span>
+                                              {player.isUnavailable &&
+                                                (() => {
+                                                  const susp =
+                                                    player.suspension_until_matchweek ||
+                                                    0;
+                                                  const inj =
+                                                    player.injury_until_matchweek ||
+                                                    0;
+                                                  const isSuspended =
+                                                    susp > matchweekCount;
+                                                  const gamesLeft = isSuspended
+                                                    ? susp - matchweekCount
+                                                    : inj - matchweekCount;
+                                                  return (
+                                                    <span
+                                                      className="text-red-400"
+                                                      title={`Indisponível até jornada ${Math.max(inj, susp) + 1}`}
+                                                    >
+                                                      ·{" "}
+                                                      {isSuspended
+                                                        ? "🟥"
+                                                        : "🩹"}{" "}
+                                                      {gamesLeft}j
+                                                    </span>
+                                                  );
+                                                })()}
+                                            </div>
+                                          </div>
+                                        </td>
+                                        {/* Pos */}
+                                        <td className="py-2.5 px-3 text-center">
+                                          <span
+                                            className={`px-2 py-0.5 bg-surface-bright rounded-sm text-[10px] font-black border-l-2 ${posBorderClass[player.position] || "border-zinc-500"} ${POSITION_TEXT_CLASS[player.position] || "text-zinc-300"}`}
+                                          >
+                                            {posLabelMap[player.position] ||
+                                              player.position}
                                           </span>
-                                        </span>
-                                      );
-                                    })()}
-                                  {player.transfer_status &&
-                                    player.transfer_status !== "none" && (
-                                      <span className="ml-2 text-[10px] font-black uppercase px-1.5 py-0.5 rounded bg-emerald-500/20 text-emerald-400 border border-emerald-500/30">
-                                        À venda
-                                      </span>
-                                    )}
-                                </td>
-                                <td className="px-3 py-2 text-center text-zinc-400 text-sm">
-                                  <span
-                                    title={
-                                      FLAG_TO_COUNTRY[player.nationality] ||
-                                      player.nationality
-                                    }
+                                        </td>
+                                        {/* Qual */}
+                                        <td className="py-2.5 px-3 text-center">
+                                          <span className="inline-flex items-center justify-center bg-surface text-on-surface px-2 py-0.5 rounded-sm text-sm border border-outline-variant/30 font-headline font-black tabular-nums">
+                                            {player.skill}
+                                          </span>
+                                          {player.prev_skill != null &&
+                                            player.prev_skill !==
+                                              player.skill && (
+                                              <span
+                                                className={`ml-1 text-[10px] font-black ${player.skill > player.prev_skill ? "text-emerald-400" : "text-red-400"}`}
+                                              >
+                                                {player.skill >
+                                                player.prev_skill
+                                                  ? "▲"
+                                                  : "▼"}
+                                              </span>
+                                            )}
+                                        </td>
+                                        {/* Idade */}
+                                        <td className="py-2.5 px-3 text-center text-on-surface-variant font-normal tabular-nums">
+                                          {player.age || "—"}
+                                        </td>
+                                        {/* Ordenado */}
+                                        <td className="py-2.5 px-3 text-center font-mono text-on-surface-variant text-xs">
+                                          {formatCurrency(player.wage || 0)}
+                                          <span className="text-[10px] opacity-40 ml-0.5">
+                                            /sem
+                                          </span>
+                                        </td>
+                                        {/* Expira */}
+                                        <td className="py-2.5 px-3 text-center text-xs font-bold">
+                                          {player.contract_until_matchweek ? (
+                                            <span
+                                              className={
+                                                contractStatus === "expiring"
+                                                  ? "text-error italic"
+                                                  : "text-on-surface"
+                                              }
+                                            >
+                                              {formatExpiry(
+                                                player.contract_until_matchweek,
+                                              )}
+                                            </span>
+                                          ) : (
+                                            <span className="text-zinc-600">
+                                              —
+                                            </span>
+                                          )}
+                                        </td>
+                                        {/* Estado */}
+                                        <td className="py-2.5 px-3">
+                                          {contractStatus === "wants_raise" && (
+                                            <div className="flex items-center justify-center gap-1.5 text-tertiary">
+                                              <span className="w-1.5 h-1.5 rounded-full bg-tertiary shrink-0" />
+                                              <span className="text-[10px] uppercase font-black">
+                                                Pediu Aumento
+                                              </span>
+                                            </div>
+                                          )}
+                                          {contractStatus === "expiring" && (
+                                            <div className="flex items-center justify-center gap-1.5 text-error">
+                                              <span className="w-1.5 h-1.5 rounded-full bg-error animate-pulse shrink-0" />
+                                              <span className="text-[10px] uppercase font-black">
+                                                A Expirar
+                                              </span>
+                                            </div>
+                                          )}
+                                          {contractStatus === "stable" && (
+                                            <div className="flex items-center justify-center gap-1.5 text-on-surface-variant">
+                                              <span className="w-1.5 h-1.5 rounded-full bg-on-surface-variant shrink-0" />
+                                              <span className="text-[10px] uppercase font-black">
+                                                Estável
+                                              </span>
+                                            </div>
+                                          )}
+                                        </td>
+                                        {/* Ações */}
+                                        <td className="py-2.5 px-3 text-right">
+                                          {canAct ? (
+                                            <div className="flex justify-end gap-1.5 flex-wrap">
+                                              <button
+                                                onClick={(e) => {
+                                                  e.stopPropagation();
+                                                  renewPlayerContract(player);
+                                                }}
+                                                className="px-3 py-1.5 bg-primary text-on-primary hover:brightness-110 text-[10px] uppercase font-black rounded-sm transition-all"
+                                              >
+                                                Renovar
+                                              </button>
+                                              <button
+                                                onClick={(e) => {
+                                                  e.stopPropagation();
+                                                  listPlayerAuction(player);
+                                                }}
+                                                disabled={
+                                                  isPlayingMatch ||
+                                                  showHalftimePanel
+                                                }
+                                                title={
+                                                  isPlayingMatch ||
+                                                  showHalftimePanel
+                                                    ? "Disponível após as partidas"
+                                                    : "Vender em Leilão"
+                                                }
+                                                className="px-3 py-1.5 bg-secondary-container hover:bg-surface-bright disabled:opacity-30 text-on-surface text-[10px] uppercase font-black rounded-sm transition-all"
+                                              >
+                                                Leilão
+                                              </button>
+                                              {player.transfer_status ===
+                                              "fixed" ? (
+                                                <button
+                                                  onClick={(e) => {
+                                                    e.stopPropagation();
+                                                    removeFromTransferList(
+                                                      player,
+                                                    );
+                                                  }}
+                                                  title="Retirar da lista de transferências"
+                                                  className="px-3 py-1.5 bg-error-container text-on-error-container hover:brightness-110 text-[10px] uppercase font-black rounded-sm transition-all"
+                                                >
+                                                  ✕ Retirar
+                                                </button>
+                                              ) : (
+                                                <button
+                                                  onClick={(e) => {
+                                                    e.stopPropagation();
+                                                    listPlayerFixed(player);
+                                                  }}
+                                                  title="Listar no Mercado"
+                                                  className="px-3 py-1.5 bg-secondary-container hover:bg-surface-bright text-on-surface text-[10px] uppercase font-black rounded-sm transition-all"
+                                                >
+                                                  Listar
+                                                </button>
+                                              )}
+                                            </div>
+                                          ) : (
+                                            <span className="text-xs text-zinc-600 uppercase">
+                                              —
+                                            </span>
+                                          )}
+                                        </td>
+                                      </tr>
+                                    );
+                                  })}
+                                </tbody>
+                              </table>
+                            </div>
+                          </div>
+
+                          {/* ── Wage distribution chart ── */}
+                          <div className="bg-surface-container-low p-5 rounded-md">
+                            <h3 className="text-[10px] font-black uppercase tracking-widest text-primary mb-4">
+                              Distribuição Salarial por Posição
+                            </h3>
+                            <div
+                              className="flex items-end gap-3"
+                              style={{ height: "80px" }}
+                            >
+                              {["GR", "DEF", "MED", "ATA"].map((pos) => {
+                                const pct =
+                                  maxPosWage > 0
+                                    ? (wageByPos[pos] / maxPosWage) * 100
+                                    : 0;
+                                return (
+                                  <div
+                                    key={pos}
+                                    className="flex-1 flex flex-col items-center gap-1 h-full justify-end"
                                   >
-                                    {player.nationality}
-                                  </span>
-                                </td>
-                                <td className="px-3 py-2 text-center text-zinc-100 font-normal">
-                                  <span className="inline-flex items-center justify-center bg-surface text-on-surface px-2 py-1 rounded-sm text-sm border border-outline-variant/30 font-headline font-black tabular-nums">
-                                    {player.skill}
-                                  </span>
-                                  {player.prev_skill !== null &&
-                                    player.prev_skill !== undefined &&
-                                    player.prev_skill !== player.skill && (
-                                      <span
-                                        className={`ml-1 text-xs font-black ${player.skill > player.prev_skill ? "text-emerald-400" : "text-red-400"}`}
-                                      >
-                                        {player.skill > player.prev_skill
-                                          ? "▲"
-                                          : "▼"}
-                                      </span>
-                                    )}
-                                </td>
-                                <td className="px-3 py-2 text-center font-normal">
-                                  <AggBadge value={player.aggressiveness} />
-                                </td>
-                                <td className="px-3 py-2 text-center text-emerald-400 font-normal">
-                                  {getPlayerStat(player, ["goals"])}{" "}
-                                  <span className="text-zinc-500 text-xs">
-                                    ({getPlayerStat(player, ["career_goals"])})
-                                  </span>
-                                </td>
-                                <td className="px-3 py-2 text-center text-red-400 font-normal">
-                                  {getPlayerStat(player, [
-                                    "reds",
-                                    "red_cards",
-                                    "reds_count",
-                                    "expulsions",
-                                  ])}{" "}
-                                  <span className="text-zinc-500 text-xs">
-                                    ({getPlayerStat(player, ["career_reds"])})
-                                  </span>
-                                </td>
-                                <td className="px-3 py-2 text-center text-orange-400 font-normal">
-                                  {getPlayerStat(player, [
-                                    "injuries",
-                                    "injury_count",
-                                    "lesoes",
-                                    "lesions",
-                                  ])}{" "}
-                                  <span className="text-zinc-500 text-xs">
-                                    (
-                                    {getPlayerStat(player, ["career_injuries"])}
-                                    )
-                                  </span>
-                                </td>
-                                <td className="px-3 py-2 text-center font-mono text-zinc-300 text-xs md:text-sm">
-                                  {formatCurrency(player.wage || 0)}
-                                </td>
-                                <td className="px-3 py-2 text-center">
-                                  {player.signed_season !==
-                                  Math.ceil((matchweekCount + 1) / 14) ? (
-                                    <div className="flex flex-nowrap justify-center gap-1">
-                                      <button
-                                        onClick={(e) => {
-                                          e.stopPropagation();
-                                          renewPlayerContract(player);
+                                    <div
+                                      className="w-full bg-primary/10 rounded-t-sm relative"
+                                      style={{ height: "60px" }}
+                                    >
+                                      <div
+                                        className="absolute inset-x-0 bottom-0 rounded-t-sm transition-all duration-700"
+                                        style={{
+                                          height: `${pct}%`,
+                                          backgroundColor: posColorHex[pos],
+                                          opacity: 0.75,
                                         }}
-                                        title="Renovar"
-                                        aria-label="Renovar"
-                                        className="px-2 py-1 rounded-md bg-emerald-600 hover:bg-emerald-500 text-white text-[10px] font-black uppercase leading-none tracking-wide"
-                                      >
-                                        R
-                                      </button>
-                                      <button
-                                        onClick={(e) => {
-                                          e.stopPropagation();
-                                          listPlayerAuction(player);
-                                        }}
-                                        disabled={
-                                          isPlayingMatch || showHalftimePanel
-                                        }
-                                        title={
-                                          isPlayingMatch || showHalftimePanel
-                                            ? "Disponível após as partidas"
-                                            : "Vender em Leilão"
-                                        }
-                                        aria-label="Vender em Leilão"
-                                        className="px-2 py-1 rounded-md bg-primary hover:brightness-110 disabled:opacity-30 disabled:hover:bg-primary text-on-primary text-[10px] font-black uppercase leading-none tracking-wide"
-                                      >
-                                        V
-                                      </button>
-                                      {player.transfer_status === "fixed" ? (
-                                        <button
-                                          onClick={(e) => {
-                                            e.stopPropagation();
-                                            removeFromTransferList(player);
-                                          }}
-                                          title="Retirar da lista de transferências"
-                                          aria-label="Retirar da lista"
-                                          className="px-2 py-1 rounded-md bg-red-700 hover:bg-red-600 text-white text-[10px] font-black uppercase leading-none tracking-wide"
-                                        >
-                                          ✕
-                                        </button>
-                                      ) : (
-                                        <button
-                                          onClick={(e) => {
-                                            e.stopPropagation();
-                                            listPlayerFixed(player);
-                                          }}
-                                          title="Listar no Mercado"
-                                          aria-label="Listar no Mercado"
-                                          className="px-2 py-1 rounded-md bg-secondary-container hover:bg-surface-bright text-on-surface text-[10px] font-black uppercase leading-none tracking-wide"
-                                        >
-                                          L
-                                        </button>
-                                      )}
+                                      />
                                     </div>
-                                  ) : (
-                                    <span className="text-xs text-zinc-600 font-normal uppercase">
-                                      —
+                                    <span
+                                      className={`text-[10px] font-black uppercase ${POSITION_TEXT_CLASS[pos] || "text-zinc-400"}`}
+                                    >
+                                      {pos}
                                     </span>
-                                  )}
-                                </td>
-                              </tr>
-                            ))}
-                          </tbody>
-                        </table>
-                      </div>
-                    </div>
-                  )}
+                                    <span className="text-[9px] text-on-surface-variant tabular-nums">
+                                      {formatCurrency(wageByPos[pos])}
+                                    </span>
+                                  </div>
+                                );
+                              })}
+                            </div>
+                          </div>
+                        </div>
+                      );
+                    })()}
 
                   {activeTab === "tactic" && (
                     <div>
