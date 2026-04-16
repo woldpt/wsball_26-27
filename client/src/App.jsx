@@ -2477,12 +2477,12 @@ function App() {
             <p className="text-base text-on-surface-variant leading-relaxed mb-10 max-w-md">
               A evolução moderna da gestão de futebol clássica. Controla as
               tácticas, as finanças e o destino do teu clube em ligas
-              multiplayer com até 32 treinadores.
+              multiplayer com até 8 treinadores.
             </p>
             <div className="flex flex-wrap gap-3">
               {[
                 { icon: "🏆", label: "Divisões", value: "4 Ligas" },
-                { icon: "👥", label: "Treinadores", value: "Até 32" },
+                { icon: "👥", label: "Treinadores", value: "Até 8" },
                 { icon: "⚡", label: "Simulação", value: "Ao vivo" },
               ].map(({ icon, label, value }) => (
                 <div
@@ -2939,7 +2939,7 @@ function App() {
                 },
                 {
                   icon: "👥",
-                  label: "Até 32 Treinadores",
+                  label: "Até 8 Treinadores",
                   desc: "Multiplayer assíncrono — submete as tácticas quando quiseres, simula em grupo.",
                 },
                 {
@@ -2950,7 +2950,7 @@ function App() {
                 {
                   icon: "⚡",
                   label: "Simulação ao Vivo",
-                  desc: "Eventos em tempo real via Socket.io, com pausa no intervalo para ajustar tácticas.",
+                  desc: "Eventos em tempo real. Acompanhe os jogos e notícias à medida que acontecem.",
                 },
               ].map(({ icon, label, desc }) => (
                 <div
@@ -2979,7 +2979,7 @@ function App() {
               ⚽ CashBall 26/27
             </span>
             <span className="text-xs text-on-surface-variant/40">
-              © 2026 CashBall Manager
+              v1.0a © 2026 by Fábio Silva
             </span>
           </div>
         </footer>
