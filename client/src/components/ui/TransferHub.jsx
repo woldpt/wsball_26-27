@@ -455,10 +455,12 @@ function PlayerDetailPanel({
         {/* Stats grid */}
         <div className="grid grid-cols-2 gap-2">
           <StatCard label="Qualidade" value={player.skill} accent />
-          <StatCard
-            label="Agressividade"
-            value={player.aggressiveness ?? "—"}
-          />
+          <div className="bg-surface-container p-3 rounded-md">
+            <p className="text-[9px] text-zinc-500 uppercase font-black tracking-widest mb-1">
+              Agressividade
+            </p>
+            <AggBadge value={player.aggressiveness} />
+          </div>
           <StatCard
             label="Golos (época)"
             value={getPlayerStat(player, ["goals"])}
