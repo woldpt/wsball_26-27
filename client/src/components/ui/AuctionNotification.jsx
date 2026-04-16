@@ -28,54 +28,55 @@ export function AuctionNotification({
   setAuctionBid,
   closeAuctionBid,
   submitAuctionBid,
-  teams,
   me,
   teamInfo,
 }) {
   if (!selectedAuctionPlayer) return null;
 
-  const sellerTeam = teams.find(
-    (t) => t.id === selectedAuctionPlayer.sellerTeamId,
-  );
   const startingPrice =
     selectedAuctionPlayer.startingPrice ||
     selectedAuctionPlayer.transfer_price ||
     0;
   const isSeller = selectedAuctionPlayer.sellerTeamId === me?.teamId;
 
+  const statusLabel = auctionResult
+    ? auctionResult.sold
+      ? "Leilão Finalizado"
+      : "Leilão Finalizado"
+    : "Leilão em Curso";
+
   return (
     <div
-      className="w-full border-b-2 border-amber-600 shadow-2xl overflow-hidden relative"
-      style={{
-        background:
-          "linear-gradient(90deg, #fbbf24 0%, #fde68a 40%, #fbbf24 60%, #f59e0b 100%)",
-        backgroundSize: "200% 100%",
-        animation: "shimmer 2s linear infinite",
-      }}
+      className="w-full shadow-2xl overflow-hidden"
+      style={{ background: "#0f0f17", borderBottom: "2px solid #d97706" }}
     >
-      <style>{`@keyframes shimmer { 0% { background-position: 200% 0; } 100% { background-position: -200% 0; } }`}</style>
-
       {/* ── Collapsed strip — always visible ── */}
       <button
         type="button"
-        className="w-full flex items-center gap-3 px-4 py-2.5 text-left relative z-10"
+        className="w-full flex items-center gap-3 px-4 py-2.5 text-left"
+        style={{
+          background: "linear-gradient(90deg, #1a1a2e 0%, #0f0f17 100%)",
+        }}
         onClick={() => setIsAuctionExpanded((v) => !v)}
       >
-        <span className="text-xs font-black uppercase tracking-widest bg-blue-700 text-white px-2 py-0.5 rounded shrink-0 shadow-md animate-pulse">
+        <span
+          className="text-xs font-black uppercase tracking-widest px-2 py-0.5 rounded shrink-0 animate-pulse"
+          style={{ background: "#d97706", color: "#0f0f17" }}
+        >
           Leilão
         </span>
-        <span className="font-black text-zinc-950 truncate drop-shadow-sm">
+        <span className="font-black text-amber-100 truncate">
           {selectedAuctionPlayer.name}
         </span>
-        <span className="text-xs text-zinc-700 shrink-0">
+        <span className="text-xs text-zinc-400 shrink-0">
           {selectedAuctionPlayer.position} · {selectedAuctionPlayer.skill}
         </span>
-        <span className="font-black text-zinc-950 text-sm shrink-0 ml-auto">
+        <span className="font-black text-amber-400 text-sm shrink-0 ml-auto">
           {formatCurrency(startingPrice)}
         </span>
         {auctionResult ? (
           <span
-            className="text-xs font-black px-2 py-0.5 rounded shrink-0 ml-auto"
+            className="text-xs font-black px-2 py-0.5 rounded shrink-0"
             style={{
               background: auctionResult.sold ? "#16a34a" : "#7f1d1d",
               color: "#fff",
@@ -86,11 +87,14 @@ export function AuctionNotification({
               : "Sem licitações"}
           </span>
         ) : myAuctionBid != null ? (
-          <span className="text-xs font-black uppercase px-2 py-0.5 rounded bg-emerald-600 text-white shrink-0">
+          <span
+            className="text-xs font-black uppercase px-2 py-0.5 rounded shrink-0"
+            style={{ background: "#059669", color: "#fff" }}
+          >
             Lance: {formatCurrency(myAuctionBid)}
           </span>
         ) : null}
-        <span className="text-zinc-600 text-sm shrink-0 ml-1">
+        <span className="text-zinc-500 text-sm shrink-0 ml-1">
           {isAuctionExpanded ? "▲" : "▼"}
         </span>
         {!auctionResult && (
@@ -100,7 +104,7 @@ export function AuctionNotification({
               e.stopPropagation();
               closeAuctionBid();
             }}
-            className="text-zinc-600 hover:text-zinc-950 font-bold text-base leading-none px-1 shrink-0"
+            className="text-zinc-500 hover:text-zinc-200 font-bold text-base leading-none px-1 shrink-0 transition-colors"
           >
             ✕
           </button>
@@ -109,170 +113,255 @@ export function AuctionNotification({
 
       {/* ── Expanded panel ── */}
       {isAuctionExpanded && (
-        <div className="border-t border-amber-500">
-          {/* Player card */}
-          <div className="p-3 sm:p-5 space-y-3 text-zinc-950">
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-x-6 gap-y-1.5 text-sm">
-              <div className="flex flex-wrap items-baseline gap-x-2 gap-y-0.5">
-                <span className="font-normal text-zinc-700 shrink-0">
-                  Equipa
-                </span>
-                <span
-                  className="font-black px-2 py-0.5 rounded text-xs leading-tight uppercase"
-                  style={{
-                    background: sellerTeam?.color_primary || "#1e3a8a",
-                    color: sellerTeam?.color_secondary || "#ffffff",
-                  }}
-                >
-                  {selectedAuctionPlayer.team_name || "Sem clube"}
-                </span>
-              </div>
-              <div className="flex flex-wrap items-baseline gap-x-2 gap-y-0.5">
-                <span className="font-normal text-zinc-700 shrink-0">
-                  Nacionalidade
-                </span>
-                <span
-                  className="font-bold"
-                  title={
-                    FLAG_TO_COUNTRY[selectedAuctionPlayer.nationality] || ""
-                  }
-                >
-                  {selectedAuctionPlayer.nationality || "—"}
-                </span>
-              </div>
-              <div className="flex flex-wrap items-baseline gap-x-2 gap-y-0.5">
-                <span className="font-normal text-zinc-700 shrink-0">
-                  Jogador
-                </span>
-                <span className="font-black text-lg leading-tight">
-                  {selectedAuctionPlayer.name}
-                </span>
-              </div>
-              <div className="flex flex-wrap items-baseline gap-x-2 gap-y-0.5">
-                <span className="font-normal text-zinc-700 shrink-0">
-                  Posição
-                </span>
-                <span className="font-bold">
-                  {selectedAuctionPlayer.position}
-                </span>
-              </div>
-              <div className="flex flex-wrap items-baseline gap-x-2 gap-y-0.5">
-                <span className="font-normal text-zinc-700 shrink-0">
-                  Força
-                </span>
-                <span className="font-black text-xl">
-                  {selectedAuctionPlayer.skill}
-                </span>
-              </div>
-              <div className="flex flex-wrap items-baseline gap-x-2 gap-y-0.5">
-                <span className="font-normal text-zinc-700 shrink-0">
-                  Agressividade
-                </span>
-                <span className="font-bold">
-                  <AggBadge value={selectedAuctionPlayer.aggressiveness} />
-                </span>
-              </div>
-              <div className="flex flex-wrap items-baseline gap-x-2 gap-y-0.5">
-                <span className="font-normal text-zinc-700 shrink-0">
-                  Salário pretendido
-                </span>
-                <span className="font-bold">
-                  {formatCurrency(selectedAuctionPlayer.wage || 0)} /sem
-                </span>
-              </div>
-              <div className="flex flex-wrap items-baseline gap-x-2 gap-y-0.5">
-                <span className="font-normal text-zinc-700 shrink-0">
-                  Preço base
-                </span>
-                <span className="font-black">
-                  {formatCurrency(startingPrice)}
-                </span>
-              </div>
+        <div style={{ background: "#0f0f17", borderTop: "1px solid #292929" }}>
+          {/* ── Header: status + player name ── */}
+          <div className="px-5 pt-5 pb-4">
+            <p
+              className="text-xs font-black uppercase tracking-[0.2em] mb-1"
+              style={{ color: "#d97706" }}
+            >
+              {statusLabel}
+            </p>
+            <div className="flex flex-wrap items-baseline gap-x-3 gap-y-1">
+              <h2 className="font-black text-2xl leading-tight text-white">
+                {selectedAuctionPlayer.name}
+              </h2>
+              <span
+                className="text-sm font-black px-2 py-0.5 rounded"
+                style={{
+                  background: "#292929",
+                  color: "#d97706",
+                  border: "1px solid #d97706",
+                }}
+              >
+                {selectedAuctionPlayer.position}
+              </span>
+              <span
+                className="text-sm font-black px-2 py-0.5 rounded"
+                style={{ background: "#292929", color: "#f4f4f5" }}
+              >
+                {selectedAuctionPlayer.skill}
+              </span>
               {selectedAuctionPlayer.is_star && (
-                <div className="flex items-center gap-1">
-                  <span className="text-amber-600 font-black">★</span>
-                  <span className="font-bold text-amber-700">Craque</span>
-                </div>
+                <span
+                  className="text-amber-400 font-black text-lg"
+                  title="Craque"
+                >
+                  ★
+                </span>
               )}
             </div>
+          </div>
 
-            {/* Historial box */}
-            <div className="border border-zinc-700 rounded-lg p-3 bg-amber-300/50 text-sm">
-              <p className="font-bold text-zinc-700 mb-1.5">Historial</p>
-              <div className="grid grid-cols-2 gap-x-4 gap-y-0.5">
-                <div className="flex justify-between gap-2">
-                  <span>Jogos</span>
-                  <span className="font-bold">
-                    {selectedAuctionPlayer.games_played || 0}
+          {/* ── Info cards row ── */}
+          <div className="px-5 pb-4 grid grid-cols-3 gap-3">
+            {/* Nationality */}
+            <div
+              className="rounded-lg p-3 flex flex-col gap-1"
+              style={{
+                background: "#1a1a2e",
+                borderBottom: "2px solid #d97706",
+              }}
+            >
+              <p className="text-xs text-zinc-500 uppercase tracking-widest font-semibold">
+                Nacionalidade
+              </p>
+              <p
+                className="font-black text-white text-base leading-tight"
+                title={FLAG_TO_COUNTRY[selectedAuctionPlayer.nationality] || ""}
+              >
+                {selectedAuctionPlayer.nationality || "—"}
+              </p>
+            </div>
+            {/* Team */}
+            <div
+              className="rounded-lg p-3 flex flex-col gap-1"
+              style={{
+                background: "#1a1a2e",
+                borderBottom: "2px solid #d97706",
+              }}
+            >
+              <p className="text-xs text-zinc-500 uppercase tracking-widest font-semibold">
+                Equipa
+              </p>
+              <p className="font-black text-white text-sm leading-tight uppercase truncate">
+                {selectedAuctionPlayer.team_name || "Sem clube"}
+              </p>
+            </div>
+            {/* Skill */}
+            <div
+              className="rounded-lg p-3 flex flex-col gap-1"
+              style={{
+                background: "#1a1a2e",
+                borderBottom: "2px solid #d97706",
+              }}
+            >
+              <p className="text-xs text-zinc-500 uppercase tracking-widest font-semibold">
+                Força
+              </p>
+              <p className="font-black text-white text-xl leading-tight">
+                {selectedAuctionPlayer.skill}
+              </p>
+            </div>
+          </div>
+
+          {/* ── Financial row ── */}
+          <div className="px-5 pb-4">
+            <div
+              className="rounded-lg grid grid-cols-2 divide-x"
+              style={{
+                background: "#1a1a2e",
+                borderBottom: "2px solid #d97706",
+                divideColor: "#292929",
+              }}
+            >
+              <div className="p-3">
+                <p className="text-xs text-zinc-500 uppercase tracking-widest font-semibold mb-0.5">
+                  Salário Pretendido
+                </p>
+                <p className="font-black text-white text-base">
+                  {formatCurrency(selectedAuctionPlayer.wage || 0)}
+                  <span className="text-xs text-zinc-400 font-normal">
+                    {" "}
+                    /sem
                   </span>
-                </div>
-                <div className="flex justify-between gap-2">
-                  <span>Golos</span>
-                  <span className="font-bold">
-                    {selectedAuctionPlayer.goals || 0}
-                  </span>
-                </div>
-                <div className="flex justify-between gap-2">
-                  <span>Vermelhos</span>
-                  <span className="font-bold">
-                    {selectedAuctionPlayer.red_cards || 0}
-                  </span>
-                </div>
-                <div className="flex justify-between gap-2">
-                  <span>Lesões</span>
-                  <span className="font-bold">
-                    {selectedAuctionPlayer.injuries || 0}
-                  </span>
-                </div>
+                </p>
+              </div>
+              <div className="p-3">
+                <p className="text-xs text-zinc-500 uppercase tracking-widest font-semibold mb-0.5">
+                  Preço Base
+                </p>
+                <p className="font-black text-white text-base">
+                  {formatCurrency(startingPrice)}
+                </p>
               </div>
             </div>
           </div>
 
-          {/* Bottom section — bid or result */}
+          {/* ── Historial ── */}
+          <div className="px-5 pb-5">
+            <p className="text-xs font-black uppercase tracking-[0.15em] text-zinc-400 mb-2">
+              Historial
+            </p>
+            <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
+              {[
+                {
+                  icon: "⚽",
+                  label: "Jogos",
+                  value: selectedAuctionPlayer.games_played || 0,
+                },
+                {
+                  icon: "🥅",
+                  label: "Golos",
+                  value: selectedAuctionPlayer.goals || 0,
+                },
+                {
+                  icon: "🟥",
+                  label: "Vermelhos",
+                  value: selectedAuctionPlayer.red_cards || 0,
+                },
+                {
+                  icon: "🩹",
+                  label: "Lesões",
+                  value: selectedAuctionPlayer.injuries || 0,
+                },
+              ].map(({ icon, label, value }) => (
+                <div
+                  key={label}
+                  className="rounded-lg p-3 flex items-center gap-3"
+                  style={{ background: "#1a1a2e" }}
+                >
+                  <span className="text-xl leading-none">{icon}</span>
+                  <div>
+                    <p className="text-xs text-zinc-500 font-medium leading-tight">
+                      {label}
+                    </p>
+                    <p className="font-black text-white text-lg leading-tight">
+                      {value}
+                    </p>
+                  </div>
+                </div>
+              ))}
+            </div>
+            {selectedAuctionPlayer.aggressiveness != null && (
+              <div className="mt-2 flex items-center gap-2 px-1">
+                <span className="text-xs text-zinc-500 font-medium">
+                  Agressividade:
+                </span>
+                <AggBadge value={selectedAuctionPlayer.aggressiveness} />
+              </div>
+            )}
+          </div>
+
+          {/* ── Bottom CTA: bid / result / seller ── */}
           {auctionResult ? (
-            <div className="px-5 py-4 bg-linear-to-r from-amber-500 to-amber-400 border-t-2 border-amber-600 text-zinc-950">
+            <div
+              className="px-5 py-4 text-center"
+              style={{
+                background: auctionResult.sold
+                  ? "linear-gradient(90deg, #c2410c 0%, #ea580c 50%, #c2410c 100%)"
+                  : "linear-gradient(90deg, #1c1917 0%, #292524 50%, #1c1917 100%)",
+                borderTop: "1px solid #292929",
+              }}
+            >
               {auctionResult.sold ? (
-                <p className="font-black text-lg">
-                  Vendido ao{" "}
-                  <span className="uppercase">
-                    {auctionResult.buyerTeamName}
-                  </span>{" "}
-                  por {formatCurrency(auctionResult.finalBid)}
+                <p className="font-black text-lg text-white uppercase tracking-wider">
+                  Vendido ao {auctionResult.buyerTeamName} por{" "}
+                  {formatCurrency(auctionResult.finalBid)}
                 </p>
               ) : (
-                <p className="font-black text-lg">
-                  Não recebeu lances e saiu do leilão.
+                <p className="font-black text-lg text-zinc-300 uppercase tracking-wider">
+                  Sem licitações — saiu do leilão
                 </p>
               )}
-              <p className="text-xs text-zinc-700 mt-1 font-medium">
-                A fechar automaticamente...
+              <p className="text-xs text-white/50 mt-1">
+                A fechar automaticamente…
               </p>
             </div>
           ) : myAuctionBid != null ? (
-            <div className="px-5 py-4 bg-linear-to-r from-emerald-600 to-emerald-500 border-t-2 border-emerald-700 text-white">
-              <p className="font-black text-sm uppercase tracking-widest mb-1">
-                Lance registado
+            <div
+              className="px-5 py-4 text-center"
+              style={{
+                background:
+                  "linear-gradient(90deg, #065f46 0%, #059669 50%, #065f46 100%)",
+                borderTop: "1px solid #292929",
+              }}
+            >
+              <p className="text-xs font-black uppercase tracking-widest text-emerald-200 mb-1">
+                Lance Registado
               </p>
-              <p className="font-black text-2xl font-mono">
+              <p className="font-black text-2xl text-white">
                 {formatCurrency(myAuctionBid)}
               </p>
-              <p className="text-xs text-emerald-200 mt-1 font-medium">
-                A aguardar o resultado do leilão...
+              <p className="text-xs text-emerald-300/60 mt-1">
+                A aguardar o resultado do leilão…
               </p>
             </div>
           ) : isSeller ? (
-            <div className="px-5 py-4 bg-linear-to-r from-emerald-600 to-emerald-500 border-t-2 border-emerald-700 text-white">
-              <p className="font-black text-sm uppercase tracking-widest mb-1">
+            <div
+              className="px-5 py-4 text-center"
+              style={{
+                background:
+                  "linear-gradient(90deg, #065f46 0%, #059669 50%, #065f46 100%)",
+                borderTop: "1px solid #292929",
+              }}
+            >
+              <p className="text-xs font-black uppercase tracking-widest text-emerald-200 mb-1">
                 O teu jogador
               </p>
-              <p className="font-black text-2xl font-mono">Em Leilão</p>
-              <p className="text-xs text-emerald-200 mt-1 font-medium">
-                A aguardar as licitações dos outros treinadores...
+              <p className="font-black text-2xl text-white">Em Leilão</p>
+              <p className="text-xs text-emerald-300/60 mt-1">
+                A aguardar as licitações dos outros treinadores…
               </p>
             </div>
           ) : (
-            <div className="px-4 py-3 sm:px-5 sm:py-4 bg-linear-to-r from-red-600 to-red-500 border-t-2 border-red-700 text-white">
-              <p className="font-bold text-sm mb-1.5">Oferta (€):</p>
+            <div
+              className="px-5 py-4"
+              style={{ background: "#1a1a2e", borderTop: "1px solid #292929" }}
+            >
+              <p className="text-xs font-black uppercase tracking-widest text-zinc-400 mb-2">
+                Fazer Oferta
+              </p>
               <div className="flex items-center gap-2 mb-2">
                 <input
                   type="number"
