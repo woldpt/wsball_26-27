@@ -11,6 +11,8 @@ import { COUNTRY_FLAGS } from "./countryFlags.js";
 // ── Extracted components ───────────────────────────────────────────────────
 import { AggBadge } from "./components/shared/AggBadge.jsx";
 import { PlayerLink } from "./components/shared/PlayerLink.jsx";
+// eslint-disable-next-line no-unused-vars
+import { motion, AnimatePresence } from "framer-motion";
 import { WelcomeModal } from "./components/modals/WelcomeModal.jsx";
 import { JobOfferModal } from "./components/modals/JobOfferModal.jsx";
 import { PlayerHistoryModal } from "./components/modals/PlayerHistoryModal.jsx";
@@ -3115,40 +3117,57 @@ function App() {
       {!isMatchInProgress && (
         <nav className="hidden lg:flex fixed left-0 top-14 bottom-0 w-64 bg-surface-container-low flex-col z-10">
           <div className="flex-1 px-3 py-4 space-y-0.5 overflow-y-auto">
-            {[
-              { key: "club", label: "Clube", icon: "groups_3" },
-              { key: "finances", label: "Finanças", icon: "payments" },
-              { key: "players", label: "Plantel", icon: "group" },
-              {
-                key: "calendario",
-                label: "Calendário",
-                icon: "calendar_month",
-              },
-              {
-                key: "standings",
-                label: "Classificações",
-                icon: "leaderboard",
-              },
-              { key: "market", label: "Mercado", icon: "swap_horiz" },
-            ].map(({ key, label, icon }) => (
-              <button
-                key={key}
-                onClick={() => {
-                  setActiveTab(key);
-                  window.scrollTo(0, 0);
-                }}
-                className={`w-full flex items-center gap-3 px-4 py-3 text-sm font-bold transition-all text-left ${
-                  activeTab === key
-                    ? "bg-primary-container/20 text-primary border-l-4 border-primary"
-                    : "text-on-surface-variant hover:bg-surface-bright hover:text-on-surface"
-                }`}
-              >
-                <span className="material-symbols-outlined text-[20px] shrink-0 leading-none">
-                  {icon}
-                </span>
-                <span>{label}</span>
-              </button>
-            ))}
+            <motion.div
+              initial="hidden"
+              animate="visible"
+              variants={{
+                hidden: {},
+                visible: { transition: { staggerChildren: 0.055 } },
+              }}
+            >
+              {[
+                { key: "club", label: "Clube", icon: "groups_3" },
+                { key: "finances", label: "Finanças", icon: "payments" },
+                { key: "players", label: "Plantel", icon: "group" },
+                {
+                  key: "calendario",
+                  label: "Calendário",
+                  icon: "calendar_month",
+                },
+                {
+                  key: "standings",
+                  label: "Classificações",
+                  icon: "leaderboard",
+                },
+                { key: "market", label: "Mercado", icon: "swap_horiz" },
+              ].map(({ key, label, icon }) => (
+                <motion.button
+                  key={key}
+                  variants={{
+                    hidden: { opacity: 0, x: -12 },
+                    visible: {
+                      opacity: 1,
+                      x: 0,
+                      transition: { duration: 0.2 },
+                    },
+                  }}
+                  onClick={() => {
+                    setActiveTab(key);
+                    window.scrollTo(0, 0);
+                  }}
+                  className={`w-full flex items-center gap-3 px-4 py-3 text-sm font-bold transition-all text-left ${
+                    activeTab === key
+                      ? "bg-primary-container/20 text-primary border-l-4 border-primary"
+                      : "text-on-surface-variant hover:bg-surface-bright hover:text-on-surface"
+                  }`}
+                >
+                  <span className="material-symbols-outlined text-[20px] shrink-0 leading-none">
+                    {icon}
+                  </span>
+                  <span>{label}</span>
+                </motion.button>
+              ))}
+            </motion.div>
             <div className="pt-2">
               <button
                 onClick={() => {
@@ -3274,8 +3293,9 @@ function App() {
             { key: "market", label: "Mercado", icon: "swap_horiz" },
             { key: "tactic", label: "Jogar", icon: "strategy" },
           ].map(({ key, label, icon }) => (
-            <button
+            <motion.button
               key={key}
+              whileTap={{ scale: 0.88 }}
               onClick={() => {
                 setActiveTab(key);
                 window.scrollTo(0, 0);
@@ -3285,13 +3305,17 @@ function App() {
               }`}
             >
               {activeTab === key && (
-                <span className="absolute top-0 left-1/2 -translate-x-1/2 w-8 h-0.5 bg-primary rounded-b-full" />
+                <motion.span
+                  layoutId="mobileTabIndicator"
+                  className="absolute top-0 left-1/2 -translate-x-1/2 w-8 h-0.5 bg-primary rounded-b-full"
+                  transition={{ type: "spring", stiffness: 500, damping: 35 }}
+                />
               )}
               <span className="material-symbols-outlined text-[22px] leading-none">
                 {icon}
               </span>
               <span>{label}</span>
-            </button>
+            </motion.button>
           ))}
         </nav>
       )}
@@ -3423,773 +3447,186 @@ function App() {
             className={`grid grid-cols-1 gap-6 ${activeTab === "tactic" ? "xl:grid-cols-[minmax(0,3fr)_320px]" : ""}`}
           >
             <div>
-              {activeTab === "live" && (matchResults || matchAction) && (
-                <div
-                  className={`bg-surface-container text-on-surface font-body p-6 border border-outline-variant/20 shadow-sm relative overflow-hidden${isMatchInProgress ? " fixed inset-0 z-30 overflow-y-auto rounded-none" : " min-h-150 rounded-lg"}`}
+              <AnimatePresence mode="wait" initial={false}>
+                <motion.div
+                  key={activeTab}
+                  initial={{ opacity: 0, y: 14 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  exit={{ opacity: 0, y: -8 }}
+                  transition={{
+                    duration: 0.22,
+                    ease: [0.25, 0.46, 0.45, 0.94],
+                  }}
                 >
-                  {matchAction && (
-                    <div className="fixed inset-0 z-[150] bg-surface/95 backdrop-blur-sm p-6 flex flex-col justify-center">
-                      <h2 className="text-3xl font-black text-amber-500 mb-2 tracking-widest text-center uppercase">
-                        {matchAction.type === "injury" ? "LESÃO" : "PENÁLTI"}
-                      </h2>
-                      <p className="text-center text-zinc-400 font-bold mb-2 text-sm">
-                        Minuto {matchAction.minute}'{" "}
-                        {matchAction.currentScore
-                          ? `| ${matchAction.currentScore.home} - ${matchAction.currentScore.away}`
-                          : ""}
-                      </p>
-                      <p className="text-center text-zinc-300 font-black mb-2 text-sm uppercase tracking-widest">
-                        {matchAction.type === "injury"
-                          ? `Jogador lesionado: ${matchAction.injuredPlayer?.name || "?"}${matchAction.injuredPlayer?.position ? ` · ${matchAction.injuredPlayer.position}` : ""}`
-                          : "Escolhe o jogador para marcar o penalty"}
-                      </p>
-                      {matchAction.type === "injury" &&
-                        injuryCountdown !== null && (
-                          <p className="text-center text-amber-400 font-black text-sm mb-4 tracking-wide">
-                            Auto-substituição em {injuryCountdown}s
+                  {activeTab === "live" && (matchResults || matchAction) && (
+                    <div
+                      className={`bg-surface-container text-on-surface font-body p-6 border border-outline-variant/20 shadow-sm relative overflow-hidden${isMatchInProgress ? " fixed inset-0 z-30 overflow-y-auto rounded-none" : " min-h-150 rounded-lg"}`}
+                    >
+                      {matchAction && (
+                        <div className="fixed inset-0 z-[150] bg-surface/95 backdrop-blur-sm p-6 flex flex-col justify-center">
+                          <h2 className="text-3xl font-black text-amber-500 mb-2 tracking-widest text-center uppercase">
+                            {matchAction.type === "injury"
+                              ? "LESÃO"
+                              : "PENÁLTI"}
+                          </h2>
+                          <p className="text-center text-zinc-400 font-bold mb-2 text-sm">
+                            Minuto {matchAction.minute}'{" "}
+                            {matchAction.currentScore
+                              ? `| ${matchAction.currentScore.home} - ${matchAction.currentScore.away}`
+                              : ""}
                           </p>
-                        )}
+                          <p className="text-center text-zinc-300 font-black mb-2 text-sm uppercase tracking-widest">
+                            {matchAction.type === "injury"
+                              ? `Jogador lesionado: ${matchAction.injuredPlayer?.name || "?"}${matchAction.injuredPlayer?.position ? ` · ${matchAction.injuredPlayer.position}` : ""}`
+                              : "Escolhe o jogador para marcar o penalty"}
+                          </p>
+                          {matchAction.type === "injury" &&
+                            injuryCountdown !== null && (
+                              <p className="text-center text-amber-400 font-black text-sm mb-4 tracking-wide">
+                                Auto-substituição em {injuryCountdown}s
+                              </p>
+                            )}
 
-                      <div className="flex-1 overflow-y-auto bg-surface-container/40 border border-outline-variant/20 rounded p-4 mb-5">
-                        <div className="space-y-2">
-                          {(matchAction.type === "injury"
-                            ? matchAction.benchPlayers || []
-                            : matchAction.takerCandidates || []
-                          ).map((player) => (
-                            <button
-                              key={player.id}
-                              onClick={() =>
-                                handleResolveMatchAction(player.id)
-                              }
-                              className="w-full flex items-center justify-between gap-3 px-4 py-3 rounded border border-outline-variant/20 bg-surface hover:bg-surface-bright transition-colors text-left"
-                            >
-                              <span className="font-bold text-white truncate">
-                                {player.name}
-                              </span>
-                              <span className="text-xs font-black uppercase tracking-widest text-zinc-400">
-                                {player.position} · {player.skill}
-                              </span>
-                            </button>
-                          ))}
-                          {((matchAction.type === "injury" &&
-                            (!matchAction.benchPlayers ||
-                              matchAction.benchPlayers.length === 0)) ||
-                            (matchAction.type === "penalty" &&
-                              (!matchAction.takerCandidates ||
-                                matchAction.takerCandidates.length === 0))) && (
-                            <p className="text-center text-zinc-500 font-bold text-sm py-8">
-                              Sem opções disponíveis. O sistema escolherá
-                              automaticamente.
-                            </p>
-                          )}
-                        </div>
-                      </div>
-
-                      <button
-                        onClick={() => handleResolveMatchAction(null)}
-                        className="w-full py-4 rounded-sm text-lg font-black uppercase tracking-widest transition-all bg-primary hover:brightness-110 text-on-primary"
-                      >
-                        Escolha automática
-                      </button>
-                    </div>
-                  )}
-
-                  {/* BUG-11 FIX: showHalftimePanel (not liveMinute===45) controls this overlay */}
-                  {showHalftimePanel &&
-                    !isPlayingMatch &&
-                    (() => {
-                      const myMatch = matchResults?.results?.find(
-                        (m) =>
-                          m.homeTeamId === me.teamId ||
-                          m.awayTeamId === me.teamId,
-                      );
-                      const hInfo = myMatch
-                        ? teams.find((t) => t.id === myMatch.homeTeamId)
-                        : null;
-                      const aInfo = myMatch
-                        ? teams.find((t) => t.id === myMatch.awayTeamId)
-                        : null;
-                      const matchEvents = myMatch?.events || [];
-                      const homeGoals = matchEvents.filter(
-                        (e) =>
-                          (e.minute <= 45 || e.minute <= liveMinute) &&
-                          e.type === "goal" &&
-                          e.team === "home",
-                      );
-                      const awayGoals = matchEvents.filter(
-                        (e) =>
-                          (e.minute <= 45 || e.minute <= liveMinute) &&
-                          e.type === "goal" &&
-                          e.team === "away",
-                      );
-
-                      return (
-                        <div className="absolute inset-0 bg-zinc-950/90 backdrop-blur-sm z-50 flex items-center justify-center p-2">
-                          <div className="w-full max-w-sm max-h-[85vh] flex flex-col overflow-hidden bg-surface-container rounded-lg border border-outline-variant/40 shadow-2xl">
-                            {/* ── Header ── */}
-                            <div className="shrink-0 flex items-center justify-between px-3 py-2 bg-surface-container-high border-b border-outline-variant/20">
-                              <div className="flex items-center gap-2.5">
-                                <span className="text-amber-500 font-black text-lg tabular-nums leading-none">
-                                  {liveMinute}'
-                                </span>
-                                <span className="text-[9px] font-black uppercase tracking-widest text-zinc-500 bg-zinc-800 px-2 py-0.5 rounded-full">
-                                  {cupPreMatch
-                                    ? "Pré-Jogo"
-                                    : liveMinute >= 90
-                                      ? "Antes do Tempo Extra · Taça"
-                                      : isCupMatch
-                                        ? "Intervalo · Taça"
-                                        : "Intervalo"}
-                                </span>
-                              </div>
-                              <div className="flex items-center gap-1.5">
-                                {Array.from({ length: MAX_MATCH_SUBS }).map(
-                                  (_, i) => (
-                                    <span
-                                      key={i}
-                                      className={`w-2 h-2 rounded-full transition-colors ${i < subsMade ? "bg-primary" : "bg-surface-container-high"}`}
-                                    />
-                                  ),
-                                )}
-                                <span className="ml-1 text-[10px] font-bold text-zinc-500 tabular-nums">
-                                  {MAX_MATCH_SUBS - subsMade}/{MAX_MATCH_SUBS}
-                                </span>
-                              </div>
-                            </div>
-
-                            {/* ── Match Score & Events ── */}
-                            {myMatch && (
-                              <div className="shrink-0 px-3 py-2.5 border-b border-outline-variant/20 bg-surface-container/60 flex flex-col gap-2 relative">
-                                {/* Score */}
-                                <div className="flex items-center justify-center font-black">
-                                  <span className="flex-1 text-on-surface truncate text-right text-xs uppercase tracking-wide">
-                                    {hInfo?.name}
+                          <div className="flex-1 overflow-y-auto bg-surface-container/40 border border-outline-variant/20 rounded p-4 mb-5">
+                            <div className="space-y-2">
+                              {(matchAction.type === "injury"
+                                ? matchAction.benchPlayers || []
+                                : matchAction.takerCandidates || []
+                              ).map((player) => (
+                                <button
+                                  key={player.id}
+                                  onClick={() =>
+                                    handleResolveMatchAction(player.id)
+                                  }
+                                  className="w-full flex items-center justify-between gap-3 px-4 py-3 rounded border border-outline-variant/20 bg-surface hover:bg-surface-bright transition-colors text-left"
+                                >
+                                  <span className="font-bold text-white truncate">
+                                    {player.name}
                                   </span>
-                                  <div className="mx-3 flex items-center gap-1.5 text-lg">
-                                    <span className="text-primary">
-                                      {homeGoals.length}
+                                  <span className="text-xs font-black uppercase tracking-widest text-zinc-400">
+                                    {player.position} · {player.skill}
+                                  </span>
+                                </button>
+                              ))}
+                              {((matchAction.type === "injury" &&
+                                (!matchAction.benchPlayers ||
+                                  matchAction.benchPlayers.length === 0)) ||
+                                (matchAction.type === "penalty" &&
+                                  (!matchAction.takerCandidates ||
+                                    matchAction.takerCandidates.length ===
+                                      0))) && (
+                                <p className="text-center text-zinc-500 font-bold text-sm py-8">
+                                  Sem opções disponíveis. O sistema escolherá
+                                  automaticamente.
+                                </p>
+                              )}
+                            </div>
+                          </div>
+
+                          <button
+                            onClick={() => handleResolveMatchAction(null)}
+                            className="w-full py-4 rounded-sm text-lg font-black uppercase tracking-widest transition-all bg-primary hover:brightness-110 text-on-primary"
+                          >
+                            Escolha automática
+                          </button>
+                        </div>
+                      )}
+
+                      {/* BUG-11 FIX: showHalftimePanel (not liveMinute===45) controls this overlay */}
+                      {showHalftimePanel &&
+                        !isPlayingMatch &&
+                        (() => {
+                          const myMatch = matchResults?.results?.find(
+                            (m) =>
+                              m.homeTeamId === me.teamId ||
+                              m.awayTeamId === me.teamId,
+                          );
+                          const hInfo = myMatch
+                            ? teams.find((t) => t.id === myMatch.homeTeamId)
+                            : null;
+                          const aInfo = myMatch
+                            ? teams.find((t) => t.id === myMatch.awayTeamId)
+                            : null;
+                          const matchEvents = myMatch?.events || [];
+                          const homeGoals = matchEvents.filter(
+                            (e) =>
+                              (e.minute <= 45 || e.minute <= liveMinute) &&
+                              e.type === "goal" &&
+                              e.team === "home",
+                          );
+                          const awayGoals = matchEvents.filter(
+                            (e) =>
+                              (e.minute <= 45 || e.minute <= liveMinute) &&
+                              e.type === "goal" &&
+                              e.team === "away",
+                          );
+
+                          return (
+                            <div className="absolute inset-0 bg-zinc-950/90 backdrop-blur-sm z-50 flex items-center justify-center p-2">
+                              <div className="w-full max-w-sm max-h-[85vh] flex flex-col overflow-hidden bg-surface-container rounded-lg border border-outline-variant/40 shadow-2xl">
+                                {/* ── Header ── */}
+                                <div className="shrink-0 flex items-center justify-between px-3 py-2 bg-surface-container-high border-b border-outline-variant/20">
+                                  <div className="flex items-center gap-2.5">
+                                    <span className="text-amber-500 font-black text-lg tabular-nums leading-none">
+                                      {liveMinute}'
                                     </span>
-                                    <span className="text-on-surface-variant/30 text-sm">
-                                      -
-                                    </span>
-                                    <span className="text-primary">
-                                      {awayGoals.length}
+                                    <span className="text-[9px] font-black uppercase tracking-widest text-zinc-500 bg-zinc-800 px-2 py-0.5 rounded-full">
+                                      {cupPreMatch
+                                        ? "Pré-Jogo"
+                                        : liveMinute >= 90
+                                          ? "Antes do Tempo Extra · Taça"
+                                          : isCupMatch
+                                            ? "Intervalo · Taça"
+                                            : "Intervalo"}
                                     </span>
                                   </div>
-                                  <span className="flex-1 text-on-surface truncate text-left text-xs uppercase tracking-wide">
-                                    {aInfo?.name}
-                                  </span>
-                                </div>
-
-                                {/* Timeline */}
-                                <div className="flex flex-col gap-1 max-h-24 overflow-y-auto px-1 text-[10px]">
-                                  {matchEvents
-                                    .filter(
-                                      (e) =>
-                                        (e.minute <= 45 ||
-                                          e.minute <= liveMinute) &&
-                                        [
-                                          "goal",
-                                          "penalty_goal",
-                                          "own_goal",
-                                          "yellow",
-                                          "red",
-                                          "injury",
-                                        ].includes(e.type),
-                                    )
-                                    .sort((a, b) => a.minute - b.minute)
-                                    .map((e, i) => {
-                                      const icon =
-                                        e.type === "goal" ||
-                                        e.type === "penalty_goal"
-                                          ? "⚽"
-                                          : e.type === "own_goal"
-                                            ? "⚽🔙"
-                                            : e.type === "yellow"
-                                              ? "🟨"
-                                              : e.type === "red"
-                                                ? "🟥"
-                                                : e.type === "injury"
-                                                  ? "🤕"
-                                                  : "";
-                                      const isHome = e.team === "home";
-                                      const name =
-                                        e.playerName ||
-                                        e.player_name ||
-                                        e.player ||
-                                        "?";
-                                      return (
-                                        <div
+                                  <div className="flex items-center gap-1.5">
+                                    {Array.from({ length: MAX_MATCH_SUBS }).map(
+                                      (_, i) => (
+                                        <span
                                           key={i}
-                                          className={`flex items-center gap-1.5 ${isHome ? "justify-start" : "justify-end text-right"}`}
-                                        >
-                                          {isHome && (
-                                            <span className="text-on-surface-variant/40 tabular-nums w-4 text-right shrink-0">
-                                              {e.minute}'
-                                            </span>
-                                          )}
-                                          {isHome && (
-                                            <span className="shrink-0">
-                                              {icon}
-                                            </span>
-                                          )}
-                                          <span
-                                            className={`truncate max-w-[120px] ${e.type === "goal" || e.type === "penalty_goal" ? "text-primary font-bold" : e.type === "red" ? "text-red-400 font-bold" : "text-on-surface-variant"}`}
-                                          >
-                                            <PlayerLink playerId={e.playerId}>
-                                              {name}
-                                            </PlayerLink>
-                                          </span>
-                                          {!isHome && (
-                                            <span className="shrink-0">
-                                              {icon}
-                                            </span>
-                                          )}
-                                          {!isHome && (
-                                            <span className="text-on-surface-variant/40 tabular-nums w-4 text-left shrink-0">
-                                              {e.minute}'
-                                            </span>
-                                          )}
-                                        </div>
-                                      );
-                                    })}
+                                          className={`w-2 h-2 rounded-full transition-colors ${i < subsMade ? "bg-primary" : "bg-surface-container-high"}`}
+                                        />
+                                      ),
+                                    )}
+                                    <span className="ml-1 text-[10px] font-bold text-zinc-500 tabular-nums">
+                                      {MAX_MATCH_SUBS - subsMade}/
+                                      {MAX_MATCH_SUBS}
+                                    </span>
+                                  </div>
                                 </div>
-                              </div>
-                            )}
 
-                            {/* ── Confirmed subs strip ── */}
-                            {confirmedSubs.length > 0 && (
-                              <div className="shrink-0 px-3 py-2 bg-surface-container/60 border-b border-outline-variant/20 flex flex-wrap gap-1.5">
-                                {confirmedSubs.map((sub, i) => {
-                                  const outP = mySquad.find(
-                                    (p) => p.id === sub.out,
-                                  );
-                                  const inP = mySquad.find(
-                                    (p) => p.id === sub.in,
-                                  );
-                                  return (
-                                    <div
-                                      key={i}
-                                      className="flex items-center gap-1 bg-zinc-800 rounded-full pl-2 pr-2.5 py-0.5 text-[10px] font-bold"
-                                    >
-                                      <span className="text-zinc-600 shrink-0">
-                                        🔄
+                                {/* ── Match Score & Events ── */}
+                                {myMatch && (
+                                  <div className="shrink-0 px-3 py-2.5 border-b border-outline-variant/20 bg-surface-container/60 flex flex-col gap-2 relative">
+                                    {/* Score */}
+                                    <div className="flex items-center justify-center font-black">
+                                      <span className="flex-1 text-on-surface truncate text-right text-xs uppercase tracking-wide">
+                                        {hInfo?.name}
                                       </span>
-                                      <span className="text-red-400 truncate max-w-[5.5rem]">
-                                        {outP?.name ?? "?"}
-                                      </span>
-                                      <span className="text-zinc-600 shrink-0 mx-0.5">
-                                        →
-                                      </span>
-                                      <span className="text-emerald-400 truncate max-w-[5.5rem]">
-                                        {inP?.name ?? "?"}
+                                      <div className="mx-3 flex items-center gap-1.5 text-lg">
+                                        <span className="text-primary">
+                                          {homeGoals.length}
+                                        </span>
+                                        <span className="text-on-surface-variant/30 text-sm">
+                                          -
+                                        </span>
+                                        <span className="text-primary">
+                                          {awayGoals.length}
+                                        </span>
+                                      </div>
+                                      <span className="flex-1 text-on-surface truncate text-left text-xs uppercase tracking-wide">
+                                        {aInfo?.name}
                                       </span>
                                     </div>
-                                  );
-                                })}
-                              </div>
-                            )}
 
-                            {/* ── Mentality selector ── */}
-                            <div className="shrink-0 px-3 py-2 bg-surface-container/60 border-b border-outline-variant/20">
-                              <span className="block text-[9px] font-black uppercase tracking-widest text-zinc-500 mb-1.5">
-                                Mentalidade
-                              </span>
-                              <div className="flex gap-1.5">
-                                {[
-                                  { value: "Defensive", label: "Defensivo" },
-                                  { value: "Balanced", label: "Equilibrado" },
-                                  { value: "Offensive", label: "Ofensivo" },
-                                ].map(({ value, label }) => (
-                                  <button
-                                    key={value}
-                                    onClick={() =>
-                                      updateTactic({ style: value })
-                                    }
-                                    className={`flex-1 py-1.5 rounded text-[10px] font-black uppercase tracking-wide transition-colors ${
-                                      tactic.style === value
-                                        ? value === "Defensive"
-                                          ? "bg-blue-600 text-white"
-                                          : value === "Offensive"
-                                            ? "bg-amber-500 text-zinc-950"
-                                            : "bg-primary text-on-primary"
-                                        : "bg-zinc-800 text-zinc-400 hover:bg-zinc-700 hover:text-zinc-200"
-                                    }`}
-                                  >
-                                    {label}
-                                  </button>
-                                ))}
-                              </div>
-                            </div>
-
-                            {/* ── Two-column player list ── */}
-                            <div className="flex flex-1 min-h-0 overflow-hidden">
-                              {/* Em Campo */}
-                              <div className="flex-1 flex flex-col min-w-0 overflow-hidden border-r border-zinc-800">
-                                <div className="shrink-0 flex items-center gap-1.5 px-3 py-1.5 bg-surface-container/40 border-b border-outline-variant/20">
-                                  <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 shrink-0" />
-                                  <span className="text-[9px] font-black uppercase tracking-widest text-emerald-500">
-                                    Em Campo
-                                  </span>
-                                </div>
-                                <div className="flex-1 overflow-y-auto">
-                                  {annotatedSquad
-                                    .filter(
-                                      (p) =>
-                                        tactic.positions[p.id] === "Titular" &&
-                                        !subbedOut.includes(p.id) &&
-                                        !redCardedHalftimeIds.has(p.id),
-                                    )
-                                    .map((p) => (
-                                      <div
-                                        key={p.id}
-                                        onClick={() =>
-                                          subsMade < MAX_MATCH_SUBS &&
-                                          handleSelectOut(p.id)
-                                        }
-                                        className={`flex items-center gap-2 px-2 py-1.5 border-b border-zinc-800/40 select-none transition-all border-l-2 ${
-                                          swapSource === p.id
-                                            ? "bg-red-500/15 border-l-red-500"
-                                            : subsMade < MAX_MATCH_SUBS
-                                              ? "cursor-pointer hover:bg-zinc-800/50 border-l-transparent"
-                                              : "opacity-40 cursor-not-allowed border-l-transparent"
-                                        }`}
-                                      >
-                                        <span
-                                          className={`w-4 h-4 rounded-sm shrink-0 flex items-center justify-center text-[8px] font-black ${
-                                            swapSource === p.id
-                                              ? "bg-red-500/25 text-red-300"
-                                              : `bg-zinc-800 ${POSITION_TEXT_CLASS[p.position]}`
-                                          }`}
-                                        >
-                                          {POSITION_SHORT_LABELS[p.position]}
-                                        </span>
-                                        <span
-                                          className={`flex-1 truncate text-[11px] font-bold ${swapSource === p.id ? "text-red-200" : "text-zinc-200"}`}
-                                        >
-                                          {p.name}
-                                          {!!p.is_star &&
-                                            (p.position === "MED" ||
-                                              p.position === "ATA") && (
-                                              <span className="ml-0.5 text-amber-400 font-black">
-                                                *
-                                              </span>
-                                            )}
-                                        </span>
-                                        <span
-                                          className={`shrink-0 text-[10px] font-black tabular-nums ${swapSource === p.id ? "text-red-400" : "text-zinc-600"}`}
-                                        >
-                                          {p.skill}
-                                        </span>
-                                      </div>
-                                    ))}
-                                </div>
-                              </div>
-
-                              {/* Banco */}
-                              <div className="flex-1 flex flex-col min-w-0 overflow-hidden">
-                                <div className="shrink-0 flex items-center gap-1.5 px-3 py-1.5 bg-surface-container/40 border-b border-outline-variant/20">
-                                  <span className="w-1.5 h-1.5 rounded-full bg-zinc-600 shrink-0" />
-                                  <span className="text-[9px] font-black uppercase tracking-widest text-zinc-500">
-                                    Banco
-                                  </span>
-                                </div>
-                                <div className="flex-1 overflow-y-auto">
-                                  {annotatedSquad
-                                    .filter(
-                                      (p) =>
-                                        tactic.positions[p.id] === "Suplente",
-                                    )
-                                    .map((p) => {
-                                      const alreadyUsed = subbedOut.includes(
-                                        p.id,
-                                      );
-                                      const disabled =
-                                        alreadyUsed ||
-                                        !swapSource ||
-                                        subsMade >= MAX_MATCH_SUBS;
-                                      return (
-                                        <div
-                                          key={p.id}
-                                          onClick={() =>
-                                            !disabled && handleSelectIn(p.id)
-                                          }
-                                          className={`flex items-center gap-2 px-2 py-1.5 border-b border-zinc-800/40 select-none transition-all border-l-2 ${
-                                            alreadyUsed
-                                              ? "opacity-20 cursor-not-allowed border-l-transparent"
-                                              : swapTarget === p.id
-                                                ? "bg-emerald-500/15 border-l-emerald-500 cursor-pointer"
-                                                : disabled
-                                                  ? "opacity-40 cursor-not-allowed border-l-transparent"
-                                                  : "cursor-pointer hover:bg-zinc-800/50 border-l-transparent"
-                                          }`}
-                                        >
-                                          <span
-                                            className={`w-4 h-4 rounded-sm shrink-0 flex items-center justify-center text-[8px] font-black ${
-                                              alreadyUsed
-                                                ? "bg-zinc-800/50 text-zinc-700"
-                                                : swapTarget === p.id
-                                                  ? "bg-emerald-500/25 text-emerald-300"
-                                                  : `bg-zinc-800 ${POSITION_TEXT_CLASS[p.position]}`
-                                            }`}
-                                          >
-                                            {POSITION_SHORT_LABELS[p.position]}
-                                          </span>
-                                          <span
-                                            className={`flex-1 truncate text-[11px] font-bold ${
-                                              alreadyUsed
-                                                ? "text-zinc-700 line-through"
-                                                : swapTarget === p.id
-                                                  ? "text-emerald-200"
-                                                  : "text-zinc-200"
-                                            }`}
-                                          >
-                                            {p.name}
-                                            {!alreadyUsed &&
-                                              !!p.is_star &&
-                                              (p.position === "MED" ||
-                                                p.position === "ATA") && (
-                                                <span className="ml-0.5 text-amber-400 font-black">
-                                                  *
-                                                </span>
-                                              )}
-                                          </span>
-                                          <span
-                                            className={`shrink-0 text-[10px] font-black tabular-nums ${
-                                              alreadyUsed
-                                                ? "text-zinc-700"
-                                                : swapTarget === p.id
-                                                  ? "text-emerald-400"
-                                                  : "text-zinc-600"
-                                            }`}
-                                          >
-                                            {alreadyUsed ? "—" : p.skill}
-                                          </span>
-                                        </div>
-                                      );
-                                    })}
-                                </div>
-                              </div>
-                            </div>
-
-                            {/* ── Swap action bar ── */}
-                            {swapSource ? (
-                              <div className="shrink-0 flex items-center gap-2 px-3 py-2.5 border-t border-outline-variant/30 bg-surface-container">
-                                <div className="flex-1 flex items-center gap-2 min-w-0">
-                                  <span className="bg-red-950 text-red-300 border border-red-800/60 text-[10px] font-black px-2 py-0.5 rounded truncate max-w-[40%]">
-                                    {annotatedSquad.find(
-                                      (p) => p.id === swapSource,
-                                    )?.name ?? "?"}
-                                  </span>
-                                  <span className="text-zinc-500 shrink-0 font-black text-sm">
-                                    →
-                                  </span>
-                                  {swapTarget ? (
-                                    <span className="bg-emerald-950 text-emerald-300 border border-emerald-800/60 text-[10px] font-black px-2 py-0.5 rounded truncate max-w-[40%]">
-                                      {annotatedSquad.find(
-                                        (p) => p.id === swapTarget,
-                                      )?.name ?? "?"}
-                                    </span>
-                                  ) : (
-                                    <span className="text-zinc-600 text-[10px] italic">
-                                      escolhe do banco…
-                                    </span>
-                                  )}
-                                </div>
-                                <button
-                                  onClick={handleResetSub}
-                                  className="shrink-0 w-6 h-6 rounded-full bg-zinc-800 hover:bg-zinc-700 text-zinc-500 hover:text-white text-[10px] flex items-center justify-center transition-colors"
-                                >
-                                  ✕
-                                </button>
-                                <button
-                                  onClick={handleConfirmSub}
-                                  disabled={!swapTarget}
-                                  className={`shrink-0 px-3 py-1.5 rounded text-[10px] font-black uppercase tracking-wide transition-colors ${
-                                    swapTarget
-                                      ? "bg-emerald-600 hover:bg-emerald-500 text-white"
-                                      : "bg-zinc-800 text-zinc-600 cursor-not-allowed"
-                                  }`}
-                                >
-                                  Substituir
-                                </button>
-                              </div>
-                            ) : subsMade < MAX_MATCH_SUBS ? (
-                              <div className="shrink-0 border-t border-zinc-800/60 px-4 py-1.5 text-center">
-                                <span className="text-[9px] text-zinc-700 font-bold uppercase tracking-wide">
-                                  Toca num jogador em campo para substituir
-                                </span>
-                              </div>
-                            ) : null}
-
-                            {/* BUG-06 FIX: Use handleHalftimeReady which always sends true */}
-                            {/* BUG: only gate on myTeamInCup when it's actually a cup match */}
-                            {(() => {
-                              const isCupContext = isCupMatch || cupPreMatch;
-                              const canContinue = !isCupContext || myTeamInCup;
-                              const isReady = !!players.find(
-                                (p) => p.name === me.name,
-                              )?.ready;
-                              return (
-                                <button
-                                  onClick={
-                                    canContinue
-                                      ? handleHalftimeReady
-                                      : undefined
-                                  }
-                                  disabled={!canContinue || isReady}
-                                  className={`shrink-0 w-full py-3.5 text-sm font-black uppercase tracking-widest transition-all ${
-                                    !canContinue
-                                      ? "bg-zinc-800 text-zinc-500 cursor-not-allowed"
-                                      : isReady
-                                        ? "bg-zinc-800 text-zinc-500"
-                                        : cupPreMatch
-                                          ? "bg-green-600 hover:bg-green-500 text-zinc-950"
-                                          : "bg-primary hover:brightness-110 text-on-primary"
-                                  }`}
-                                >
-                                  {!canContinue
-                                    ? "⏳ A AGUARDAR JOGO DA TAÇA..."
-                                    : isReady
-                                      ? "⏳ A AGUARDAR..."
-                                      : cupPreMatch
-                                        ? "▶ INICIAR JOGO — TAÇA"
-                                        : isCupMatch
-                                          ? "▶ 2ª PARTE — TAÇA"
-                                          : "▶ INICIAR 2ª PARTE"}
-                                </button>
-                              );
-                            })()}
-                          </div>
-                        </div>
-                      );
-                    })()}
-
-                  {/* ── V2 TOP BAR ─────────────────────── */}
-                  <div className="flex items-center justify-center mb-4">
-                    {/* ── CENTERED CLOCK ── */}
-                    <div className="flex flex-col items-center">
-                      {isPlayingMatch ? (
-                        <>
-                          <span className="text-3xl font-headline font-black text-primary tabular-nums leading-none">
-                            {liveMinute}'
-                          </span>
-                          <span className="text-[9px] font-bold text-primary/60 uppercase tracking-widest mt-0.5">
-                            {liveMinute > 45 ? "2ª Parte" : "1ª Parte"}
-                          </span>
-                        </>
-                      ) : liveMinute === 45 && !isCupMatch ? (
-                        <span className="text-sm font-black text-tertiary uppercase tracking-wide">
-                          Intervalo
-                        </span>
-                      ) : isCupMatch ? (
-                        <span className="text-sm font-black text-on-surface-variant/60 uppercase tracking-wide">
-                          🏆 {cupMatchRoundName}
-                          {cupPreMatch
-                            ? " — Pré-Jogo"
-                            : cupExtraTimeBadge
-                              ? " — Prolongamento"
-                              : ""}
-                        </span>
-                      ) : null}
-                    </div>
-                  </div>
-
-                  {/* ── HERO: MY MATCH ─────────────────────── */}
-                  {matchResults &&
-                    (() => {
-                      const myMatch = matchResults.results.find(
-                        (m) =>
-                          m.homeTeamId === me.teamId ||
-                          m.awayTeamId === me.teamId,
-                      );
-                      if (!myMatch) return null;
-                      const hInfo = teams.find(
-                        (t) => t.id === myMatch.homeTeamId,
-                      );
-                      const aInfo = teams.find(
-                        (t) => t.id === myMatch.awayTeamId,
-                      );
-                      const matchEvents = myMatch.events || [];
-                      const homeGoals = matchEvents.filter(
-                        (e) =>
-                          e.minute <= liveMinute &&
-                          e.type === "goal" &&
-                          e.team === "home",
-                      );
-                      const awayGoals = matchEvents.filter(
-                        (e) =>
-                          e.minute <= liveMinute &&
-                          e.type === "goal" &&
-                          e.team === "away",
-                      );
-                      const progress = Math.min(100, (liveMinute / 90) * 100);
-
-                      return (
-                        <div className="bg-surface-container rounded-md overflow-hidden mb-4 relative">
-                          {/* Stadium glow gradient */}
-                          <div
-                            className="absolute inset-0 pointer-events-none"
-                            style={{
-                              background: `radial-gradient(ellipse 80% 40% at 50% 0%, ${hInfo?.color_primary || "#333"}22 0%, transparent 70%)`,
-                            }}
-                          />
-
-                          {/* Matchday label bar */}
-                          <div className="relative flex items-center justify-center px-4 py-2 text-[10px] uppercase tracking-widest text-on-surface-variant/50 font-bold">
-                            <span>
-                              {isCupMatch
-                                ? `Taça · ${cupMatchRoundName}`
-                                : `${DIVISION_NAMES[hInfo?.division] || ""} · Jornada ${matchResults.matchweek}`}
-                            </span>
-                          </div>
-
-                          {/* Teams + Score */}
-                          <div className="relative flex items-stretch justify-between px-2 sm:px-6 py-4 sm:py-5">
-                            {/* Home */}
-                            <div className="flex-1 min-w-0 flex flex-col items-center gap-1">
-                              <span
-                                className="w-10 h-10 rounded-md flex items-center justify-center text-sm font-black shrink-0"
-                                style={{
-                                  backgroundColor:
-                                    hInfo?.color_primary || "#333",
-                                  color: hInfo?.color_secondary || "#fff",
-                                }}
-                              >
-                                {(hInfo?.name || "")
-                                  .substring(0, 3)
-                                  .toUpperCase()}
-                              </span>
-                              <span className="text-xs font-bold text-on-surface truncate w-full text-center px-1">
-                                {hInfo?.name}
-                              </span>
-                              <div className="flex flex-col items-center mt-1 w-full">
-                                {matchEvents
-                                  .filter(
-                                    (e) =>
-                                      e.minute <= liveMinute &&
-                                      e.team === "home" &&
-                                      [
-                                        "goal",
-                                        "penalty_goal",
-                                        "own_goal",
-                                        "yellow",
-                                        "red",
-                                        "injury",
-                                        "substitution",
-                                      ].includes(e.type),
-                                  )
-                                  .sort((a, b) => a.minute - b.minute)
-                                  .map((e, i) => {
-                                    const icon =
-                                      e.type === "goal" ||
-                                      e.type === "penalty_goal"
-                                        ? "⚽"
-                                        : e.type === "own_goal"
-                                          ? "⚽🔙"
-                                          : e.type === "yellow"
-                                            ? "🟨"
-                                            : e.type === "red"
-                                              ? "🟥"
-                                              : e.type === "injury"
-                                                ? "🤕"
-                                                : e.type === "substitution" ||
-                                                    e.type === "halftime_sub"
-                                                  ? "🔄"
-                                                  : "";
-                                    const name =
-                                      e.playerName ||
-                                      e.player_name ||
-                                      e.player ||
-                                      "?";
-                                    return (
-                                      <div
-                                        key={i}
-                                        className="flex items-center justify-center gap-1 text-[10px] leading-tight w-full"
-                                      >
-                                        <span className="text-on-surface-variant/40 tabular-nums shrink-0">
-                                          {e.minute}'
-                                        </span>
-                                        <span className="shrink-0">{icon}</span>
-                                        <span
-                                          className={`font-bold truncate min-w-0 ${e.type === "goal" || e.type === "penalty_goal" ? "text-primary" : e.type === "own_goal" ? "text-orange-400" : e.type === "red" ? "text-red-400" : "text-on-surface-variant/70"}`}
-                                        >
-                                          <PlayerLink playerId={e.playerId}>
-                                            {name}
-                                          </PlayerLink>
-                                        </span>
-                                      </div>
-                                    );
-                                  })}
-                              </div>
-                            </div>
-
-                            {/* Score center */}
-                            {(() => {
-                              const myFlashHome =
-                                goalFlashRef.current[
-                                  `${myMatch.homeTeamId}_${myMatch.awayTeamId}_home`
-                                ];
-                              const myFlashAway =
-                                goalFlashRef.current[
-                                  `${myMatch.homeTeamId}_${myMatch.awayTeamId}_away`
-                                ];
-                              const nowTs = Date.now();
-                              const myHomeFlashing =
-                                myFlashHome && nowTs - myFlashHome < 1500;
-                              const myAwayFlashing =
-                                myFlashAway && nowTs - myFlashAway < 1500;
-                              return (
-                                <div className="flex flex-col items-center justify-center gap-1 shrink-0 w-[90px] sm:w-[120px]">
-                                  <button
-                                    onClick={() => {
-                                      setMatchDetailFixture(myMatch);
-                                      setShowMatchDetail(true);
-                                    }}
-                                    className="flex items-baseline gap-1.5 cursor-pointer group"
-                                  >
-                                    <span
-                                      className="text-4xl sm:text-5xl font-headline font-black tracking-tighter"
-                                      style={{
-                                        color: myHomeFlashing
-                                          ? "#ff4444"
-                                          : undefined,
-                                        transition: myHomeFlashing
-                                          ? "none"
-                                          : "color 1.25s ease",
-                                      }}
-                                    >
-                                      {homeGoals.length}
-                                    </span>
-                                    <span className="text-xl sm:text-2xl text-on-surface-variant/30 font-headline">
-                                      -
-                                    </span>
-                                    <span
-                                      className="text-4xl sm:text-5xl font-headline font-black tracking-tighter"
-                                      style={{
-                                        color: myAwayFlashing
-                                          ? "#ff4444"
-                                          : undefined,
-                                        transition: myAwayFlashing
-                                          ? "none"
-                                          : "color 1.25s ease",
-                                      }}
-                                    >
-                                      {awayGoals.length}
-                                    </span>
-                                  </button>
-                                  {/* Enriched progress bar */}
-                                  <div className="relative w-full mt-2">
-                                    <div className="relative h-1.5 bg-outline-variant/20 rounded-full overflow-hidden">
-                                      <div
-                                        className="h-full bg-primary transition-all duration-1000"
-                                        style={{ width: `${progress}%` }}
-                                      />
-                                      {/* Event markers on progress bar */}
+                                    {/* Timeline */}
+                                    <div className="flex flex-col gap-1 max-h-24 overflow-y-auto px-1 text-[10px]">
                                       {matchEvents
                                         .filter(
                                           (e) =>
-                                            e.minute <= liveMinute &&
+                                            (e.minute <= 45 ||
+                                              e.minute <= liveMinute) &&
                                             [
                                               "goal",
                                               "penalty_goal",
@@ -4199,2675 +3636,3378 @@ function App() {
                                               "injury",
                                             ].includes(e.type),
                                         )
-                                        .map((e, i) => (
-                                          <span
-                                            key={i}
-                                            className="absolute top-1/2 -translate-y-1/2 -translate-x-1/2"
-                                            style={{
-                                              left: `${Math.min(98, Math.max(2, (e.minute / 90) * 100))}%`,
-                                            }}
-                                            title={`${e.minute}' ${e.type}`}
-                                          >
-                                            <span
-                                              className={`block w-1.5 h-1.5 rounded-full ${
-                                                e.type === "goal" ||
-                                                e.type === "penalty_goal"
-                                                  ? "bg-primary"
-                                                  : e.type === "own_goal"
-                                                    ? "bg-orange-400"
-                                                    : e.type === "yellow"
-                                                      ? "bg-yellow-400"
-                                                      : e.type === "red"
-                                                        ? "bg-red-500"
-                                                        : "bg-blue-400"
-                                              }`}
-                                            />
+                                        .sort((a, b) => a.minute - b.minute)
+                                        .map((e, i) => {
+                                          const icon =
+                                            e.type === "goal" ||
+                                            e.type === "penalty_goal"
+                                              ? "⚽"
+                                              : e.type === "own_goal"
+                                                ? "⚽🔙"
+                                                : e.type === "yellow"
+                                                  ? "🟨"
+                                                  : e.type === "red"
+                                                    ? "🟥"
+                                                    : e.type === "injury"
+                                                      ? "🤕"
+                                                      : "";
+                                          const isHome = e.team === "home";
+                                          const name =
+                                            e.playerName ||
+                                            e.player_name ||
+                                            e.player ||
+                                            "?";
+                                          return (
+                                            <div
+                                              key={i}
+                                              className={`flex items-center gap-1.5 ${isHome ? "justify-start" : "justify-end text-right"}`}
+                                            >
+                                              {isHome && (
+                                                <span className="text-on-surface-variant/40 tabular-nums w-4 text-right shrink-0">
+                                                  {e.minute}'
+                                                </span>
+                                              )}
+                                              {isHome && (
+                                                <span className="shrink-0">
+                                                  {icon}
+                                                </span>
+                                              )}
+                                              <span
+                                                className={`truncate max-w-[120px] ${e.type === "goal" || e.type === "penalty_goal" ? "text-primary font-bold" : e.type === "red" ? "text-red-400 font-bold" : "text-on-surface-variant"}`}
+                                              >
+                                                <PlayerLink
+                                                  playerId={e.playerId}
+                                                >
+                                                  {name}
+                                                </PlayerLink>
+                                              </span>
+                                              {!isHome && (
+                                                <span className="shrink-0">
+                                                  {icon}
+                                                </span>
+                                              )}
+                                              {!isHome && (
+                                                <span className="text-on-surface-variant/40 tabular-nums w-4 text-left shrink-0">
+                                                  {e.minute}'
+                                                </span>
+                                              )}
+                                            </div>
+                                          );
+                                        })}
+                                    </div>
+                                  </div>
+                                )}
+
+                                {/* ── Confirmed subs strip ── */}
+                                {confirmedSubs.length > 0 && (
+                                  <div className="shrink-0 px-3 py-2 bg-surface-container/60 border-b border-outline-variant/20 flex flex-wrap gap-1.5">
+                                    {confirmedSubs.map((sub, i) => {
+                                      const outP = mySquad.find(
+                                        (p) => p.id === sub.out,
+                                      );
+                                      const inP = mySquad.find(
+                                        (p) => p.id === sub.in,
+                                      );
+                                      return (
+                                        <div
+                                          key={i}
+                                          className="flex items-center gap-1 bg-zinc-800 rounded-full pl-2 pr-2.5 py-0.5 text-[10px] font-bold"
+                                        >
+                                          <span className="text-zinc-600 shrink-0">
+                                            🔄
                                           </span>
-                                        ))}
-                                    </div>
-                                    <div className="flex justify-between text-[8px] text-on-surface-variant/30 mt-0.5">
-                                      <span>0'</span>
-                                      <span className="font-bold text-primary/60">
-                                        {liveMinute}'
-                                      </span>
-                                      <span>90'</span>
-                                    </div>
-                                    {myMatch.attendance && (
-                                      <div className="flex items-center justify-center gap-1 mt-1 text-[10px] text-on-surface-variant/50">
-                                        <span>🏟️</span>
-                                        <span className="font-bold">
-                                          {myMatch.attendance.toLocaleString(
-                                            "pt-PT",
-                                          )}
-                                        </span>
-                                      </div>
-                                    )}
+                                          <span className="text-red-400 truncate max-w-[5.5rem]">
+                                            {outP?.name ?? "?"}
+                                          </span>
+                                          <span className="text-zinc-600 shrink-0 mx-0.5">
+                                            →
+                                          </span>
+                                          <span className="text-emerald-400 truncate max-w-[5.5rem]">
+                                            {inP?.name ?? "?"}
+                                          </span>
+                                        </div>
+                                      );
+                                    })}
+                                  </div>
+                                )}
+
+                                {/* ── Mentality selector ── */}
+                                <div className="shrink-0 px-3 py-2 bg-surface-container/60 border-b border-outline-variant/20">
+                                  <span className="block text-[9px] font-black uppercase tracking-widest text-zinc-500 mb-1.5">
+                                    Mentalidade
+                                  </span>
+                                  <div className="flex gap-1.5">
+                                    {[
+                                      {
+                                        value: "Defensive",
+                                        label: "Defensivo",
+                                      },
+                                      {
+                                        value: "Balanced",
+                                        label: "Equilibrado",
+                                      },
+                                      { value: "Offensive", label: "Ofensivo" },
+                                    ].map(({ value, label }) => (
+                                      <button
+                                        key={value}
+                                        onClick={() =>
+                                          updateTactic({ style: value })
+                                        }
+                                        className={`flex-1 py-1.5 rounded text-[10px] font-black uppercase tracking-wide transition-colors ${
+                                          tactic.style === value
+                                            ? value === "Defensive"
+                                              ? "bg-blue-600 text-white"
+                                              : value === "Offensive"
+                                                ? "bg-amber-500 text-zinc-950"
+                                                : "bg-primary text-on-primary"
+                                            : "bg-zinc-800 text-zinc-400 hover:bg-zinc-700 hover:text-zinc-200"
+                                        }`}
+                                      >
+                                        {label}
+                                      </button>
+                                    ))}
                                   </div>
                                 </div>
-                              );
-                            })()}
 
-                            {/* Away */}
-                            <div className="flex-1 min-w-0 flex flex-col items-center gap-1">
-                              <span
-                                className="w-10 h-10 rounded-md flex items-center justify-center text-sm font-black shrink-0"
+                                {/* ── Two-column player list ── */}
+                                <div className="flex flex-1 min-h-0 overflow-hidden">
+                                  {/* Em Campo */}
+                                  <div className="flex-1 flex flex-col min-w-0 overflow-hidden border-r border-zinc-800">
+                                    <div className="shrink-0 flex items-center gap-1.5 px-3 py-1.5 bg-surface-container/40 border-b border-outline-variant/20">
+                                      <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 shrink-0" />
+                                      <span className="text-[9px] font-black uppercase tracking-widest text-emerald-500">
+                                        Em Campo
+                                      </span>
+                                    </div>
+                                    <div className="flex-1 overflow-y-auto">
+                                      {annotatedSquad
+                                        .filter(
+                                          (p) =>
+                                            tactic.positions[p.id] ===
+                                              "Titular" &&
+                                            !subbedOut.includes(p.id) &&
+                                            !redCardedHalftimeIds.has(p.id),
+                                        )
+                                        .map((p) => (
+                                          <div
+                                            key={p.id}
+                                            onClick={() =>
+                                              subsMade < MAX_MATCH_SUBS &&
+                                              handleSelectOut(p.id)
+                                            }
+                                            className={`flex items-center gap-2 px-2 py-1.5 border-b border-zinc-800/40 select-none transition-all border-l-2 ${
+                                              swapSource === p.id
+                                                ? "bg-red-500/15 border-l-red-500"
+                                                : subsMade < MAX_MATCH_SUBS
+                                                  ? "cursor-pointer hover:bg-zinc-800/50 border-l-transparent"
+                                                  : "opacity-40 cursor-not-allowed border-l-transparent"
+                                            }`}
+                                          >
+                                            <span
+                                              className={`w-4 h-4 rounded-sm shrink-0 flex items-center justify-center text-[8px] font-black ${
+                                                swapSource === p.id
+                                                  ? "bg-red-500/25 text-red-300"
+                                                  : `bg-zinc-800 ${POSITION_TEXT_CLASS[p.position]}`
+                                              }`}
+                                            >
+                                              {
+                                                POSITION_SHORT_LABELS[
+                                                  p.position
+                                                ]
+                                              }
+                                            </span>
+                                            <span
+                                              className={`flex-1 truncate text-[11px] font-bold ${swapSource === p.id ? "text-red-200" : "text-zinc-200"}`}
+                                            >
+                                              {p.name}
+                                              {!!p.is_star &&
+                                                (p.position === "MED" ||
+                                                  p.position === "ATA") && (
+                                                  <span className="ml-0.5 text-amber-400 font-black">
+                                                    *
+                                                  </span>
+                                                )}
+                                            </span>
+                                            <span
+                                              className={`shrink-0 text-[10px] font-black tabular-nums ${swapSource === p.id ? "text-red-400" : "text-zinc-600"}`}
+                                            >
+                                              {p.skill}
+                                            </span>
+                                          </div>
+                                        ))}
+                                    </div>
+                                  </div>
+
+                                  {/* Banco */}
+                                  <div className="flex-1 flex flex-col min-w-0 overflow-hidden">
+                                    <div className="shrink-0 flex items-center gap-1.5 px-3 py-1.5 bg-surface-container/40 border-b border-outline-variant/20">
+                                      <span className="w-1.5 h-1.5 rounded-full bg-zinc-600 shrink-0" />
+                                      <span className="text-[9px] font-black uppercase tracking-widest text-zinc-500">
+                                        Banco
+                                      </span>
+                                    </div>
+                                    <div className="flex-1 overflow-y-auto">
+                                      {annotatedSquad
+                                        .filter(
+                                          (p) =>
+                                            tactic.positions[p.id] ===
+                                            "Suplente",
+                                        )
+                                        .map((p) => {
+                                          const alreadyUsed =
+                                            subbedOut.includes(p.id);
+                                          const disabled =
+                                            alreadyUsed ||
+                                            !swapSource ||
+                                            subsMade >= MAX_MATCH_SUBS;
+                                          return (
+                                            <div
+                                              key={p.id}
+                                              onClick={() =>
+                                                !disabled &&
+                                                handleSelectIn(p.id)
+                                              }
+                                              className={`flex items-center gap-2 px-2 py-1.5 border-b border-zinc-800/40 select-none transition-all border-l-2 ${
+                                                alreadyUsed
+                                                  ? "opacity-20 cursor-not-allowed border-l-transparent"
+                                                  : swapTarget === p.id
+                                                    ? "bg-emerald-500/15 border-l-emerald-500 cursor-pointer"
+                                                    : disabled
+                                                      ? "opacity-40 cursor-not-allowed border-l-transparent"
+                                                      : "cursor-pointer hover:bg-zinc-800/50 border-l-transparent"
+                                              }`}
+                                            >
+                                              <span
+                                                className={`w-4 h-4 rounded-sm shrink-0 flex items-center justify-center text-[8px] font-black ${
+                                                  alreadyUsed
+                                                    ? "bg-zinc-800/50 text-zinc-700"
+                                                    : swapTarget === p.id
+                                                      ? "bg-emerald-500/25 text-emerald-300"
+                                                      : `bg-zinc-800 ${POSITION_TEXT_CLASS[p.position]}`
+                                                }`}
+                                              >
+                                                {
+                                                  POSITION_SHORT_LABELS[
+                                                    p.position
+                                                  ]
+                                                }
+                                              </span>
+                                              <span
+                                                className={`flex-1 truncate text-[11px] font-bold ${
+                                                  alreadyUsed
+                                                    ? "text-zinc-700 line-through"
+                                                    : swapTarget === p.id
+                                                      ? "text-emerald-200"
+                                                      : "text-zinc-200"
+                                                }`}
+                                              >
+                                                {p.name}
+                                                {!alreadyUsed &&
+                                                  !!p.is_star &&
+                                                  (p.position === "MED" ||
+                                                    p.position === "ATA") && (
+                                                    <span className="ml-0.5 text-amber-400 font-black">
+                                                      *
+                                                    </span>
+                                                  )}
+                                              </span>
+                                              <span
+                                                className={`shrink-0 text-[10px] font-black tabular-nums ${
+                                                  alreadyUsed
+                                                    ? "text-zinc-700"
+                                                    : swapTarget === p.id
+                                                      ? "text-emerald-400"
+                                                      : "text-zinc-600"
+                                                }`}
+                                              >
+                                                {alreadyUsed ? "—" : p.skill}
+                                              </span>
+                                            </div>
+                                          );
+                                        })}
+                                    </div>
+                                  </div>
+                                </div>
+
+                                {/* ── Swap action bar ── */}
+                                {swapSource ? (
+                                  <div className="shrink-0 flex items-center gap-2 px-3 py-2.5 border-t border-outline-variant/30 bg-surface-container">
+                                    <div className="flex-1 flex items-center gap-2 min-w-0">
+                                      <span className="bg-red-950 text-red-300 border border-red-800/60 text-[10px] font-black px-2 py-0.5 rounded truncate max-w-[40%]">
+                                        {annotatedSquad.find(
+                                          (p) => p.id === swapSource,
+                                        )?.name ?? "?"}
+                                      </span>
+                                      <span className="text-zinc-500 shrink-0 font-black text-sm">
+                                        →
+                                      </span>
+                                      {swapTarget ? (
+                                        <span className="bg-emerald-950 text-emerald-300 border border-emerald-800/60 text-[10px] font-black px-2 py-0.5 rounded truncate max-w-[40%]">
+                                          {annotatedSquad.find(
+                                            (p) => p.id === swapTarget,
+                                          )?.name ?? "?"}
+                                        </span>
+                                      ) : (
+                                        <span className="text-zinc-600 text-[10px] italic">
+                                          escolhe do banco…
+                                        </span>
+                                      )}
+                                    </div>
+                                    <button
+                                      onClick={handleResetSub}
+                                      className="shrink-0 w-6 h-6 rounded-full bg-zinc-800 hover:bg-zinc-700 text-zinc-500 hover:text-white text-[10px] flex items-center justify-center transition-colors"
+                                    >
+                                      ✕
+                                    </button>
+                                    <button
+                                      onClick={handleConfirmSub}
+                                      disabled={!swapTarget}
+                                      className={`shrink-0 px-3 py-1.5 rounded text-[10px] font-black uppercase tracking-wide transition-colors ${
+                                        swapTarget
+                                          ? "bg-emerald-600 hover:bg-emerald-500 text-white"
+                                          : "bg-zinc-800 text-zinc-600 cursor-not-allowed"
+                                      }`}
+                                    >
+                                      Substituir
+                                    </button>
+                                  </div>
+                                ) : subsMade < MAX_MATCH_SUBS ? (
+                                  <div className="shrink-0 border-t border-zinc-800/60 px-4 py-1.5 text-center">
+                                    <span className="text-[9px] text-zinc-700 font-bold uppercase tracking-wide">
+                                      Toca num jogador em campo para substituir
+                                    </span>
+                                  </div>
+                                ) : null}
+
+                                {/* BUG-06 FIX: Use handleHalftimeReady which always sends true */}
+                                {/* BUG: only gate on myTeamInCup when it's actually a cup match */}
+                                {(() => {
+                                  const isCupContext =
+                                    isCupMatch || cupPreMatch;
+                                  const canContinue =
+                                    !isCupContext || myTeamInCup;
+                                  const isReady = !!players.find(
+                                    (p) => p.name === me.name,
+                                  )?.ready;
+                                  return (
+                                    <button
+                                      onClick={
+                                        canContinue
+                                          ? handleHalftimeReady
+                                          : undefined
+                                      }
+                                      disabled={!canContinue || isReady}
+                                      className={`shrink-0 w-full py-3.5 text-sm font-black uppercase tracking-widest transition-all ${
+                                        !canContinue
+                                          ? "bg-zinc-800 text-zinc-500 cursor-not-allowed"
+                                          : isReady
+                                            ? "bg-zinc-800 text-zinc-500"
+                                            : cupPreMatch
+                                              ? "bg-green-600 hover:bg-green-500 text-zinc-950"
+                                              : "bg-primary hover:brightness-110 text-on-primary"
+                                      }`}
+                                    >
+                                      {!canContinue
+                                        ? "⏳ A AGUARDAR JOGO DA TAÇA..."
+                                        : isReady
+                                          ? "⏳ A AGUARDAR..."
+                                          : cupPreMatch
+                                            ? "▶ INICIAR JOGO — TAÇA"
+                                            : isCupMatch
+                                              ? "▶ 2ª PARTE — TAÇA"
+                                              : "▶ INICIAR 2ª PARTE"}
+                                    </button>
+                                  );
+                                })()}
+                              </div>
+                            </div>
+                          );
+                        })()}
+
+                      {/* ── V2 TOP BAR ─────────────────────── */}
+                      <div className="flex items-center justify-center mb-4">
+                        {/* ── CENTERED CLOCK ── */}
+                        <div className="flex flex-col items-center">
+                          {isPlayingMatch ? (
+                            <>
+                              <span className="text-3xl font-headline font-black text-primary tabular-nums leading-none">
+                                {liveMinute}'
+                              </span>
+                              <span className="text-[9px] font-bold text-primary/60 uppercase tracking-widest mt-0.5">
+                                {liveMinute > 45 ? "2ª Parte" : "1ª Parte"}
+                              </span>
+                            </>
+                          ) : liveMinute === 45 && !isCupMatch ? (
+                            <span className="text-sm font-black text-tertiary uppercase tracking-wide">
+                              Intervalo
+                            </span>
+                          ) : isCupMatch ? (
+                            <span className="text-sm font-black text-on-surface-variant/60 uppercase tracking-wide">
+                              🏆 {cupMatchRoundName}
+                              {cupPreMatch
+                                ? " — Pré-Jogo"
+                                : cupExtraTimeBadge
+                                  ? " — Prolongamento"
+                                  : ""}
+                            </span>
+                          ) : null}
+                        </div>
+                      </div>
+
+                      {/* ── HERO: MY MATCH ─────────────────────── */}
+                      {matchResults &&
+                        (() => {
+                          const myMatch = matchResults.results.find(
+                            (m) =>
+                              m.homeTeamId === me.teamId ||
+                              m.awayTeamId === me.teamId,
+                          );
+                          if (!myMatch) return null;
+                          const hInfo = teams.find(
+                            (t) => t.id === myMatch.homeTeamId,
+                          );
+                          const aInfo = teams.find(
+                            (t) => t.id === myMatch.awayTeamId,
+                          );
+                          const matchEvents = myMatch.events || [];
+                          const homeGoals = matchEvents.filter(
+                            (e) =>
+                              e.minute <= liveMinute &&
+                              e.type === "goal" &&
+                              e.team === "home",
+                          );
+                          const awayGoals = matchEvents.filter(
+                            (e) =>
+                              e.minute <= liveMinute &&
+                              e.type === "goal" &&
+                              e.team === "away",
+                          );
+                          const progress = Math.min(
+                            100,
+                            (liveMinute / 90) * 100,
+                          );
+
+                          return (
+                            <div className="bg-surface-container rounded-md overflow-hidden mb-4 relative">
+                              {/* Stadium glow gradient */}
+                              <div
+                                className="absolute inset-0 pointer-events-none"
                                 style={{
-                                  backgroundColor:
-                                    aInfo?.color_primary || "#333",
-                                  color: aInfo?.color_secondary || "#fff",
+                                  background: `radial-gradient(ellipse 80% 40% at 50% 0%, ${hInfo?.color_primary || "#333"}22 0%, transparent 70%)`,
                                 }}
-                              >
-                                {(aInfo?.name || "")
-                                  .substring(0, 3)
-                                  .toUpperCase()}
-                              </span>
-                              <span className="text-xs font-bold text-on-surface truncate w-full text-center px-1">
-                                {aInfo?.name}
-                              </span>
-                              <div className="flex flex-col items-center mt-1 w-full">
-                                {matchEvents
-                                  .filter(
-                                    (e) =>
-                                      e.minute <= liveMinute &&
-                                      e.team === "away" &&
-                                      [
-                                        "goal",
-                                        "penalty_goal",
-                                        "own_goal",
-                                        "yellow",
-                                        "red",
-                                        "injury",
-                                        "substitution",
-                                      ].includes(e.type),
-                                  )
-                                  .sort((a, b) => a.minute - b.minute)
-                                  .map((e, i) => {
-                                    const icon =
-                                      e.type === "goal" ||
-                                      e.type === "penalty_goal"
-                                        ? "⚽"
-                                        : e.type === "own_goal"
-                                          ? "⚽🔙"
-                                          : e.type === "yellow"
-                                            ? "🟨"
-                                            : e.type === "red"
-                                              ? "🟥"
-                                              : e.type === "injury"
-                                                ? "🤕"
-                                                : e.type === "substitution" ||
-                                                    e.type === "halftime_sub"
-                                                  ? "🔄"
-                                                  : "";
-                                    const name =
-                                      e.playerName ||
-                                      e.player_name ||
-                                      e.player ||
-                                      "?";
-                                    return (
-                                      <div
-                                        key={i}
-                                        className="flex items-center justify-center gap-1 text-[10px] leading-tight w-full"
+                              />
+
+                              {/* Matchday label bar */}
+                              <div className="relative flex items-center justify-center px-4 py-2 text-[10px] uppercase tracking-widest text-on-surface-variant/50 font-bold">
+                                <span>
+                                  {isCupMatch
+                                    ? `Taça · ${cupMatchRoundName}`
+                                    : `${DIVISION_NAMES[hInfo?.division] || ""} · Jornada ${matchResults.matchweek}`}
+                                </span>
+                              </div>
+
+                              {/* Teams + Score */}
+                              <div className="relative flex items-stretch justify-between px-2 sm:px-6 py-4 sm:py-5">
+                                {/* Home */}
+                                <div className="flex-1 min-w-0 flex flex-col items-center gap-1">
+                                  <span
+                                    className="w-10 h-10 rounded-md flex items-center justify-center text-sm font-black shrink-0"
+                                    style={{
+                                      backgroundColor:
+                                        hInfo?.color_primary || "#333",
+                                      color: hInfo?.color_secondary || "#fff",
+                                    }}
+                                  >
+                                    {(hInfo?.name || "")
+                                      .substring(0, 3)
+                                      .toUpperCase()}
+                                  </span>
+                                  <span className="text-xs font-bold text-on-surface truncate w-full text-center px-1">
+                                    {hInfo?.name}
+                                  </span>
+                                  <div className="flex flex-col items-center mt-1 w-full">
+                                    {matchEvents
+                                      .filter(
+                                        (e) =>
+                                          e.minute <= liveMinute &&
+                                          e.team === "home" &&
+                                          [
+                                            "goal",
+                                            "penalty_goal",
+                                            "own_goal",
+                                            "yellow",
+                                            "red",
+                                            "injury",
+                                            "substitution",
+                                          ].includes(e.type),
+                                      )
+                                      .sort((a, b) => a.minute - b.minute)
+                                      .map((e, i) => {
+                                        const icon =
+                                          e.type === "goal" ||
+                                          e.type === "penalty_goal"
+                                            ? "⚽"
+                                            : e.type === "own_goal"
+                                              ? "⚽🔙"
+                                              : e.type === "yellow"
+                                                ? "🟨"
+                                                : e.type === "red"
+                                                  ? "🟥"
+                                                  : e.type === "injury"
+                                                    ? "🤕"
+                                                    : e.type ===
+                                                          "substitution" ||
+                                                        e.type ===
+                                                          "halftime_sub"
+                                                      ? "🔄"
+                                                      : "";
+                                        const name =
+                                          e.playerName ||
+                                          e.player_name ||
+                                          e.player ||
+                                          "?";
+                                        return (
+                                          <div
+                                            key={i}
+                                            className="flex items-center justify-center gap-1 text-[10px] leading-tight w-full"
+                                          >
+                                            <span className="text-on-surface-variant/40 tabular-nums shrink-0">
+                                              {e.minute}'
+                                            </span>
+                                            <span className="shrink-0">
+                                              {icon}
+                                            </span>
+                                            <span
+                                              className={`font-bold truncate min-w-0 ${e.type === "goal" || e.type === "penalty_goal" ? "text-primary" : e.type === "own_goal" ? "text-orange-400" : e.type === "red" ? "text-red-400" : "text-on-surface-variant/70"}`}
+                                            >
+                                              <PlayerLink playerId={e.playerId}>
+                                                {name}
+                                              </PlayerLink>
+                                            </span>
+                                          </div>
+                                        );
+                                      })}
+                                  </div>
+                                </div>
+
+                                {/* Score center */}
+                                {(() => {
+                                  const myFlashHome =
+                                    goalFlashRef.current[
+                                      `${myMatch.homeTeamId}_${myMatch.awayTeamId}_home`
+                                    ];
+                                  const myFlashAway =
+                                    goalFlashRef.current[
+                                      `${myMatch.homeTeamId}_${myMatch.awayTeamId}_away`
+                                    ];
+                                  const nowTs = Date.now();
+                                  const myHomeFlashing =
+                                    myFlashHome && nowTs - myFlashHome < 1500;
+                                  const myAwayFlashing =
+                                    myFlashAway && nowTs - myFlashAway < 1500;
+                                  return (
+                                    <div className="flex flex-col items-center justify-center gap-1 shrink-0 w-[90px] sm:w-[120px]">
+                                      <button
+                                        onClick={() => {
+                                          setMatchDetailFixture(myMatch);
+                                          setShowMatchDetail(true);
+                                        }}
+                                        className="flex items-baseline gap-1.5 cursor-pointer group"
                                       >
                                         <span
-                                          className={`font-bold truncate min-w-0 ${e.type === "goal" || e.type === "penalty_goal" ? "text-primary" : e.type === "own_goal" ? "text-orange-400" : e.type === "red" ? "text-red-400" : "text-on-surface-variant/70"}`}
+                                          className="text-4xl sm:text-5xl font-headline font-black tracking-tighter"
+                                          style={{
+                                            color: myHomeFlashing
+                                              ? "#ff4444"
+                                              : undefined,
+                                            transition: myHomeFlashing
+                                              ? "none"
+                                              : "color 1.25s ease",
+                                          }}
                                         >
-                                          <PlayerLink playerId={e.playerId}>
-                                            {name}
-                                          </PlayerLink>
+                                          {homeGoals.length}
                                         </span>
-                                        <span className="shrink-0">{icon}</span>
-                                        <span className="text-on-surface-variant/40 tabular-nums shrink-0">
-                                          {e.minute}'
+                                        <span className="text-xl sm:text-2xl text-on-surface-variant/30 font-headline">
+                                          -
                                         </span>
+                                        <span
+                                          className="text-4xl sm:text-5xl font-headline font-black tracking-tighter"
+                                          style={{
+                                            color: myAwayFlashing
+                                              ? "#ff4444"
+                                              : undefined,
+                                            transition: myAwayFlashing
+                                              ? "none"
+                                              : "color 1.25s ease",
+                                          }}
+                                        >
+                                          {awayGoals.length}
+                                        </span>
+                                      </button>
+                                      {/* Enriched progress bar */}
+                                      <div className="relative w-full mt-2">
+                                        <div className="relative h-1.5 bg-outline-variant/20 rounded-full overflow-hidden">
+                                          <div
+                                            className="h-full bg-primary transition-all duration-1000"
+                                            style={{ width: `${progress}%` }}
+                                          />
+                                          {/* Event markers on progress bar */}
+                                          {matchEvents
+                                            .filter(
+                                              (e) =>
+                                                e.minute <= liveMinute &&
+                                                [
+                                                  "goal",
+                                                  "penalty_goal",
+                                                  "own_goal",
+                                                  "yellow",
+                                                  "red",
+                                                  "injury",
+                                                ].includes(e.type),
+                                            )
+                                            .map((e, i) => (
+                                              <span
+                                                key={i}
+                                                className="absolute top-1/2 -translate-y-1/2 -translate-x-1/2"
+                                                style={{
+                                                  left: `${Math.min(98, Math.max(2, (e.minute / 90) * 100))}%`,
+                                                }}
+                                                title={`${e.minute}' ${e.type}`}
+                                              >
+                                                <span
+                                                  className={`block w-1.5 h-1.5 rounded-full ${
+                                                    e.type === "goal" ||
+                                                    e.type === "penalty_goal"
+                                                      ? "bg-primary"
+                                                      : e.type === "own_goal"
+                                                        ? "bg-orange-400"
+                                                        : e.type === "yellow"
+                                                          ? "bg-yellow-400"
+                                                          : e.type === "red"
+                                                            ? "bg-red-500"
+                                                            : "bg-blue-400"
+                                                  }`}
+                                                />
+                                              </span>
+                                            ))}
+                                        </div>
+                                        <div className="flex justify-between text-[8px] text-on-surface-variant/30 mt-0.5">
+                                          <span>0'</span>
+                                          <span className="font-bold text-primary/60">
+                                            {liveMinute}'
+                                          </span>
+                                          <span>90'</span>
+                                        </div>
+                                        {myMatch.attendance && (
+                                          <div className="flex items-center justify-center gap-1 mt-1 text-[10px] text-on-surface-variant/50">
+                                            <span>🏟️</span>
+                                            <span className="font-bold">
+                                              {myMatch.attendance.toLocaleString(
+                                                "pt-PT",
+                                              )}
+                                            </span>
+                                          </div>
+                                        )}
+                                      </div>
+                                    </div>
+                                  );
+                                })()}
+
+                                {/* Away */}
+                                <div className="flex-1 min-w-0 flex flex-col items-center gap-1">
+                                  <span
+                                    className="w-10 h-10 rounded-md flex items-center justify-center text-sm font-black shrink-0"
+                                    style={{
+                                      backgroundColor:
+                                        aInfo?.color_primary || "#333",
+                                      color: aInfo?.color_secondary || "#fff",
+                                    }}
+                                  >
+                                    {(aInfo?.name || "")
+                                      .substring(0, 3)
+                                      .toUpperCase()}
+                                  </span>
+                                  <span className="text-xs font-bold text-on-surface truncate w-full text-center px-1">
+                                    {aInfo?.name}
+                                  </span>
+                                  <div className="flex flex-col items-center mt-1 w-full">
+                                    {matchEvents
+                                      .filter(
+                                        (e) =>
+                                          e.minute <= liveMinute &&
+                                          e.team === "away" &&
+                                          [
+                                            "goal",
+                                            "penalty_goal",
+                                            "own_goal",
+                                            "yellow",
+                                            "red",
+                                            "injury",
+                                            "substitution",
+                                          ].includes(e.type),
+                                      )
+                                      .sort((a, b) => a.minute - b.minute)
+                                      .map((e, i) => {
+                                        const icon =
+                                          e.type === "goal" ||
+                                          e.type === "penalty_goal"
+                                            ? "⚽"
+                                            : e.type === "own_goal"
+                                              ? "⚽🔙"
+                                              : e.type === "yellow"
+                                                ? "🟨"
+                                                : e.type === "red"
+                                                  ? "🟥"
+                                                  : e.type === "injury"
+                                                    ? "🤕"
+                                                    : e.type ===
+                                                          "substitution" ||
+                                                        e.type ===
+                                                          "halftime_sub"
+                                                      ? "🔄"
+                                                      : "";
+                                        const name =
+                                          e.playerName ||
+                                          e.player_name ||
+                                          e.player ||
+                                          "?";
+                                        return (
+                                          <div
+                                            key={i}
+                                            className="flex items-center justify-center gap-1 text-[10px] leading-tight w-full"
+                                          >
+                                            <span
+                                              className={`font-bold truncate min-w-0 ${e.type === "goal" || e.type === "penalty_goal" ? "text-primary" : e.type === "own_goal" ? "text-orange-400" : e.type === "red" ? "text-red-400" : "text-on-surface-variant/70"}`}
+                                            >
+                                              <PlayerLink playerId={e.playerId}>
+                                                {name}
+                                              </PlayerLink>
+                                            </span>
+                                            <span className="shrink-0">
+                                              {icon}
+                                            </span>
+                                            <span className="text-on-surface-variant/40 tabular-nums shrink-0">
+                                              {e.minute}'
+                                            </span>
+                                          </div>
+                                        );
+                                      })}
+                                  </div>
+                                </div>
+                              </div>
+                            </div>
+                          );
+                        })()}
+
+                      {/* ── MULTIVIEW GRID ─────────────────────── */}
+                      {!isCupMatch && (
+                        <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
+                          {[1, 2, 3, 4].map((div) => (
+                            <div key={div}>
+                              <h3 className="text-[10px] font-black uppercase tracking-widest text-on-surface-variant/40 mb-1.5 mt-2 first:mt-0">
+                                {DIVISION_NAMES[div] || `Div ${div}`}
+                              </h3>
+                              <div className="space-y-1">
+                                {matchResults.results
+                                  .filter(
+                                    (m) =>
+                                      teams.find((t) => t.id === m.homeTeamId)
+                                        ?.division === div,
+                                  )
+                                  .filter(
+                                    (m) =>
+                                      m.homeTeamId !== me.teamId &&
+                                      m.awayTeamId !== me.teamId,
+                                  )
+                                  .map((match, idx) => {
+                                    const hInfo = teams.find(
+                                      (t) => t.id === match.homeTeamId,
+                                    );
+                                    const aInfo = teams.find(
+                                      (t) => t.id === match.awayTeamId,
+                                    );
+                                    const matchEvents = match.events || [];
+                                    const currentHome = matchEvents.filter(
+                                      (e) =>
+                                        e.minute <= liveMinute &&
+                                        e.type === "goal" &&
+                                        e.team === "home",
+                                    );
+                                    const currentAway = matchEvents.filter(
+                                      (e) =>
+                                        e.minute <= liveMinute &&
+                                        e.type === "goal" &&
+                                        e.team === "away",
+                                    );
+                                    const isHumanMatch = players.some(
+                                      (p) =>
+                                        p.teamId === match.homeTeamId ||
+                                        p.teamId === match.awayTeamId,
+                                    );
+
+                                    const flashHome =
+                                      goalFlashRef.current[
+                                        `${match.homeTeamId}_${match.awayTeamId}_home`
+                                      ];
+                                    const flashAway =
+                                      goalFlashRef.current[
+                                        `${match.homeTeamId}_${match.awayTeamId}_away`
+                                      ];
+                                    const now = Date.now();
+                                    const homeFlashing =
+                                      flashHome && now - flashHome < 1500;
+                                    const awayFlashing =
+                                      flashAway && now - flashAway < 1500;
+
+                                    return (
+                                      <div
+                                        key={idx}
+                                        className={`bg-surface-container-low rounded-md overflow-hidden ${isHumanMatch ? "border-l-2 border-l-primary/50" : ""}`}
+                                      >
+                                        {/* Match card */}
+                                        <div className="flex items-center">
+                                          <div className="flex-1 flex items-center gap-1.5 px-2.5 py-1.5 min-w-0">
+                                            <span
+                                              className="w-2 h-2 rounded-full shrink-0"
+                                              style={{
+                                                backgroundColor:
+                                                  hInfo?.color_primary ||
+                                                  "#666",
+                                              }}
+                                            />
+                                            <span className="text-[11px] font-bold text-on-surface truncate">
+                                              {hInfo?.name}
+                                            </span>
+                                          </div>
+                                          <button
+                                            onClick={() => {
+                                              setMatchDetailFixture(match);
+                                              setShowMatchDetail(true);
+                                            }}
+                                            title="Ver detalhes da partida"
+                                            className="px-3 py-1.5 bg-surface-container hover:bg-surface-bright text-on-surface text-center font-headline min-w-[52px] flex gap-1 items-center justify-center text-sm leading-none transition-colors cursor-pointer"
+                                          >
+                                            <span
+                                              className="font-black"
+                                              style={{
+                                                color: homeFlashing
+                                                  ? "#ff4444"
+                                                  : undefined,
+                                                transition: homeFlashing
+                                                  ? "none"
+                                                  : "color 1.25s ease",
+                                              }}
+                                            >
+                                              {currentHome.length}
+                                            </span>
+                                            <span className="text-on-surface-variant/30 text-xs">
+                                              -
+                                            </span>
+                                            <span
+                                              className="font-black"
+                                              style={{
+                                                color: awayFlashing
+                                                  ? "#ff4444"
+                                                  : undefined,
+                                                transition: awayFlashing
+                                                  ? "none"
+                                                  : "color 1.25s ease",
+                                              }}
+                                            >
+                                              {currentAway.length}
+                                            </span>
+                                          </button>
+                                          <div className="flex-1 flex items-center gap-1.5 px-2.5 py-1.5 min-w-0 justify-end">
+                                            <span className="text-[11px] font-bold text-on-surface truncate">
+                                              {aInfo?.name}
+                                            </span>
+                                            <span
+                                              className="w-2 h-2 rounded-full shrink-0"
+                                              style={{
+                                                backgroundColor:
+                                                  aInfo?.color_primary ||
+                                                  "#666",
+                                              }}
+                                            />
+                                          </div>
+                                        </div>
+                                        {/* Last event */}
+                                        <div className="flex text-[9px] text-on-surface-variant/40 px-2.5 pb-1">
+                                          <span className="flex-1 truncate">
+                                            {getMatchLastEventText(
+                                              matchEvents,
+                                              liveMinute,
+                                              "home",
+                                            )}
+                                          </span>
+                                          {isHumanMatch && (
+                                            <span className="text-primary/40 font-bold text-[8px] uppercase">
+                                              Humano
+                                            </span>
+                                          )}
+                                          <span className="flex-1 truncate text-right">
+                                            {getMatchLastEventText(
+                                              matchEvents,
+                                              liveMinute,
+                                              "away",
+                                            )}
+                                          </span>
+                                        </div>
                                       </div>
                                     );
                                   })}
                               </div>
+                            </div>
+                          ))}
+                        </div>
+                      )}
+
+                      {/* ── CUP MULTIVIEW (single list, no division groups) ── */}
+                      {isCupMatch && matchResults?.results && (
+                        <div className="space-y-1">
+                          {matchResults.results
+                            .filter(
+                              (m) =>
+                                m.homeTeamId !== me.teamId &&
+                                m.awayTeamId !== me.teamId,
+                            )
+                            .filter((m) => {
+                              // After 90', only show games still in extra time (score tied at 90)
+                              if (liveMinute <= 90) return true;
+                              const goals90Home = (m.events || []).filter(
+                                (e) =>
+                                  e.minute <= 90 &&
+                                  e.type === "goal" &&
+                                  e.team === "home",
+                              ).length;
+                              const goals90Away = (m.events || []).filter(
+                                (e) =>
+                                  e.minute <= 90 &&
+                                  e.type === "goal" &&
+                                  e.team === "away",
+                              ).length;
+                              return goals90Home === goals90Away;
+                            })
+                            .map((match, idx) => {
+                              const hInfo = teams.find(
+                                (t) => t.id === match.homeTeamId,
+                              );
+                              const aInfo = teams.find(
+                                (t) => t.id === match.awayTeamId,
+                              );
+                              const matchEvents = match.events || [];
+                              const currentHome = matchEvents.filter(
+                                (e) =>
+                                  e.minute <= liveMinute &&
+                                  e.type === "goal" &&
+                                  e.team === "home",
+                              );
+                              const currentAway = matchEvents.filter(
+                                (e) =>
+                                  e.minute <= liveMinute &&
+                                  e.type === "goal" &&
+                                  e.team === "away",
+                              );
+                              const isHumanMatch = players.some(
+                                (p) =>
+                                  p.teamId === match.homeTeamId ||
+                                  p.teamId === match.awayTeamId,
+                              );
+                              const flashHome =
+                                goalFlashRef.current[
+                                  `${match.homeTeamId}_${match.awayTeamId}_home`
+                                ];
+                              const flashAway =
+                                goalFlashRef.current[
+                                  `${match.homeTeamId}_${match.awayTeamId}_away`
+                                ];
+                              const now = Date.now();
+                              const homeFlashing =
+                                flashHome && now - flashHome < 1500;
+                              const awayFlashing =
+                                flashAway && now - flashAway < 1500;
+
+                              return (
+                                <div
+                                  key={idx}
+                                  className={`bg-surface-container-low rounded-md overflow-hidden ${isHumanMatch ? "border-l-2 border-l-primary/50" : ""}`}
+                                >
+                                  <div className="flex items-center">
+                                    <div className="flex-1 flex items-center gap-1.5 px-2.5 py-1.5 min-w-0">
+                                      <span
+                                        className="w-2 h-2 rounded-full shrink-0"
+                                        style={{
+                                          backgroundColor:
+                                            hInfo?.color_primary || "#666",
+                                        }}
+                                      />
+                                      <span className="text-[11px] font-bold text-on-surface truncate">
+                                        {hInfo?.name}
+                                      </span>
+                                    </div>
+                                    <button
+                                      onClick={() => {
+                                        setMatchDetailFixture(match);
+                                        setShowMatchDetail(true);
+                                      }}
+                                      title="Ver detalhes da partida"
+                                      className="px-3 py-1.5 bg-surface-container hover:bg-surface-bright text-on-surface text-center font-headline min-w-[52px] flex gap-1 items-center justify-center text-sm leading-none transition-colors cursor-pointer"
+                                    >
+                                      <span
+                                        className="font-black"
+                                        style={{
+                                          color: homeFlashing
+                                            ? "#ff4444"
+                                            : undefined,
+                                          transition: homeFlashing
+                                            ? "none"
+                                            : "color 1.25s ease",
+                                        }}
+                                      >
+                                        {currentHome.length}
+                                      </span>
+                                      <span className="text-on-surface-variant/30 text-xs">
+                                        -
+                                      </span>
+                                      <span
+                                        className="font-black"
+                                        style={{
+                                          color: awayFlashing
+                                            ? "#ff4444"
+                                            : undefined,
+                                          transition: awayFlashing
+                                            ? "none"
+                                            : "color 1.25s ease",
+                                        }}
+                                      >
+                                        {currentAway.length}
+                                      </span>
+                                    </button>
+                                    <div className="flex-1 flex items-center gap-1.5 px-2.5 py-1.5 min-w-0 justify-end">
+                                      <span className="text-[11px] font-bold text-on-surface truncate">
+                                        {aInfo?.name}
+                                      </span>
+                                      <span
+                                        className="w-2 h-2 rounded-full shrink-0"
+                                        style={{
+                                          backgroundColor:
+                                            aInfo?.color_primary || "#666",
+                                        }}
+                                      />
+                                    </div>
+                                  </div>
+                                  <div className="flex text-[9px] text-on-surface-variant/40 px-2.5 pb-1">
+                                    <span className="flex-1 truncate">
+                                      {getMatchLastEventText(
+                                        matchEvents,
+                                        liveMinute,
+                                        "home",
+                                      )}
+                                    </span>
+                                    {isHumanMatch && (
+                                      <span className="text-primary/40 font-bold text-[8px] uppercase">
+                                        Humano
+                                      </span>
+                                    )}
+                                    <span className="flex-1 truncate text-right">
+                                      {getMatchLastEventText(
+                                        matchEvents,
+                                        liveMinute,
+                                        "away",
+                                      )}
+                                    </span>
+                                  </div>
+                                </div>
+                              );
+                            })}
+                        </div>
+                      )}
+                    </div>
+                  )}
+
+                  {activeTab === "standings" && (
+                    <LeagueStandings
+                      teams={teams}
+                      teamForms={teamForms}
+                      topScorers={topScorers}
+                      myTeamId={me.teamId}
+                      completedJornada={completedJornada}
+                      matchweekCount={matchweekCount}
+                      palmares={palmares}
+                      onTeamClick={handleOpenTeamSquad}
+                    />
+                  )}
+
+                  {activeTab === "cup" && (
+                    <div className="space-y-6">
+                      {/* ── TAÇA DE PORTUGAL PAGE ─────────────────────────────── */}
+                      {!cupRoundResults && !cupDraw && (
+                        <div className="bg-surface-container rounded-lg p-10 text-center">
+                          <p className="text-4xl mb-3">🏆</p>
+                          <p className="text-zinc-500 font-bold">
+                            Sem dados de Taça disponíveis neste momento.
+                          </p>
+                        </div>
+                      )}
+
+                      {cupRoundResults && (
+                        <div className="bg-surface-container rounded-lg overflow-hidden">
+                          <div className="bg-amber-900/20 px-6 py-4 border-b border-amber-800/30">
+                            <p className="text-xs text-amber-400 uppercase font-black tracking-widest">
+                              Taça de Portugal · Temporada{" "}
+                              {cupRoundResults.season}
+                            </p>
+                            <h2 className="text-xl font-black text-white mt-0.5">
+                              {cupRoundResults.roundName}
+                            </h2>
+                          </div>
+                          <div className="p-4 space-y-2">
+                            {(cupRoundResults.results || []).map((r, idx) => {
+                              const hInfo = teams.find(
+                                (t) => t.id === r.homeTeamId,
+                              );
+                              const aInfo = teams.find(
+                                (t) => t.id === r.awayTeamId,
+                              );
+                              const winnerInfo = teams.find(
+                                (t) => t.id === r.winnerId,
+                              );
+                              const isMyMatch =
+                                r.homeTeamId === me.teamId ||
+                                r.awayTeamId === me.teamId;
+                              return (
+                                <div
+                                  key={idx}
+                                  className={`rounded-md border px-4 py-3 ${isMyMatch ? "border-primary bg-primary/10" : "border-outline-variant/20 bg-surface"}`}
+                                >
+                                  <div className="flex items-center gap-3">
+                                    <span
+                                      className="flex-1 text-right font-black text-sm truncate"
+                                      style={{
+                                        color: hInfo?.color_primary || "#fff",
+                                      }}
+                                    >
+                                      {hInfo?.name || r.homeTeamId}
+                                    </span>
+                                    <span className="px-3 py-1 bg-surface border border-outline-variant/20 rounded font-black text-on-surface text-sm">
+                                      {r.homeGoals} – {r.awayGoals}
+                                      {r.wentToET && !r.decidedByPenalties && (
+                                        <span className="ml-1 text-[10px] text-zinc-500 font-semibold">
+                                          (p.e.)
+                                        </span>
+                                      )}
+                                      {r.decidedByPenalties && (
+                                        <span className="ml-1 text-[10px] text-amber-400 font-semibold">
+                                          ({r.penaltyHomeGoals}–
+                                          {r.penaltyAwayGoals} g.p.)
+                                        </span>
+                                      )}
+                                    </span>
+                                    <span
+                                      className="flex-1 text-left font-black text-sm truncate"
+                                      style={{
+                                        color: aInfo?.color_primary || "#fff",
+                                      }}
+                                    >
+                                      {aInfo?.name || r.awayTeamId}
+                                    </span>
+                                  </div>
+                                  {winnerInfo && (
+                                    <p className="text-center text-amber-400 text-xs font-black mt-1">
+                                      ✓ Apura-se {winnerInfo.name}
+                                      {cupRoundResults.isFinal
+                                        ? " 🏆 Vencedor da Taça!"
+                                        : ""}
+                                    </p>
+                                  )}
+                                </div>
+                              );
+                            })}
+                          </div>
+                        </div>
+                      )}
+
+                      {cupDraw && !cupRoundResults && (
+                        <div className="bg-surface-container rounded-lg overflow-hidden">
+                          <div className="bg-surface-container-high/40 px-6 py-4 border-b border-outline-variant/20">
+                            <p className="text-xs text-zinc-400 uppercase font-black tracking-widest">
+                              Taça de Portugal · Temporada {cupDraw.season}
+                            </p>
+                            <h2 className="text-xl font-black text-white mt-0.5">
+                              Sorteio — {cupDraw.roundName}
+                            </h2>
+                          </div>
+                          <div className="p-4 space-y-2">
+                            {(cupDraw.fixtures || []).map((fixture, idx) => {
+                              const hInfo = fixture.homeTeam;
+                              const aInfo = fixture.awayTeam;
+                              const homeId = hInfo?.id;
+                              const awayId = aInfo?.id;
+                              const hName = hInfo?.name || "?";
+                              const aName = aInfo?.name || "?";
+                              const isMine =
+                                homeId === me.teamId || awayId === me.teamId;
+                              return (
+                                <div
+                                  key={idx}
+                                  className={`rounded-md border px-4 py-3 flex items-center gap-3 ${isMine ? "border-primary bg-primary/10" : "border-outline-variant/20 bg-surface"}`}
+                                >
+                                  <span
+                                    className="flex-1 text-right font-black text-sm truncate"
+                                    style={{
+                                      color: hInfo?.color_primary || "#fff",
+                                    }}
+                                  >
+                                    {hName}
+                                  </span>
+                                  <span className="px-3 py-1 bg-surface border border-outline-variant/20 rounded font-black text-on-surface-variant text-sm">
+                                    vs
+                                  </span>
+                                  <span
+                                    className="flex-1 text-left font-black text-sm truncate"
+                                    style={{
+                                      color: aInfo?.color_primary || "#fff",
+                                    }}
+                                  >
+                                    {aName}
+                                  </span>
+                                </div>
+                              );
+                            })}
+                          </div>
+                        </div>
+                      )}
+                    </div>
+                  )}
+
+                  {activeTab === "calendario" &&
+                    (() => {
+                      const cal = calendarData;
+                      const curIdx = cal?.calendarIndex ?? 0;
+                      const calYear = cal?.year ?? seasonYear;
+                      const done = Math.min(curIdx, SEASON_CALENDAR.length);
+                      const pct = Math.round(
+                        (done / SEASON_CALENDAR.length) * 100,
+                      );
+                      const myTeamId = me?.teamId;
+                      const myTeam = teams.find((t) => t.id === myTeamId);
+                      const myDivision = myTeam?.division;
+                      const myDivTeams = teams
+                        .filter((t) => t.division === myDivision)
+                        .sort((a, b) => a.id - b.id);
+
+                      const getStatus = (entry) => {
+                        if (entry.calendarIndex < curIdx) return "done";
+                        if (entry.calendarIndex === curIdx) return "current";
+                        return "future";
+                      };
+
+                      const toggleEntry = (idx) =>
+                        setExpandedCalEntries((prev) => ({
+                          ...prev,
+                          [idx]: !prev[idx],
+                        }));
+
+                      return (
+                        <div className="space-y-4">
+                          {/* ── PAGE HEADER ──────────────────────────────────── */}
+                          <div className="flex flex-wrap items-start justify-between gap-3">
+                            <div>
+                              <h2 className="text-lg font-headline font-black text-on-surface">
+                                Calendário
+                              </h2>
+                              <p className="text-xs text-on-surface-variant mt-0.5">
+                                Época {calYear}/{calYear + 1}
+                                {cal ? ` · Temporada ${cal.season}` : ""}
+                              </p>
+                            </div>
+                            {/* Progress pill */}
+                            <div className="flex flex-col items-end gap-1 shrink-0">
+                              <span className="text-[10px] font-black uppercase tracking-widest text-on-surface-variant">
+                                {done} / {SEASON_CALENDAR.length} semanas
+                              </span>
+                              <div className="w-36 h-1.5 bg-outline-variant/30 rounded-full overflow-hidden">
+                                <div
+                                  className="h-full bg-primary rounded-full transition-all duration-500"
+                                  style={{ width: `${pct}%` }}
+                                />
+                              </div>
+                            </div>
+                          </div>
+
+                          {/* ── LOADING STATE ─────────────────────────────────── */}
+                          {!cal && (
+                            <div className="bg-surface-container rounded-lg p-10 text-center">
+                              <span className="material-symbols-outlined text-4xl text-on-surface-variant/40 block mb-2">
+                                calendar_month
+                              </span>
+                              <p className="text-on-surface-variant font-bold text-sm">
+                                A carregar calendário…
+                              </p>
+                            </div>
+                          )}
+
+                          {/* ── CALENDAR ENTRIES ──────────────────────────────── */}
+                          {cal && (
+                            <div className="space-y-2">
+                              {SEASON_CALENDAR.map((entry) => {
+                                const status = getStatus(entry);
+                                const isCurrent = status === "current";
+                                const isDone = status === "done";
+                                const isCupEntry = entry.type === "cup";
+                                const isExpanded =
+                                  !!expandedCalEntries[entry.calendarIndex];
+
+                                // ── card style per status ───────────────────
+                                const cardClass = isCurrent
+                                  ? "bg-primary/8 border border-primary/50 rounded-lg overflow-hidden"
+                                  : isDone
+                                    ? "bg-surface-container rounded-lg overflow-hidden opacity-80"
+                                    : "bg-surface-container rounded-lg overflow-hidden opacity-60";
+
+                                // ── CUP ENTRY ────────────────────────────────
+                                if (isCupEntry) {
+                                  const cupFixtures = cal.cupMatches.filter(
+                                    (m) => m.round === entry.round,
+                                  );
+                                  const cupDrawn = cupFixtures.length > 0;
+                                  const myMatch = cupDrawn
+                                    ? cupFixtures.find(
+                                        (f) =>
+                                          f.home_team_id === myTeamId ||
+                                          f.away_team_id === myTeamId,
+                                      )
+                                    : null;
+
+                                  // check if user was already eliminated from the cup
+                                  const isEliminated = (() => {
+                                    const myPlayedCupMatches =
+                                      cal.cupMatches.filter(
+                                        (m) =>
+                                          m.played &&
+                                          (m.home_team_id === myTeamId ||
+                                            m.away_team_id === myTeamId),
+                                      );
+                                    return myPlayedCupMatches.some((m) => {
+                                      const hasPen =
+                                        m.home_penalties > 0 ||
+                                        m.away_penalties > 0;
+                                      if (m.home_team_id === myTeamId) {
+                                        const myScore = hasPen
+                                          ? m.home_penalties
+                                          : m.home_score;
+                                        const opScore = hasPen
+                                          ? m.away_penalties
+                                          : m.away_score;
+                                        return myScore < opScore;
+                                      } else {
+                                        const myScore = hasPen
+                                          ? m.away_penalties
+                                          : m.away_score;
+                                        const opScore = hasPen
+                                          ? m.home_penalties
+                                          : m.home_score;
+                                        return myScore < opScore;
+                                      }
+                                    });
+                                  })();
+
+                                  // status badge
+                                  const cupBadge = isDone ? (
+                                    <span className="text-[9px] font-black uppercase tracking-widest bg-surface-bright text-on-surface-variant/60 px-2 py-0.5 rounded">
+                                      Concluído
+                                    </span>
+                                  ) : isCurrent ? (
+                                    <span className="text-[9px] font-black uppercase tracking-widest bg-primary/20 text-primary px-2 py-0.5 rounded animate-pulse">
+                                      Próximo
+                                    </span>
+                                  ) : !cupDrawn ? (
+                                    isEliminated ? (
+                                      <span className="text-[9px] font-black uppercase tracking-widest bg-red-500/15 text-red-400 px-2 py-0.5 rounded">
+                                        Eliminado
+                                      </span>
+                                    ) : (
+                                      <span className="text-[9px] font-black uppercase tracking-widest bg-amber-500/15 text-amber-400 px-2 py-0.5 rounded">
+                                        Aguarda sorteio
+                                      </span>
+                                    )
+                                  ) : (
+                                    <span className="text-[9px] font-black uppercase tracking-widest bg-surface-bright text-on-surface-variant/40 px-2 py-0.5 rounded">
+                                      Por jogar
+                                    </span>
+                                  );
+
+                                  return (
+                                    <div
+                                      key={entry.calendarIndex}
+                                      className={cardClass}
+                                    >
+                                      {/* Header – clickable to expand all cup matches */}
+                                      <div
+                                        className={`flex items-center gap-3 px-4 py-2.5 border-b border-amber-800/30 bg-amber-900/15 ${cupDrawn ? "cursor-pointer select-none" : ""}`}
+                                        onClick={
+                                          cupDrawn
+                                            ? () =>
+                                                toggleEntry(entry.calendarIndex)
+                                            : undefined
+                                        }
+                                      >
+                                        <span className="shrink-0 text-[9px] font-black uppercase tracking-widest px-1.5 py-0.5 rounded bg-amber-500/25 text-amber-400">
+                                          Taça
+                                        </span>
+                                        <span className="font-black text-sm text-on-surface flex-1 truncate">
+                                          {entry.roundName}
+                                        </span>
+                                        {isCurrent && (
+                                          <span className="shrink-0 relative flex h-2 w-2">
+                                            <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-primary opacity-75" />
+                                            <span className="relative inline-flex rounded-full h-2 w-2 bg-primary" />
+                                          </span>
+                                        )}
+                                        {/* Our cup match preview */}
+                                        {myMatch &&
+                                          (() => {
+                                            const hInfo = teams.find(
+                                              (t) =>
+                                                t.id === myMatch.home_team_id,
+                                            );
+                                            const aInfo = teams.find(
+                                              (t) =>
+                                                t.id === myMatch.away_team_id,
+                                            );
+                                            const hasPen =
+                                              myMatch.home_penalties > 0 ||
+                                              myMatch.away_penalties > 0;
+                                            return (
+                                              <div className="flex items-center gap-1.5 text-[11px] font-bold shrink-0">
+                                                <span
+                                                  className={
+                                                    myMatch.home_team_id ===
+                                                    myTeamId
+                                                      ? "text-primary"
+                                                      : "text-on-surface-variant"
+                                                  }
+                                                >
+                                                  {hInfo?.name ??
+                                                    myMatch.home_team_id}
+                                                </span>
+                                                <span className="text-on-surface-variant/50 text-[10px] font-black">
+                                                  {myMatch.played
+                                                    ? `${myMatch.home_score}–${myMatch.away_score}${hasPen ? ` (${myMatch.home_penalties}–${myMatch.away_penalties}gp)` : ""}`
+                                                    : "vs"}
+                                                </span>
+                                                <span
+                                                  className={
+                                                    myMatch.away_team_id ===
+                                                    myTeamId
+                                                      ? "text-primary"
+                                                      : "text-on-surface-variant"
+                                                  }
+                                                >
+                                                  {aInfo?.name ??
+                                                    myMatch.away_team_id}
+                                                </span>
+                                              </div>
+                                            );
+                                          })()}
+                                        {!myMatch && !cupDrawn && (
+                                          <span className="text-[10px] text-on-surface-variant/40 italic">
+                                            Sorteio por realizar
+                                          </span>
+                                        )}
+                                        <div className="flex items-center gap-2 shrink-0">
+                                          {cupBadge}
+                                          {cupDrawn && (
+                                            <span className="material-symbols-outlined text-base text-on-surface-variant/40">
+                                              {isExpanded
+                                                ? "expand_less"
+                                                : "expand_more"}
+                                            </span>
+                                          )}
+                                        </div>
+                                      </div>
+
+                                      {/* Expanded: all cup fixtures */}
+                                      {isExpanded && cupDrawn && (
+                                        <div>
+                                          {cupFixtures.map((f, fi) => {
+                                            const homeInfo = teams.find(
+                                              (t) => t.id === f.home_team_id,
+                                            );
+                                            const awayInfo = teams.find(
+                                              (t) => t.id === f.away_team_id,
+                                            );
+                                            const isMyMatch =
+                                              f.home_team_id === myTeamId ||
+                                              f.away_team_id === myTeamId;
+                                            const hasPenalties =
+                                              f.home_penalties > 0 ||
+                                              f.away_penalties > 0;
+                                            const hasET =
+                                              (f.home_et_score > 0 ||
+                                                f.away_et_score > 0) &&
+                                              !hasPenalties;
+                                            return (
+                                              <div
+                                                key={fi}
+                                                className={`flex items-center gap-2 px-4 py-2 border-b border-outline-variant/5 last:border-0 ${
+                                                  isMyMatch
+                                                    ? "bg-primary/8"
+                                                    : ""
+                                                }`}
+                                              >
+                                                <div className="flex items-center gap-1.5 flex-1 min-w-0 justify-end">
+                                                  <button
+                                                    className={`text-[11px] font-bold truncate text-right ${isMyMatch && f.home_team_id === myTeamId ? "text-primary" : f.played && f.winner_team_id !== f.home_team_id ? "text-on-surface-variant/50" : "text-on-surface hover:underline"}`}
+                                                    onClick={(e) => {
+                                                      e.stopPropagation();
+                                                      if (
+                                                        f.home_team_id !==
+                                                          myTeamId &&
+                                                        homeInfo
+                                                      )
+                                                        handleOpenTeamSquad(
+                                                          homeInfo,
+                                                        );
+                                                    }}
+                                                  >
+                                                    {homeInfo?.name ??
+                                                      f.home_team_id}
+                                                  </button>
+                                                  <span
+                                                    className="shrink-0 w-2 h-2 rounded-full"
+                                                    style={{
+                                                      backgroundColor:
+                                                        homeInfo?.color_primary ||
+                                                        "#666",
+                                                    }}
+                                                  />
+                                                </div>
+                                                <div className="shrink-0 w-20 text-center">
+                                                  {f.played ? (
+                                                    <span className="text-xs font-black font-headline text-on-surface bg-surface border border-outline-variant/20 rounded px-2 py-0.5 whitespace-nowrap">
+                                                      {f.home_score}–
+                                                      {f.away_score}
+                                                      {hasPenalties && (
+                                                        <span className="ml-1 text-[9px] text-amber-400">
+                                                          ({f.home_penalties}–
+                                                          {f.away_penalties}gp)
+                                                        </span>
+                                                      )}
+                                                      {hasET && (
+                                                        <span className="ml-1 text-[9px] text-zinc-500">
+                                                          (p.e.)
+                                                        </span>
+                                                      )}
+                                                    </span>
+                                                  ) : (
+                                                    <span className="text-[10px] font-black text-on-surface-variant/40">
+                                                      vs
+                                                    </span>
+                                                  )}
+                                                </div>
+                                                <div className="flex items-center gap-1.5 flex-1 min-w-0">
+                                                  <span
+                                                    className="shrink-0 w-2 h-2 rounded-full"
+                                                    style={{
+                                                      backgroundColor:
+                                                        awayInfo?.color_primary ||
+                                                        "#666",
+                                                    }}
+                                                  />
+                                                  <button
+                                                    className={`text-[11px] font-bold truncate text-left ${isMyMatch && f.away_team_id === myTeamId ? "text-primary" : f.played && f.winner_team_id !== f.away_team_id ? "text-on-surface-variant/50" : "text-on-surface hover:underline"}`}
+                                                    onClick={(e) => {
+                                                      e.stopPropagation();
+                                                      if (
+                                                        f.away_team_id !==
+                                                          myTeamId &&
+                                                        awayInfo
+                                                      )
+                                                        handleOpenTeamSquad(
+                                                          awayInfo,
+                                                        );
+                                                    }}
+                                                  >
+                                                    {awayInfo?.name ??
+                                                      f.away_team_id}
+                                                  </button>
+                                                </div>
+                                              </div>
+                                            );
+                                          })}
+                                          {/* Cup final winner */}
+                                          {entry.round === 5 &&
+                                            cupFixtures.some((m) => m.played) &&
+                                            (() => {
+                                              const finalMatch =
+                                                cupFixtures.find(
+                                                  (m) => m.played,
+                                                );
+                                              const champ = finalMatch
+                                                ? teams.find(
+                                                    (t) =>
+                                                      t.id ===
+                                                      finalMatch.winner_team_id,
+                                                  )
+                                                : null;
+                                              return champ ? (
+                                                <div className="px-4 py-2 border-t border-amber-800/30 bg-amber-900/10 flex items-center gap-2">
+                                                  <span className="text-amber-400 text-sm">
+                                                    🏆
+                                                  </span>
+                                                  <span className="text-xs font-black text-amber-400 uppercase tracking-widest">
+                                                    Vencedor: {champ.name}
+                                                  </span>
+                                                </div>
+                                              ) : null;
+                                            })()}
+                                        </div>
+                                      )}
+                                    </div>
+                                  );
+                                }
+
+                                // ── LEAGUE ENTRY ─────────────────────────────
+                                // For done matchweeks: use actual DB records as the source
+                                // of truth (home/away and scores).  For future/current:
+                                // use the fixture generator (with swap correction).
+                                const divFixtures = isDone
+                                  ? cal.leagueMatches
+                                      .filter(
+                                        (m) =>
+                                          m.matchweek === entry.matchweek &&
+                                          myDivTeams.some(
+                                            (t) => t.id === m.home_team_id,
+                                          ) &&
+                                          myDivTeams.some(
+                                            (t) => t.id === m.away_team_id,
+                                          ),
+                                      )
+                                      .map((m) => ({
+                                        homeTeamId: m.home_team_id,
+                                        awayTeamId: m.away_team_id,
+                                        result: m,
+                                      }))
+                                  : generateLeagueFixtures(
+                                      myDivTeams,
+                                      entry.matchweek,
+                                      myTeamId,
+                                    ).map((f) => ({ ...f, result: null }));
+
+                                const myFixture = divFixtures.find(
+                                  (f) =>
+                                    f.homeTeamId === myTeamId ||
+                                    f.awayTeamId === myTeamId,
+                                );
+                                const myImHome =
+                                  myFixture?.homeTeamId === myTeamId;
+                                const myHomeInfo = myFixture
+                                  ? teams.find(
+                                      (t) => t.id === myFixture.homeTeamId,
+                                    )
+                                  : null;
+                                const myAwayInfo = myFixture
+                                  ? teams.find(
+                                      (t) => t.id === myFixture.awayTeamId,
+                                    )
+                                  : null;
+
+                                // status badge
+                                const leagueBadge = isDone ? (
+                                  <span className="text-[9px] font-black uppercase tracking-widest bg-surface-bright text-on-surface-variant/60 px-2 py-0.5 rounded shrink-0">
+                                    Concluído
+                                  </span>
+                                ) : isCurrent ? (
+                                  <span className="text-[9px] font-black uppercase tracking-widest bg-primary/20 text-primary px-2 py-0.5 rounded animate-pulse shrink-0">
+                                    Próximo
+                                  </span>
+                                ) : (
+                                  <span className="text-[9px] font-black uppercase tracking-widest bg-surface-bright text-on-surface-variant/40 px-2 py-0.5 rounded shrink-0">
+                                    Por jogar
+                                  </span>
+                                );
+
+                                return (
+                                  <div
+                                    key={entry.calendarIndex}
+                                    className={cardClass}
+                                  >
+                                    {/* ── CLICKABLE HEADER: week + our match ── */}
+                                    <div
+                                      className={`flex items-center gap-2 px-4 py-2.5 cursor-pointer select-none border-b ${
+                                        isCurrent
+                                          ? "border-primary/20 bg-primary/5"
+                                          : "border-outline-variant/20"
+                                      }`}
+                                      onClick={() =>
+                                        toggleEntry(entry.calendarIndex)
+                                      }
+                                    >
+                                      {/* Liga badge + week */}
+                                      <span className="shrink-0 text-[9px] font-black uppercase tracking-widest px-1.5 py-0.5 rounded bg-primary/20 text-primary">
+                                        Liga
+                                      </span>
+                                      <span className="font-black text-sm text-on-surface shrink-0">
+                                        J{entry.matchweek}
+                                      </span>
+                                      {isCurrent && (
+                                        <span className="shrink-0 relative flex h-2 w-2">
+                                          <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-primary opacity-75" />
+                                          <span className="relative inline-flex rounded-full h-2 w-2 bg-primary" />
+                                        </span>
+                                      )}
+
+                                      {/* Our team's match – centered, grows to fill */}
+                                      {myFixture ? (
+                                        <div className="flex items-center gap-1.5 flex-1 min-w-0 justify-center">
+                                          <span
+                                            className={`shrink-0 text-[8px] font-black uppercase tracking-wider ${myImHome ? "text-emerald-400" : "text-on-surface-variant/50"}`}
+                                          >
+                                            {myImHome ? "casa" : "fora"}
+                                          </span>
+                                          <span
+                                            className="shrink-0 w-2 h-2 rounded-full"
+                                            style={{
+                                              backgroundColor:
+                                                myHomeInfo?.color_primary ||
+                                                "#666",
+                                            }}
+                                          />
+                                          <span
+                                            className={`text-[11px] font-bold truncate ${myFixture.homeTeamId === myTeamId ? "text-primary" : "text-on-surface"}`}
+                                          >
+                                            {myHomeInfo?.name ??
+                                              myFixture.homeTeamId}
+                                          </span>
+                                          <span className="shrink-0 text-xs font-black font-headline text-on-surface-variant/70 mx-0.5">
+                                            {myFixture.result
+                                              ? `${myFixture.result.home_score}–${myFixture.result.away_score}`
+                                              : "vs"}
+                                          </span>
+                                          <span
+                                            className={`text-[11px] font-bold truncate ${myFixture.awayTeamId === myTeamId ? "text-primary" : "text-on-surface"}`}
+                                          >
+                                            {myAwayInfo?.name ??
+                                              myFixture.awayTeamId}
+                                          </span>
+                                          <span
+                                            className="shrink-0 w-2 h-2 rounded-full"
+                                            style={{
+                                              backgroundColor:
+                                                myAwayInfo?.color_primary ||
+                                                "#666",
+                                            }}
+                                          />
+                                        </div>
+                                      ) : (
+                                        <div className="flex-1" />
+                                      )}
+
+                                      {/* right side: badge + chevron */}
+                                      <div className="flex items-center gap-1.5 shrink-0">
+                                        {leagueBadge}
+                                        <span className="material-symbols-outlined text-base text-on-surface-variant/40">
+                                          {isExpanded
+                                            ? "expand_less"
+                                            : "expand_more"}
+                                        </span>
+                                      </div>
+                                    </div>
+
+                                    {/* ── EXPANDED: all division fixtures ──── */}
+                                    {isExpanded && (
+                                      <div className="divide-y divide-outline-variant/10">
+                                        {divFixtures.map((f, fi) => {
+                                          const homeInfo = teams.find(
+                                            (t) => t.id === f.homeTeamId,
+                                          );
+                                          const awayInfo = teams.find(
+                                            (t) => t.id === f.awayTeamId,
+                                          );
+                                          const isMyMatch =
+                                            f.homeTeamId === myTeamId ||
+                                            f.awayTeamId === myTeamId;
+                                          return (
+                                            <div
+                                              key={fi}
+                                              className={`flex items-center px-4 py-1.5 gap-2 ${
+                                                isMyMatch ? "bg-primary/8" : ""
+                                              }`}
+                                            >
+                                              {/* Home team */}
+                                              <div className="flex items-center gap-1.5 flex-1 min-w-0 justify-end">
+                                                {isMyMatch &&
+                                                  f.homeTeamId === myTeamId && (
+                                                    <span className="shrink-0 text-[8px] font-black text-emerald-400 uppercase tracking-wider">
+                                                      casa
+                                                    </span>
+                                                  )}
+                                                <button
+                                                  className={`text-[11px] font-bold truncate text-left ${isMyMatch && f.homeTeamId === myTeamId ? "text-primary" : "text-on-surface hover:underline"}`}
+                                                  onClick={(e) => {
+                                                    e.stopPropagation();
+                                                    if (
+                                                      f.homeTeamId !==
+                                                        myTeamId &&
+                                                      homeInfo
+                                                    )
+                                                      handleOpenTeamSquad(
+                                                        homeInfo,
+                                                      );
+                                                  }}
+                                                >
+                                                  {homeInfo?.name ??
+                                                    f.homeTeamId}
+                                                </button>
+                                                <span
+                                                  className="shrink-0 w-2 h-2 rounded-full"
+                                                  style={{
+                                                    backgroundColor:
+                                                      homeInfo?.color_primary ||
+                                                      "#666",
+                                                  }}
+                                                />
+                                              </div>
+                                              {/* Score or VS */}
+                                              <div className="shrink-0 w-14 text-center">
+                                                {f.result ? (
+                                                  <span className="text-xs font-black font-headline text-on-surface bg-surface border border-outline-variant/20 rounded px-2 py-0.5">
+                                                    {f.result.home_score}–
+                                                    {f.result.away_score}
+                                                  </span>
+                                                ) : (
+                                                  <span className="text-[10px] font-black text-on-surface-variant/40">
+                                                    vs
+                                                  </span>
+                                                )}
+                                              </div>
+                                              {/* Away team */}
+                                              <div className="flex items-center gap-1.5 flex-1 min-w-0">
+                                                <span
+                                                  className="shrink-0 w-2 h-2 rounded-full"
+                                                  style={{
+                                                    backgroundColor:
+                                                      awayInfo?.color_primary ||
+                                                      "#666",
+                                                  }}
+                                                />
+                                                <button
+                                                  className={`text-[11px] font-bold truncate text-left ${isMyMatch && f.awayTeamId === myTeamId ? "text-primary" : "text-on-surface hover:underline"}`}
+                                                  onClick={(e) => {
+                                                    e.stopPropagation();
+                                                    if (
+                                                      f.awayTeamId !==
+                                                        myTeamId &&
+                                                      awayInfo
+                                                    )
+                                                      handleOpenTeamSquad(
+                                                        awayInfo,
+                                                      );
+                                                  }}
+                                                >
+                                                  {awayInfo?.name ??
+                                                    f.awayTeamId}
+                                                </button>
+                                                {isMyMatch &&
+                                                  f.awayTeamId === myTeamId && (
+                                                    <span className="shrink-0 text-[8px] font-black text-on-surface-variant/50 uppercase tracking-wider">
+                                                      fora
+                                                    </span>
+                                                  )}
+                                              </div>
+                                            </div>
+                                          );
+                                        })}
+                                      </div>
+                                    )}
+                                  </div>
+                                );
+                              })}
+                            </div>
+                          )}
+                        </div>
+                      );
+                    })()}
+
+                  {activeTab === "club" && (
+                    <div className="space-y-5 relative">
+                      {/* Ambient glow blobs */}
+                      <div
+                        className="pointer-events-none absolute -top-8 -left-8 w-72 h-72 rounded-full blur-[100px] opacity-10"
+                        style={{
+                          background: teamInfo?.color_primary || "#95d4b3",
+                        }}
+                      />
+                      <div
+                        className="pointer-events-none absolute top-40 -right-12 w-48 h-48 rounded-full blur-[80px] opacity-5"
+                        style={{
+                          background: teamInfo?.color_secondary || "#e9c349",
+                        }}
+                      />
+
+                      {/* ── HERO + BUDGET WIDGET ─────────── */}
+                      <div className="grid grid-cols-1 lg:grid-cols-3 gap-5">
+                        {/* Club hero card (2/3) */}
+                        <div className="lg:col-span-2 bg-surface-container rounded-lg overflow-hidden relative">
+                          <div
+                            className="absolute inset-0"
+                            style={{
+                              background: teamInfo?.color_primary
+                                ? `linear-gradient(to right, ${teamInfo.color_primary}28, transparent)`
+                                : "linear-gradient(to right, #2d6a4f28, transparent)",
+                            }}
+                          />
+                          <div className="relative p-6 flex flex-col sm:flex-row gap-5 items-start sm:items-center">
+                            {/* Badge */}
+                            <div
+                              className="w-20 h-20 rounded-xl flex items-center justify-center text-4xl font-black shrink-0 shadow-lg"
+                              style={{
+                                background:
+                                  teamInfo?.color_primary || "#201f1f",
+                                color: teamInfo?.color_secondary || "#fff",
+                              }}
+                            >
+                              {teamInfo?.name?.[0] || "?"}
+                            </div>
+                            <div className="flex-1 min-w-0">
+                              <h1
+                                className="font-headline text-3xl font-black tracking-tighter leading-none mb-1 truncate"
+                                style={{
+                                  color: teamInfo?.color_primary || "#fff",
+                                }}
+                              >
+                                {teamInfo?.name || "—"}
+                              </h1>
+                              <div className="flex flex-wrap items-center gap-3 mb-4">
+                                <span className="text-on-surface-variant text-sm font-bold">
+                                  {DIVISION_NAMES[teamInfo?.division] ||
+                                    `Divisão ${teamInfo?.division}`}
+                                </span>
+                                <span className="w-1 h-1 bg-outline-variant rounded-full" />
+                                <span className="text-on-surface-variant text-sm">
+                                  {seasonYear}
+                                </span>
+                              </div>
+                              {/* Moral bar */}
+                              <div className="max-w-xs">
+                                <div className="flex items-center justify-between mb-1.5">
+                                  <span className="text-[10px] uppercase tracking-widest text-on-surface-variant font-black">
+                                    Moral do Plantel
+                                  </span>
+                                  <span
+                                    className={`text-[10px] font-black ${
+                                      (teamInfo?.morale || 75) >= 70
+                                        ? "text-primary"
+                                        : (teamInfo?.morale || 75) >= 40
+                                          ? "text-tertiary"
+                                          : "text-error"
+                                    }`}
+                                  >
+                                    {(teamInfo?.morale || 75) >= 70
+                                      ? "ELEVADO"
+                                      : (teamInfo?.morale || 75) >= 40
+                                        ? "ESTÁVEL"
+                                        : "BAIXO"}
+                                  </span>
+                                </div>
+                                <div className="w-full bg-surface-container-high h-2 rounded-full overflow-hidden">
+                                  <div
+                                    className={`h-full rounded-full transition-all ${
+                                      (teamInfo?.morale || 75) >= 70
+                                        ? "bg-linear-to-r from-primary/60 to-primary"
+                                        : (teamInfo?.morale || 75) >= 40
+                                          ? "bg-linear-to-r from-tertiary/60 to-tertiary"
+                                          : "bg-linear-to-r from-error/60 to-error"
+                                    }`}
+                                    style={{
+                                      width: `${teamInfo?.morale || 75}%`,
+                                    }}
+                                  />
+                                </div>
+                                <p className="text-[10px] text-on-surface-variant/60 uppercase tracking-widest mt-1.5">
+                                  Índice de confiança do plantel
+                                </p>
+                              </div>
+                            </div>
+                            {/* Manager */}
+                            <div className="shrink-0 text-right hidden sm:block">
+                              <p className="text-[10px] uppercase tracking-widest text-on-surface-variant font-bold mb-1">
+                                Manager
+                              </p>
+                              <p className="font-headline font-black text-on-surface text-lg tracking-tight">
+                                {me?.name}
+                              </p>
+                            </div>
+                          </div>
+                        </div>
+
+                        {/* Budget widget (1/3) */}
+                        <div
+                          className="bg-surface-container-high rounded-lg p-5 flex flex-col justify-between border-t-2"
+                          style={{
+                            borderColor: teamInfo?.color_primary || "#95d4b3",
+                          }}
+                        >
+                          <div className="flex justify-between items-start mb-4">
+                            <div>
+                              <p className="text-[10px] uppercase tracking-widest text-on-surface-variant font-black mb-1.5">
+                                Saldo Disponível
+                              </p>
+                              <p
+                                className={`font-headline text-2xl font-black ${
+                                  currentBudget >= 0
+                                    ? "text-on-surface"
+                                    : "text-error"
+                                }`}
+                              >
+                                {formatCurrency(currentBudget)}
+                              </p>
+                            </div>
+                            <span
+                              className="material-symbols-outlined text-3xl"
+                              style={{
+                                color: teamInfo?.color_primary || "#95d4b3",
+                              }}
+                            >
+                              payments
+                            </span>
+                          </div>
+                          <div className="space-y-3">
+                            <div className="flex justify-between text-xs">
+                              <span className="text-on-surface-variant">
+                                Salários / jornada
+                              </span>
+                              <span className="font-mono font-bold text-on-surface">
+                                {formatCurrency(totalWeeklyWage)}
+                              </span>
+                            </div>
+                            <div className="w-full bg-surface-container-lowest h-1 rounded-full overflow-hidden">
+                              <div
+                                className="h-full rounded-full"
+                                style={{
+                                  width: `${Math.min(100, (totalWeeklyWage / 500000) * 100)}%`,
+                                  background:
+                                    teamInfo?.color_primary || "#95d4b3",
+                                }}
+                              />
+                            </div>
+                            <div className="flex justify-between text-[10px] pt-1">
+                              <span
+                                className={`font-black ${
+                                  currentBudget >= 0
+                                    ? "text-primary"
+                                    : "text-error"
+                                }`}
+                              >
+                                {currentBudget >= 0 ? "ESTÁVEL" : "DÉFICE"}
+                              </span>
+                              {loanAmount > 0 && (
+                                <span className="text-error/70">
+                                  Dívida: {formatCurrency(loanAmount)}
+                                </span>
+                              )}
+                            </div>
+                          </div>
+                        </div>
+                      </div>
+
+                      {/* ── ESTÁDIO + PALMARÉS ────────────── */}
+                      <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
+                        {/* Estádio */}
+                        <div className="bg-surface-container rounded-lg overflow-hidden flex flex-col">
+                          <div
+                            className="h-24 relative flex items-end"
+                            style={{
+                              background: teamInfo?.color_primary
+                                ? `linear-gradient(135deg, ${teamInfo.color_primary}40 0%, #201f1f 100%)`
+                                : "linear-gradient(135deg, #2d6a4f40 0%, #201f1f 100%)",
+                            }}
+                          >
+                            <div
+                              className="absolute inset-0 opacity-5"
+                              style={{
+                                backgroundImage:
+                                  "radial-gradient(circle, rgba(255,255,255,0.2) 1px, transparent 1px)",
+                                backgroundSize: "16px 16px",
+                              }}
+                            />
+                            <div className="relative px-5 pb-4">
+                              <h3 className="font-headline text-lg font-black text-on-surface leading-tight">
+                                {teamInfo?.stadium_name || "Estádio Municipal"}
+                              </h3>
+                              <p
+                                className="text-xs font-bold"
+                                style={{
+                                  color: teamInfo?.color_primary || "#95d4b3",
+                                }}
+                              >
+                                Recinto Principal
+                              </p>
+                            </div>
+                          </div>
+                          <div className="p-5 grid grid-cols-2 gap-3">
+                            <div className="bg-surface-container-low p-3 rounded-lg text-center">
+                              <p className="text-[10px] uppercase tracking-tight text-on-surface-variant font-bold mb-1">
+                                Capacidade
+                              </p>
+                              <p className="font-headline font-black text-on-surface text-lg">
+                                {(
+                                  teamInfo?.stadium_capacity || 10000
+                                ).toLocaleString("pt-PT")}
+                              </p>
+                            </div>
+                            <div className="bg-surface-container-low p-3 rounded-lg text-center">
+                              <p className="text-[10px] uppercase tracking-tight text-on-surface-variant font-bold mb-1">
+                                Divisão
+                              </p>
+                              <p className="font-headline font-black text-primary text-sm leading-tight mt-0.5">
+                                {DIVISION_NAMES[teamInfo?.division] || "Liga"}
+                              </p>
+                            </div>
+                          </div>
+                        </div>
+
+                        {/* Palmarés */}
+                        <div className="bg-surface-container rounded-lg p-5 flex flex-col">
+                          <div className="flex justify-between items-center mb-5">
+                            <h3 className="font-headline text-sm font-black uppercase tracking-widest text-on-surface">
+                              Palmarés
+                            </h3>
+                            <span
+                              className="material-symbols-outlined text-tertiary"
+                              style={{ fontVariationSettings: "'FILL' 1" }}
+                            >
+                              military_tech
+                            </span>
+                          </div>
+                          {palmaresTeamId === me?.teamId &&
+                          palmares.trophies?.length > 0 ? (
+                            <div className="flex flex-wrap gap-3">
+                              {palmares.trophies.map((trophy, idx) => (
+                                <div
+                                  key={idx}
+                                  className="flex items-center gap-3 px-4 py-3 rounded-lg bg-tertiary/8 border border-tertiary/20"
+                                >
+                                  <span
+                                    className="material-symbols-outlined text-tertiary text-xl"
+                                    style={{
+                                      fontVariationSettings: "'FILL' 1",
+                                    }}
+                                  >
+                                    emoji_events
+                                  </span>
+                                  <div>
+                                    <p className="text-tertiary font-black text-sm">
+                                      {trophy.achievement}
+                                    </p>
+                                    <p className="text-on-surface-variant text-xs font-bold">
+                                      {trophy.season}
+                                    </p>
+                                  </div>
+                                </div>
+                              ))}
+                            </div>
+                          ) : (
+                            <div className="flex-1 flex flex-col items-center justify-center border border-dashed border-outline-variant/20 rounded-lg bg-surface-container-low/50 p-8">
+                              <span
+                                className="material-symbols-outlined text-on-surface-variant/30 text-5xl mb-3"
+                                style={{ fontVariationSettings: "'FILL' 0" }}
+                              >
+                                trophy
+                              </span>
+                              <p className="text-sm text-on-surface-variant font-bold text-center">
+                                Nenhum título conquistado.
+                              </p>
+                              <p className="text-[10px] text-on-surface-variant/40 uppercase tracking-widest mt-1 text-center">
+                                Constrói o teu legado hoje
+                              </p>
+                            </div>
+                          )}
+                        </div>
+                      </div>
+
+                      {/* ── JORNAL DO CLUBE ──────────────── */}
+                      <div className="bg-surface-container rounded-lg overflow-hidden">
+                        <div className="bg-surface-container-high px-5 py-4 flex justify-between items-center">
+                          <h3 className="font-headline text-sm font-black uppercase tracking-widest text-on-surface">
+                            Jornal do Clube
+                          </h3>
+                          {clubNews?.some(
+                            (n) =>
+                              n.type === "transfer_in" ||
+                              n.type === "transfer_out",
+                          ) && (
+                            <span className="text-[10px] text-tertiary font-black tracking-[0.2em] uppercase">
+                              Foco em Transferências
+                            </span>
+                          )}
+                        </div>
+                        {clubNews && clubNews.length > 0 ? (
+                          <>
+                            <div className="divide-y divide-surface-container-low">
+                              {clubNews.slice(0, 8).map((news, idx) => (
+                                <div
+                                  key={news.id || idx}
+                                  className="px-5 py-3.5 flex items-center gap-4 hover:bg-surface-bright/30 transition-colors"
+                                >
+                                  {/* Icon container */}
+                                  <div
+                                    className={`w-9 h-9 rounded-lg flex items-center justify-center shrink-0 ${
+                                      news.type === "transfer_in"
+                                        ? "bg-primary/15"
+                                        : news.type === "transfer_out"
+                                          ? "bg-error/15"
+                                          : "bg-surface-container-high"
+                                    }`}
+                                  >
+                                    <span
+                                      className={`material-symbols-outlined text-sm ${
+                                        news.type === "transfer_in"
+                                          ? "text-primary"
+                                          : news.type === "transfer_out"
+                                            ? "text-error"
+                                            : "text-on-surface-variant"
+                                      }`}
+                                    >
+                                      {news.type === "transfer_in"
+                                        ? "trending_up"
+                                        : news.type === "transfer_out"
+                                          ? "trending_down"
+                                          : "info"}
+                                    </span>
+                                  </div>
+                                  {/* Content */}
+                                  <div className="flex-1 min-w-0">
+                                    <p className="text-sm font-bold text-on-surface truncate">
+                                      {news.title}
+                                    </p>
+                                    <p className="text-xs text-on-surface-variant truncate">
+                                      {news.related_team_name &&
+                                      (news.type === "transfer_in" ||
+                                        news.type === "transfer_out")
+                                        ? `${
+                                            news.type === "transfer_in"
+                                              ? "de"
+                                              : "para"
+                                          } ${news.related_team_name}`
+                                        : `Jornada ${news.matchweek || "?"}${
+                                            news.year ? ` · ${news.year}` : ""
+                                          }`}
+                                    </p>
+                                  </div>
+                                  {/* Amount */}
+                                  {news.amount > 0 && (
+                                    <div className="text-right shrink-0">
+                                      <p
+                                        className={`font-headline font-black text-sm ${
+                                          news.type === "transfer_out"
+                                            ? "text-primary"
+                                            : "text-error"
+                                        }`}
+                                      >
+                                        {news.type === "transfer_out"
+                                          ? "+"
+                                          : "-"}
+                                        {formatCurrency(news.amount)}
+                                      </p>
+                                      <p className="text-[10px] text-on-surface-variant uppercase tracking-wider">
+                                        {news.type === "transfer_out"
+                                          ? "Venda"
+                                          : news.type === "transfer_in"
+                                            ? "Compra"
+                                            : ""}
+                                      </p>
+                                    </div>
+                                  )}
+                                </div>
+                              ))}
+                            </div>
+                            {clubNews.length > 8 && (
+                              <div className="p-4 text-center bg-surface-container-low/50 border-t border-outline-variant/10">
+                                <p className="text-[10px] font-black tracking-widest text-on-surface-variant uppercase">
+                                  + {clubNews.length - 8} entradas no arquivo
+                                </p>
+                              </div>
+                            )}
+                          </>
+                        ) : (
+                          <div className="p-8 text-center">
+                            <span className="material-symbols-outlined text-on-surface-variant/30 text-4xl block mb-3">
+                              newspaper
+                            </span>
+                            <p className="text-on-surface-variant font-bold text-sm">
+                              Nenhuma notícia ainda.
+                            </p>
+                          </div>
+                        )}
+                      </div>
+                    </div>
+                  )}
+
+                  {activeTab === "finances" &&
+                    (() => {
+                      const totalSeasonIncome =
+                        (financeData?.totalTicketRevenue || 0) +
+                        (financeData?.sponsorRevenue || 0) +
+                        (financeData?.totalTransferIncome || 0);
+                      const totalSeasonExpenses =
+                        totalWeeklyWage * completedJornada +
+                        loanInterestPerWeek * completedJornada +
+                        (financeData?.totalTransferExpenses || 0) +
+                        (financeData?.totalStadiumExpenses || 0);
+                      const seasonResult =
+                        totalSeasonIncome - totalSeasonExpenses;
+                      const loanPct = Math.min(
+                        100,
+                        (loanAmount / 2500000) * 100,
+                      );
+                      const wageSharePct =
+                        totalSeasonIncome > 0
+                          ? Math.min(
+                              100,
+                              Math.round(
+                                ((totalWeeklyWage * completedJornada) /
+                                  totalSeasonIncome) *
+                                  100,
+                              ),
+                            )
+                          : 0;
+                      return (
+                        <div className="space-y-4">
+                          {/* ── HERO ──────────────────────────────────────────────────────── */}
+                          <div className="grid grid-cols-1 md:grid-cols-3 gap-0.5 bg-outline-variant/10 overflow-hidden rounded-xl">
+                            {/* Saldo Actual */}
+                            <div className="bg-surface-container p-6 flex flex-col justify-between relative overflow-hidden">
+                              <div className="absolute top-0 right-0 p-4 opacity-5 pointer-events-none select-none">
+                                <span className="material-symbols-outlined text-8xl">
+                                  payments
+                                </span>
+                              </div>
+                              <div>
+                                <p className="text-[10px] uppercase tracking-widest text-on-surface-variant mb-1 font-label">
+                                  Saldo Actual
+                                </p>
+                                <h2
+                                  className={`font-headline text-4xl font-bold tracking-tighter ${currentBudget >= 0 ? "text-primary" : "text-error"}`}
+                                >
+                                  {formatCurrency(currentBudget)}
+                                </h2>
+                              </div>
+                              <div className="mt-6 flex items-end gap-2">
+                                <div className="flex gap-1 h-8 items-end">
+                                  <div className="w-1 bg-primary/20 h-2 rounded-t-sm" />
+                                  <div className="w-1 bg-primary/40 h-4 rounded-t-sm" />
+                                  <div className="w-1 bg-primary/60 h-3 rounded-t-sm" />
+                                  <div className="w-1 bg-primary/80 h-6 rounded-t-sm" />
+                                  <div className="w-1 bg-primary h-8 rounded-t-sm" />
+                                </div>
+                                <span className="text-[10px] text-primary font-bold font-label">
+                                  época {seasonYear}/{seasonYear + 1}
+                                </span>
+                              </div>
+                            </div>
+                            {/* Resultado da Época */}
+                            <div className="bg-surface-container p-6 flex flex-col justify-between">
+                              <div>
+                                <p className="text-[10px] uppercase tracking-widest text-on-surface-variant mb-1 font-label">
+                                  Resultado da Época
+                                </p>
+                                <h2
+                                  className={`font-headline text-4xl font-bold tracking-tighter ${seasonResult >= 0 ? "text-tertiary" : "text-error"}`}
+                                >
+                                  {seasonResult >= 0 ? "+" : ""}
+                                  {formatCurrency(seasonResult)}
+                                </h2>
+                              </div>
+                              <div className="mt-6 flex items-center gap-2">
+                                <span
+                                  className={`material-symbols-outlined text-sm ${seasonResult >= 0 ? "text-tertiary" : "text-error"}`}
+                                >
+                                  {seasonResult >= 0
+                                    ? "trending_up"
+                                    : "trending_down"}
+                                </span>
+                                <span className="text-[10px] text-on-surface-variant font-medium font-label uppercase">
+                                  {completedJornada} / 14 jornadas concluídas
+                                </span>
+                              </div>
+                            </div>
+                            {/* Estádio */}
+                            <div className="bg-surface-container p-6 flex flex-col justify-between relative overflow-hidden">
+                              <div className="absolute top-0 right-0 p-4 opacity-5 pointer-events-none select-none">
+                                <span className="material-symbols-outlined text-8xl">
+                                  stadium
+                                </span>
+                              </div>
+                              <div>
+                                <p className="text-[10px] uppercase tracking-widest text-on-surface-variant mb-1 font-label">
+                                  Estádio
+                                </p>
+                                <h2 className="font-headline text-3xl font-bold tracking-tighter text-on-surface">
+                                  {(
+                                    teamInfo?.stadium_capacity || 10000
+                                  ).toLocaleString("pt-PT")}{" "}
+                                  lug.
+                                </h2>
+                              </div>
+                              <div className="mt-6">
+                                <p className="text-[10px] text-on-surface-variant uppercase mb-1">
+                                  Receita máx./jogo em casa
+                                </p>
+                                <p className="font-headline text-lg font-bold text-primary">
+                                  {formatCurrency(capacityRevPerGame)}
+                                </p>
+                              </div>
+                            </div>
+                          </div>
+
+                          {/* ── RECEITAS / DESPESAS / CONTROLO ────────────────────────────── */}
+                          <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
+                            {/* Receitas */}
+                            <div className="bg-surface-container-low rounded-lg p-5 flex flex-col space-y-3">
+                              <div className="flex justify-between items-center pb-2 border-b border-outline-variant/15">
+                                <h3 className="font-headline text-base uppercase tracking-tight flex items-center gap-2">
+                                  <span className="material-symbols-outlined text-primary text-base">
+                                    arrow_downward
+                                  </span>
+                                  Receitas
+                                </h3>
+                                <span className="font-headline text-primary font-bold text-sm">
+                                  {formatCurrency(totalSeasonIncome)}
+                                </span>
+                              </div>
+                              <ul className="space-y-3">
+                                <li className="flex justify-between items-center">
+                                  <div>
+                                    <p className="text-sm text-on-surface-variant">
+                                      Bilheteiras
+                                    </p>
+                                    <p className="text-[10px] opacity-40 uppercase">
+                                      {financeData?.homeMatchesPlayed || 0}{" "}
+                                      jogos em casa
+                                    </p>
+                                  </div>
+                                  <span className="font-headline text-sm font-bold">
+                                    {formatCurrency(
+                                      financeData?.totalTicketRevenue || 0,
+                                    )}
+                                  </span>
+                                </li>
+                                <li className="flex justify-between items-center">
+                                  <div>
+                                    <p className="text-sm text-on-surface-variant">
+                                      Patrocinadores
+                                    </p>
+                                    <p className="text-[10px] opacity-40 uppercase">
+                                      Receita anual por divisão
+                                    </p>
+                                  </div>
+                                  <span className="font-headline text-sm font-bold">
+                                    {formatCurrency(
+                                      financeData?.sponsorRevenue || 0,
+                                    )}
+                                  </span>
+                                </li>
+                                {(financeData?.totalTransferIncome || 0) >
+                                  0 && (
+                                  <li className="flex justify-between items-center">
+                                    <div>
+                                      <p className="text-sm text-on-surface-variant">
+                                        Vendas de Jogadores
+                                      </p>
+                                      <p className="text-[10px] opacity-40 uppercase">
+                                        Receitas de transferências
+                                      </p>
+                                    </div>
+                                    <span className="font-headline text-sm font-bold">
+                                      {formatCurrency(
+                                        financeData.totalTransferIncome,
+                                      )}
+                                    </span>
+                                  </li>
+                                )}
+                              </ul>
+                            </div>
+
+                            {/* Despesas */}
+                            <div className="bg-surface-container-low rounded-lg p-5 flex flex-col space-y-3">
+                              <div className="flex justify-between items-center pb-2 border-b border-outline-variant/15">
+                                <h3 className="font-headline text-base uppercase tracking-tight flex items-center gap-2">
+                                  <span className="material-symbols-outlined text-error text-base">
+                                    arrow_upward
+                                  </span>
+                                  Despesas
+                                </h3>
+                                <span className="font-headline text-error font-bold text-sm">
+                                  {formatCurrency(totalSeasonExpenses)}
+                                </span>
+                              </div>
+                              <ul className="space-y-3">
+                                <li className="flex justify-between items-center">
+                                  <div>
+                                    <p className="text-sm text-on-surface-variant">
+                                      Folha Salarial
+                                    </p>
+                                    <p className="text-[10px] opacity-40 uppercase">
+                                      {mySquad.length} atletas · pago por
+                                      jornada
+                                    </p>
+                                  </div>
+                                  <span className="font-headline text-sm font-bold">
+                                    {formatCurrency(
+                                      totalWeeklyWage * completedJornada,
+                                    )}
+                                  </span>
+                                </li>
+                                {loanAmount > 0 && (
+                                  <li className="flex justify-between items-center">
+                                    <div>
+                                      <p className="text-sm text-on-surface-variant">
+                                        Juros Bancários
+                                      </p>
+                                      <p className="text-[10px] opacity-40 uppercase">
+                                        2,5% da dívida / jornada
+                                      </p>
+                                    </div>
+                                    <span className="font-headline text-sm font-bold">
+                                      {formatCurrency(
+                                        loanInterestPerWeek * completedJornada,
+                                      )}
+                                    </span>
+                                  </li>
+                                )}
+                                {(financeData?.totalTransferExpenses || 0) >
+                                  0 && (
+                                  <li className="flex justify-between items-center">
+                                    <div>
+                                      <p className="text-sm text-on-surface-variant">
+                                        Compras de Jogadores
+                                      </p>
+                                      <p className="text-[10px] opacity-40 uppercase">
+                                        Despesas com transferências
+                                      </p>
+                                    </div>
+                                    <span className="font-headline text-sm font-bold">
+                                      {formatCurrency(
+                                        financeData.totalTransferExpenses,
+                                      )}
+                                    </span>
+                                  </li>
+                                )}
+                                {(financeData?.totalStadiumExpenses || 0) >
+                                  0 && (
+                                  <li className="flex justify-between items-center">
+                                    <div>
+                                      <p className="text-sm text-on-surface-variant">
+                                        Obras no Estádio
+                                      </p>
+                                      <p className="text-[10px] opacity-40 uppercase">
+                                        300.000€ ×{" "}
+                                        {Math.round(
+                                          (financeData.totalStadiumExpenses ||
+                                            0) / 300000,
+                                        )}{" "}
+                                        obra(s)
+                                      </p>
+                                    </div>
+                                    <span className="font-headline text-sm font-bold">
+                                      {formatCurrency(
+                                        financeData.totalStadiumExpenses,
+                                      )}
+                                    </span>
+                                  </li>
+                                )}
+                              </ul>
+                            </div>
+
+                            {/* Centro de Controlo */}
+                            <div className="space-y-4">
+                              {/* Folha Salarial */}
+                              <div
+                                className={`bg-surface-container rounded-lg p-5 border-l-4 ${wageSharePct > 75 ? "border-error" : wageSharePct > 50 ? "border-tertiary" : "border-primary"} relative overflow-hidden`}
+                              >
+                                <div className="flex justify-between items-start mb-3">
+                                  <div>
+                                    <h3 className="font-headline text-xs uppercase tracking-widest text-on-surface-variant">
+                                      Folha Salarial
+                                    </h3>
+                                    <p className="font-headline text-xl font-bold mt-1">
+                                      {formatCurrency(totalWeeklyWage)}{" "}
+                                      <span className="text-xs font-normal opacity-50">
+                                        / jornada
+                                      </span>
+                                    </p>
+                                  </div>
+                                  {wageSharePct > 75 && (
+                                    <span
+                                      className="material-symbols-outlined text-error"
+                                      style={{
+                                        fontVariationSettings: "'FILL' 1",
+                                      }}
+                                    >
+                                      warning
+                                    </span>
+                                  )}
+                                </div>
+                                <div className="space-y-1.5">
+                                  <div className="flex justify-between text-[10px] font-bold uppercase tracking-wider">
+                                    <span>% das receitas</span>
+                                    <span
+                                      className={
+                                        wageSharePct > 75
+                                          ? "text-error"
+                                          : wageSharePct > 50
+                                            ? "text-tertiary"
+                                            : "text-primary"
+                                      }
+                                    >
+                                      {wageSharePct}%
+                                    </span>
+                                  </div>
+                                  <div className="h-2 w-full bg-surface-bright rounded-full overflow-hidden">
+                                    <div
+                                      className={`h-full rounded-full transition-all ${wageSharePct > 75 ? "bg-error" : wageSharePct > 50 ? "bg-tertiary" : "bg-primary"}`}
+                                      style={{ width: `${wageSharePct}%` }}
+                                    />
+                                  </div>
+                                  <div className="flex justify-between text-[10px] opacity-50 uppercase">
+                                    <span>
+                                      {formatCurrency(totalWeeklyWage)}/jornada
+                                    </span>
+                                    <span>{mySquad.length} atletas</span>
+                                  </div>
+                                </div>
+                              </div>
+
+                              {/* Dívida Bancária */}
+                              <div className="bg-surface-container rounded-lg p-5 border-t border-outline-variant/10">
+                                <h3 className="font-headline text-xs uppercase tracking-widest text-on-surface-variant mb-3">
+                                  Empréstimos
+                                </h3>
+                                <div className="mb-4">
+                                  <p className="text-[10px] opacity-50 uppercase mb-0.5">
+                                    Dívida Actual
+                                  </p>
+                                  <p
+                                    className={`font-headline text-2xl font-bold tracking-tight ${loanAmount > 0 ? "text-error" : "text-primary"}`}
+                                  >
+                                    {formatCurrency(loanAmount)}
+                                  </p>
+                                  {loanAmount > 0 && (
+                                    <p className="text-[10px] text-error font-medium mt-0.5">
+                                      JUROS: 2,5% / JORNADA
+                                    </p>
+                                  )}
+                                  <div className="mt-2 h-1.5 w-full bg-surface-bright rounded-full overflow-hidden">
+                                    <div
+                                      className={`h-full rounded-full transition-all ${loanPct > 75 ? "bg-error" : loanPct > 40 ? "bg-tertiary" : "bg-amber-400"}`}
+                                      style={{ width: `${loanPct}%` }}
+                                    />
+                                  </div>
+                                  <p className="text-[10px] opacity-40 text-right mt-0.5">
+                                    {loanPct.toFixed(0)}% de 2.500.000€
+                                  </p>
+                                </div>
+                                <div className="grid grid-cols-2 gap-2">
+                                  <button
+                                    onClick={() => socket.emit("payLoan")}
+                                    disabled={
+                                      loanAmount < 500000 ||
+                                      currentBudget < 500000
+                                    }
+                                    className="bg-surface-container-high py-2 text-xs font-headline font-bold uppercase tracking-wider rounded hover:bg-surface-bright disabled:opacity-40 disabled:cursor-not-allowed transition-all"
+                                  >
+                                    Pagar -500K
+                                  </button>
+                                  <button
+                                    onClick={() => socket.emit("takeLoan")}
+                                    disabled={loanAmount >= 2500000}
+                                    className="bg-surface-bright py-2 text-xs font-headline font-bold uppercase tracking-wider rounded hover:brightness-110 disabled:opacity-40 disabled:cursor-not-allowed transition-all border border-outline-variant/30"
+                                  >
+                                    Pedir +500K
+                                  </button>
+                                </div>
+                              </div>
+                            </div>
+                          </div>
+
+                          {/* ── ESTÁDIO ───────────────────────────────────────────────────── */}
+                          <div className="bg-surface-container-low rounded-lg overflow-hidden">
+                            <div className="px-6 py-4 border-b border-outline-variant/10 flex justify-between items-center">
+                              <h3 className="font-headline text-xs uppercase tracking-widest flex items-center gap-2">
+                                <span className="material-symbols-outlined text-tertiary text-base">
+                                  stadium
+                                </span>
+                                Expansão do Estádio
+                              </h3>
+                            </div>
+                            <div className="p-6">
+                              <div className="grid grid-cols-2 md:grid-cols-3 gap-4 mb-6">
+                                <div className="bg-surface rounded-md border border-outline-variant/15 p-4 flex flex-col gap-1">
+                                  <span className="text-on-surface-variant text-[10px] font-black uppercase tracking-wider">
+                                    Capacidade Actual
+                                  </span>
+                                  <span className="text-on-surface font-headline font-bold text-2xl">
+                                    {(
+                                      teamInfo?.stadium_capacity || 10000
+                                    ).toLocaleString("pt-PT")}
+                                  </span>
+                                  <span className="text-on-surface-variant text-[10px]">
+                                    lugares
+                                  </span>
+                                </div>
+                                <div className="bg-surface rounded-md border border-outline-variant/15 p-4 flex flex-col gap-1">
+                                  <span className="text-on-surface-variant text-[10px] font-black uppercase tracking-wider">
+                                    Receita máx./jogo
+                                  </span>
+                                  <span className="text-primary font-headline font-bold text-xl">
+                                    {formatCurrency(capacityRevPerGame)}
+                                  </span>
+                                  <span className="text-on-surface-variant text-[10px]">
+                                    15€ × lotação
+                                  </span>
+                                </div>
+                                <div className="bg-surface rounded-md border border-outline-variant/15 p-4 flex flex-col gap-1 col-span-2 md:col-span-1">
+                                  <span className="text-on-surface-variant text-[10px] font-black uppercase tracking-wider">
+                                    Custo de Expansão
+                                  </span>
+                                  <span className="text-tertiary font-headline font-bold text-xl">
+                                    300.000€
+                                  </span>
+                                  <span className="text-on-surface-variant text-[10px]">
+                                    +5.000 lugares por obra
+                                  </span>
+                                </div>
+                              </div>
+                              <button
+                                onClick={() => socket.emit("buildStadium")}
+                                disabled={currentBudget < 300000}
+                                className="w-full bg-primary hover:brightness-110 disabled:opacity-40 disabled:cursor-not-allowed text-on-primary font-headline font-bold py-3 rounded text-sm transition-all uppercase tracking-wide"
+                              >
+                                Expandir Estádio — 300.000€
+                              </button>
+                              {currentBudget < 300000 && (
+                                <p className="text-on-surface-variant text-[10px] text-center mt-2 uppercase tracking-wider opacity-60">
+                                  Saldo insuficiente · faltam{" "}
+                                  {formatCurrency(300000 - currentBudget)}
+                                </p>
+                              )}
                             </div>
                           </div>
                         </div>
                       );
                     })()}
 
-                  {/* ── MULTIVIEW GRID ─────────────────────── */}
-                  {!isCupMatch && (
-                    <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
-                      {[1, 2, 3, 4].map((div) => (
-                        <div key={div}>
-                          <h3 className="text-[10px] font-black uppercase tracking-widest text-on-surface-variant/40 mb-1.5 mt-2 first:mt-0">
-                            {DIVISION_NAMES[div] || `Div ${div}`}
-                          </h3>
-                          <div className="space-y-1">
-                            {matchResults.results
-                              .filter(
-                                (m) =>
-                                  teams.find((t) => t.id === m.homeTeamId)
-                                    ?.division === div,
-                              )
-                              .filter(
-                                (m) =>
-                                  m.homeTeamId !== me.teamId &&
-                                  m.awayTeamId !== me.teamId,
-                              )
-                              .map((match, idx) => {
-                                const hInfo = teams.find(
-                                  (t) => t.id === match.homeTeamId,
-                                );
-                                const aInfo = teams.find(
-                                  (t) => t.id === match.awayTeamId,
-                                );
-                                const matchEvents = match.events || [];
-                                const currentHome = matchEvents.filter(
-                                  (e) =>
-                                    e.minute <= liveMinute &&
-                                    e.type === "goal" &&
-                                    e.team === "home",
-                                );
-                                const currentAway = matchEvents.filter(
-                                  (e) =>
-                                    e.minute <= liveMinute &&
-                                    e.type === "goal" &&
-                                    e.team === "away",
-                                );
-                                const isHumanMatch = players.some(
-                                  (p) =>
-                                    p.teamId === match.homeTeamId ||
-                                    p.teamId === match.awayTeamId,
-                                );
-
-                                const flashHome =
-                                  goalFlashRef.current[
-                                    `${match.homeTeamId}_${match.awayTeamId}_home`
-                                  ];
-                                const flashAway =
-                                  goalFlashRef.current[
-                                    `${match.homeTeamId}_${match.awayTeamId}_away`
-                                  ];
-                                const now = Date.now();
-                                const homeFlashing =
-                                  flashHome && now - flashHome < 1500;
-                                const awayFlashing =
-                                  flashAway && now - flashAway < 1500;
-
-                                return (
-                                  <div
-                                    key={idx}
-                                    className={`bg-surface-container-low rounded-md overflow-hidden ${isHumanMatch ? "border-l-2 border-l-primary/50" : ""}`}
-                                  >
-                                    {/* Match card */}
-                                    <div className="flex items-center">
-                                      <div className="flex-1 flex items-center gap-1.5 px-2.5 py-1.5 min-w-0">
-                                        <span
-                                          className="w-2 h-2 rounded-full shrink-0"
-                                          style={{
-                                            backgroundColor:
-                                              hInfo?.color_primary || "#666",
-                                          }}
-                                        />
-                                        <span className="text-[11px] font-bold text-on-surface truncate">
-                                          {hInfo?.name}
-                                        </span>
-                                      </div>
-                                      <button
-                                        onClick={() => {
-                                          setMatchDetailFixture(match);
-                                          setShowMatchDetail(true);
-                                        }}
-                                        title="Ver detalhes da partida"
-                                        className="px-3 py-1.5 bg-surface-container hover:bg-surface-bright text-on-surface text-center font-headline min-w-[52px] flex gap-1 items-center justify-center text-sm leading-none transition-colors cursor-pointer"
+                  {activeTab === "players" && (
+                    <div className="space-y-6">
+                      <div className="bg-surface-container rounded-lg shadow-sm overflow-x-auto">
+                        <table className="w-full min-w-[720px] text-left text-sm font-normal">
+                          <thead>
+                            <tr className="bg-surface/50 text-on-surface-variant uppercase text-[11px] tracking-widest border-b border-outline-variant/20 font-normal">
+                              <th className="px-3 py-3 text-center w-12 font-normal">
+                                POS
+                              </th>
+                              <th className="px-3 py-3 font-normal">NOME</th>
+                              <th className="px-3 py-3 text-center w-12 font-normal">
+                                NAC
+                              </th>
+                              <th className="px-3 py-3 text-center w-14 font-normal">
+                                QUAL
+                              </th>
+                              <th className="px-3 py-3 text-center font-normal">
+                                AGR
+                              </th>
+                              <th className="px-3 py-3 text-center w-12 font-normal">
+                                ⚽
+                              </th>
+                              <th className="px-3 py-3 text-center w-12 font-normal">
+                                🟥
+                              </th>
+                              <th className="px-3 py-3 text-center w-12 font-normal">
+                                🩹
+                              </th>
+                              <th className="px-3 py-3 text-center w-24 font-normal">
+                                ORDENADO
+                              </th>
+                              <th className="px-3 py-3 text-center w-24 font-normal">
+                                AÇÕES
+                              </th>
+                            </tr>
+                          </thead>
+                          <tbody className="divide-y divide-outline-variant/10 font-normal">
+                            {annotatedSquad.map((player) => (
+                              <tr
+                                key={player.id}
+                                className={`transition-colors group select-none ${ENABLE_ROW_BG ? POSITION_BG_CLASS[player.position] : ""} hover:bg-zinc-800/50 ${player.isUnavailable ? "opacity-50" : ""}`}
+                              >
+                                <td
+                                  className={`px-3 py-2 text-center text-sm tracking-wider ${POSITION_TEXT_CLASS[player.position] || "text-zinc-300"}`}
+                                >
+                                  {POSITION_SHORT_LABELS[player.position] ||
+                                    player.position}
+                                </td>
+                                <td className="px-3 py-2 text-white text-sm md:text-base whitespace-nowrap">
+                                  <PlayerLink playerId={player.id}>
+                                    {player.name}
+                                  </PlayerLink>
+                                  {!!player.is_star &&
+                                    (player.position === "MED" ||
+                                      player.position === "ATA") && (
+                                      <span
+                                        className="ml-1 text-amber-400 font-black"
+                                        title="Craque"
                                       >
-                                        <span
-                                          className="font-black"
-                                          style={{
-                                            color: homeFlashing
-                                              ? "#ff4444"
-                                              : undefined,
-                                            transition: homeFlashing
-                                              ? "none"
-                                              : "color 1.25s ease",
-                                          }}
-                                        >
-                                          {currentHome.length}
-                                        </span>
-                                        <span className="text-on-surface-variant/30 text-xs">
-                                          -
-                                        </span>
-                                        <span
-                                          className="font-black"
-                                          style={{
-                                            color: awayFlashing
-                                              ? "#ff4444"
-                                              : undefined,
-                                            transition: awayFlashing
-                                              ? "none"
-                                              : "color 1.25s ease",
-                                          }}
-                                        >
-                                          {currentAway.length}
-                                        </span>
-                                      </button>
-                                      <div className="flex-1 flex items-center gap-1.5 px-2.5 py-1.5 min-w-0 justify-end">
-                                        <span className="text-[11px] font-bold text-on-surface truncate">
-                                          {aInfo?.name}
-                                        </span>
-                                        <span
-                                          className="w-2 h-2 rounded-full shrink-0"
-                                          style={{
-                                            backgroundColor:
-                                              aInfo?.color_primary || "#666",
-                                          }}
-                                        />
-                                      </div>
-                                    </div>
-                                    {/* Last event */}
-                                    <div className="flex text-[9px] text-on-surface-variant/40 px-2.5 pb-1">
-                                      <span className="flex-1 truncate">
-                                        {getMatchLastEventText(
-                                          matchEvents,
-                                          liveMinute,
-                                          "home",
-                                        )}
-                                      </span>
-                                      {isHumanMatch && (
-                                        <span className="text-primary/40 font-bold text-[8px] uppercase">
-                                          Humano
-                                        </span>
-                                      )}
-                                      <span className="flex-1 truncate text-right">
-                                        {getMatchLastEventText(
-                                          matchEvents,
-                                          liveMinute,
-                                          "away",
-                                        )}
-                                      </span>
-                                    </div>
-                                  </div>
-                                );
-                              })}
-                          </div>
-                        </div>
-                      ))}
-                    </div>
-                  )}
-
-                  {/* ── CUP MULTIVIEW (single list, no division groups) ── */}
-                  {isCupMatch && matchResults?.results && (
-                    <div className="space-y-1">
-                      {matchResults.results
-                        .filter(
-                          (m) =>
-                            m.homeTeamId !== me.teamId &&
-                            m.awayTeamId !== me.teamId,
-                        )
-                        .filter((m) => {
-                          // After 90', only show games still in extra time (score tied at 90)
-                          if (liveMinute <= 90) return true;
-                          const goals90Home = (m.events || []).filter(
-                            (e) =>
-                              e.minute <= 90 &&
-                              e.type === "goal" &&
-                              e.team === "home",
-                          ).length;
-                          const goals90Away = (m.events || []).filter(
-                            (e) =>
-                              e.minute <= 90 &&
-                              e.type === "goal" &&
-                              e.team === "away",
-                          ).length;
-                          return goals90Home === goals90Away;
-                        })
-                        .map((match, idx) => {
-                          const hInfo = teams.find(
-                            (t) => t.id === match.homeTeamId,
-                          );
-                          const aInfo = teams.find(
-                            (t) => t.id === match.awayTeamId,
-                          );
-                          const matchEvents = match.events || [];
-                          const currentHome = matchEvents.filter(
-                            (e) =>
-                              e.minute <= liveMinute &&
-                              e.type === "goal" &&
-                              e.team === "home",
-                          );
-                          const currentAway = matchEvents.filter(
-                            (e) =>
-                              e.minute <= liveMinute &&
-                              e.type === "goal" &&
-                              e.team === "away",
-                          );
-                          const isHumanMatch = players.some(
-                            (p) =>
-                              p.teamId === match.homeTeamId ||
-                              p.teamId === match.awayTeamId,
-                          );
-                          const flashHome =
-                            goalFlashRef.current[
-                              `${match.homeTeamId}_${match.awayTeamId}_home`
-                            ];
-                          const flashAway =
-                            goalFlashRef.current[
-                              `${match.homeTeamId}_${match.awayTeamId}_away`
-                            ];
-                          const now = Date.now();
-                          const homeFlashing =
-                            flashHome && now - flashHome < 1500;
-                          const awayFlashing =
-                            flashAway && now - flashAway < 1500;
-
-                          return (
-                            <div
-                              key={idx}
-                              className={`bg-surface-container-low rounded-md overflow-hidden ${isHumanMatch ? "border-l-2 border-l-primary/50" : ""}`}
-                            >
-                              <div className="flex items-center">
-                                <div className="flex-1 flex items-center gap-1.5 px-2.5 py-1.5 min-w-0">
-                                  <span
-                                    className="w-2 h-2 rounded-full shrink-0"
-                                    style={{
-                                      backgroundColor:
-                                        hInfo?.color_primary || "#666",
-                                    }}
-                                  />
-                                  <span className="text-[11px] font-bold text-on-surface truncate">
-                                    {hInfo?.name}
-                                  </span>
-                                </div>
-                                <button
-                                  onClick={() => {
-                                    setMatchDetailFixture(match);
-                                    setShowMatchDetail(true);
-                                  }}
-                                  title="Ver detalhes da partida"
-                                  className="px-3 py-1.5 bg-surface-container hover:bg-surface-bright text-on-surface text-center font-headline min-w-[52px] flex gap-1 items-center justify-center text-sm leading-none transition-colors cursor-pointer"
-                                >
-                                  <span
-                                    className="font-black"
-                                    style={{
-                                      color: homeFlashing
-                                        ? "#ff4444"
-                                        : undefined,
-                                      transition: homeFlashing
-                                        ? "none"
-                                        : "color 1.25s ease",
-                                    }}
-                                  >
-                                    {currentHome.length}
-                                  </span>
-                                  <span className="text-on-surface-variant/30 text-xs">
-                                    -
-                                  </span>
-                                  <span
-                                    className="font-black"
-                                    style={{
-                                      color: awayFlashing
-                                        ? "#ff4444"
-                                        : undefined,
-                                      transition: awayFlashing
-                                        ? "none"
-                                        : "color 1.25s ease",
-                                    }}
-                                  >
-                                    {currentAway.length}
-                                  </span>
-                                </button>
-                                <div className="flex-1 flex items-center gap-1.5 px-2.5 py-1.5 min-w-0 justify-end">
-                                  <span className="text-[11px] font-bold text-on-surface truncate">
-                                    {aInfo?.name}
-                                  </span>
-                                  <span
-                                    className="w-2 h-2 rounded-full shrink-0"
-                                    style={{
-                                      backgroundColor:
-                                        aInfo?.color_primary || "#666",
-                                    }}
-                                  />
-                                </div>
-                              </div>
-                              <div className="flex text-[9px] text-on-surface-variant/40 px-2.5 pb-1">
-                                <span className="flex-1 truncate">
-                                  {getMatchLastEventText(
-                                    matchEvents,
-                                    liveMinute,
-                                    "home",
-                                  )}
-                                </span>
-                                {isHumanMatch && (
-                                  <span className="text-primary/40 font-bold text-[8px] uppercase">
-                                    Humano
-                                  </span>
-                                )}
-                                <span className="flex-1 truncate text-right">
-                                  {getMatchLastEventText(
-                                    matchEvents,
-                                    liveMinute,
-                                    "away",
-                                  )}
-                                </span>
-                              </div>
-                            </div>
-                          );
-                        })}
-                    </div>
-                  )}
-                </div>
-              )}
-
-              {activeTab === "standings" && (
-                <LeagueStandings
-                  teams={teams}
-                  teamForms={teamForms}
-                  topScorers={topScorers}
-                  myTeamId={me.teamId}
-                  completedJornada={completedJornada}
-                  matchweekCount={matchweekCount}
-                  palmares={palmares}
-                  onTeamClick={handleOpenTeamSquad}
-                />
-              )}
-
-              {activeTab === "cup" && (
-                <div className="space-y-6">
-                  {/* ── TAÇA DE PORTUGAL PAGE ─────────────────────────────── */}
-                  {!cupRoundResults && !cupDraw && (
-                    <div className="bg-surface-container rounded-lg p-10 text-center">
-                      <p className="text-4xl mb-3">🏆</p>
-                      <p className="text-zinc-500 font-bold">
-                        Sem dados de Taça disponíveis neste momento.
-                      </p>
-                    </div>
-                  )}
-
-                  {cupRoundResults && (
-                    <div className="bg-surface-container rounded-lg overflow-hidden">
-                      <div className="bg-amber-900/20 px-6 py-4 border-b border-amber-800/30">
-                        <p className="text-xs text-amber-400 uppercase font-black tracking-widest">
-                          Taça de Portugal · Temporada {cupRoundResults.season}
-                        </p>
-                        <h2 className="text-xl font-black text-white mt-0.5">
-                          {cupRoundResults.roundName}
-                        </h2>
-                      </div>
-                      <div className="p-4 space-y-2">
-                        {(cupRoundResults.results || []).map((r, idx) => {
-                          const hInfo = teams.find(
-                            (t) => t.id === r.homeTeamId,
-                          );
-                          const aInfo = teams.find(
-                            (t) => t.id === r.awayTeamId,
-                          );
-                          const winnerInfo = teams.find(
-                            (t) => t.id === r.winnerId,
-                          );
-                          const isMyMatch =
-                            r.homeTeamId === me.teamId ||
-                            r.awayTeamId === me.teamId;
-                          return (
-                            <div
-                              key={idx}
-                              className={`rounded-md border px-4 py-3 ${isMyMatch ? "border-primary bg-primary/10" : "border-outline-variant/20 bg-surface"}`}
-                            >
-                              <div className="flex items-center gap-3">
-                                <span
-                                  className="flex-1 text-right font-black text-sm truncate"
-                                  style={{
-                                    color: hInfo?.color_primary || "#fff",
-                                  }}
-                                >
-                                  {hInfo?.name || r.homeTeamId}
-                                </span>
-                                <span className="px-3 py-1 bg-surface border border-outline-variant/20 rounded font-black text-on-surface text-sm">
-                                  {r.homeGoals} – {r.awayGoals}
-                                  {r.wentToET && !r.decidedByPenalties && (
-                                    <span className="ml-1 text-[10px] text-zinc-500 font-semibold">
-                                      (p.e.)
-                                    </span>
-                                  )}
-                                  {r.decidedByPenalties && (
-                                    <span className="ml-1 text-[10px] text-amber-400 font-semibold">
-                                      ({r.penaltyHomeGoals}–{r.penaltyAwayGoals}{" "}
-                                      g.p.)
-                                    </span>
-                                  )}
-                                </span>
-                                <span
-                                  className="flex-1 text-left font-black text-sm truncate"
-                                  style={{
-                                    color: aInfo?.color_primary || "#fff",
-                                  }}
-                                >
-                                  {aInfo?.name || r.awayTeamId}
-                                </span>
-                              </div>
-                              {winnerInfo && (
-                                <p className="text-center text-amber-400 text-xs font-black mt-1">
-                                  ✓ Apura-se {winnerInfo.name}
-                                  {cupRoundResults.isFinal
-                                    ? " 🏆 Vencedor da Taça!"
-                                    : ""}
-                                </p>
-                              )}
-                            </div>
-                          );
-                        })}
-                      </div>
-                    </div>
-                  )}
-
-                  {cupDraw && !cupRoundResults && (
-                    <div className="bg-surface-container rounded-lg overflow-hidden">
-                      <div className="bg-surface-container-high/40 px-6 py-4 border-b border-outline-variant/20">
-                        <p className="text-xs text-zinc-400 uppercase font-black tracking-widest">
-                          Taça de Portugal · Temporada {cupDraw.season}
-                        </p>
-                        <h2 className="text-xl font-black text-white mt-0.5">
-                          Sorteio — {cupDraw.roundName}
-                        </h2>
-                      </div>
-                      <div className="p-4 space-y-2">
-                        {(cupDraw.fixtures || []).map((fixture, idx) => {
-                          const hInfo = fixture.homeTeam;
-                          const aInfo = fixture.awayTeam;
-                          const homeId = hInfo?.id;
-                          const awayId = aInfo?.id;
-                          const hName = hInfo?.name || "?";
-                          const aName = aInfo?.name || "?";
-                          const isMine =
-                            homeId === me.teamId || awayId === me.teamId;
-                          return (
-                            <div
-                              key={idx}
-                              className={`rounded-md border px-4 py-3 flex items-center gap-3 ${isMine ? "border-primary bg-primary/10" : "border-outline-variant/20 bg-surface"}`}
-                            >
-                              <span
-                                className="flex-1 text-right font-black text-sm truncate"
-                                style={{
-                                  color: hInfo?.color_primary || "#fff",
-                                }}
-                              >
-                                {hName}
-                              </span>
-                              <span className="px-3 py-1 bg-surface border border-outline-variant/20 rounded font-black text-on-surface-variant text-sm">
-                                vs
-                              </span>
-                              <span
-                                className="flex-1 text-left font-black text-sm truncate"
-                                style={{
-                                  color: aInfo?.color_primary || "#fff",
-                                }}
-                              >
-                                {aName}
-                              </span>
-                            </div>
-                          );
-                        })}
-                      </div>
-                    </div>
-                  )}
-                </div>
-              )}
-
-              {activeTab === "calendario" &&
-                (() => {
-                  const cal = calendarData;
-                  const curIdx = cal?.calendarIndex ?? 0;
-                  const calYear = cal?.year ?? seasonYear;
-                  const done = Math.min(curIdx, SEASON_CALENDAR.length);
-                  const pct = Math.round((done / SEASON_CALENDAR.length) * 100);
-                  const myTeamId = me?.teamId;
-                  const myTeam = teams.find((t) => t.id === myTeamId);
-                  const myDivision = myTeam?.division;
-                  const myDivTeams = teams
-                    .filter((t) => t.division === myDivision)
-                    .sort((a, b) => a.id - b.id);
-
-                  const getStatus = (entry) => {
-                    if (entry.calendarIndex < curIdx) return "done";
-                    if (entry.calendarIndex === curIdx) return "current";
-                    return "future";
-                  };
-
-                  const toggleEntry = (idx) =>
-                    setExpandedCalEntries((prev) => ({
-                      ...prev,
-                      [idx]: !prev[idx],
-                    }));
-
-                  return (
-                    <div className="space-y-4">
-                      {/* ── PAGE HEADER ──────────────────────────────────── */}
-                      <div className="flex flex-wrap items-start justify-between gap-3">
-                        <div>
-                          <h2 className="text-lg font-headline font-black text-on-surface">
-                            Calendário
-                          </h2>
-                          <p className="text-xs text-on-surface-variant mt-0.5">
-                            Época {calYear}/{calYear + 1}
-                            {cal ? ` · Temporada ${cal.season}` : ""}
-                          </p>
-                        </div>
-                        {/* Progress pill */}
-                        <div className="flex flex-col items-end gap-1 shrink-0">
-                          <span className="text-[10px] font-black uppercase tracking-widest text-on-surface-variant">
-                            {done} / {SEASON_CALENDAR.length} semanas
-                          </span>
-                          <div className="w-36 h-1.5 bg-outline-variant/30 rounded-full overflow-hidden">
-                            <div
-                              className="h-full bg-primary rounded-full transition-all duration-500"
-                              style={{ width: `${pct}%` }}
-                            />
-                          </div>
-                        </div>
-                      </div>
-
-                      {/* ── LOADING STATE ─────────────────────────────────── */}
-                      {!cal && (
-                        <div className="bg-surface-container rounded-lg p-10 text-center">
-                          <span className="material-symbols-outlined text-4xl text-on-surface-variant/40 block mb-2">
-                            calendar_month
-                          </span>
-                          <p className="text-on-surface-variant font-bold text-sm">
-                            A carregar calendário…
-                          </p>
-                        </div>
-                      )}
-
-                      {/* ── CALENDAR ENTRIES ──────────────────────────────── */}
-                      {cal && (
-                        <div className="space-y-2">
-                          {SEASON_CALENDAR.map((entry) => {
-                            const status = getStatus(entry);
-                            const isCurrent = status === "current";
-                            const isDone = status === "done";
-                            const isCupEntry = entry.type === "cup";
-                            const isExpanded =
-                              !!expandedCalEntries[entry.calendarIndex];
-
-                            // ── card style per status ───────────────────
-                            const cardClass = isCurrent
-                              ? "bg-primary/8 border border-primary/50 rounded-lg overflow-hidden"
-                              : isDone
-                                ? "bg-surface-container rounded-lg overflow-hidden opacity-80"
-                                : "bg-surface-container rounded-lg overflow-hidden opacity-60";
-
-                            // ── CUP ENTRY ────────────────────────────────
-                            if (isCupEntry) {
-                              const cupFixtures = cal.cupMatches.filter(
-                                (m) => m.round === entry.round,
-                              );
-                              const cupDrawn = cupFixtures.length > 0;
-                              const myMatch = cupDrawn
-                                ? cupFixtures.find(
-                                    (f) =>
-                                      f.home_team_id === myTeamId ||
-                                      f.away_team_id === myTeamId,
-                                  )
-                                : null;
-
-                              // check if user was already eliminated from the cup
-                              const isEliminated = (() => {
-                                const myPlayedCupMatches =
-                                  cal.cupMatches.filter(
-                                    (m) =>
-                                      m.played &&
-                                      (m.home_team_id === myTeamId ||
-                                        m.away_team_id === myTeamId),
-                                  );
-                                return myPlayedCupMatches.some((m) => {
-                                  const hasPen =
-                                    m.home_penalties > 0 ||
-                                    m.away_penalties > 0;
-                                  if (m.home_team_id === myTeamId) {
-                                    const myScore = hasPen
-                                      ? m.home_penalties
-                                      : m.home_score;
-                                    const opScore = hasPen
-                                      ? m.away_penalties
-                                      : m.away_score;
-                                    return myScore < opScore;
-                                  } else {
-                                    const myScore = hasPen
-                                      ? m.away_penalties
-                                      : m.away_score;
-                                    const opScore = hasPen
-                                      ? m.home_penalties
-                                      : m.home_score;
-                                    return myScore < opScore;
-                                  }
-                                });
-                              })();
-
-                              // status badge
-                              const cupBadge = isDone ? (
-                                <span className="text-[9px] font-black uppercase tracking-widest bg-surface-bright text-on-surface-variant/60 px-2 py-0.5 rounded">
-                                  Concluído
-                                </span>
-                              ) : isCurrent ? (
-                                <span className="text-[9px] font-black uppercase tracking-widest bg-primary/20 text-primary px-2 py-0.5 rounded animate-pulse">
-                                  Próximo
-                                </span>
-                              ) : !cupDrawn ? (
-                                isEliminated ? (
-                                  <span className="text-[9px] font-black uppercase tracking-widest bg-red-500/15 text-red-400 px-2 py-0.5 rounded">
-                                    Eliminado
-                                  </span>
-                                ) : (
-                                  <span className="text-[9px] font-black uppercase tracking-widest bg-amber-500/15 text-amber-400 px-2 py-0.5 rounded">
-                                    Aguarda sorteio
-                                  </span>
-                                )
-                              ) : (
-                                <span className="text-[9px] font-black uppercase tracking-widest bg-surface-bright text-on-surface-variant/40 px-2 py-0.5 rounded">
-                                  Por jogar
-                                </span>
-                              );
-
-                              return (
-                                <div
-                                  key={entry.calendarIndex}
-                                  className={cardClass}
-                                >
-                                  {/* Header – clickable to expand all cup matches */}
-                                  <div
-                                    className={`flex items-center gap-3 px-4 py-2.5 border-b border-amber-800/30 bg-amber-900/15 ${cupDrawn ? "cursor-pointer select-none" : ""}`}
-                                    onClick={
-                                      cupDrawn
-                                        ? () => toggleEntry(entry.calendarIndex)
-                                        : undefined
-                                    }
-                                  >
-                                    <span className="shrink-0 text-[9px] font-black uppercase tracking-widest px-1.5 py-0.5 rounded bg-amber-500/25 text-amber-400">
-                                      Taça
-                                    </span>
-                                    <span className="font-black text-sm text-on-surface flex-1 truncate">
-                                      {entry.roundName}
-                                    </span>
-                                    {isCurrent && (
-                                      <span className="shrink-0 relative flex h-2 w-2">
-                                        <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-primary opacity-75" />
-                                        <span className="relative inline-flex rounded-full h-2 w-2 bg-primary" />
+                                        *
                                       </span>
                                     )}
-                                    {/* Our cup match preview */}
-                                    {myMatch &&
-                                      (() => {
-                                        const hInfo = teams.find(
-                                          (t) => t.id === myMatch.home_team_id,
-                                        );
-                                        const aInfo = teams.find(
-                                          (t) => t.id === myMatch.away_team_id,
-                                        );
-                                        const hasPen =
-                                          myMatch.home_penalties > 0 ||
-                                          myMatch.away_penalties > 0;
-                                        return (
-                                          <div className="flex items-center gap-1.5 text-[11px] font-bold shrink-0">
-                                            <span
-                                              className={
-                                                myMatch.home_team_id ===
-                                                myTeamId
-                                                  ? "text-primary"
-                                                  : "text-on-surface-variant"
-                                              }
-                                            >
-                                              {hInfo?.name ??
-                                                myMatch.home_team_id}
-                                            </span>
-                                            <span className="text-on-surface-variant/50 text-[10px] font-black">
-                                              {myMatch.played
-                                                ? `${myMatch.home_score}–${myMatch.away_score}${hasPen ? ` (${myMatch.home_penalties}–${myMatch.away_penalties}gp)` : ""}`
-                                                : "vs"}
-                                            </span>
-                                            <span
-                                              className={
-                                                myMatch.away_team_id ===
-                                                myTeamId
-                                                  ? "text-primary"
-                                                  : "text-on-surface-variant"
-                                              }
-                                            >
-                                              {aInfo?.name ??
-                                                myMatch.away_team_id}
-                                            </span>
-                                          </div>
-                                        );
-                                      })()}
-                                    {!myMatch && !cupDrawn && (
-                                      <span className="text-[10px] text-on-surface-variant/40 italic">
-                                        Sorteio por realizar
-                                      </span>
-                                    )}
-                                    <div className="flex items-center gap-2 shrink-0">
-                                      {cupBadge}
-                                      {cupDrawn && (
-                                        <span className="material-symbols-outlined text-base text-on-surface-variant/40">
-                                          {isExpanded
-                                            ? "expand_less"
-                                            : "expand_more"}
-                                        </span>
-                                      )}
-                                    </div>
-                                  </div>
-
-                                  {/* Expanded: all cup fixtures */}
-                                  {isExpanded && cupDrawn && (
-                                    <div>
-                                      {cupFixtures.map((f, fi) => {
-                                        const homeInfo = teams.find(
-                                          (t) => t.id === f.home_team_id,
-                                        );
-                                        const awayInfo = teams.find(
-                                          (t) => t.id === f.away_team_id,
-                                        );
-                                        const isMyMatch =
-                                          f.home_team_id === myTeamId ||
-                                          f.away_team_id === myTeamId;
-                                        const hasPenalties =
-                                          f.home_penalties > 0 ||
-                                          f.away_penalties > 0;
-                                        const hasET =
-                                          (f.home_et_score > 0 ||
-                                            f.away_et_score > 0) &&
-                                          !hasPenalties;
-                                        return (
-                                          <div
-                                            key={fi}
-                                            className={`flex items-center gap-2 px-4 py-2 border-b border-outline-variant/5 last:border-0 ${
-                                              isMyMatch ? "bg-primary/8" : ""
-                                            }`}
-                                          >
-                                            <div className="flex items-center gap-1.5 flex-1 min-w-0 justify-end">
-                                              <button
-                                                className={`text-[11px] font-bold truncate text-right ${isMyMatch && f.home_team_id === myTeamId ? "text-primary" : f.played && f.winner_team_id !== f.home_team_id ? "text-on-surface-variant/50" : "text-on-surface hover:underline"}`}
-                                                onClick={(e) => {
-                                                  e.stopPropagation();
-                                                  if (
-                                                    f.home_team_id !==
-                                                      myTeamId &&
-                                                    homeInfo
-                                                  )
-                                                    handleOpenTeamSquad(
-                                                      homeInfo,
-                                                    );
-                                                }}
-                                              >
-                                                {homeInfo?.name ??
-                                                  f.home_team_id}
-                                              </button>
-                                              <span
-                                                className="shrink-0 w-2 h-2 rounded-full"
-                                                style={{
-                                                  backgroundColor:
-                                                    homeInfo?.color_primary ||
-                                                    "#666",
-                                                }}
-                                              />
-                                            </div>
-                                            <div className="shrink-0 w-20 text-center">
-                                              {f.played ? (
-                                                <span className="text-xs font-black font-headline text-on-surface bg-surface border border-outline-variant/20 rounded px-2 py-0.5 whitespace-nowrap">
-                                                  {f.home_score}–{f.away_score}
-                                                  {hasPenalties && (
-                                                    <span className="ml-1 text-[9px] text-amber-400">
-                                                      ({f.home_penalties}–
-                                                      {f.away_penalties}gp)
-                                                    </span>
-                                                  )}
-                                                  {hasET && (
-                                                    <span className="ml-1 text-[9px] text-zinc-500">
-                                                      (p.e.)
-                                                    </span>
-                                                  )}
-                                                </span>
-                                              ) : (
-                                                <span className="text-[10px] font-black text-on-surface-variant/40">
-                                                  vs
-                                                </span>
-                                              )}
-                                            </div>
-                                            <div className="flex items-center gap-1.5 flex-1 min-w-0">
-                                              <span
-                                                className="shrink-0 w-2 h-2 rounded-full"
-                                                style={{
-                                                  backgroundColor:
-                                                    awayInfo?.color_primary ||
-                                                    "#666",
-                                                }}
-                                              />
-                                              <button
-                                                className={`text-[11px] font-bold truncate text-left ${isMyMatch && f.away_team_id === myTeamId ? "text-primary" : f.played && f.winner_team_id !== f.away_team_id ? "text-on-surface-variant/50" : "text-on-surface hover:underline"}`}
-                                                onClick={(e) => {
-                                                  e.stopPropagation();
-                                                  if (
-                                                    f.away_team_id !==
-                                                      myTeamId &&
-                                                    awayInfo
-                                                  )
-                                                    handleOpenTeamSquad(
-                                                      awayInfo,
-                                                    );
-                                                }}
-                                              >
-                                                {awayInfo?.name ??
-                                                  f.away_team_id}
-                                              </button>
-                                            </div>
-                                          </div>
-                                        );
-                                      })}
-                                      {/* Cup final winner */}
-                                      {entry.round === 5 &&
-                                        cupFixtures.some((m) => m.played) &&
-                                        (() => {
-                                          const finalMatch = cupFixtures.find(
-                                            (m) => m.played,
-                                          );
-                                          const champ = finalMatch
-                                            ? teams.find(
-                                                (t) =>
-                                                  t.id ===
-                                                  finalMatch.winner_team_id,
-                                              )
-                                            : null;
-                                          return champ ? (
-                                            <div className="px-4 py-2 border-t border-amber-800/30 bg-amber-900/10 flex items-center gap-2">
-                                              <span className="text-amber-400 text-sm">
-                                                🏆
-                                              </span>
-                                              <span className="text-xs font-black text-amber-400 uppercase tracking-widest">
-                                                Vencedor: {champ.name}
-                                              </span>
-                                            </div>
-                                          ) : null;
-                                        })()}
-                                    </div>
-                                  )}
-                                </div>
-                              );
-                            }
-
-                            // ── LEAGUE ENTRY ─────────────────────────────
-                            // For done matchweeks: use actual DB records as the source
-                            // of truth (home/away and scores).  For future/current:
-                            // use the fixture generator (with swap correction).
-                            const divFixtures = isDone
-                              ? cal.leagueMatches
-                                  .filter(
-                                    (m) =>
-                                      m.matchweek === entry.matchweek &&
-                                      myDivTeams.some(
-                                        (t) => t.id === m.home_team_id,
-                                      ) &&
-                                      myDivTeams.some(
-                                        (t) => t.id === m.away_team_id,
-                                      ),
-                                  )
-                                  .map((m) => ({
-                                    homeTeamId: m.home_team_id,
-                                    awayTeamId: m.away_team_id,
-                                    result: m,
-                                  }))
-                              : generateLeagueFixtures(
-                                  myDivTeams,
-                                  entry.matchweek,
-                                  myTeamId,
-                                ).map((f) => ({ ...f, result: null }));
-
-                            const myFixture = divFixtures.find(
-                              (f) =>
-                                f.homeTeamId === myTeamId ||
-                                f.awayTeamId === myTeamId,
-                            );
-                            const myImHome = myFixture?.homeTeamId === myTeamId;
-                            const myHomeInfo = myFixture
-                              ? teams.find((t) => t.id === myFixture.homeTeamId)
-                              : null;
-                            const myAwayInfo = myFixture
-                              ? teams.find((t) => t.id === myFixture.awayTeamId)
-                              : null;
-
-                            // status badge
-                            const leagueBadge = isDone ? (
-                              <span className="text-[9px] font-black uppercase tracking-widest bg-surface-bright text-on-surface-variant/60 px-2 py-0.5 rounded shrink-0">
-                                Concluído
-                              </span>
-                            ) : isCurrent ? (
-                              <span className="text-[9px] font-black uppercase tracking-widest bg-primary/20 text-primary px-2 py-0.5 rounded animate-pulse shrink-0">
-                                Próximo
-                              </span>
-                            ) : (
-                              <span className="text-[9px] font-black uppercase tracking-widest bg-surface-bright text-on-surface-variant/40 px-2 py-0.5 rounded shrink-0">
-                                Por jogar
-                              </span>
-                            );
-
-                            return (
-                              <div
-                                key={entry.calendarIndex}
-                                className={cardClass}
-                              >
-                                {/* ── CLICKABLE HEADER: week + our match ── */}
-                                <div
-                                  className={`flex items-center gap-2 px-4 py-2.5 cursor-pointer select-none border-b ${
-                                    isCurrent
-                                      ? "border-primary/20 bg-primary/5"
-                                      : "border-outline-variant/20"
-                                  }`}
-                                  onClick={() =>
-                                    toggleEntry(entry.calendarIndex)
-                                  }
-                                >
-                                  {/* Liga badge + week */}
-                                  <span className="shrink-0 text-[9px] font-black uppercase tracking-widest px-1.5 py-0.5 rounded bg-primary/20 text-primary">
-                                    Liga
-                                  </span>
-                                  <span className="font-black text-sm text-on-surface shrink-0">
-                                    J{entry.matchweek}
-                                  </span>
-                                  {isCurrent && (
-                                    <span className="shrink-0 relative flex h-2 w-2">
-                                      <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-primary opacity-75" />
-                                      <span className="relative inline-flex rounded-full h-2 w-2 bg-primary" />
-                                    </span>
-                                  )}
-
-                                  {/* Our team's match – centered, grows to fill */}
-                                  {myFixture ? (
-                                    <div className="flex items-center gap-1.5 flex-1 min-w-0 justify-center">
-                                      <span
-                                        className={`shrink-0 text-[8px] font-black uppercase tracking-wider ${myImHome ? "text-emerald-400" : "text-on-surface-variant/50"}`}
-                                      >
-                                        {myImHome ? "casa" : "fora"}
-                                      </span>
-                                      <span
-                                        className="shrink-0 w-2 h-2 rounded-full"
-                                        style={{
-                                          backgroundColor:
-                                            myHomeInfo?.color_primary || "#666",
-                                        }}
-                                      />
-                                      <span
-                                        className={`text-[11px] font-bold truncate ${myFixture.homeTeamId === myTeamId ? "text-primary" : "text-on-surface"}`}
-                                      >
-                                        {myHomeInfo?.name ??
-                                          myFixture.homeTeamId}
-                                      </span>
-                                      <span className="shrink-0 text-xs font-black font-headline text-on-surface-variant/70 mx-0.5">
-                                        {myFixture.result
-                                          ? `${myFixture.result.home_score}–${myFixture.result.away_score}`
-                                          : "vs"}
-                                      </span>
-                                      <span
-                                        className={`text-[11px] font-bold truncate ${myFixture.awayTeamId === myTeamId ? "text-primary" : "text-on-surface"}`}
-                                      >
-                                        {myAwayInfo?.name ??
-                                          myFixture.awayTeamId}
-                                      </span>
-                                      <span
-                                        className="shrink-0 w-2 h-2 rounded-full"
-                                        style={{
-                                          backgroundColor:
-                                            myAwayInfo?.color_primary || "#666",
-                                        }}
-                                      />
-                                    </div>
-                                  ) : (
-                                    <div className="flex-1" />
-                                  )}
-
-                                  {/* right side: badge + chevron */}
-                                  <div className="flex items-center gap-1.5 shrink-0">
-                                    {leagueBadge}
-                                    <span className="material-symbols-outlined text-base text-on-surface-variant/40">
-                                      {isExpanded
-                                        ? "expand_less"
-                                        : "expand_more"}
-                                    </span>
-                                  </div>
-                                </div>
-
-                                {/* ── EXPANDED: all division fixtures ──── */}
-                                {isExpanded && (
-                                  <div className="divide-y divide-outline-variant/10">
-                                    {divFixtures.map((f, fi) => {
-                                      const homeInfo = teams.find(
-                                        (t) => t.id === f.homeTeamId,
-                                      );
-                                      const awayInfo = teams.find(
-                                        (t) => t.id === f.awayTeamId,
-                                      );
-                                      const isMyMatch =
-                                        f.homeTeamId === myTeamId ||
-                                        f.awayTeamId === myTeamId;
+                                  {player.isUnavailable &&
+                                    (() => {
+                                      const susp =
+                                        player.suspension_until_matchweek || 0;
+                                      const inj =
+                                        player.injury_until_matchweek || 0;
+                                      const isSuspended = susp > matchweekCount;
+                                      const gamesLeft = isSuspended
+                                        ? susp - matchweekCount
+                                        : inj - matchweekCount;
                                       return (
-                                        <div
-                                          key={fi}
-                                          className={`flex items-center px-4 py-1.5 gap-2 ${
-                                            isMyMatch ? "bg-primary/8" : ""
-                                          }`}
+                                        <span
+                                          className="ml-2 text-xs font-bold text-red-400 inline-flex items-center gap-0.5"
+                                          title={`Indisponível até jornada ${Math.max(inj, susp) + 1}`}
                                         >
-                                          {/* Home team */}
-                                          <div className="flex items-center gap-1.5 flex-1 min-w-0 justify-end">
-                                            {isMyMatch &&
-                                              f.homeTeamId === myTeamId && (
-                                                <span className="shrink-0 text-[8px] font-black text-emerald-400 uppercase tracking-wider">
-                                                  casa
-                                                </span>
-                                              )}
-                                            <button
-                                              className={`text-[11px] font-bold truncate text-left ${isMyMatch && f.homeTeamId === myTeamId ? "text-primary" : "text-on-surface hover:underline"}`}
-                                              onClick={(e) => {
-                                                e.stopPropagation();
-                                                if (
-                                                  f.homeTeamId !== myTeamId &&
-                                                  homeInfo
-                                                )
-                                                  handleOpenTeamSquad(homeInfo);
-                                              }}
-                                            >
-                                              {homeInfo?.name ?? f.homeTeamId}
-                                            </button>
-                                            <span
-                                              className="shrink-0 w-2 h-2 rounded-full"
-                                              style={{
-                                                backgroundColor:
-                                                  homeInfo?.color_primary ||
-                                                  "#666",
-                                              }}
-                                            />
-                                          </div>
-                                          {/* Score or VS */}
-                                          <div className="shrink-0 w-14 text-center">
-                                            {f.result ? (
-                                              <span className="text-xs font-black font-headline text-on-surface bg-surface border border-outline-variant/20 rounded px-2 py-0.5">
-                                                {f.result.home_score}–
-                                                {f.result.away_score}
-                                              </span>
-                                            ) : (
-                                              <span className="text-[10px] font-black text-on-surface-variant/40">
-                                                vs
-                                              </span>
-                                            )}
-                                          </div>
-                                          {/* Away team */}
-                                          <div className="flex items-center gap-1.5 flex-1 min-w-0">
-                                            <span
-                                              className="shrink-0 w-2 h-2 rounded-full"
-                                              style={{
-                                                backgroundColor:
-                                                  awayInfo?.color_primary ||
-                                                  "#666",
-                                              }}
-                                            />
-                                            <button
-                                              className={`text-[11px] font-bold truncate text-left ${isMyMatch && f.awayTeamId === myTeamId ? "text-primary" : "text-on-surface hover:underline"}`}
-                                              onClick={(e) => {
-                                                e.stopPropagation();
-                                                if (
-                                                  f.awayTeamId !== myTeamId &&
-                                                  awayInfo
-                                                )
-                                                  handleOpenTeamSquad(awayInfo);
-                                              }}
-                                            >
-                                              {awayInfo?.name ?? f.awayTeamId}
-                                            </button>
-                                            {isMyMatch &&
-                                              f.awayTeamId === myTeamId && (
-                                                <span className="shrink-0 text-[8px] font-black text-on-surface-variant/50 uppercase tracking-wider">
-                                                  fora
-                                                </span>
-                                              )}
-                                          </div>
-                                        </div>
+                                          {isSuspended ? "🟥" : "🩹"}
+                                          <span className="tabular-nums">
+                                            {gamesLeft}
+                                          </span>
+                                        </span>
                                       );
-                                    })}
-                                  </div>
-                                )}
-                              </div>
-                            );
-                          })}
-                        </div>
-                      )}
-                    </div>
-                  );
-                })()}
-
-              {activeTab === "club" && (
-                <div className="space-y-5 relative">
-                  {/* Ambient glow blobs */}
-                  <div
-                    className="pointer-events-none absolute -top-8 -left-8 w-72 h-72 rounded-full blur-[100px] opacity-10"
-                    style={{ background: teamInfo?.color_primary || "#95d4b3" }}
-                  />
-                  <div
-                    className="pointer-events-none absolute top-40 -right-12 w-48 h-48 rounded-full blur-[80px] opacity-5"
-                    style={{
-                      background: teamInfo?.color_secondary || "#e9c349",
-                    }}
-                  />
-
-                  {/* ── HERO + BUDGET WIDGET ─────────── */}
-                  <div className="grid grid-cols-1 lg:grid-cols-3 gap-5">
-                    {/* Club hero card (2/3) */}
-                    <div className="lg:col-span-2 bg-surface-container rounded-lg overflow-hidden relative">
-                      <div
-                        className="absolute inset-0"
-                        style={{
-                          background: teamInfo?.color_primary
-                            ? `linear-gradient(to right, ${teamInfo.color_primary}28, transparent)`
-                            : "linear-gradient(to right, #2d6a4f28, transparent)",
-                        }}
-                      />
-                      <div className="relative p-6 flex flex-col sm:flex-row gap-5 items-start sm:items-center">
-                        {/* Badge */}
-                        <div
-                          className="w-20 h-20 rounded-xl flex items-center justify-center text-4xl font-black shrink-0 shadow-lg"
-                          style={{
-                            background: teamInfo?.color_primary || "#201f1f",
-                            color: teamInfo?.color_secondary || "#fff",
-                          }}
-                        >
-                          {teamInfo?.name?.[0] || "?"}
-                        </div>
-                        <div className="flex-1 min-w-0">
-                          <h1
-                            className="font-headline text-3xl font-black tracking-tighter leading-none mb-1 truncate"
-                            style={{ color: teamInfo?.color_primary || "#fff" }}
-                          >
-                            {teamInfo?.name || "—"}
-                          </h1>
-                          <div className="flex flex-wrap items-center gap-3 mb-4">
-                            <span className="text-on-surface-variant text-sm font-bold">
-                              {DIVISION_NAMES[teamInfo?.division] ||
-                                `Divisão ${teamInfo?.division}`}
-                            </span>
-                            <span className="w-1 h-1 bg-outline-variant rounded-full" />
-                            <span className="text-on-surface-variant text-sm">
-                              {seasonYear}
-                            </span>
-                          </div>
-                          {/* Moral bar */}
-                          <div className="max-w-xs">
-                            <div className="flex items-center justify-between mb-1.5">
-                              <span className="text-[10px] uppercase tracking-widest text-on-surface-variant font-black">
-                                Moral do Plantel
-                              </span>
-                              <span
-                                className={`text-[10px] font-black ${
-                                  (teamInfo?.morale || 75) >= 70
-                                    ? "text-primary"
-                                    : (teamInfo?.morale || 75) >= 40
-                                      ? "text-tertiary"
-                                      : "text-error"
-                                }`}
-                              >
-                                {(teamInfo?.morale || 75) >= 70
-                                  ? "ELEVADO"
-                                  : (teamInfo?.morale || 75) >= 40
-                                    ? "ESTÁVEL"
-                                    : "BAIXO"}
-                              </span>
-                            </div>
-                            <div className="w-full bg-surface-container-high h-2 rounded-full overflow-hidden">
-                              <div
-                                className={`h-full rounded-full transition-all ${
-                                  (teamInfo?.morale || 75) >= 70
-                                    ? "bg-linear-to-r from-primary/60 to-primary"
-                                    : (teamInfo?.morale || 75) >= 40
-                                      ? "bg-linear-to-r from-tertiary/60 to-tertiary"
-                                      : "bg-linear-to-r from-error/60 to-error"
-                                }`}
-                                style={{ width: `${teamInfo?.morale || 75}%` }}
-                              />
-                            </div>
-                            <p className="text-[10px] text-on-surface-variant/60 uppercase tracking-widest mt-1.5">
-                              Índice de confiança do plantel
-                            </p>
-                          </div>
-                        </div>
-                        {/* Manager */}
-                        <div className="shrink-0 text-right hidden sm:block">
-                          <p className="text-[10px] uppercase tracking-widest text-on-surface-variant font-bold mb-1">
-                            Manager
-                          </p>
-                          <p className="font-headline font-black text-on-surface text-lg tracking-tight">
-                            {me?.name}
-                          </p>
-                        </div>
-                      </div>
-                    </div>
-
-                    {/* Budget widget (1/3) */}
-                    <div
-                      className="bg-surface-container-high rounded-lg p-5 flex flex-col justify-between border-t-2"
-                      style={{
-                        borderColor: teamInfo?.color_primary || "#95d4b3",
-                      }}
-                    >
-                      <div className="flex justify-between items-start mb-4">
-                        <div>
-                          <p className="text-[10px] uppercase tracking-widest text-on-surface-variant font-black mb-1.5">
-                            Saldo Disponível
-                          </p>
-                          <p
-                            className={`font-headline text-2xl font-black ${
-                              currentBudget >= 0
-                                ? "text-on-surface"
-                                : "text-error"
-                            }`}
-                          >
-                            {formatCurrency(currentBudget)}
-                          </p>
-                        </div>
-                        <span
-                          className="material-symbols-outlined text-3xl"
-                          style={{
-                            color: teamInfo?.color_primary || "#95d4b3",
-                          }}
-                        >
-                          payments
-                        </span>
-                      </div>
-                      <div className="space-y-3">
-                        <div className="flex justify-between text-xs">
-                          <span className="text-on-surface-variant">
-                            Salários / jornada
-                          </span>
-                          <span className="font-mono font-bold text-on-surface">
-                            {formatCurrency(totalWeeklyWage)}
-                          </span>
-                        </div>
-                        <div className="w-full bg-surface-container-lowest h-1 rounded-full overflow-hidden">
-                          <div
-                            className="h-full rounded-full"
-                            style={{
-                              width: `${Math.min(100, (totalWeeklyWage / 500000) * 100)}%`,
-                              background: teamInfo?.color_primary || "#95d4b3",
-                            }}
-                          />
-                        </div>
-                        <div className="flex justify-between text-[10px] pt-1">
-                          <span
-                            className={`font-black ${
-                              currentBudget >= 0 ? "text-primary" : "text-error"
-                            }`}
-                          >
-                            {currentBudget >= 0 ? "ESTÁVEL" : "DÉFICE"}
-                          </span>
-                          {loanAmount > 0 && (
-                            <span className="text-error/70">
-                              Dívida: {formatCurrency(loanAmount)}
-                            </span>
-                          )}
-                        </div>
-                      </div>
-                    </div>
-                  </div>
-
-                  {/* ── ESTÁDIO + PALMARÉS ────────────── */}
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
-                    {/* Estádio */}
-                    <div className="bg-surface-container rounded-lg overflow-hidden flex flex-col">
-                      <div
-                        className="h-24 relative flex items-end"
-                        style={{
-                          background: teamInfo?.color_primary
-                            ? `linear-gradient(135deg, ${teamInfo.color_primary}40 0%, #201f1f 100%)`
-                            : "linear-gradient(135deg, #2d6a4f40 0%, #201f1f 100%)",
-                        }}
-                      >
-                        <div
-                          className="absolute inset-0 opacity-5"
-                          style={{
-                            backgroundImage:
-                              "radial-gradient(circle, rgba(255,255,255,0.2) 1px, transparent 1px)",
-                            backgroundSize: "16px 16px",
-                          }}
-                        />
-                        <div className="relative px-5 pb-4">
-                          <h3 className="font-headline text-lg font-black text-on-surface leading-tight">
-                            {teamInfo?.stadium_name || "Estádio Municipal"}
-                          </h3>
-                          <p
-                            className="text-xs font-bold"
-                            style={{
-                              color: teamInfo?.color_primary || "#95d4b3",
-                            }}
-                          >
-                            Recinto Principal
-                          </p>
-                        </div>
-                      </div>
-                      <div className="p-5 grid grid-cols-2 gap-3">
-                        <div className="bg-surface-container-low p-3 rounded-lg text-center">
-                          <p className="text-[10px] uppercase tracking-tight text-on-surface-variant font-bold mb-1">
-                            Capacidade
-                          </p>
-                          <p className="font-headline font-black text-on-surface text-lg">
-                            {(
-                              teamInfo?.stadium_capacity || 10000
-                            ).toLocaleString("pt-PT")}
-                          </p>
-                        </div>
-                        <div className="bg-surface-container-low p-3 rounded-lg text-center">
-                          <p className="text-[10px] uppercase tracking-tight text-on-surface-variant font-bold mb-1">
-                            Divisão
-                          </p>
-                          <p className="font-headline font-black text-primary text-sm leading-tight mt-0.5">
-                            {DIVISION_NAMES[teamInfo?.division] || "Liga"}
-                          </p>
-                        </div>
-                      </div>
-                    </div>
-
-                    {/* Palmarés */}
-                    <div className="bg-surface-container rounded-lg p-5 flex flex-col">
-                      <div className="flex justify-between items-center mb-5">
-                        <h3 className="font-headline text-sm font-black uppercase tracking-widest text-on-surface">
-                          Palmarés
-                        </h3>
-                        <span
-                          className="material-symbols-outlined text-tertiary"
-                          style={{ fontVariationSettings: "'FILL' 1" }}
-                        >
-                          military_tech
-                        </span>
-                      </div>
-                      {palmaresTeamId === me?.teamId &&
-                      palmares.trophies?.length > 0 ? (
-                        <div className="flex flex-wrap gap-3">
-                          {palmares.trophies.map((trophy, idx) => (
-                            <div
-                              key={idx}
-                              className="flex items-center gap-3 px-4 py-3 rounded-lg bg-tertiary/8 border border-tertiary/20"
-                            >
-                              <span
-                                className="material-symbols-outlined text-tertiary text-xl"
-                                style={{ fontVariationSettings: "'FILL' 1" }}
-                              >
-                                emoji_events
-                              </span>
-                              <div>
-                                <p className="text-tertiary font-black text-sm">
-                                  {trophy.achievement}
-                                </p>
-                                <p className="text-on-surface-variant text-xs font-bold">
-                                  {trophy.season}
-                                </p>
-                              </div>
-                            </div>
-                          ))}
-                        </div>
-                      ) : (
-                        <div className="flex-1 flex flex-col items-center justify-center border border-dashed border-outline-variant/20 rounded-lg bg-surface-container-low/50 p-8">
-                          <span
-                            className="material-symbols-outlined text-on-surface-variant/30 text-5xl mb-3"
-                            style={{ fontVariationSettings: "'FILL' 0" }}
-                          >
-                            trophy
-                          </span>
-                          <p className="text-sm text-on-surface-variant font-bold text-center">
-                            Nenhum título conquistado.
-                          </p>
-                          <p className="text-[10px] text-on-surface-variant/40 uppercase tracking-widest mt-1 text-center">
-                            Constrói o teu legado hoje
-                          </p>
-                        </div>
-                      )}
-                    </div>
-                  </div>
-
-                  {/* ── JORNAL DO CLUBE ──────────────── */}
-                  <div className="bg-surface-container rounded-lg overflow-hidden">
-                    <div className="bg-surface-container-high px-5 py-4 flex justify-between items-center">
-                      <h3 className="font-headline text-sm font-black uppercase tracking-widest text-on-surface">
-                        Jornal do Clube
-                      </h3>
-                      {clubNews?.some(
-                        (n) =>
-                          n.type === "transfer_in" || n.type === "transfer_out",
-                      ) && (
-                        <span className="text-[10px] text-tertiary font-black tracking-[0.2em] uppercase">
-                          Foco em Transferências
-                        </span>
-                      )}
-                    </div>
-                    {clubNews && clubNews.length > 0 ? (
-                      <>
-                        <div className="divide-y divide-surface-container-low">
-                          {clubNews.slice(0, 8).map((news, idx) => (
-                            <div
-                              key={news.id || idx}
-                              className="px-5 py-3.5 flex items-center gap-4 hover:bg-surface-bright/30 transition-colors"
-                            >
-                              {/* Icon container */}
-                              <div
-                                className={`w-9 h-9 rounded-lg flex items-center justify-center shrink-0 ${
-                                  news.type === "transfer_in"
-                                    ? "bg-primary/15"
-                                    : news.type === "transfer_out"
-                                      ? "bg-error/15"
-                                      : "bg-surface-container-high"
-                                }`}
-                              >
-                                <span
-                                  className={`material-symbols-outlined text-sm ${
-                                    news.type === "transfer_in"
-                                      ? "text-primary"
-                                      : news.type === "transfer_out"
-                                        ? "text-error"
-                                        : "text-on-surface-variant"
-                                  }`}
-                                >
-                                  {news.type === "transfer_in"
-                                    ? "trending_up"
-                                    : news.type === "transfer_out"
-                                      ? "trending_down"
-                                      : "info"}
-                                </span>
-                              </div>
-                              {/* Content */}
-                              <div className="flex-1 min-w-0">
-                                <p className="text-sm font-bold text-on-surface truncate">
-                                  {news.title}
-                                </p>
-                                <p className="text-xs text-on-surface-variant truncate">
-                                  {news.related_team_name &&
-                                  (news.type === "transfer_in" ||
-                                    news.type === "transfer_out")
-                                    ? `${
-                                        news.type === "transfer_in"
-                                          ? "de"
-                                          : "para"
-                                      } ${news.related_team_name}`
-                                    : `Jornada ${news.matchweek || "?"}${
-                                        news.year ? ` · ${news.year}` : ""
-                                      }`}
-                                </p>
-                              </div>
-                              {/* Amount */}
-                              {news.amount > 0 && (
-                                <div className="text-right shrink-0">
-                                  <p
-                                    className={`font-headline font-black text-sm ${
-                                      news.type === "transfer_out"
-                                        ? "text-primary"
-                                        : "text-error"
-                                    }`}
-                                  >
-                                    {news.type === "transfer_out" ? "+" : "-"}
-                                    {formatCurrency(news.amount)}
-                                  </p>
-                                  <p className="text-[10px] text-on-surface-variant uppercase tracking-wider">
-                                    {news.type === "transfer_out"
-                                      ? "Venda"
-                                      : news.type === "transfer_in"
-                                        ? "Compra"
-                                        : ""}
-                                  </p>
-                                </div>
-                              )}
-                            </div>
-                          ))}
-                        </div>
-                        {clubNews.length > 8 && (
-                          <div className="p-4 text-center bg-surface-container-low/50 border-t border-outline-variant/10">
-                            <p className="text-[10px] font-black tracking-widest text-on-surface-variant uppercase">
-                              + {clubNews.length - 8} entradas no arquivo
-                            </p>
-                          </div>
-                        )}
-                      </>
-                    ) : (
-                      <div className="p-8 text-center">
-                        <span className="material-symbols-outlined text-on-surface-variant/30 text-4xl block mb-3">
-                          newspaper
-                        </span>
-                        <p className="text-on-surface-variant font-bold text-sm">
-                          Nenhuma notícia ainda.
-                        </p>
-                      </div>
-                    )}
-                  </div>
-                </div>
-              )}
-
-              {activeTab === "finances" &&
-                (() => {
-                  const totalSeasonIncome =
-                    (financeData?.totalTicketRevenue || 0) +
-                    (financeData?.sponsorRevenue || 0) +
-                    (financeData?.totalTransferIncome || 0);
-                  const totalSeasonExpenses =
-                    totalWeeklyWage * completedJornada +
-                    loanInterestPerWeek * completedJornada +
-                    (financeData?.totalTransferExpenses || 0) +
-                    (financeData?.totalStadiumExpenses || 0);
-                  const seasonResult = totalSeasonIncome - totalSeasonExpenses;
-                  const loanPct = Math.min(100, (loanAmount / 2500000) * 100);
-                  const wageSharePct =
-                    totalSeasonIncome > 0
-                      ? Math.min(
-                          100,
-                          Math.round(
-                            ((totalWeeklyWage * completedJornada) /
-                              totalSeasonIncome) *
-                              100,
-                          ),
-                        )
-                      : 0;
-                  return (
-                    <div className="space-y-4">
-                      {/* ── HERO ──────────────────────────────────────────────────────── */}
-                      <div className="grid grid-cols-1 md:grid-cols-3 gap-0.5 bg-outline-variant/10 overflow-hidden rounded-xl">
-                        {/* Saldo Actual */}
-                        <div className="bg-surface-container p-6 flex flex-col justify-between relative overflow-hidden">
-                          <div className="absolute top-0 right-0 p-4 opacity-5 pointer-events-none select-none">
-                            <span className="material-symbols-outlined text-8xl">
-                              payments
-                            </span>
-                          </div>
-                          <div>
-                            <p className="text-[10px] uppercase tracking-widest text-on-surface-variant mb-1 font-label">
-                              Saldo Actual
-                            </p>
-                            <h2
-                              className={`font-headline text-4xl font-bold tracking-tighter ${currentBudget >= 0 ? "text-primary" : "text-error"}`}
-                            >
-                              {formatCurrency(currentBudget)}
-                            </h2>
-                          </div>
-                          <div className="mt-6 flex items-end gap-2">
-                            <div className="flex gap-1 h-8 items-end">
-                              <div className="w-1 bg-primary/20 h-2 rounded-t-sm" />
-                              <div className="w-1 bg-primary/40 h-4 rounded-t-sm" />
-                              <div className="w-1 bg-primary/60 h-3 rounded-t-sm" />
-                              <div className="w-1 bg-primary/80 h-6 rounded-t-sm" />
-                              <div className="w-1 bg-primary h-8 rounded-t-sm" />
-                            </div>
-                            <span className="text-[10px] text-primary font-bold font-label">
-                              época {seasonYear}/{seasonYear + 1}
-                            </span>
-                          </div>
-                        </div>
-                        {/* Resultado da Época */}
-                        <div className="bg-surface-container p-6 flex flex-col justify-between">
-                          <div>
-                            <p className="text-[10px] uppercase tracking-widest text-on-surface-variant mb-1 font-label">
-                              Resultado da Época
-                            </p>
-                            <h2
-                              className={`font-headline text-4xl font-bold tracking-tighter ${seasonResult >= 0 ? "text-tertiary" : "text-error"}`}
-                            >
-                              {seasonResult >= 0 ? "+" : ""}
-                              {formatCurrency(seasonResult)}
-                            </h2>
-                          </div>
-                          <div className="mt-6 flex items-center gap-2">
-                            <span
-                              className={`material-symbols-outlined text-sm ${seasonResult >= 0 ? "text-tertiary" : "text-error"}`}
-                            >
-                              {seasonResult >= 0
-                                ? "trending_up"
-                                : "trending_down"}
-                            </span>
-                            <span className="text-[10px] text-on-surface-variant font-medium font-label uppercase">
-                              {completedJornada} / 14 jornadas concluídas
-                            </span>
-                          </div>
-                        </div>
-                        {/* Estádio */}
-                        <div className="bg-surface-container p-6 flex flex-col justify-between relative overflow-hidden">
-                          <div className="absolute top-0 right-0 p-4 opacity-5 pointer-events-none select-none">
-                            <span className="material-symbols-outlined text-8xl">
-                              stadium
-                            </span>
-                          </div>
-                          <div>
-                            <p className="text-[10px] uppercase tracking-widest text-on-surface-variant mb-1 font-label">
-                              Estádio
-                            </p>
-                            <h2 className="font-headline text-3xl font-bold tracking-tighter text-on-surface">
-                              {(
-                                teamInfo?.stadium_capacity || 10000
-                              ).toLocaleString("pt-PT")}{" "}
-                              lug.
-                            </h2>
-                          </div>
-                          <div className="mt-6">
-                            <p className="text-[10px] text-on-surface-variant uppercase mb-1">
-                              Receita máx./jogo em casa
-                            </p>
-                            <p className="font-headline text-lg font-bold text-primary">
-                              {formatCurrency(capacityRevPerGame)}
-                            </p>
-                          </div>
-                        </div>
-                      </div>
-
-                      {/* ── RECEITAS / DESPESAS / CONTROLO ────────────────────────────── */}
-                      <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
-                        {/* Receitas */}
-                        <div className="bg-surface-container-low rounded-lg p-5 flex flex-col space-y-3">
-                          <div className="flex justify-between items-center pb-2 border-b border-outline-variant/15">
-                            <h3 className="font-headline text-base uppercase tracking-tight flex items-center gap-2">
-                              <span className="material-symbols-outlined text-primary text-base">
-                                arrow_downward
-                              </span>
-                              Receitas
-                            </h3>
-                            <span className="font-headline text-primary font-bold text-sm">
-                              {formatCurrency(totalSeasonIncome)}
-                            </span>
-                          </div>
-                          <ul className="space-y-3">
-                            <li className="flex justify-between items-center">
-                              <div>
-                                <p className="text-sm text-on-surface-variant">
-                                  Bilheteiras
-                                </p>
-                                <p className="text-[10px] opacity-40 uppercase">
-                                  {financeData?.homeMatchesPlayed || 0} jogos em
-                                  casa
-                                </p>
-                              </div>
-                              <span className="font-headline text-sm font-bold">
-                                {formatCurrency(
-                                  financeData?.totalTicketRevenue || 0,
-                                )}
-                              </span>
-                            </li>
-                            <li className="flex justify-between items-center">
-                              <div>
-                                <p className="text-sm text-on-surface-variant">
-                                  Patrocinadores
-                                </p>
-                                <p className="text-[10px] opacity-40 uppercase">
-                                  Receita anual por divisão
-                                </p>
-                              </div>
-                              <span className="font-headline text-sm font-bold">
-                                {formatCurrency(
-                                  financeData?.sponsorRevenue || 0,
-                                )}
-                              </span>
-                            </li>
-                            {(financeData?.totalTransferIncome || 0) > 0 && (
-                              <li className="flex justify-between items-center">
-                                <div>
-                                  <p className="text-sm text-on-surface-variant">
-                                    Vendas de Jogadores
-                                  </p>
-                                  <p className="text-[10px] opacity-40 uppercase">
-                                    Receitas de transferências
-                                  </p>
-                                </div>
-                                <span className="font-headline text-sm font-bold">
-                                  {formatCurrency(
-                                    financeData.totalTransferIncome,
-                                  )}
-                                </span>
-                              </li>
-                            )}
-                          </ul>
-                        </div>
-
-                        {/* Despesas */}
-                        <div className="bg-surface-container-low rounded-lg p-5 flex flex-col space-y-3">
-                          <div className="flex justify-between items-center pb-2 border-b border-outline-variant/15">
-                            <h3 className="font-headline text-base uppercase tracking-tight flex items-center gap-2">
-                              <span className="material-symbols-outlined text-error text-base">
-                                arrow_upward
-                              </span>
-                              Despesas
-                            </h3>
-                            <span className="font-headline text-error font-bold text-sm">
-                              {formatCurrency(totalSeasonExpenses)}
-                            </span>
-                          </div>
-                          <ul className="space-y-3">
-                            <li className="flex justify-between items-center">
-                              <div>
-                                <p className="text-sm text-on-surface-variant">
-                                  Folha Salarial
-                                </p>
-                                <p className="text-[10px] opacity-40 uppercase">
-                                  {mySquad.length} atletas · pago por jornada
-                                </p>
-                              </div>
-                              <span className="font-headline text-sm font-bold">
-                                {formatCurrency(
-                                  totalWeeklyWage * completedJornada,
-                                )}
-                              </span>
-                            </li>
-                            {loanAmount > 0 && (
-                              <li className="flex justify-between items-center">
-                                <div>
-                                  <p className="text-sm text-on-surface-variant">
-                                    Juros Bancários
-                                  </p>
-                                  <p className="text-[10px] opacity-40 uppercase">
-                                    2,5% da dívida / jornada
-                                  </p>
-                                </div>
-                                <span className="font-headline text-sm font-bold">
-                                  {formatCurrency(
-                                    loanInterestPerWeek * completedJornada,
-                                  )}
-                                </span>
-                              </li>
-                            )}
-                            {(financeData?.totalTransferExpenses || 0) > 0 && (
-                              <li className="flex justify-between items-center">
-                                <div>
-                                  <p className="text-sm text-on-surface-variant">
-                                    Compras de Jogadores
-                                  </p>
-                                  <p className="text-[10px] opacity-40 uppercase">
-                                    Despesas com transferências
-                                  </p>
-                                </div>
-                                <span className="font-headline text-sm font-bold">
-                                  {formatCurrency(
-                                    financeData.totalTransferExpenses,
-                                  )}
-                                </span>
-                              </li>
-                            )}
-                            {(financeData?.totalStadiumExpenses || 0) > 0 && (
-                              <li className="flex justify-between items-center">
-                                <div>
-                                  <p className="text-sm text-on-surface-variant">
-                                    Obras no Estádio
-                                  </p>
-                                  <p className="text-[10px] opacity-40 uppercase">
-                                    300.000€ ×{" "}
-                                    {Math.round(
-                                      (financeData.totalStadiumExpenses || 0) /
-                                        300000,
-                                    )}{" "}
-                                    obra(s)
-                                  </p>
-                                </div>
-                                <span className="font-headline text-sm font-bold">
-                                  {formatCurrency(
-                                    financeData.totalStadiumExpenses,
-                                  )}
-                                </span>
-                              </li>
-                            )}
-                          </ul>
-                        </div>
-
-                        {/* Centro de Controlo */}
-                        <div className="space-y-4">
-                          {/* Folha Salarial */}
-                          <div
-                            className={`bg-surface-container rounded-lg p-5 border-l-4 ${wageSharePct > 75 ? "border-error" : wageSharePct > 50 ? "border-tertiary" : "border-primary"} relative overflow-hidden`}
-                          >
-                            <div className="flex justify-between items-start mb-3">
-                              <div>
-                                <h3 className="font-headline text-xs uppercase tracking-widest text-on-surface-variant">
-                                  Folha Salarial
-                                </h3>
-                                <p className="font-headline text-xl font-bold mt-1">
-                                  {formatCurrency(totalWeeklyWage)}{" "}
-                                  <span className="text-xs font-normal opacity-50">
-                                    / jornada
-                                  </span>
-                                </p>
-                              </div>
-                              {wageSharePct > 75 && (
-                                <span
-                                  className="material-symbols-outlined text-error"
-                                  style={{ fontVariationSettings: "'FILL' 1" }}
-                                >
-                                  warning
-                                </span>
-                              )}
-                            </div>
-                            <div className="space-y-1.5">
-                              <div className="flex justify-between text-[10px] font-bold uppercase tracking-wider">
-                                <span>% das receitas</span>
-                                <span
-                                  className={
-                                    wageSharePct > 75
-                                      ? "text-error"
-                                      : wageSharePct > 50
-                                        ? "text-tertiary"
-                                        : "text-primary"
-                                  }
-                                >
-                                  {wageSharePct}%
-                                </span>
-                              </div>
-                              <div className="h-2 w-full bg-surface-bright rounded-full overflow-hidden">
-                                <div
-                                  className={`h-full rounded-full transition-all ${wageSharePct > 75 ? "bg-error" : wageSharePct > 50 ? "bg-tertiary" : "bg-primary"}`}
-                                  style={{ width: `${wageSharePct}%` }}
-                                />
-                              </div>
-                              <div className="flex justify-between text-[10px] opacity-50 uppercase">
-                                <span>
-                                  {formatCurrency(totalWeeklyWage)}/jornada
-                                </span>
-                                <span>{mySquad.length} atletas</span>
-                              </div>
-                            </div>
-                          </div>
-
-                          {/* Dívida Bancária */}
-                          <div className="bg-surface-container rounded-lg p-5 border-t border-outline-variant/10">
-                            <h3 className="font-headline text-xs uppercase tracking-widest text-on-surface-variant mb-3">
-                              Empréstimos
-                            </h3>
-                            <div className="mb-4">
-                              <p className="text-[10px] opacity-50 uppercase mb-0.5">
-                                Dívida Actual
-                              </p>
-                              <p
-                                className={`font-headline text-2xl font-bold tracking-tight ${loanAmount > 0 ? "text-error" : "text-primary"}`}
-                              >
-                                {formatCurrency(loanAmount)}
-                              </p>
-                              {loanAmount > 0 && (
-                                <p className="text-[10px] text-error font-medium mt-0.5">
-                                  JUROS: 2,5% / JORNADA
-                                </p>
-                              )}
-                              <div className="mt-2 h-1.5 w-full bg-surface-bright rounded-full overflow-hidden">
-                                <div
-                                  className={`h-full rounded-full transition-all ${loanPct > 75 ? "bg-error" : loanPct > 40 ? "bg-tertiary" : "bg-amber-400"}`}
-                                  style={{ width: `${loanPct}%` }}
-                                />
-                              </div>
-                              <p className="text-[10px] opacity-40 text-right mt-0.5">
-                                {loanPct.toFixed(0)}% de 2.500.000€
-                              </p>
-                            </div>
-                            <div className="grid grid-cols-2 gap-2">
-                              <button
-                                onClick={() => socket.emit("payLoan")}
-                                disabled={
-                                  loanAmount < 500000 || currentBudget < 500000
-                                }
-                                className="bg-surface-container-high py-2 text-xs font-headline font-bold uppercase tracking-wider rounded hover:bg-surface-bright disabled:opacity-40 disabled:cursor-not-allowed transition-all"
-                              >
-                                Pagar -500K
-                              </button>
-                              <button
-                                onClick={() => socket.emit("takeLoan")}
-                                disabled={loanAmount >= 2500000}
-                                className="bg-surface-bright py-2 text-xs font-headline font-bold uppercase tracking-wider rounded hover:brightness-110 disabled:opacity-40 disabled:cursor-not-allowed transition-all border border-outline-variant/30"
-                              >
-                                Pedir +500K
-                              </button>
-                            </div>
-                          </div>
-                        </div>
-                      </div>
-
-                      {/* ── ESTÁDIO ───────────────────────────────────────────────────── */}
-                      <div className="bg-surface-container-low rounded-lg overflow-hidden">
-                        <div className="px-6 py-4 border-b border-outline-variant/10 flex justify-between items-center">
-                          <h3 className="font-headline text-xs uppercase tracking-widest flex items-center gap-2">
-                            <span className="material-symbols-outlined text-tertiary text-base">
-                              stadium
-                            </span>
-                            Expansão do Estádio
-                          </h3>
-                        </div>
-                        <div className="p-6">
-                          <div className="grid grid-cols-2 md:grid-cols-3 gap-4 mb-6">
-                            <div className="bg-surface rounded-md border border-outline-variant/15 p-4 flex flex-col gap-1">
-                              <span className="text-on-surface-variant text-[10px] font-black uppercase tracking-wider">
-                                Capacidade Actual
-                              </span>
-                              <span className="text-on-surface font-headline font-bold text-2xl">
-                                {(
-                                  teamInfo?.stadium_capacity || 10000
-                                ).toLocaleString("pt-PT")}
-                              </span>
-                              <span className="text-on-surface-variant text-[10px]">
-                                lugares
-                              </span>
-                            </div>
-                            <div className="bg-surface rounded-md border border-outline-variant/15 p-4 flex flex-col gap-1">
-                              <span className="text-on-surface-variant text-[10px] font-black uppercase tracking-wider">
-                                Receita máx./jogo
-                              </span>
-                              <span className="text-primary font-headline font-bold text-xl">
-                                {formatCurrency(capacityRevPerGame)}
-                              </span>
-                              <span className="text-on-surface-variant text-[10px]">
-                                15€ × lotação
-                              </span>
-                            </div>
-                            <div className="bg-surface rounded-md border border-outline-variant/15 p-4 flex flex-col gap-1 col-span-2 md:col-span-1">
-                              <span className="text-on-surface-variant text-[10px] font-black uppercase tracking-wider">
-                                Custo de Expansão
-                              </span>
-                              <span className="text-tertiary font-headline font-bold text-xl">
-                                300.000€
-                              </span>
-                              <span className="text-on-surface-variant text-[10px]">
-                                +5.000 lugares por obra
-                              </span>
-                            </div>
-                          </div>
-                          <button
-                            onClick={() => socket.emit("buildStadium")}
-                            disabled={currentBudget < 300000}
-                            className="w-full bg-primary hover:brightness-110 disabled:opacity-40 disabled:cursor-not-allowed text-on-primary font-headline font-bold py-3 rounded text-sm transition-all uppercase tracking-wide"
-                          >
-                            Expandir Estádio — 300.000€
-                          </button>
-                          {currentBudget < 300000 && (
-                            <p className="text-on-surface-variant text-[10px] text-center mt-2 uppercase tracking-wider opacity-60">
-                              Saldo insuficiente · faltam{" "}
-                              {formatCurrency(300000 - currentBudget)}
-                            </p>
-                          )}
-                        </div>
-                      </div>
-                    </div>
-                  );
-                })()}
-
-              {activeTab === "players" && (
-                <div className="space-y-6">
-                  <div className="bg-surface-container rounded-lg shadow-sm overflow-x-auto">
-                    <table className="w-full min-w-[720px] text-left text-sm font-normal">
-                      <thead>
-                        <tr className="bg-surface/50 text-on-surface-variant uppercase text-[11px] tracking-widest border-b border-outline-variant/20 font-normal">
-                          <th className="px-3 py-3 text-center w-12 font-normal">
-                            POS
-                          </th>
-                          <th className="px-3 py-3 font-normal">NOME</th>
-                          <th className="px-3 py-3 text-center w-12 font-normal">
-                            NAC
-                          </th>
-                          <th className="px-3 py-3 text-center w-14 font-normal">
-                            QUAL
-                          </th>
-                          <th className="px-3 py-3 text-center font-normal">
-                            AGR
-                          </th>
-                          <th className="px-3 py-3 text-center w-12 font-normal">
-                            ⚽
-                          </th>
-                          <th className="px-3 py-3 text-center w-12 font-normal">
-                            🟥
-                          </th>
-                          <th className="px-3 py-3 text-center w-12 font-normal">
-                            🩹
-                          </th>
-                          <th className="px-3 py-3 text-center w-24 font-normal">
-                            ORDENADO
-                          </th>
-                          <th className="px-3 py-3 text-center w-24 font-normal">
-                            AÇÕES
-                          </th>
-                        </tr>
-                      </thead>
-                      <tbody className="divide-y divide-outline-variant/10 font-normal">
-                        {annotatedSquad.map((player) => (
-                          <tr
-                            key={player.id}
-                            className={`transition-colors group select-none ${ENABLE_ROW_BG ? POSITION_BG_CLASS[player.position] : ""} hover:bg-zinc-800/50 ${player.isUnavailable ? "opacity-50" : ""}`}
-                          >
-                            <td
-                              className={`px-3 py-2 text-center text-sm tracking-wider ${POSITION_TEXT_CLASS[player.position] || "text-zinc-300"}`}
-                            >
-                              {POSITION_SHORT_LABELS[player.position] ||
-                                player.position}
-                            </td>
-                            <td className="px-3 py-2 text-white text-sm md:text-base whitespace-nowrap">
-                              <PlayerLink playerId={player.id}>
-                                {player.name}
-                              </PlayerLink>
-                              {!!player.is_star &&
-                                (player.position === "MED" ||
-                                  player.position === "ATA") && (
-                                  <span
-                                    className="ml-1 text-amber-400 font-black"
-                                    title="Craque"
-                                  >
-                                    *
-                                  </span>
-                                )}
-                              {player.isUnavailable &&
-                                (() => {
-                                  const susp =
-                                    player.suspension_until_matchweek || 0;
-                                  const inj =
-                                    player.injury_until_matchweek || 0;
-                                  const isSuspended = susp > matchweekCount;
-                                  const gamesLeft = isSuspended
-                                    ? susp - matchweekCount
-                                    : inj - matchweekCount;
-                                  return (
-                                    <span
-                                      className="ml-2 text-xs font-bold text-red-400 inline-flex items-center gap-0.5"
-                                      title={`Indisponível até jornada ${Math.max(inj, susp) + 1}`}
-                                    >
-                                      {isSuspended ? "🟥" : "🩹"}
-                                      <span className="tabular-nums">
-                                        {gamesLeft}
+                                    })()}
+                                  {player.transfer_status &&
+                                    player.transfer_status !== "none" && (
+                                      <span className="ml-2 text-[10px] font-black uppercase px-1.5 py-0.5 rounded bg-emerald-500/20 text-emerald-400 border border-emerald-500/30">
+                                        À venda
                                       </span>
-                                    </span>
-                                  );
-                                })()}
-                              {player.transfer_status &&
-                                player.transfer_status !== "none" && (
-                                  <span className="ml-2 text-[10px] font-black uppercase px-1.5 py-0.5 rounded bg-emerald-500/20 text-emerald-400 border border-emerald-500/30">
-                                    À venda
-                                  </span>
-                                )}
-                            </td>
-                            <td className="px-3 py-2 text-center text-zinc-400 text-sm">
-                              <span
-                                title={
-                                  FLAG_TO_COUNTRY[player.nationality] ||
-                                  player.nationality
-                                }
-                              >
-                                {player.nationality}
-                              </span>
-                            </td>
-                            <td className="px-3 py-2 text-center text-zinc-100 font-normal">
-                              <span className="inline-flex items-center justify-center bg-surface text-on-surface px-2 py-1 rounded-sm text-sm border border-outline-variant/30 font-headline font-black tabular-nums">
-                                {player.skill}
-                              </span>
-                              {player.prev_skill !== null &&
-                                player.prev_skill !== undefined &&
-                                player.prev_skill !== player.skill && (
+                                    )}
+                                </td>
+                                <td className="px-3 py-2 text-center text-zinc-400 text-sm">
                                   <span
-                                    className={`ml-1 text-xs font-black ${player.skill > player.prev_skill ? "text-emerald-400" : "text-red-400"}`}
-                                  >
-                                    {player.skill > player.prev_skill
-                                      ? "▲"
-                                      : "▼"}
-                                  </span>
-                                )}
-                            </td>
-                            <td className="px-3 py-2 text-center font-normal">
-                              <AggBadge value={player.aggressiveness} />
-                            </td>
-                            <td className="px-3 py-2 text-center text-emerald-400 font-normal">
-                              {getPlayerStat(player, ["goals"])}{" "}
-                              <span className="text-zinc-500 text-xs">
-                                ({getPlayerStat(player, ["career_goals"])})
-                              </span>
-                            </td>
-                            <td className="px-3 py-2 text-center text-red-400 font-normal">
-                              {getPlayerStat(player, [
-                                "reds",
-                                "red_cards",
-                                "reds_count",
-                                "expulsions",
-                              ])}{" "}
-                              <span className="text-zinc-500 text-xs">
-                                ({getPlayerStat(player, ["career_reds"])})
-                              </span>
-                            </td>
-                            <td className="px-3 py-2 text-center text-orange-400 font-normal">
-                              {getPlayerStat(player, [
-                                "injuries",
-                                "injury_count",
-                                "lesoes",
-                                "lesions",
-                              ])}{" "}
-                              <span className="text-zinc-500 text-xs">
-                                ({getPlayerStat(player, ["career_injuries"])})
-                              </span>
-                            </td>
-                            <td className="px-3 py-2 text-center font-mono text-zinc-300 text-xs md:text-sm">
-                              {formatCurrency(player.wage || 0)}
-                            </td>
-                            <td className="px-3 py-2 text-center">
-                              {player.signed_season !==
-                              Math.ceil((matchweekCount + 1) / 14) ? (
-                                <div className="flex flex-nowrap justify-center gap-1">
-                                  <button
-                                    onClick={(e) => {
-                                      e.stopPropagation();
-                                      renewPlayerContract(player);
-                                    }}
-                                    title="Renovar"
-                                    aria-label="Renovar"
-                                    className="px-2 py-1 rounded-md bg-emerald-600 hover:bg-emerald-500 text-white text-[10px] font-black uppercase leading-none tracking-wide"
-                                  >
-                                    R
-                                  </button>
-                                  <button
-                                    onClick={(e) => {
-                                      e.stopPropagation();
-                                      listPlayerAuction(player);
-                                    }}
-                                    disabled={
-                                      isPlayingMatch || showHalftimePanel
-                                    }
                                     title={
-                                      isPlayingMatch || showHalftimePanel
-                                        ? "Disponível após as partidas"
-                                        : "Vender em Leilão"
+                                      FLAG_TO_COUNTRY[player.nationality] ||
+                                      player.nationality
                                     }
-                                    aria-label="Vender em Leilão"
-                                    className="px-2 py-1 rounded-md bg-primary hover:brightness-110 disabled:opacity-30 disabled:hover:bg-primary text-on-primary text-[10px] font-black uppercase leading-none tracking-wide"
                                   >
-                                    V
-                                  </button>
-                                  {player.transfer_status === "fixed" ? (
-                                    <button
-                                      onClick={(e) => {
-                                        e.stopPropagation();
-                                        removeFromTransferList(player);
-                                      }}
-                                      title="Retirar da lista de transferências"
-                                      aria-label="Retirar da lista"
-                                      className="px-2 py-1 rounded-md bg-red-700 hover:bg-red-600 text-white text-[10px] font-black uppercase leading-none tracking-wide"
-                                    >
-                                      ✕
-                                    </button>
-                                  ) : (
-                                    <button
-                                      onClick={(e) => {
-                                        e.stopPropagation();
-                                        listPlayerFixed(player);
-                                      }}
-                                      title="Listar no Mercado"
-                                      aria-label="Listar no Mercado"
-                                      className="px-2 py-1 rounded-md bg-secondary-container hover:bg-surface-bright text-on-surface text-[10px] font-black uppercase leading-none tracking-wide"
-                                    >
-                                      L
-                                    </button>
-                                  )}
-                                </div>
-                              ) : (
-                                <span className="text-xs text-zinc-600 font-normal uppercase">
-                                  —
-                                </span>
-                              )}
-                            </td>
-                          </tr>
-                        ))}
-                      </tbody>
-                    </table>
-                  </div>
-                </div>
-              )}
-
-              {activeTab === "tactic" && (
-                <div>
-                  {/* ── COMPACT PLAYER LIST ──────────────────────────── */}
-                  <div className="bg-surface-container rounded-lg">
-                    <div className="px-4 py-3 border-b border-outline-variant/20 bg-surface/40 rounded-t-lg flex items-center justify-between">
-                      <p className="text-[10px] uppercase tracking-widest text-zinc-500 font-black">
-                        Plantel
-                      </p>
-                      <p className="text-[10px] font-black text-zinc-500">
-                        <span className="text-emerald-400">
-                          {
-                            annotatedSquad.filter((p) => p.status === "Titular")
-                              .length
-                          }
-                        </span>
-                        /11 titulares ·{" "}
-                        <span className="text-amber-400">
-                          {
-                            annotatedSquad.filter(
-                              (p) => p.status === "Suplente",
-                            ).length
-                          }
-                        </span>
-                        /5 suplentes
-                      </p>
-                    </div>
-                    <div className="divide-y divide-outline-variant/10">
-                      {annotatedSquad.map((player) => (
-                        <div
-                          key={player.id}
-                          className={`flex items-center gap-3 px-4 py-2.5 transition-colors hover:bg-surface-bright/20 select-none relative ${player.isUnavailable ? "opacity-60" : ""}`}
-                        >
-                          <span
-                            className={`cursor-pointer text-base leading-none shrink-0 inline-flex items-center justify-center w-7 h-7 rounded-full ${player.status === "Titular" ? "bg-emerald-500/15" : player.status === "Suplente" ? "bg-amber-500/15" : "bg-zinc-900/80"}`}
-                            onClick={(e) => {
-                              e.stopPropagation();
-                              setOpenStatusPickerId((prev) =>
-                                prev === player.id ? null : player.id,
-                              );
-                            }}
-                          >
-                            {player.status === "Titular"
-                              ? "🟢"
-                              : player.status === "Suplente"
-                                ? "🟡"
-                                : "⚫️"}
-                          </span>
-                          <span
-                            className={`text-xs font-black w-5 text-center shrink-0 ${POSITION_TEXT_CLASS[player.position] || "text-zinc-400"}`}
-                          >
-                            {POSITION_SHORT_LABELS[player.position] ||
-                              player.position}
-                          </span>
-                          <span className="flex-1 text-white text-sm font-bold truncate">
-                            <PlayerLink playerId={player.id}>
-                              {player.name}
-                            </PlayerLink>
-                            {!!player.is_star &&
-                              (player.position === "MED" ||
-                                player.position === "ATA") && (
-                                <span
-                                  className="ml-1 text-amber-400 font-black"
-                                  title="Craque"
-                                >
-                                  *
-                                </span>
-                              )}
-                            {player.isUnavailable && (
-                              <span className="ml-1.5 text-xs font-bold text-red-400">
-                                {(player.suspension_until_matchweek || 0) >
-                                matchweekCount
-                                  ? "🟥"
-                                  : "🩹"}
-                              </span>
-                            )}
-                          </span>
-                          <span className="text-primary font-black text-sm shrink-0">
-                            {player.skill}
-                            {player.prev_skill !== null &&
-                              player.prev_skill !== undefined &&
-                              player.prev_skill !== player.skill && (
-                                <span
-                                  className={`ml-0.5 text-[10px] ${player.skill > player.prev_skill ? "text-emerald-400" : "text-red-400"}`}
-                                >
-                                  {player.skill > player.prev_skill ? "▲" : "▼"}
-                                </span>
-                              )}
-                          </span>
-                          {openStatusPickerId === player.id &&
-                            (() => {
-                              const subCount = Object.entries(
-                                tactic.positions,
-                              ).filter(
-                                ([id, s]) =>
-                                  s === "Suplente" && Number(id) !== player.id,
-                              ).length;
-                              const subsFull = subCount >= 5;
-                              return (
-                                <div
-                                  className="absolute left-10 top-full z-50 bg-surface-container-high border border-outline-variant/40 rounded-md shadow-xl p-1 flex flex-col gap-0.5 min-w-36"
-                                  onClick={(e) => e.stopPropagation()}
-                                >
-                                  {[
-                                    ["Titular", "🟢", "Convocado"],
-                                    ["Suplente", "🟡", "Suplente"],
-                                    ["Excluído", "⚫️", "Não convocado"],
-                                  ].map(([status, emoji, label]) => {
-                                    const unavailable =
-                                      player.isUnavailable &&
-                                      (status === "Titular" ||
-                                        status === "Suplente");
-                                    const disabled =
-                                      unavailable ||
-                                      (status === "Suplente" &&
-                                        subsFull &&
-                                        player.status !== "Suplente");
-                                    return (
+                                    {player.nationality}
+                                  </span>
+                                </td>
+                                <td className="px-3 py-2 text-center text-zinc-100 font-normal">
+                                  <span className="inline-flex items-center justify-center bg-surface text-on-surface px-2 py-1 rounded-sm text-sm border border-outline-variant/30 font-headline font-black tabular-nums">
+                                    {player.skill}
+                                  </span>
+                                  {player.prev_skill !== null &&
+                                    player.prev_skill !== undefined &&
+                                    player.prev_skill !== player.skill && (
+                                      <span
+                                        className={`ml-1 text-xs font-black ${player.skill > player.prev_skill ? "text-emerald-400" : "text-red-400"}`}
+                                      >
+                                        {player.skill > player.prev_skill
+                                          ? "▲"
+                                          : "▼"}
+                                      </span>
+                                    )}
+                                </td>
+                                <td className="px-3 py-2 text-center font-normal">
+                                  <AggBadge value={player.aggressiveness} />
+                                </td>
+                                <td className="px-3 py-2 text-center text-emerald-400 font-normal">
+                                  {getPlayerStat(player, ["goals"])}{" "}
+                                  <span className="text-zinc-500 text-xs">
+                                    ({getPlayerStat(player, ["career_goals"])})
+                                  </span>
+                                </td>
+                                <td className="px-3 py-2 text-center text-red-400 font-normal">
+                                  {getPlayerStat(player, [
+                                    "reds",
+                                    "red_cards",
+                                    "reds_count",
+                                    "expulsions",
+                                  ])}{" "}
+                                  <span className="text-zinc-500 text-xs">
+                                    ({getPlayerStat(player, ["career_reds"])})
+                                  </span>
+                                </td>
+                                <td className="px-3 py-2 text-center text-orange-400 font-normal">
+                                  {getPlayerStat(player, [
+                                    "injuries",
+                                    "injury_count",
+                                    "lesoes",
+                                    "lesions",
+                                  ])}{" "}
+                                  <span className="text-zinc-500 text-xs">
+                                    (
+                                    {getPlayerStat(player, ["career_injuries"])}
+                                    )
+                                  </span>
+                                </td>
+                                <td className="px-3 py-2 text-center font-mono text-zinc-300 text-xs md:text-sm">
+                                  {formatCurrency(player.wage || 0)}
+                                </td>
+                                <td className="px-3 py-2 text-center">
+                                  {player.signed_season !==
+                                  Math.ceil((matchweekCount + 1) / 14) ? (
+                                    <div className="flex flex-nowrap justify-center gap-1">
                                       <button
-                                        key={status}
-                                        onClick={() =>
-                                          !disabled &&
-                                          handleSetPlayerStatus(
-                                            player.id,
-                                            status,
-                                          )
+                                        onClick={(e) => {
+                                          e.stopPropagation();
+                                          renewPlayerContract(player);
+                                        }}
+                                        title="Renovar"
+                                        aria-label="Renovar"
+                                        className="px-2 py-1 rounded-md bg-emerald-600 hover:bg-emerald-500 text-white text-[10px] font-black uppercase leading-none tracking-wide"
+                                      >
+                                        R
+                                      </button>
+                                      <button
+                                        onClick={(e) => {
+                                          e.stopPropagation();
+                                          listPlayerAuction(player);
+                                        }}
+                                        disabled={
+                                          isPlayingMatch || showHalftimePanel
                                         }
                                         title={
-                                          unavailable
-                                            ? "Jogador indisponível (lesão/suspensão)"
-                                            : disabled
-                                              ? "Máximo de 5 suplentes atingido"
-                                              : undefined
+                                          isPlayingMatch || showHalftimePanel
+                                            ? "Disponível após as partidas"
+                                            : "Vender em Leilão"
                                         }
-                                        className={`px-3 py-2 rounded-md text-xs font-bold flex items-center gap-2 text-left ${
-                                          disabled
-                                            ? "opacity-40 cursor-not-allowed text-on-surface-variant"
-                                            : player.status === status
-                                              ? "bg-surface-bright text-on-surface"
-                                              : "hover:bg-surface-bright/60 text-on-surface-variant"
-                                        }`}
+                                        aria-label="Vender em Leilão"
+                                        className="px-2 py-1 rounded-md bg-primary hover:brightness-110 disabled:opacity-30 disabled:hover:bg-primary text-on-primary text-[10px] font-black uppercase leading-none tracking-wide"
                                       >
-                                        {emoji} {label}
+                                        V
                                       </button>
-                                    );
-                                  })}
-                                </div>
-                              );
-                            })()}
-                        </div>
-                      ))}
-                    </div>
-                  </div>
-                </div>
-              )}
-
-              {activeTab === "market" && (
-                <div className="bg-surface-container rounded-lg shadow-sm overflow-hidden">
-                  <div className="border-b border-outline-variant/20 bg-surface/40 p-4 md:p-5">
-                    <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
-                      <div>
-                        <label className="block text-[10px] uppercase tracking-widest text-zinc-500 font-black mb-2">
-                          Posição
-                        </label>
-                        <select
-                          className="w-full bg-surface border border-outline-variant rounded-sm px-3 py-3 text-sm font-bold text-on-surface focus:ring-2 focus:ring-primary"
-                          value={marketPositionFilter}
-                          onChange={(e) =>
-                            setMarketPositionFilter(e.target.value)
-                          }
-                        >
-                          <option value="all">Todas</option>
-                          <option value="GR">Guarda-Redes</option>
-                          <option value="DEF">Defesa</option>
-                          <option value="MED">Médio</option>
-                          <option value="ATA">Avançado</option>
-                        </select>
-                      </div>
-                      <div>
-                        <label className="block text-[10px] uppercase tracking-widest text-zinc-500 font-black mb-2">
-                          Ordenar por
-                        </label>
-                        <select
-                          className="w-full bg-surface border border-outline-variant rounded-sm px-3 py-3 text-sm font-bold text-on-surface focus:ring-2 focus:ring-primary"
-                          value={marketSort}
-                          onChange={(e) => setMarketSort(e.target.value)}
-                        >
-                          <option value="quality-desc">
-                            Qualidade (maior primeiro)
-                          </option>
-                          <option value="quality-asc">
-                            Qualidade (menor primeiro)
-                          </option>
-                          <option value="price-asc">Preço (mais barato)</option>
-                          <option value="price-desc">Preço (mais caro)</option>
-                        </select>
-                      </div>
-                      <div className="flex flex-col justify-end gap-1">
-                        <div className="text-[10px] uppercase tracking-widest text-zinc-500 font-black">
-                          Caixa disponível
-                        </div>
-                        <div className="text-sm font-black text-emerald-400">
-                          €{(teamInfo?.budget ?? 0).toLocaleString("pt-PT")}
-                        </div>
-                        <div className="text-xs text-zinc-500">
-                          {filteredMarketPlayers.length} jogadores
-                        </div>
-                      </div>
-                    </div>
-                  </div>
-                  <div className="overflow-x-auto">
-                    <table className="w-full min-w-[760px] text-left text-xs md:text-sm">
-                      <thead>
-                        <tr className="bg-surface/50 text-on-surface-variant uppercase text-[10px] md:text-[11px] border-b border-outline-variant/20">
-                          <th className="px-4 py-2.5 font-black">Pos</th>
-                          <th className="px-4 py-2.5 font-black"></th>
-                          <th className="px-4 py-2.5 font-black">Nome</th>
-                          <th className="px-4 py-2.5 font-black">Clube</th>
-                          <th className="px-4 py-2.5 font-black text-center">
-                            Qual
-                          </th>
-                          <th className="px-4 py-2.5 font-black text-center">
-                            Agr.
-                          </th>
-                          <th className="px-4 py-2.5 font-black text-center">
-                            Golos
-                          </th>
-                          <th className="px-4 py-2.5 font-black text-center">
-                            Vermelhos
-                          </th>
-                          <th className="px-4 py-2.5 font-black text-center">
-                            Lesões
-                          </th>
-                          <th className="px-4 py-2.5 font-black text-right">
-                            Preço
-                          </th>
-                          <th className="px-4 py-2.5 font-black text-right">
-                            Ordenado
-                          </th>
-                          <th className="px-4 py-2.5"></th>
-                        </tr>
-                      </thead>
-                      <tbody className="divide-y divide-outline-variant/10 font-medium">
-                        {filteredMarketPlayers.map((player) => {
-                          const isListed =
-                            player.transfer_status &&
-                            player.transfer_status !== "none";
-                          const price = player.marketPrice;
-                          const canAfford = teamInfo?.budget >= price;
-                          return (
-                            <tr
-                              key={player.id}
-                              className="hover:bg-surface-bright/20 transition-colors"
-                            >
-                              <td className="px-4 py-2 font-black text-[11px] md:text-xs">
-                                {player.position}
-                              </td>
-                              <td
-                                className="px-4 py-2 text-center text-lg"
-                                title={
-                                  FLAG_TO_COUNTRY[player.nationality] ||
-                                  player.nationality ||
-                                  "—"
-                                }
-                              >
-                                {player.nationality || "—"}
-                              </td>
-                              <td className="px-4 py-2">
-                                <div className="flex items-center gap-2">
-                                  <p className="font-bold text-white text-sm leading-tight">
-                                    <PlayerLink playerId={player.id}>
-                                      {player.name}
-                                    </PlayerLink>
-                                    {!!player.is_star &&
-                                      (player.position === "MED" ||
-                                        player.position === "ATA") && (
-                                        <span
-                                          className="ml-1 text-amber-400 font-black"
-                                          title="Craque"
+                                      {player.transfer_status === "fixed" ? (
+                                        <button
+                                          onClick={(e) => {
+                                            e.stopPropagation();
+                                            removeFromTransferList(player);
+                                          }}
+                                          title="Retirar da lista de transferências"
+                                          aria-label="Retirar da lista"
+                                          className="px-2 py-1 rounded-md bg-red-700 hover:bg-red-600 text-white text-[10px] font-black uppercase leading-none tracking-wide"
                                         >
-                                          *
-                                        </span>
+                                          ✕
+                                        </button>
+                                      ) : (
+                                        <button
+                                          onClick={(e) => {
+                                            e.stopPropagation();
+                                            listPlayerFixed(player);
+                                          }}
+                                          title="Listar no Mercado"
+                                          aria-label="Listar no Mercado"
+                                          className="px-2 py-1 rounded-md bg-secondary-container hover:bg-surface-bright text-on-surface text-[10px] font-black uppercase leading-none tracking-wide"
+                                        >
+                                          L
+                                        </button>
                                       )}
-                                  </p>
-                                  {isListed && (
-                                    <span
-                                      className={`text-[10px] font-black uppercase px-2 py-0.5 rounded ${player.transfer_status === "auction" ? "bg-primary text-on-primary" : "bg-sky-500 text-zinc-950"}`}
-                                    >
-                                      {player.transfer_status === "auction"
-                                        ? "Leilão"
-                                        : "Lista"}
+                                    </div>
+                                  ) : (
+                                    <span className="text-xs text-zinc-600 font-normal uppercase">
+                                      —
                                     </span>
                                   )}
-                                </div>
-                              </td>
-                              <td className="px-4 py-2 font-bold text-zinc-400">
-                                {player.team_name || "Sem clube"}
-                              </td>
-                              <td className="px-4 py-2 text-center">
-                                <span className="bg-surface text-on-surface font-headline font-black px-2 py-1 rounded-sm text-sm border border-outline-variant/30 tabular-nums">
-                                  {player.skill}
-                                </span>
-                              </td>
-                              <td className="px-4 py-2 text-center">
-                                <AggBadge value={player.aggressiveness} />
-                              </td>
-                              <td className="px-4 py-2 text-center font-black text-emerald-400">
-                                {getPlayerStat(player, ["goals"])}{" "}
-                                <span className="text-zinc-500 text-xs font-normal">
-                                  ({getPlayerStat(player, ["career_goals"])})
-                                </span>
-                              </td>
-                              <td className="px-4 py-2 text-center font-black text-red-400">
-                                {getPlayerStat(player, ["red_cards"])}{" "}
-                                <span className="text-zinc-500 text-xs font-normal">
-                                  ({getPlayerStat(player, ["career_reds"])})
-                                </span>
-                              </td>
-                              <td className="px-4 py-2 text-center font-black text-orange-400">
-                                {getPlayerStat(player, ["injuries"])}{" "}
-                                <span className="text-zinc-500 text-xs font-normal">
-                                  ({getPlayerStat(player, ["career_injuries"])})
-                                </span>
-                              </td>
-                              <td className="px-4 py-2 text-right font-mono text-zinc-300 text-sm md:text-base">
-                                {formatCurrency(price)}
-                              </td>
-                              <td className="px-4 py-2 text-right font-mono text-zinc-300 text-xs md:text-sm">
-                                {formatCurrency(
-                                  player.contract_requested_wage ||
-                                    player.wage ||
-                                    0,
-                                )}
-                              </td>
-                              <td className="px-4 py-2 text-right">
-                                {player.transfer_status === "auction" ? (
-                                  isSameTeamId(
-                                    player.auction_seller_team_id,
-                                    me?.teamId,
-                                  ) ? (
-                                    <span className="text-zinc-600 text-[10px] font-bold uppercase">
-                                      Meu leilão
-                                    </span>
-                                  ) : (
-                                    <button
-                                      onClick={() => openAuctionBid(player)}
-                                      className="bg-primary hover:brightness-110 text-on-primary font-black uppercase text-[10px] px-3 py-1.5 rounded-md tracking-wide"
+                                </td>
+                              </tr>
+                            ))}
+                          </tbody>
+                        </table>
+                      </div>
+                    </div>
+                  )}
+
+                  {activeTab === "tactic" && (
+                    <div>
+                      {/* ── COMPACT PLAYER LIST ──────────────────────────── */}
+                      <div className="bg-surface-container rounded-lg">
+                        <div className="px-4 py-3 border-b border-outline-variant/20 bg-surface/40 rounded-t-lg flex items-center justify-between">
+                          <p className="text-[10px] uppercase tracking-widest text-zinc-500 font-black">
+                            Plantel
+                          </p>
+                          <p className="text-[10px] font-black text-zinc-500">
+                            <span className="text-emerald-400">
+                              {
+                                annotatedSquad.filter(
+                                  (p) => p.status === "Titular",
+                                ).length
+                              }
+                            </span>
+                            /11 titulares ·{" "}
+                            <span className="text-amber-400">
+                              {
+                                annotatedSquad.filter(
+                                  (p) => p.status === "Suplente",
+                                ).length
+                              }
+                            </span>
+                            /5 suplentes
+                          </p>
+                        </div>
+                        <div className="divide-y divide-outline-variant/10">
+                          {annotatedSquad.map((player) => (
+                            <div
+                              key={player.id}
+                              className={`flex items-center gap-3 px-4 py-2.5 transition-colors hover:bg-surface-bright/20 select-none relative ${player.isUnavailable ? "opacity-60" : ""}`}
+                            >
+                              <span
+                                className={`cursor-pointer text-base leading-none shrink-0 inline-flex items-center justify-center w-7 h-7 rounded-full ${player.status === "Titular" ? "bg-emerald-500/15" : player.status === "Suplente" ? "bg-amber-500/15" : "bg-zinc-900/80"}`}
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  setOpenStatusPickerId((prev) =>
+                                    prev === player.id ? null : player.id,
+                                  );
+                                }}
+                              >
+                                {player.status === "Titular"
+                                  ? "🟢"
+                                  : player.status === "Suplente"
+                                    ? "🟡"
+                                    : "⚫️"}
+                              </span>
+                              <span
+                                className={`text-xs font-black w-5 text-center shrink-0 ${POSITION_TEXT_CLASS[player.position] || "text-zinc-400"}`}
+                              >
+                                {POSITION_SHORT_LABELS[player.position] ||
+                                  player.position}
+                              </span>
+                              <span className="flex-1 text-white text-sm font-bold truncate">
+                                <PlayerLink playerId={player.id}>
+                                  {player.name}
+                                </PlayerLink>
+                                {!!player.is_star &&
+                                  (player.position === "MED" ||
+                                    player.position === "ATA") && (
+                                    <span
+                                      className="ml-1 text-amber-400 font-black"
+                                      title="Craque"
                                     >
-                                      Licitar
-                                    </button>
-                                  )
-                                ) : (
-                                  <button
-                                    onClick={() => buyPlayer(player.id)}
-                                    disabled={!canAfford}
-                                    className="bg-primary hover:brightness-110 disabled:opacity-30 disabled:hover:bg-primary text-on-primary font-black uppercase text-[10px] px-3 py-1.5 rounded-md tracking-wide"
-                                  >
-                                    {canAfford ? "Comprar" : "Sem dinheiro"}
-                                  </button>
+                                      *
+                                    </span>
+                                  )}
+                                {player.isUnavailable && (
+                                  <span className="ml-1.5 text-xs font-bold text-red-400">
+                                    {(player.suspension_until_matchweek || 0) >
+                                    matchweekCount
+                                      ? "🟥"
+                                      : "🩹"}
+                                  </span>
                                 )}
-                              </td>
+                              </span>
+                              <span className="text-primary font-black text-sm shrink-0">
+                                {player.skill}
+                                {player.prev_skill !== null &&
+                                  player.prev_skill !== undefined &&
+                                  player.prev_skill !== player.skill && (
+                                    <span
+                                      className={`ml-0.5 text-[10px] ${player.skill > player.prev_skill ? "text-emerald-400" : "text-red-400"}`}
+                                    >
+                                      {player.skill > player.prev_skill
+                                        ? "▲"
+                                        : "▼"}
+                                    </span>
+                                  )}
+                              </span>
+                              {openStatusPickerId === player.id &&
+                                (() => {
+                                  const subCount = Object.entries(
+                                    tactic.positions,
+                                  ).filter(
+                                    ([id, s]) =>
+                                      s === "Suplente" &&
+                                      Number(id) !== player.id,
+                                  ).length;
+                                  const subsFull = subCount >= 5;
+                                  return (
+                                    <div
+                                      className="absolute left-10 top-full z-50 bg-surface-container-high border border-outline-variant/40 rounded-md shadow-xl p-1 flex flex-col gap-0.5 min-w-36"
+                                      onClick={(e) => e.stopPropagation()}
+                                    >
+                                      {[
+                                        ["Titular", "🟢", "Convocado"],
+                                        ["Suplente", "🟡", "Suplente"],
+                                        ["Excluído", "⚫️", "Não convocado"],
+                                      ].map(([status, emoji, label]) => {
+                                        const unavailable =
+                                          player.isUnavailable &&
+                                          (status === "Titular" ||
+                                            status === "Suplente");
+                                        const disabled =
+                                          unavailable ||
+                                          (status === "Suplente" &&
+                                            subsFull &&
+                                            player.status !== "Suplente");
+                                        return (
+                                          <button
+                                            key={status}
+                                            onClick={() =>
+                                              !disabled &&
+                                              handleSetPlayerStatus(
+                                                player.id,
+                                                status,
+                                              )
+                                            }
+                                            title={
+                                              unavailable
+                                                ? "Jogador indisponível (lesão/suspensão)"
+                                                : disabled
+                                                  ? "Máximo de 5 suplentes atingido"
+                                                  : undefined
+                                            }
+                                            className={`px-3 py-2 rounded-md text-xs font-bold flex items-center gap-2 text-left ${
+                                              disabled
+                                                ? "opacity-40 cursor-not-allowed text-on-surface-variant"
+                                                : player.status === status
+                                                  ? "bg-surface-bright text-on-surface"
+                                                  : "hover:bg-surface-bright/60 text-on-surface-variant"
+                                            }`}
+                                          >
+                                            {emoji} {label}
+                                          </button>
+                                        );
+                                      })}
+                                    </div>
+                                  );
+                                })()}
+                            </div>
+                          ))}
+                        </div>
+                      </div>
+                    </div>
+                  )}
+
+                  {activeTab === "market" && (
+                    <div className="bg-surface-container rounded-lg shadow-sm overflow-hidden">
+                      <div className="border-b border-outline-variant/20 bg-surface/40 p-4 md:p-5">
+                        <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
+                          <div>
+                            <label className="block text-[10px] uppercase tracking-widest text-zinc-500 font-black mb-2">
+                              Posição
+                            </label>
+                            <select
+                              className="w-full bg-surface border border-outline-variant rounded-sm px-3 py-3 text-sm font-bold text-on-surface focus:ring-2 focus:ring-primary"
+                              value={marketPositionFilter}
+                              onChange={(e) =>
+                                setMarketPositionFilter(e.target.value)
+                              }
+                            >
+                              <option value="all">Todas</option>
+                              <option value="GR">Guarda-Redes</option>
+                              <option value="DEF">Defesa</option>
+                              <option value="MED">Médio</option>
+                              <option value="ATA">Avançado</option>
+                            </select>
+                          </div>
+                          <div>
+                            <label className="block text-[10px] uppercase tracking-widest text-zinc-500 font-black mb-2">
+                              Ordenar por
+                            </label>
+                            <select
+                              className="w-full bg-surface border border-outline-variant rounded-sm px-3 py-3 text-sm font-bold text-on-surface focus:ring-2 focus:ring-primary"
+                              value={marketSort}
+                              onChange={(e) => setMarketSort(e.target.value)}
+                            >
+                              <option value="quality-desc">
+                                Qualidade (maior primeiro)
+                              </option>
+                              <option value="quality-asc">
+                                Qualidade (menor primeiro)
+                              </option>
+                              <option value="price-asc">
+                                Preço (mais barato)
+                              </option>
+                              <option value="price-desc">
+                                Preço (mais caro)
+                              </option>
+                            </select>
+                          </div>
+                          <div className="flex flex-col justify-end gap-1">
+                            <div className="text-[10px] uppercase tracking-widest text-zinc-500 font-black">
+                              Caixa disponível
+                            </div>
+                            <div className="text-sm font-black text-emerald-400">
+                              €{(teamInfo?.budget ?? 0).toLocaleString("pt-PT")}
+                            </div>
+                            <div className="text-xs text-zinc-500">
+                              {filteredMarketPlayers.length} jogadores
+                            </div>
+                          </div>
+                        </div>
+                      </div>
+                      <div className="overflow-x-auto">
+                        <table className="w-full min-w-[760px] text-left text-xs md:text-sm">
+                          <thead>
+                            <tr className="bg-surface/50 text-on-surface-variant uppercase text-[10px] md:text-[11px] border-b border-outline-variant/20">
+                              <th className="px-4 py-2.5 font-black">Pos</th>
+                              <th className="px-4 py-2.5 font-black"></th>
+                              <th className="px-4 py-2.5 font-black">Nome</th>
+                              <th className="px-4 py-2.5 font-black">Clube</th>
+                              <th className="px-4 py-2.5 font-black text-center">
+                                Qual
+                              </th>
+                              <th className="px-4 py-2.5 font-black text-center">
+                                Agr.
+                              </th>
+                              <th className="px-4 py-2.5 font-black text-center">
+                                Golos
+                              </th>
+                              <th className="px-4 py-2.5 font-black text-center">
+                                Vermelhos
+                              </th>
+                              <th className="px-4 py-2.5 font-black text-center">
+                                Lesões
+                              </th>
+                              <th className="px-4 py-2.5 font-black text-right">
+                                Preço
+                              </th>
+                              <th className="px-4 py-2.5 font-black text-right">
+                                Ordenado
+                              </th>
+                              <th className="px-4 py-2.5"></th>
                             </tr>
-                          );
-                        })}
-                      </tbody>
-                    </table>
-                  </div>
-                </div>
-              )}
+                          </thead>
+                          <tbody className="divide-y divide-outline-variant/10 font-medium">
+                            {filteredMarketPlayers.map((player) => {
+                              const isListed =
+                                player.transfer_status &&
+                                player.transfer_status !== "none";
+                              const price = player.marketPrice;
+                              const canAfford = teamInfo?.budget >= price;
+                              return (
+                                <tr
+                                  key={player.id}
+                                  className="hover:bg-surface-bright/20 transition-colors"
+                                >
+                                  <td className="px-4 py-2 font-black text-[11px] md:text-xs">
+                                    {player.position}
+                                  </td>
+                                  <td
+                                    className="px-4 py-2 text-center text-lg"
+                                    title={
+                                      FLAG_TO_COUNTRY[player.nationality] ||
+                                      player.nationality ||
+                                      "—"
+                                    }
+                                  >
+                                    {player.nationality || "—"}
+                                  </td>
+                                  <td className="px-4 py-2">
+                                    <div className="flex items-center gap-2">
+                                      <p className="font-bold text-white text-sm leading-tight">
+                                        <PlayerLink playerId={player.id}>
+                                          {player.name}
+                                        </PlayerLink>
+                                        {!!player.is_star &&
+                                          (player.position === "MED" ||
+                                            player.position === "ATA") && (
+                                            <span
+                                              className="ml-1 text-amber-400 font-black"
+                                              title="Craque"
+                                            >
+                                              *
+                                            </span>
+                                          )}
+                                      </p>
+                                      {isListed && (
+                                        <span
+                                          className={`text-[10px] font-black uppercase px-2 py-0.5 rounded ${player.transfer_status === "auction" ? "bg-primary text-on-primary" : "bg-sky-500 text-zinc-950"}`}
+                                        >
+                                          {player.transfer_status === "auction"
+                                            ? "Leilão"
+                                            : "Lista"}
+                                        </span>
+                                      )}
+                                    </div>
+                                  </td>
+                                  <td className="px-4 py-2 font-bold text-zinc-400">
+                                    {player.team_name || "Sem clube"}
+                                  </td>
+                                  <td className="px-4 py-2 text-center">
+                                    <span className="bg-surface text-on-surface font-headline font-black px-2 py-1 rounded-sm text-sm border border-outline-variant/30 tabular-nums">
+                                      {player.skill}
+                                    </span>
+                                  </td>
+                                  <td className="px-4 py-2 text-center">
+                                    <AggBadge value={player.aggressiveness} />
+                                  </td>
+                                  <td className="px-4 py-2 text-center font-black text-emerald-400">
+                                    {getPlayerStat(player, ["goals"])}{" "}
+                                    <span className="text-zinc-500 text-xs font-normal">
+                                      ({getPlayerStat(player, ["career_goals"])}
+                                      )
+                                    </span>
+                                  </td>
+                                  <td className="px-4 py-2 text-center font-black text-red-400">
+                                    {getPlayerStat(player, ["red_cards"])}{" "}
+                                    <span className="text-zinc-500 text-xs font-normal">
+                                      ({getPlayerStat(player, ["career_reds"])})
+                                    </span>
+                                  </td>
+                                  <td className="px-4 py-2 text-center font-black text-orange-400">
+                                    {getPlayerStat(player, ["injuries"])}{" "}
+                                    <span className="text-zinc-500 text-xs font-normal">
+                                      (
+                                      {getPlayerStat(player, [
+                                        "career_injuries",
+                                      ])}
+                                      )
+                                    </span>
+                                  </td>
+                                  <td className="px-4 py-2 text-right font-mono text-zinc-300 text-sm md:text-base">
+                                    {formatCurrency(price)}
+                                  </td>
+                                  <td className="px-4 py-2 text-right font-mono text-zinc-300 text-xs md:text-sm">
+                                    {formatCurrency(
+                                      player.contract_requested_wage ||
+                                        player.wage ||
+                                        0,
+                                    )}
+                                  </td>
+                                  <td className="px-4 py-2 text-right">
+                                    {player.transfer_status === "auction" ? (
+                                      isSameTeamId(
+                                        player.auction_seller_team_id,
+                                        me?.teamId,
+                                      ) ? (
+                                        <span className="text-zinc-600 text-[10px] font-bold uppercase">
+                                          Meu leilão
+                                        </span>
+                                      ) : (
+                                        <button
+                                          onClick={() => openAuctionBid(player)}
+                                          className="bg-primary hover:brightness-110 text-on-primary font-black uppercase text-[10px] px-3 py-1.5 rounded-md tracking-wide"
+                                        >
+                                          Licitar
+                                        </button>
+                                      )
+                                    ) : (
+                                      <button
+                                        onClick={() => buyPlayer(player.id)}
+                                        disabled={!canAfford}
+                                        className="bg-primary hover:brightness-110 disabled:opacity-30 disabled:hover:bg-primary text-on-primary font-black uppercase text-[10px] px-3 py-1.5 rounded-md tracking-wide"
+                                      >
+                                        {canAfford ? "Comprar" : "Sem dinheiro"}
+                                      </button>
+                                    )}
+                                  </td>
+                                </tr>
+                              );
+                            })}
+                          </tbody>
+                        </table>
+                      </div>
+                    </div>
+                  )}
+                </motion.div>
+              </AnimatePresence>
             </div>
 
             {activeTab === "tactic" && (
