@@ -676,6 +676,17 @@ function App() {
   // Match detail modal (non-blocking overlay during live match)
   const [showMatchDetail, setShowMatchDetail] = useState(false);
   const [matchDetailFixture, setMatchDetailFixture] = useState(null);
+
+  // Chat state
+  const [chatOpen, setChatOpen] = useState(false);
+  const [activeChatTab, setActiveChatTab] = useState("room");
+  const [roomMessages, setRoomMessages] = useState([]);
+  const [globalMessages, setGlobalMessages] = useState([]);
+  const [unreadRoom, setUnreadRoom] = useState(0);
+  const [unreadGlobal, setUnreadGlobal] = useState(0);
+  const [chatInput, setChatInput] = useState("");
+  const chatMessagesRef = React.useRef(null);
+
   const meRef = React.useRef(null);
   const isPlayingMatchRef = React.useRef(false);
   const isCupDrawRef = React.useRef(false);
@@ -1440,6 +1451,21 @@ function App() {
 
     socket.on("jobOffer", (data) => setJobOfferModal(data));
 
+    socket.on("chatMessage", (msg) => {
+      if (msg.channel === "room") {
+        setRoomMessages((prev) => [...prev.slice(-199), msg]);
+        setUnreadRoom((prev) => (chatOpen && activeChatTab === "room" ? 0 : prev + 1));
+      } else if (msg.channel === "global") {
+        setGlobalMessages((prev) => [...prev.slice(-199), msg]);
+        setUnreadGlobal((prev) => (chatOpen && activeChatTab === "global" ? 0 : prev + 1));
+      }
+    });
+
+    socket.on("chatHistory", ({ channel, messages }) => {
+      if (channel === "room") setRoomMessages(messages || []);
+      else if (channel === "global") setGlobalMessages(messages || []);
+    });
+
     // BUG-15 FIX: Track socket connection state
     const onConnect = () => {
       setDisconnected(false);
@@ -1501,6 +1527,8 @@ function App() {
       socket.off("gameState");
       socket.off("coachDismissed");
       socket.off("jobOffer");
+      socket.off("chatMessage");
+      socket.off("chatHistory");
       socket.off("connect", onConnect);
       socket.off("disconnect", onDisconnect);
     };
@@ -1510,6 +1538,20 @@ function App() {
   useEffect(() => {
     meRef.current = me;
   }, [me]);
+
+  // Auto-scroll chat messages panel
+  useEffect(() => {
+    if (chatMessagesRef.current) {
+      chatMessagesRef.current.scrollTop = chatMessagesRef.current.scrollHeight;
+    }
+  }, [roomMessages, globalMessages, chatOpen, activeChatTab]);
+
+  // Clear unread when tab is active and chat is open
+  useEffect(() => {
+    if (!chatOpen) return;
+    if (activeChatTab === "room") setUnreadRoom(0);
+    else if (activeChatTab === "global") setUnreadGlobal(0);
+  }, [chatOpen, activeChatTab]);
 
   useEffect(() => {
     mySquadRef.current = mySquad;
@@ -8399,6 +8441,153 @@ function App() {
                 )}
               </div>
             </div>
+          </div>
+        );
+      })()}
+
+      {/* ── CHAT WIDGET ────────────────────────────────────────────────────── */}
+      {me && (() => {
+        const totalUnread = unreadRoom + unreadGlobal;
+        const activeMessages = activeChatTab === "room" ? roomMessages : globalMessages;
+        const sendChat = () => {
+          const trimmed = chatInput.trim();
+          if (!trimmed) return;
+          socket.emit("sendChatMessage", { channel: activeChatTab, message: trimmed });
+          setChatInput("");
+        };
+        const formatChatTime = (ts) => {
+          const d = new Date(ts);
+          return d.toLocaleTimeString("pt-PT", { hour: "2-digit", minute: "2-digit" });
+        };
+        return (
+          <div className="fixed bottom-4 right-4 z-50 flex flex-col items-end gap-2">
+            {/* Expanded panel */}
+            {chatOpen && (
+              <div
+                className="flex flex-col rounded-xl shadow-2xl overflow-hidden border border-outline-variant/40"
+                style={{ width: 340, height: 430, background: "#1a1a1a" }}
+              >
+                {/* Header */}
+                <div
+                  className="flex items-center justify-between px-4 py-2.5 shrink-0"
+                  style={{ background: "#111" }}
+                >
+                  <span className="text-sm font-black uppercase tracking-widest text-on-surface">Chat</span>
+                  <button
+                    onClick={() => setChatOpen(false)}
+                    className="text-on-surface-variant hover:text-on-surface transition-colors"
+                  >
+                    <span className="material-symbols-outlined text-[18px] leading-none">close</span>
+                  </button>
+                </div>
+
+                {/* Tabs */}
+                <div className="flex shrink-0 border-b border-outline-variant/20" style={{ background: "#111" }}>
+                  {[
+                    { key: "room", label: "Sala", unread: unreadRoom },
+                    { key: "global", label: "Global", unread: unreadGlobal },
+                  ].map(({ key, label, unread }) => (
+                    <button
+                      key={key}
+                      onClick={() => setActiveChatTab(key)}
+                      className={`flex-1 py-2 text-xs font-black uppercase tracking-widest transition-colors relative ${
+                        activeChatTab === key
+                          ? "text-primary border-b-2 border-primary"
+                          : "text-on-surface-variant hover:text-on-surface"
+                      }`}
+                    >
+                      {label}
+                      {unread > 0 && (
+                        <span className="ml-1.5 inline-flex items-center justify-center rounded-full bg-rose-500 text-white text-[9px] font-black leading-none px-1.5 py-0.5">
+                          {unread > 9 ? "9+" : unread}
+                        </span>
+                      )}
+                    </button>
+                  ))}
+                </div>
+
+                {/* Messages */}
+                <div
+                  ref={chatMessagesRef}
+                  className="flex-1 overflow-y-auto px-3 py-3 space-y-2"
+                  style={{ scrollBehavior: "smooth" }}
+                >
+                  {activeMessages.length === 0 ? (
+                    <p className="text-center text-on-surface-variant text-xs italic mt-8">
+                      {activeChatTab === "room" ? "Nenhuma mensagem nesta sala ainda." : "Nenhuma mensagem global ainda."}
+                    </p>
+                  ) : (
+                    activeMessages.map((msg) => {
+                      const isOwn = msg.coachName === me.name;
+                      return (
+                        <div
+                          key={msg.id}
+                          className={`flex flex-col gap-0.5 ${isOwn ? "items-end" : "items-start"}`}
+                        >
+                          {!isOwn && (
+                            <span className="text-[10px] text-on-surface-variant font-semibold px-1">
+                              {msg.coachName}
+                            </span>
+                          )}
+                          <div
+                            className={`max-w-[80%] px-3 py-1.5 rounded-xl text-sm leading-snug ${
+                              isOwn
+                                ? "bg-primary text-on-primary rounded-br-sm"
+                                : "bg-surface-container text-on-surface rounded-bl-sm"
+                            }`}
+                          >
+                            {msg.message}
+                          </div>
+                          <span className="text-[9px] text-on-surface-variant px-1">
+                            {formatChatTime(msg.timestamp)}
+                          </span>
+                        </div>
+                      );
+                    })
+                  )}
+                </div>
+
+                {/* Input */}
+                <div
+                  className="flex items-center gap-2 px-3 py-2.5 shrink-0 border-t border-outline-variant/20"
+                  style={{ background: "#111" }}
+                >
+                  <input
+                    type="text"
+                    value={chatInput}
+                    onChange={(e) => setChatInput(e.target.value)}
+                    onKeyDown={(e) => { if (e.key === "Enter") sendChat(); }}
+                    placeholder="Escreve uma mensagem…"
+                    maxLength={500}
+                    className="flex-1 bg-surface-container text-on-surface text-sm px-3 py-1.5 rounded-lg outline-none placeholder:text-on-surface-variant/50 border border-outline-variant/30 focus:border-primary/60 transition-colors"
+                  />
+                  <button
+                    onClick={sendChat}
+                    disabled={!chatInput.trim()}
+                    className="shrink-0 p-1.5 rounded-lg bg-primary text-on-primary disabled:opacity-30 hover:opacity-90 transition-opacity"
+                  >
+                    <span className="material-symbols-outlined text-[18px] leading-none">send</span>
+                  </button>
+                </div>
+              </div>
+            )}
+
+            {/* Toggle button */}
+            <button
+              onClick={() => setChatOpen((o) => !o)}
+              className="relative flex items-center justify-center w-12 h-12 rounded-full shadow-xl transition-all hover:scale-105 active:scale-95"
+              style={{ background: chatOpen ? "#3b3b3b" : "#2563eb" }}
+              title="Chat"
+            >
+              <span className="material-symbols-outlined text-white text-[22px] leading-none">
+                {chatOpen ? "close" : "chat"}
+              </span>
+              {!chatOpen && totalUnread > 0 && (
+                <span className="absolute -top-1 -right-1 flex items-center justify-center rounded-full bg-rose-500 text-white text-[9px] font-black leading-none min-w-[18px] h-[18px] px-1">
+                  {totalUnread > 9 ? "9+" : totalUnread}
+                </span>
+              )}
+            </button>
           </div>
         );
       })()}

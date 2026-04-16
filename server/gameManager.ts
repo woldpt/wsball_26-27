@@ -336,6 +336,12 @@ function getGame(roomCode: string, onReady?: OnReady): ActiveGame | null {
             season INTEGER NOT NULL,
             achievement TEXT NOT NULL
           )`);
+          db.run(`CREATE TABLE IF NOT EXISTS chat_messages (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            coach_name TEXT NOT NULL,
+            message TEXT NOT NULL,
+            timestamp INTEGER NOT NULL
+          )`);
 
           // ── Read persisted state (flat: one query for all keys) ──────────────
           db.all(

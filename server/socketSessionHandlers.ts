@@ -1,6 +1,7 @@
 import type { ActiveGame, GamePhase, PlayerSession } from "./types";
 import { getAllTeamForms } from "./coreHelpers";
 import { SPONSOR_REVENUE_BY_DIVISION } from "./gameConstants";
+import { getGlobalMessages } from "./db/globalDatabase";
 
 type AnyRow = Record<string, any>;
 
@@ -40,6 +41,7 @@ interface SessionHandlerDeps {
   buildNextMatchSummary: (game: ActiveGame, teamId: number) => Promise<any>;
   doesGameExist: (roomCode: string) => boolean;
   generateUniqueRoomCode: () => string;
+  globalDb?: any;
 }
 
 // ─── LEGACY COMPAT HELPERS ───────────────────────────────────────────────────
@@ -184,6 +186,18 @@ export function registerSessionSocketHandlers(
         });
       },
     );
+
+    // Emit chat history for both channels
+    game.db.all(
+      "SELECT id, coach_name AS coachName, message, timestamp FROM chat_messages ORDER BY id DESC LIMIT 50",
+      (err: any, rows: any[]) => {
+        const messages = err ? [] : (rows || []).reverse();
+        socket.emit("chatHistory", { channel: "room", messages });
+      },
+    );
+    getGlobalMessages(50)
+      .then((messages) => socket.emit("chatHistory", { channel: "global", messages }))
+      .catch(() => socket.emit("chatHistory", { channel: "global", messages: [] }));
   }
 
   function generateRandomTeam(
@@ -285,6 +299,7 @@ export function registerSessionSocketHandlers(
       }
       
       socket.join(finalRoomCode);
+      socket.join("__global__");
 
       socket.emit("joinGameSuccess", { 
         roomCode: finalRoomCode, 

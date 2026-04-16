@@ -68,6 +68,8 @@ const { registerCupSocketHandlers } =
   require("./socketCupHandlers") as typeof import("./socketCupHandlers");
 const { registerGameplaySocketHandlers } =
   require("./socketGameplayHandlers") as typeof import("./socketGameplayHandlers");
+const { registerChatHandlers } =
+  require("./socketChatHandlers") as typeof import("./socketChatHandlers");
 const { emitAwaitingCoaches: emitAwaitingCoachesHelper } =
   require("./presenceHelpers") as typeof import("./presenceHelpers");
 const { createWeeklyFlowHelpers } =
@@ -435,6 +437,12 @@ io.on("connection", (socket) => {
     emitAwaitingCoaches,
     handleAcceptJobOffer,
     handleDeclineJobOffer,
+  });
+
+  registerChatHandlers(socket, {
+    io,
+    getGameBySocket,
+    getPlayerBySocket,
   });
 });
 
