@@ -598,14 +598,34 @@ function App() {
   };
 
   const TICKER_TEAM_COLORS = [
-    "#f87171","#fb923c","#facc15","#4ade80","#34d399","#22d3ee",
-    "#60a5fa","#a78bfa","#e879f9","#f472b6","#94a3b8","#fbbf24",
-    "#86efac","#67e8f9","#c4b5fd","#fda4af","#6ee7b7","#93c5fd",
+    "#f87171",
+    "#fb923c",
+    "#facc15",
+    "#4ade80",
+    "#34d399",
+    "#22d3ee",
+    "#60a5fa",
+    "#a78bfa",
+    "#e879f9",
+    "#f472b6",
+    "#94a3b8",
+    "#fbbf24",
+    "#86efac",
+    "#67e8f9",
+    "#c4b5fd",
+    "#fda4af",
+    "#6ee7b7",
+    "#93c5fd",
   ];
   const getTeamColor = (teamId) =>
     teamId ? TICKER_TEAM_COLORS[teamId % TICKER_TEAM_COLORS.length] : "#ef4444";
 
-  const pushTickerItem = (text, playerId = null, playerName = null, teamId = null) => {
+  const pushTickerItem = (
+    text,
+    playerId = null,
+    playerName = null,
+    teamId = null,
+  ) => {
     setNewsTickerItems((prev) => [
       ...prev.slice(-49),
       { id: Date.now() + Math.random(), text, playerId, playerName, teamId },
@@ -765,7 +785,8 @@ function App() {
       if (isPlayingMatchRef.current || isCupDrawRef.current) return;
       // Skip if starting price exceeds our available budget
       const myTeamId = meRef.current?.teamId;
-      const myTeamBudget = teamsRef.current.find((t) => t.id == myTeamId)?.budget ?? Infinity;
+      const myTeamBudget =
+        teamsRef.current.find((t) => t.id == myTeamId)?.budget ?? Infinity;
       if (auctionData.startingPrice > myTeamBudget) return;
       // Auto-open auction notification for all eligible coaches
       setSelectedAuctionPlayer(auctionData);
@@ -786,10 +807,17 @@ function App() {
       if (result.sold) {
         pushTickerItem(
           `${result.playerName} transferido para ${result.buyerTeamName} por ${formatCurrency(result.finalBid)}`,
-          result.playerId, result.playerName, result.buyerTeamId
+          result.playerId,
+          result.playerName,
+          result.buyerTeamId,
         );
       } else {
-        pushTickerItem(`Leilão de ${result.playerName} encerrado sem licitações`, result.playerId, result.playerName, null);
+        pushTickerItem(
+          `Leilão de ${result.playerName} encerrado sem licitações`,
+          result.playerId,
+          result.playerName,
+          null,
+        );
       }
       setSelectedAuctionPlayer((prev) => {
         if (prev && prev.playerId === result.playerId) {
@@ -810,11 +838,23 @@ function App() {
     socket.on("topScorers", (data) => setTopScorers(data));
     socket.on("seasonEnd", (data) => {
       if (data.champion) {
-        pushTickerItem(`Campeão: ${data.champion.name}`, null, null, data.champion.id);
+        pushTickerItem(
+          `Campeão: ${data.champion.name}`,
+          null,
+          null,
+          data.champion.id,
+        );
       }
       for (const p of data.promotions || []) {
-        const teamName = teamsRef.current.find((t) => t.id === p.teamId)?.name || `Equipa ${p.teamId}`;
-        pushTickerItem(`${teamName} promovida/descida para divisão ${p.toDiv}`, null, null, p.teamId);
+        const teamName =
+          teamsRef.current.find((t) => t.id === p.teamId)?.name ||
+          `Equipa ${p.teamId}`;
+        pushTickerItem(
+          `${teamName} promovida/descida para divisão ${p.toDiv}`,
+          null,
+          null,
+          p.teamId,
+        );
       }
     });
     socket.on("teamSquadData", ({ teamId, squad }) => {
@@ -950,7 +990,13 @@ function App() {
     });
     socket.on("cupExtraTimeStart", (data) => {
       // Cup match went to extra time — only animate if the coach's own team is in this fixture
-      if (data && me.teamId && data.homeTeamId !== me.teamId && data.awayTeamId !== me.teamId) return;
+      if (
+        data &&
+        me.teamId &&
+        data.homeTeamId !== me.teamId &&
+        data.awayTeamId !== me.teamId
+      )
+        return;
       setShowHalftimePanel(false);
       setIsCupExtraTime(true);
       setCupExtraTimeBadge(true);
@@ -1048,9 +1094,20 @@ function App() {
     socket.on("cupRoundResults", (data) => {
       isCupDrawRef.current = false;
       for (const r of data.results || []) {
-        const homeName = r.homeTeam?.name || teamsRef.current.find((t) => t.id === r.homeTeamId)?.name || "?";
-        const awayName = r.awayTeam?.name || teamsRef.current.find((t) => t.id === r.awayTeamId)?.name || "?";
-        pushTickerItem(`Taça: ${homeName} ${r.homeGoals}-${r.awayGoals} ${awayName}`, null, null, r.winnerId || r.homeTeamId);
+        const homeName =
+          r.homeTeam?.name ||
+          teamsRef.current.find((t) => t.id === r.homeTeamId)?.name ||
+          "?";
+        const awayName =
+          r.awayTeam?.name ||
+          teamsRef.current.find((t) => t.id === r.awayTeamId)?.name ||
+          "?";
+        pushTickerItem(
+          `Taça: ${homeName} ${r.homeGoals}-${r.awayGoals} ${awayName}`,
+          null,
+          null,
+          r.winnerId || r.homeTeamId,
+        );
       }
       setCupRoundResults(data);
       setCupPenaltyPopup(null);
@@ -1094,17 +1151,25 @@ function App() {
     socket.on("clubNewsData", (data) => {
       setClubNews(data.news || []);
     });
-    socket.on("clubNewsUpdated", ({ teamId, title, playerId, playerName, isAuction }) => {
-      // Use meRef (not me) to avoid stale closure — this listener is registered once with [] deps
-      const currentMe = meRef.current;
-      if (currentMe?.teamId === teamId) {
-        socket.emit("requestClubNews", { teamId });
-      }
-      // Auction transfers are already covered by the auctionClosed handler — skip to avoid duplicates
-      if (title && !isAuction) {
-        pushTickerItem(title, playerId || null, playerName || null, teamId || null);
-      }
-    });
+    socket.on(
+      "clubNewsUpdated",
+      ({ teamId, title, playerId, playerName, isAuction }) => {
+        // Use meRef (not me) to avoid stale closure — this listener is registered once with [] deps
+        const currentMe = meRef.current;
+        if (currentMe?.teamId === teamId) {
+          socket.emit("requestClubNews", { teamId });
+        }
+        // Auction transfers are already covered by the auctionClosed handler — skip to avoid duplicates
+        if (title && !isAuction) {
+          pushTickerItem(
+            title,
+            playerId || null,
+            playerName || null,
+            teamId || null,
+          );
+        }
+      },
+    );
     socket.on("playerHistoryData", (data) => setPlayerHistoryModal(data));
     socket.on("financeData", (data) => setFinanceData(data));
     socket.on("systemMessage", (msg) => addToast(msg));
@@ -1401,14 +1466,32 @@ function App() {
     socket.on("matchResults", (data) => {
       setIsMatchActionPending(false);
       const myTeamId = meRef.current?.teamId;
-      const myDivision = teamsRef.current.find((t) => t.id === myTeamId)?.division;
+      const myDivision = teamsRef.current.find(
+        (t) => t.id === myTeamId,
+      )?.division;
       for (const r of data.results || []) {
-        const homeDiv = teamsRef.current.find((t) => t.id === r.homeTeamId)?.division;
+        const homeDiv = teamsRef.current.find(
+          (t) => t.id === r.homeTeamId,
+        )?.division;
         if (myDivision && homeDiv !== myDivision) continue;
-        const home = r.homeTeam?.name || teamsRef.current.find((t) => t.id === r.homeTeamId)?.name || "?";
-        const away = r.awayTeam?.name || teamsRef.current.find((t) => t.id === r.awayTeamId)?.name || "?";
-        const teamId = r.homeTeamId === myTeamId || r.awayTeamId === myTeamId ? myTeamId : r.homeTeamId;
-        pushTickerItem(`${home} ${r.finalHomeGoals ?? r.homeGoals ?? "?"}-${r.finalAwayGoals ?? r.awayGoals ?? "?"} ${away}`, null, null, teamId);
+        const home =
+          r.homeTeam?.name ||
+          teamsRef.current.find((t) => t.id === r.homeTeamId)?.name ||
+          "?";
+        const away =
+          r.awayTeam?.name ||
+          teamsRef.current.find((t) => t.id === r.awayTeamId)?.name ||
+          "?";
+        const teamId =
+          r.homeTeamId === myTeamId || r.awayTeamId === myTeamId
+            ? myTeamId
+            : r.homeTeamId;
+        pushTickerItem(
+          `${home} ${r.finalHomeGoals ?? r.homeGoals ?? "?"}-${r.finalAwayGoals ?? r.awayGoals ?? "?"} ${away}`,
+          null,
+          null,
+          teamId,
+        );
       }
       setMatchResults(data);
       setMatchweekCount(data.matchweek);
@@ -1454,10 +1537,14 @@ function App() {
     socket.on("chatMessage", (msg) => {
       if (msg.channel === "room") {
         setRoomMessages((prev) => [...prev.slice(-199), msg]);
-        setUnreadRoom((prev) => (chatOpen && activeChatTab === "room" ? 0 : prev + 1));
+        setUnreadRoom((prev) =>
+          chatOpen && activeChatTab === "room" ? 0 : prev + 1,
+        );
       } else if (msg.channel === "global") {
         setGlobalMessages((prev) => [...prev.slice(-199), msg]);
-        setUnreadGlobal((prev) => (chatOpen && activeChatTab === "global" ? 0 : prev + 1));
+        setUnreadGlobal((prev) =>
+          chatOpen && activeChatTab === "global" ? 0 : prev + 1,
+        );
       }
     });
 
@@ -2338,441 +2425,564 @@ function App() {
       confirmPassword !== "" && password !== confirmPassword;
 
     return (
-      <div className="min-h-screen bg-surface text-on-surface flex items-center justify-center p-6 relative overflow-hidden">
-        {/* Decorative background */}
+      <div className="min-h-screen bg-surface text-on-surface flex flex-col relative overflow-hidden">
+        {/* Background layer */}
         <div className="pointer-events-none fixed inset-0 z-0">
-          <div className="absolute inset-0 tactical-pattern"></div>
+          <div className="absolute inset-0 grid-lines"></div>
           <div className="absolute inset-0 pitch-glow"></div>
-          <div className="absolute inset-0 bg-gradient-to-b from-transparent via-surface/50 to-surface"></div>
+          <div className="absolute inset-0 bg-gradient-to-b from-transparent via-surface/20 to-surface/70"></div>
         </div>
 
-        <div className="relative z-10 w-full max-w-2xl">
-          <div className="mb-8 text-center">
-            <p className="text-[10px] uppercase tracking-[0.4em] text-on-surface-variant font-bold mb-3">
-              Gestão de Futebol Multiplayer
-            </p>
-            <h1 className="font-headline font-black tracking-tighter leading-none">
-              <span className="text-6xl md:text-8xl text-tertiary">
-                CashBall
+        {/* Sticky header */}
+        <header className="relative z-10 w-full border-b border-outline-variant/25 bg-surface/80 backdrop-blur-md sticky top-0">
+          <div className="max-w-7xl mx-auto px-6 lg:px-10 h-16 flex items-center justify-between">
+            <div className="flex items-center gap-2.5">
+              <span className="text-2xl">⚽</span>
+              <span className="font-headline font-black text-xl tracking-tighter">
+                Cash<span className="text-tertiary">Ball</span>
+                <span className="text-on-surface-variant font-bold ml-2 text-sm">
+                  26/27
+                </span>
               </span>
-              <span className="block text-3xl md:text-4xl text-primary mt-1">
-                26/27
+            </div>
+            <div className="flex items-center gap-2 bg-primary/10 border border-primary/20 px-3 py-1.5 rounded-full">
+              <span className="w-1.5 h-1.5 rounded-full bg-primary animate-pulse"></span>
+              <span className="text-[10px] font-black uppercase tracking-[0.3em] text-primary hidden sm:block">
+                Época 26/27 · Activa
+              </span>
+            </div>
+          </div>
+        </header>
+
+        {/* Hero + Auth card */}
+        <div className="relative z-10 flex-1 flex flex-col lg:flex-row items-center justify-center gap-12 lg:gap-16 px-6 sm:px-10 lg:px-16 py-14 max-w-7xl mx-auto w-full">
+          {/* Left: Hero copy */}
+          <div className="w-full lg:w-1/2 flex flex-col items-start text-left">
+            <div className="inline-flex items-center gap-2 border border-outline-variant/40 bg-surface-container px-3 py-1 rounded-full mb-8">
+              <span className="text-[10px] font-black uppercase tracking-[0.35em] text-on-surface-variant">
+                Gestão de Futebol Multiplayer
+              </span>
+            </div>
+            <h1 className="font-headline font-black leading-none tracking-tighter mb-8">
+              <span className="block text-6xl sm:text-7xl lg:text-[5.5rem] text-on-surface">
+                TREINA.
+              </span>
+              <span className="block text-6xl sm:text-7xl lg:text-[5.5rem] text-tertiary drop-shadow-[0_0_32px_rgba(233,195,73,0.2)]">
+                PROSPERA.
+              </span>
+              <span className="block text-6xl sm:text-7xl lg:text-[5.5rem] text-on-surface">
+                REPETE.
               </span>
             </h1>
+            <p className="text-base text-on-surface-variant leading-relaxed mb-10 max-w-md">
+              A evolução moderna da gestão de futebol clássica. Controla as
+              tácticas, as finanças e o destino do teu clube em ligas
+              multiplayer com até 32 treinadores.
+            </p>
+            <div className="flex flex-wrap gap-3">
+              {[
+                { icon: "🏆", label: "Divisões", value: "4 Ligas" },
+                { icon: "👥", label: "Treinadores", value: "Até 32" },
+                { icon: "⚡", label: "Simulação", value: "Ao vivo" },
+              ].map(({ icon, label, value }) => (
+                <div
+                  key={label}
+                  className="flex items-center gap-2.5 bg-surface-container border border-outline-variant/30 px-4 py-2.5 rounded-lg"
+                >
+                  <span className="text-lg">{icon}</span>
+                  <div>
+                    <p className="text-[9px] uppercase tracking-wider text-on-surface-variant font-bold leading-none mb-0.5">
+                      {label}
+                    </p>
+                    <p className="text-sm font-black text-on-surface leading-none">
+                      {value}
+                    </p>
+                  </div>
+                </div>
+              ))}
+            </div>
           </div>
 
-          <div className="bg-surface-container rounded-lg relative overflow-hidden shadow-2xl">
-            <div className="absolute top-0 inset-x-0 h-0.5 bg-primary"></div>
+          {/* Right: Auth glass card */}
+          <div className="w-full lg:w-1/2 flex justify-center lg:justify-end">
+            <div className="glass-card rounded-2xl w-full max-w-md relative overflow-hidden shadow-2xl">
+              {/* Corner accents */}
+              <div className="absolute top-2 right-2 w-12 h-12 border-t border-r border-primary/25 rounded-tr-xl pointer-events-none"></div>
+              <div className="absolute bottom-2 left-2 w-12 h-12 border-b border-l border-primary/25 rounded-bl-xl pointer-events-none"></div>
+              {/* Top accent bar */}
+              <div className="absolute top-0 inset-x-0 h-0.5 bg-gradient-to-r from-primary/40 via-primary to-primary/40"></div>
 
-            {authPhase === "login" && (
-              <div className="p-8 space-y-5">
-                <div className="space-y-2 text-center">
-                  <p className="text-[10px] text-on-surface-variant uppercase font-black tracking-[0.35em]">
-                    Login
-                  </p>
-                  <h2 className="text-3xl font-headline font-black text-on-surface tracking-tight">
-                    Entra primeiro na tua conta
-                  </h2>
-                  <p className="text-sm text-on-surface-variant font-medium">
-                    Depois escolhes se queres novo jogo, continuar uma época ou
-                    juntar-te a amigos.
-                  </p>
-                </div>
-                <div>
-                  <label className="block text-[10px] uppercase text-on-surface-variant mb-2 font-bold tracking-wider">
-                    O teu nome de Treinador
-                  </label>
-                  <input
-                    type="text"
-                    className="w-full bg-surface border border-outline-variant p-4 rounded-sm text-on-surface text-lg font-black outline-none transition-all placeholder:text-on-surface-variant/40 focus:ring-2 focus:ring-primary"
-                    value={name}
-                    placeholder="Ex: Amorim"
-                    onChange={(e) => {
-                      setName(e.target.value);
-                      setAuthError("");
-                    }}
-                  />
-                </div>
-                <div>
-                  <label className="block text-[10px] uppercase text-on-surface-variant mb-2 font-bold tracking-wider">
-                    Palavra-passe
-                  </label>
-                  <input
-                    type="password"
-                    className="w-full bg-surface border border-outline-variant p-4 rounded-sm text-on-surface text-lg font-black outline-none transition-all placeholder:text-on-surface-variant/40 focus:ring-2 focus:ring-primary"
-                    value={password}
-                    placeholder="••••••••"
-                    onChange={(e) => {
-                      setPassword(e.target.value);
-                      setAuthError("");
-                    }}
-                    onKeyDown={(e) => {
-                      if (e.key === "Enter") handleAuthenticate("login");
-                    }}
-                  />
-                </div>
-                <button
-                  onClick={() => handleAuthenticate("login")}
-                  disabled={!name.trim() || !password || authSubmitting}
-                  className="w-full bg-primary hover:brightness-110 disabled:bg-surface-bright disabled:text-on-surface-variant text-on-primary py-5 rounded-sm font-black text-xl transition-all active:scale-95"
-                >
-                  {authSubmitting ? "A VALIDAR CONTA..." : "ENTRAR"}
-                </button>
-                <button
-                  onClick={handleAdminAuthenticate}
-                  disabled={!name.trim() || !password || authSubmitting}
-                  className="w-full border border-cyan-500/30 bg-cyan-500/10 hover:bg-cyan-500/20 disabled:bg-surface-container disabled:text-on-surface-variant text-cyan-100 py-4 rounded-xl font-black text-sm uppercase tracking-[0.25em] transition-all"
-                >
-                  Entrar como Admin
-                </button>
-                <button
-                  onClick={() => {
-                    setConfirmPassword("");
-                    setAuthError("");
-                    setJoinError("");
-                    setAuthPhase("register");
-                  }}
-                  className="w-full border border-outline-variant bg-surface-container hover:border-outline-variant text-on-surface py-4 rounded font-black text-sm uppercase tracking-[0.25em] transition-all"
-                >
-                  Criar nova conta
-                </button>
-                {authError && (
-                  <p className="text-red-400 text-sm text-center font-bold">
-                    ⚠️ {authError}
-                  </p>
-                )}
-                {!authError && disconnected && (
-                  <p className="text-red-400 text-sm text-center font-bold">
-                    ⚠️ Sem ligação ao servidor. Tenta novamente.
-                  </p>
-                )}
-              </div>
-            )}
-
-            {authPhase === "register" && (
-              <div className="p-8 space-y-5">
-                <button
-                  onClick={resetAuthFlow}
-                  className="text-xs text-zinc-500 hover:text-zinc-300 font-black uppercase tracking-widest flex items-center gap-1"
-                >
-                  ← Voltar
-                </button>
-                <div className="space-y-2 text-center">
-                  <p className="text-[10px] text-on-surface-variant uppercase font-black tracking-[0.35em]">
-                    Nova conta
-                  </p>
-                  <h2 className="text-3xl font-headline font-black text-on-surface tracking-tight">
-                    Cria a tua conta de treinador
-                  </h2>
-                </div>
-                <div>
-                  <label className="block text-[10px] uppercase text-on-surface-variant mb-2 font-bold tracking-wider">
-                    O teu nome de Treinador
-                  </label>
-                  <input
-                    type="text"
-                    className="w-full bg-surface border border-outline-variant p-4 rounded-sm text-on-surface text-lg font-black outline-none transition-all placeholder:text-on-surface-variant/40 focus:ring-2 focus:ring-primary"
-                    value={name}
-                    placeholder="Ex: Amorim"
-                    onChange={(e) => {
-                      setName(e.target.value);
-                      setAuthError("");
-                    }}
-                  />
-                </div>
-                <div>
-                  <label className="block text-[10px] uppercase text-on-surface-variant mb-2 font-bold tracking-wider">
-                    Palavra-passe
-                  </label>
-                  <input
-                    type="password"
-                    className="w-full bg-surface border border-outline-variant p-4 rounded-sm text-on-surface text-lg font-black outline-none transition-all placeholder:text-on-surface-variant/40 focus:ring-2 focus:ring-primary"
-                    value={password}
-                    placeholder="••••••••"
-                    onChange={(e) => {
-                      setPassword(e.target.value);
-                      setAuthError("");
-                    }}
-                  />
-                </div>
-                <div>
-                  <label className="block text-[10px] uppercase text-on-surface-variant mb-2 font-bold tracking-wider">
-                    Confirmar Palavra-passe
-                  </label>
-                  <input
-                    type="password"
-                    className={`w-full bg-surface border p-4 rounded-sm text-on-surface text-lg font-black outline-none transition-all placeholder:text-on-surface-variant/40 focus:ring-2 ${registerPasswordMismatch ? "border-red-500 focus:ring-red-500" : "border-outline-variant focus:ring-primary"}`}
-                    value={confirmPassword}
-                    placeholder="••••••••"
-                    onChange={(e) => {
-                      setConfirmPassword(e.target.value);
-                      setAuthError("");
-                    }}
-                    onKeyDown={(e) => {
-                      if (e.key === "Enter" && !registerPasswordMismatch) {
-                        handleAuthenticate("register");
-                      }
-                    }}
-                  />
-                  {registerPasswordMismatch && (
-                    <p className="text-red-400 text-xs mt-1 font-bold">
-                      As palavras-passe não coincidem.
+              {/* ─── LOGIN PHASE ───────────────────────── */}
+              {authPhase === "login" && (
+                <div className="p-8 space-y-5">
+                  <div className="space-y-1 text-center mb-4">
+                    <p className="text-[10px] text-on-surface-variant uppercase font-black tracking-[0.4em]">
+                      Painel do Treinador
+                    </p>
+                    <h2 className="text-2xl font-headline font-black text-on-surface tracking-tight">
+                      Acede à tua conta
+                    </h2>
+                    <p className="text-xs text-on-surface-variant">
+                      Depois escolhes novo jogo, época guardada ou amigos.
+                    </p>
+                  </div>
+                  <div>
+                    <label className="block text-[10px] uppercase text-on-surface-variant mb-2 font-bold tracking-wider">
+                      Nome de Treinador
+                    </label>
+                    <input
+                      type="text"
+                      className="w-full bg-surface border border-outline-variant p-4 rounded-sm text-on-surface text-lg font-black outline-none transition-all placeholder:text-on-surface-variant/40 focus:ring-2 focus:ring-primary"
+                      value={name}
+                      placeholder="Ex: Amorim"
+                      onChange={(e) => {
+                        setName(e.target.value);
+                        setAuthError("");
+                      }}
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-[10px] uppercase text-on-surface-variant mb-2 font-bold tracking-wider">
+                      Palavra-passe
+                    </label>
+                    <input
+                      type="password"
+                      className="w-full bg-surface border border-outline-variant p-4 rounded-sm text-on-surface text-lg font-black outline-none transition-all placeholder:text-on-surface-variant/40 focus:ring-2 focus:ring-primary"
+                      value={password}
+                      placeholder="••••••••"
+                      onChange={(e) => {
+                        setPassword(e.target.value);
+                        setAuthError("");
+                      }}
+                      onKeyDown={(e) => {
+                        if (e.key === "Enter") handleAuthenticate("login");
+                      }}
+                    />
+                  </div>
+                  <button
+                    onClick={() => handleAuthenticate("login")}
+                    disabled={!name.trim() || !password || authSubmitting}
+                    className="w-full bg-primary hover:brightness-110 disabled:bg-surface-bright disabled:text-on-surface-variant text-on-primary py-4 rounded font-black text-base uppercase tracking-[0.2em] transition-all active:scale-95"
+                  >
+                    {authSubmitting ? "A VALIDAR..." : "ENTRAR"}
+                  </button>
+                  <div className="grid grid-cols-2 gap-3">
+                    <button
+                      onClick={handleAdminAuthenticate}
+                      disabled={!name.trim() || !password || authSubmitting}
+                      className="border border-cyan-500/30 bg-cyan-500/10 hover:bg-cyan-500/20 disabled:bg-surface-container disabled:text-on-surface-variant text-cyan-100 py-3 rounded font-black text-xs uppercase tracking-[0.2em] transition-all"
+                    >
+                      Admin
+                    </button>
+                    <button
+                      onClick={() => {
+                        setConfirmPassword("");
+                        setAuthError("");
+                        setJoinError("");
+                        setAuthPhase("register");
+                      }}
+                      className="border border-outline-variant/60 bg-surface-container hover:border-primary/40 text-on-surface py-3 rounded font-black text-xs uppercase tracking-[0.2em] transition-all"
+                    >
+                      Criar conta
+                    </button>
+                  </div>
+                  {authError && (
+                    <p className="text-red-400 text-sm text-center font-bold">
+                      ⚠️ {authError}
+                    </p>
+                  )}
+                  {!authError && disconnected && (
+                    <p className="text-red-400 text-sm text-center font-bold">
+                      ⚠️ Sem ligação ao servidor. Tenta novamente.
                     </p>
                   )}
                 </div>
-                <button
-                  onClick={() => handleAuthenticate("register")}
-                  disabled={
-                    !name.trim() ||
-                    !password ||
-                    authSubmitting ||
-                    registerPasswordMismatch
-                  }
-                  className="w-full bg-primary hover:brightness-110 disabled:bg-surface-container disabled:text-on-surface-variant text-on-primary py-5 rounded font-black text-xl transition-all active:scale-95"
-                >
-                  {authSubmitting ? "A CRIAR CONTA..." : "CRIAR CONTA"}
-                </button>
-                {authError && (
-                  <p className="text-red-400 text-sm text-center font-bold">
-                    ⚠️ {authError}
-                  </p>
-                )}
-                {!authError && disconnected && (
-                  <p className="text-red-400 text-sm text-center font-bold">
-                    ⚠️ Sem ligação ao servidor. Tenta novamente.
-                  </p>
-                )}
-              </div>
-            )}
+              )}
 
-            {authPhase === "mode" && (
-              <div className="p-8 space-y-5">
-                <div className="flex items-start justify-between gap-4">
-                  <div>
-                    <p className="text-[10px] text-on-surface-variant uppercase font-black tracking-[0.35em] mb-2">
-                      Sessão autenticada
-                    </p>
-                    <h2 className="text-3xl font-headline font-black text-on-surface tracking-tight">
-                      Escolhe como queres jogar
-                    </h2>
-                    <p className="text-sm text-zinc-400 font-medium mt-2">
-                      {name} já está autenticado. Agora escolhe a experiência.
-                    </p>
-                  </div>
+              {/* ─── REGISTER PHASE ────────────────────── */}
+              {authPhase === "register" && (
+                <div className="p-8 space-y-5">
                   <button
                     onClick={resetAuthFlow}
-                    className="shrink-0 text-xs text-on-surface-variant hover:text-on-surface font-black uppercase tracking-widest"
+                    className="text-xs text-zinc-500 hover:text-zinc-300 font-black uppercase tracking-widest flex items-center gap-1"
                   >
-                    Trocar conta
+                    ← Voltar
                   </button>
-                </div>
-
-                <div className="grid gap-3 sm:grid-cols-3">
-                  <button
-                    onClick={() => selectJoinMode("new-game")}
-                    className={`rounded-lg border p-5 text-left transition-all ${joinMode === "new-game" ? "border-primary bg-primary/10" : "border-outline-variant/20 bg-surface hover:border-outline-variant"}`}
-                  >
-                    <div className="mb-3 inline-flex h-10 w-10 items-center justify-center rounded bg-primary/15 text-primary text-xl">
-                      ✦
-                    </div>
-                    <p className="text-[10px] uppercase tracking-[0.35em] text-primary font-black mb-1">
-                      Novo jogo
+                  <div className="space-y-1 text-center">
+                    <p className="text-[10px] text-on-surface-variant uppercase font-black tracking-[0.4em]">
+                      Nova conta
                     </p>
-                    <p className="text-base font-black text-white">Novo jogo</p>
-                    <p className="mt-2 text-xs text-on-surface-variant leading-relaxed">
-                      Começa do zero e recebe uma nova sala.
-                    </p>
-                  </button>
-
-                  <button
-                    onClick={() => selectJoinMode("saved-game")}
-                    className={`rounded-lg border p-5 text-left transition-all ${joinMode === "saved-game" ? "border-primary bg-primary/10" : "border-outline-variant/20 bg-surface hover:border-outline-variant"}`}
-                  >
-                    <div className="mb-3 inline-flex h-10 w-10 items-center justify-center rounded bg-primary/15 text-primary text-xl">
-                      ⟲
-                    </div>
-                    <p className="text-[10px] uppercase tracking-[0.35em] text-primary font-black mb-1">
-                      Save
-                    </p>
-                    <p className="text-base font-black text-white">
-                      Continuar jogo
-                    </p>
-                    <p className="mt-2 text-xs text-on-surface-variant leading-relaxed">
-                      Reabre uma época guardada.
-                    </p>
-                  </button>
-
-                  <button
-                    onClick={() => selectJoinMode("friend-room")}
-                    className={`rounded-lg border p-5 text-left transition-all ${joinMode === "friend-room" ? "border-primary bg-primary/10" : "border-outline-variant/20 bg-surface hover:border-outline-variant"}`}
-                  >
-                    <div className="mb-3 inline-flex h-10 w-10 items-center justify-center rounded bg-primary/15 text-primary text-xl">
-                      ↗
-                    </div>
-                    <p className="text-[10px] uppercase tracking-[0.35em] text-primary font-black mb-1">
-                      Amigos
-                    </p>
-                    <p className="text-base font-black text-white">
-                      Juntar a amigos
-                    </p>
-                    <p className="mt-2 text-xs text-on-surface-variant leading-relaxed">
-                      Junta-te a outra equipa com um código.
-                    </p>
-                  </button>
-                </div>
-
-                {joinMode === "new-game" && (
-                  <div className="space-y-3 rounded-lg border border-primary/30 bg-primary/8 p-5">
-                    <label className="block text-[10px] uppercase text-on-surface-variant mb-2 font-bold tracking-[0.3em]">
-                      Nome do novo jogo
+                    <h2 className="text-2xl font-headline font-black text-on-surface tracking-tight">
+                      Cria a tua conta de treinador
+                    </h2>
+                  </div>
+                  <div>
+                    <label className="block text-[10px] uppercase text-on-surface-variant mb-2 font-bold tracking-wider">
+                      Nome de Treinador
                     </label>
                     <input
                       type="text"
-                      className="w-full bg-surface border border-outline-variant p-4 rounded-sm text-on-surface text-lg font-black outline-none transition-all placeholder:text-on-surface-variant/40 focus:ring-2 focus:ring-primary uppercase"
-                      value={roomCode}
-                      placeholder="INVERNO"
-                      onChange={(e) =>
-                        setRoomCode(e.target.value.toUpperCase())
-                      }
-                      onKeyDown={(e) => {
-                        if (e.key === "Enter") handleJoin();
+                      className="w-full bg-surface border border-outline-variant p-4 rounded-sm text-on-surface text-lg font-black outline-none transition-all placeholder:text-on-surface-variant/40 focus:ring-2 focus:ring-primary"
+                      value={name}
+                      placeholder="Ex: Amorim"
+                      onChange={(e) => {
+                        setName(e.target.value);
+                        setAuthError("");
                       }}
                     />
-                    <p className="text-sm font-bold text-on-surface-variant/80">
-                      Ficarás com um clube mágico da 4ª Divisão.
-                    </p>
                   </div>
-                )}
-
-                {joinMode === "saved-game" && (
-                  <div className="space-y-3 rounded-lg border border-primary/20 bg-surface-container p-5">
-                    <label className="block text-[10px] uppercase text-cyan-300 mb-2 font-bold tracking-[0.3em]">
-                      As tuas Salas Gravadas
+                  <div>
+                    <label className="block text-[10px] uppercase text-on-surface-variant mb-2 font-bold tracking-wider">
+                      Palavra-passe
                     </label>
-                    {availableSaves.length === 0 ? (
-                      <p className="text-on-surface-variant text-sm mt-2">
-                        Nenhum save encontrado para este treinador.
+                    <input
+                      type="password"
+                      className="w-full bg-surface border border-outline-variant p-4 rounded-sm text-on-surface text-lg font-black outline-none transition-all placeholder:text-on-surface-variant/40 focus:ring-2 focus:ring-primary"
+                      value={password}
+                      placeholder="••••••••"
+                      onChange={(e) => {
+                        setPassword(e.target.value);
+                        setAuthError("");
+                      }}
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-[10px] uppercase text-on-surface-variant mb-2 font-bold tracking-wider">
+                      Confirmar Palavra-passe
+                    </label>
+                    <input
+                      type="password"
+                      className={`w-full bg-surface border p-4 rounded-sm text-on-surface text-lg font-black outline-none transition-all placeholder:text-on-surface-variant/40 focus:ring-2 ${registerPasswordMismatch ? "border-red-500 focus:ring-red-500" : "border-outline-variant focus:ring-primary"}`}
+                      value={confirmPassword}
+                      placeholder="••••••••"
+                      onChange={(e) => {
+                        setConfirmPassword(e.target.value);
+                        setAuthError("");
+                      }}
+                      onKeyDown={(e) => {
+                        if (e.key === "Enter" && !registerPasswordMismatch) {
+                          handleAuthenticate("register");
+                        }
+                      }}
+                    />
+                    {registerPasswordMismatch && (
+                      <p className="text-red-400 text-xs mt-1 font-bold">
+                        As palavras-passe não coincidem.
                       </p>
-                    ) : (
-                      <div className="space-y-2">
-                        {availableSaves.map((save) => (
-                          <div
-                            key={save.code}
-                            onClick={() => setRoomCode(save.code)}
-                            className={`flex items-center justify-between gap-3 px-4 py-3 rounded-xl border cursor-pointer transition-all ${
-                              roomCode === save.code
-                                ? "border-cyan-500 bg-cyan-500/15 text-white"
-                                : "border-outline-variant/20 bg-surface text-on-surface-variant hover:border-outline-variant hover:text-on-surface"
-                            }`}
-                          >
-                            <div className="flex flex-col flex-1 min-w-0">
-                              <span className="font-black text-sm uppercase tracking-widest">
-                                {save.name}
-                              </span>
-                              <span className="text-xs text-on-surface-variant/60">
-                                {save.code}
-                              </span>
-                            </div>
-                            <button
-                              onClick={(e) => {
-                                e.stopPropagation();
-                                if (
-                                  !window.confirm(
-                                    `Apagar a sala "${save.name}" permanentemente?`,
-                                  )
-                                )
-                                  return;
-                                fetch(
-                                  `${backendUrl}/saves/${encodeURIComponent(save.code)}`,
-                                  {
-                                    method: "DELETE",
-                                    headers: {
-                                      "Content-Type": "application/json",
-                                    },
-                                    body: JSON.stringify({ name, password }),
-                                  },
-                                )
-                                  .then((r) => r.json())
-                                  .then((data) => {
-                                    if (data.ok) {
-                                      setAvailableSaves((prev) =>
-                                        prev.filter(
-                                          (s) => s.code !== save.code,
-                                        ),
-                                      );
-                                      if (roomCode === save.code)
-                                        setRoomCode("");
-                                    } else {
-                                      alert(
-                                        data.error || "Erro ao apagar sala.",
-                                      );
-                                    }
-                                  })
-                                  .catch(() =>
-                                    alert("Erro de ligação ao servidor."),
-                                  );
-                              }}
-                              className="shrink-0 text-on-surface-variant/50 hover:text-error transition-colors p-1"
-                              title="Apagar sala"
-                            >
-                              🗑️
-                            </button>
-                          </div>
-                        ))}
-                      </div>
                     )}
                   </div>
-                )}
-
-                {joinMode === "friend-room" && (
-                  <div className="space-y-3 rounded-lg border border-primary/20 bg-surface-container p-5">
-                    <label className="block text-[10px] uppercase text-emerald-300 mb-2 font-bold tracking-[0.3em]">
-                      Código da Sala do Amigo
-                    </label>
-                    <input
-                      type="text"
-                      className="w-full bg-surface border border-outline-variant p-4 rounded-sm text-on-surface text-lg font-black outline-none transition-all placeholder:text-on-surface-variant/40 focus:ring-2 focus:ring-primary uppercase"
-                      value={roomCode}
-                      placeholder="INVERNO"
-                      onChange={(e) =>
-                        setRoomCode(e.target.value.toUpperCase())
-                      }
-                      onKeyDown={(e) => {
-                        if (e.key === "Enter") handleJoin();
-                      }}
-                    />
-                  </div>
-                )}
-
-                {joinMode && (
                   <button
-                    onClick={handleJoin}
-                    disabled={!roomCode || joining}
-                    className={`w-full disabled:bg-surface-container disabled:text-on-surface-variant py-5 rounded font-black text-xl transition-all active:scale-95 ${joinMode === "new-game" ? "bg-primary hover:brightness-110 text-on-primary" : joinMode === "saved-game" ? "bg-cyan-500 hover:bg-cyan-400 text-zinc-950" : "bg-primary hover:brightness-110 text-on-primary"}`}
+                    onClick={() => handleAuthenticate("register")}
+                    disabled={
+                      !name.trim() ||
+                      !password ||
+                      authSubmitting ||
+                      registerPasswordMismatch
+                    }
+                    className="w-full bg-primary hover:brightness-110 disabled:bg-surface-container disabled:text-on-surface-variant text-on-primary py-4 rounded font-black text-base uppercase tracking-[0.2em] transition-all active:scale-95"
                   >
-                    {joining
-                      ? "A GERAR CONTRATO..."
-                      : joinMode === "new-game"
-                        ? "CRIAR JOGO"
-                        : joinMode === "saved-game"
-                          ? "CONTINUAR JOGO"
-                          : "JUNTAR A AMIGOS"}
+                    {authSubmitting ? "A CRIAR CONTA..." : "CRIAR CONTA"}
                   </button>
-                )}
-                {joinError && (
-                  <p className="text-red-400 text-sm text-center font-bold">
-                    ⚠️ {joinError}
-                  </p>
-                )}
-                {!joinError && disconnected && (
-                  <p className="text-red-400 text-sm text-center font-bold">
-                    ⚠️ Sem ligação ao servidor. Tenta novamente.
-                  </p>
-                )}
-              </div>
-            )}
+                  {authError && (
+                    <p className="text-red-400 text-sm text-center font-bold">
+                      ⚠️ {authError}
+                    </p>
+                  )}
+                  {!authError && disconnected && (
+                    <p className="text-red-400 text-sm text-center font-bold">
+                      ⚠️ Sem ligação ao servidor. Tenta novamente.
+                    </p>
+                  )}
+                </div>
+              )}
+
+              {/* ─── MODE PHASE ────────────────────────── */}
+              {authPhase === "mode" && (
+                <div className="p-8 space-y-5">
+                  <div className="flex items-start justify-between gap-4">
+                    <div>
+                      <p className="text-[10px] text-on-surface-variant uppercase font-black tracking-[0.4em] mb-1">
+                        Sessão autenticada
+                      </p>
+                      <h2 className="text-2xl font-headline font-black text-on-surface tracking-tight">
+                        Escolhe como jogar
+                      </h2>
+                      <p className="text-sm text-zinc-400 font-medium mt-1">
+                        {name} já está autenticado.
+                      </p>
+                    </div>
+                    <button
+                      onClick={resetAuthFlow}
+                      className="shrink-0 text-xs text-on-surface-variant hover:text-on-surface font-black uppercase tracking-widest"
+                    >
+                      Trocar conta
+                    </button>
+                  </div>
+
+                  <div className="grid gap-3 sm:grid-cols-3">
+                    <button
+                      onClick={() => selectJoinMode("new-game")}
+                      className={`rounded-lg border p-4 text-left transition-all ${joinMode === "new-game" ? "border-primary bg-primary/10" : "border-outline-variant/20 bg-surface hover:border-outline-variant"}`}
+                    >
+                      <div className="mb-3 inline-flex h-9 w-9 items-center justify-center rounded bg-primary/15 text-primary">
+                        ✦
+                      </div>
+                      <p className="text-[10px] uppercase tracking-[0.3em] text-primary font-black mb-0.5">
+                        Novo jogo
+                      </p>
+                      <p className="text-sm font-black text-white">Novo jogo</p>
+                      <p className="mt-1 text-xs text-on-surface-variant leading-relaxed">
+                        Começa do zero e recebe uma nova sala.
+                      </p>
+                    </button>
+
+                    <button
+                      onClick={() => selectJoinMode("saved-game")}
+                      className={`rounded-lg border p-4 text-left transition-all ${joinMode === "saved-game" ? "border-primary bg-primary/10" : "border-outline-variant/20 bg-surface hover:border-outline-variant"}`}
+                    >
+                      <div className="mb-3 inline-flex h-9 w-9 items-center justify-center rounded bg-primary/15 text-primary">
+                        ⟲
+                      </div>
+                      <p className="text-[10px] uppercase tracking-[0.3em] text-primary font-black mb-0.5">
+                        Save
+                      </p>
+                      <p className="text-sm font-black text-white">
+                        Continuar jogo
+                      </p>
+                      <p className="mt-1 text-xs text-on-surface-variant leading-relaxed">
+                        Reabre uma época guardada.
+                      </p>
+                    </button>
+
+                    <button
+                      onClick={() => selectJoinMode("friend-room")}
+                      className={`rounded-lg border p-4 text-left transition-all ${joinMode === "friend-room" ? "border-primary bg-primary/10" : "border-outline-variant/20 bg-surface hover:border-outline-variant"}`}
+                    >
+                      <div className="mb-3 inline-flex h-9 w-9 items-center justify-center rounded bg-primary/15 text-primary">
+                        ↗
+                      </div>
+                      <p className="text-[10px] uppercase tracking-[0.3em] text-primary font-black mb-0.5">
+                        Amigos
+                      </p>
+                      <p className="text-sm font-black text-white">
+                        Juntar a amigos
+                      </p>
+                      <p className="mt-1 text-xs text-on-surface-variant leading-relaxed">
+                        Junta-te com um código de sala.
+                      </p>
+                    </button>
+                  </div>
+
+                  {joinMode === "new-game" && (
+                    <div className="space-y-3 rounded-lg border border-primary/30 bg-primary/8 p-4">
+                      <label className="block text-[10px] uppercase text-on-surface-variant mb-2 font-bold tracking-[0.3em]">
+                        Nome do novo jogo
+                      </label>
+                      <input
+                        type="text"
+                        className="w-full bg-surface border border-outline-variant p-4 rounded-sm text-on-surface text-lg font-black outline-none transition-all placeholder:text-on-surface-variant/40 focus:ring-2 focus:ring-primary uppercase"
+                        value={roomCode}
+                        placeholder="INVERNO"
+                        onChange={(e) =>
+                          setRoomCode(e.target.value.toUpperCase())
+                        }
+                        onKeyDown={(e) => {
+                          if (e.key === "Enter") handleJoin();
+                        }}
+                      />
+                      <p className="text-sm font-bold text-on-surface-variant/80">
+                        Ficarás com um clube mágico da 4ª Divisão.
+                      </p>
+                    </div>
+                  )}
+
+                  {joinMode === "saved-game" && (
+                    <div className="space-y-3 rounded-lg border border-primary/20 bg-surface-container p-4">
+                      <label className="block text-[10px] uppercase text-cyan-300 mb-2 font-bold tracking-[0.3em]">
+                        As tuas Salas Gravadas
+                      </label>
+                      {availableSaves.length === 0 ? (
+                        <p className="text-on-surface-variant text-sm mt-2">
+                          Nenhum save encontrado para este treinador.
+                        </p>
+                      ) : (
+                        <div className="space-y-2">
+                          {availableSaves.map((save) => (
+                            <div
+                              key={save.code}
+                              onClick={() => setRoomCode(save.code)}
+                              className={`flex items-center justify-between gap-3 px-4 py-3 rounded-xl border cursor-pointer transition-all ${
+                                roomCode === save.code
+                                  ? "border-cyan-500 bg-cyan-500/15 text-white"
+                                  : "border-outline-variant/20 bg-surface text-on-surface-variant hover:border-outline-variant hover:text-on-surface"
+                              }`}
+                            >
+                              <div className="flex flex-col flex-1 min-w-0">
+                                <span className="font-black text-sm uppercase tracking-widest">
+                                  {save.name}
+                                </span>
+                                <span className="text-xs text-on-surface-variant/60">
+                                  {save.code}
+                                </span>
+                              </div>
+                              <button
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  if (
+                                    !window.confirm(
+                                      `Apagar a sala "${save.name}" permanentemente?`,
+                                    )
+                                  )
+                                    return;
+                                  fetch(
+                                    `${backendUrl}/saves/${encodeURIComponent(save.code)}`,
+                                    {
+                                      method: "DELETE",
+                                      headers: {
+                                        "Content-Type": "application/json",
+                                      },
+                                      body: JSON.stringify({ name, password }),
+                                    },
+                                  )
+                                    .then((r) => r.json())
+                                    .then((data) => {
+                                      if (data.ok) {
+                                        setAvailableSaves((prev) =>
+                                          prev.filter(
+                                            (s) => s.code !== save.code,
+                                          ),
+                                        );
+                                        if (roomCode === save.code)
+                                          setRoomCode("");
+                                      } else {
+                                        alert(
+                                          data.error || "Erro ao apagar sala.",
+                                        );
+                                      }
+                                    })
+                                    .catch(() =>
+                                      alert("Erro de ligação ao servidor."),
+                                    );
+                                }}
+                                className="shrink-0 text-on-surface-variant/50 hover:text-error transition-colors p-1"
+                                title="Apagar sala"
+                              >
+                                🗑️
+                              </button>
+                            </div>
+                          ))}
+                        </div>
+                      )}
+                    </div>
+                  )}
+
+                  {joinMode === "friend-room" && (
+                    <div className="space-y-3 rounded-lg border border-primary/20 bg-surface-container p-4">
+                      <label className="block text-[10px] uppercase text-emerald-300 mb-2 font-bold tracking-[0.3em]">
+                        Código da Sala do Amigo
+                      </label>
+                      <input
+                        type="text"
+                        className="w-full bg-surface border border-outline-variant p-4 rounded-sm text-on-surface text-lg font-black outline-none transition-all placeholder:text-on-surface-variant/40 focus:ring-2 focus:ring-primary uppercase"
+                        value={roomCode}
+                        placeholder="INVERNO"
+                        onChange={(e) =>
+                          setRoomCode(e.target.value.toUpperCase())
+                        }
+                        onKeyDown={(e) => {
+                          if (e.key === "Enter") handleJoin();
+                        }}
+                      />
+                    </div>
+                  )}
+
+                  {joinMode && (
+                    <button
+                      onClick={handleJoin}
+                      disabled={!roomCode || joining}
+                      className={`w-full disabled:bg-surface-container disabled:text-on-surface-variant py-4 rounded font-black text-base uppercase tracking-[0.2em] transition-all active:scale-95 ${joinMode === "new-game" ? "bg-primary hover:brightness-110 text-on-primary" : joinMode === "saved-game" ? "bg-cyan-500 hover:bg-cyan-400 text-zinc-950" : "bg-primary hover:brightness-110 text-on-primary"}`}
+                    >
+                      {joining
+                        ? "A GERAR CONTRATO..."
+                        : joinMode === "new-game"
+                          ? "CRIAR JOGO"
+                          : joinMode === "saved-game"
+                            ? "CONTINUAR JOGO"
+                            : "JUNTAR A AMIGOS"}
+                    </button>
+                  )}
+                  {joinError && (
+                    <p className="text-red-400 text-sm text-center font-bold">
+                      ⚠️ {joinError}
+                    </p>
+                  )}
+                  {!joinError && disconnected && (
+                    <p className="text-red-400 text-sm text-center font-bold">
+                      ⚠️ Sem ligação ao servidor. Tenta novamente.
+                    </p>
+                  )}
+                </div>
+              )}
+            </div>
           </div>
         </div>
+
+        {/* Features strip */}
+        <div className="relative z-10 w-full border-t border-outline-variant/20 bg-surface-container/50 backdrop-blur-sm">
+          <div className="max-w-7xl mx-auto px-6 lg:px-10 py-10">
+            <div className="grid grid-cols-2 lg:grid-cols-4 gap-5">
+              {[
+                {
+                  icon: "🌍",
+                  label: "4 Divisões",
+                  desc: "Primeira Liga, Segunda, Liga 3 e Campeonato de Portugal com promoção e descida.",
+                },
+                {
+                  icon: "👥",
+                  label: "Até 32 Treinadores",
+                  desc: "Multiplayer assíncrono — submete as tácticas quando quiseres, simula em grupo.",
+                },
+                {
+                  icon: "💰",
+                  label: "Finanças & Contratos",
+                  desc: "Gere o orçamento, renegocia contratos e evita a falência do clube.",
+                },
+                {
+                  icon: "⚡",
+                  label: "Simulação ao Vivo",
+                  desc: "Eventos em tempo real via Socket.io, com pausa no intervalo para ajustar tácticas.",
+                },
+              ].map(({ icon, label, desc }) => (
+                <div
+                  key={label}
+                  className="bg-surface border border-outline-variant/20 hover:border-tertiary/30 rounded-xl p-5 transition-all group"
+                >
+                  <div className="w-10 h-10 flex items-center justify-center text-xl bg-surface-container-high rounded-lg mb-4 group-hover:bg-tertiary/10 transition-colors">
+                    {icon}
+                  </div>
+                  <p className="font-headline font-black text-sm text-on-surface mb-1.5 tracking-tight">
+                    {label}
+                  </p>
+                  <p className="text-xs text-on-surface-variant leading-relaxed">
+                    {desc}
+                  </p>
+                </div>
+              ))}
+            </div>
+          </div>
+        </div>
+
+        {/* Footer */}
+        <footer className="relative z-10 border-t border-outline-variant/20 bg-surface py-5">
+          <div className="max-w-7xl mx-auto px-6 lg:px-10 flex items-center justify-between">
+            <span className="text-xs text-on-surface-variant font-bold">
+              ⚽ CashBall 26/27
+            </span>
+            <span className="text-xs text-on-surface-variant/40">
+              © 2026 CashBall Manager
+            </span>
+          </div>
+        </footer>
       </div>
     );
   }
@@ -3437,7 +3647,9 @@ function App() {
                                           <span
                                             className={`truncate max-w-[120px] ${e.type === "goal" || e.type === "penalty_goal" ? "text-primary font-bold" : e.type === "red" ? "text-red-400 font-bold" : "text-on-surface-variant"}`}
                                           >
-                                            <PlayerLink playerId={e.playerId}>{name}</PlayerLink>
+                                            <PlayerLink playerId={e.playerId}>
+                                              {name}
+                                            </PlayerLink>
                                           </span>
                                           {!isHome && (
                                             <span className="shrink-0">
@@ -3913,7 +4125,9 @@ function App() {
                                         <span
                                           className={`font-bold truncate min-w-0 ${e.type === "goal" || e.type === "penalty_goal" ? "text-primary" : e.type === "own_goal" ? "text-orange-400" : e.type === "red" ? "text-red-400" : "text-on-surface-variant/70"}`}
                                         >
-                                          <PlayerLink playerId={e.playerId}>{name}</PlayerLink>
+                                          <PlayerLink playerId={e.playerId}>
+                                            {name}
+                                          </PlayerLink>
                                         </span>
                                       </div>
                                     );
@@ -4108,7 +4322,9 @@ function App() {
                                         <span
                                           className={`font-bold truncate min-w-0 ${e.type === "goal" || e.type === "penalty_goal" ? "text-primary" : e.type === "own_goal" ? "text-orange-400" : e.type === "red" ? "text-red-400" : "text-on-surface-variant/70"}`}
                                         >
-                                          <PlayerLink playerId={e.playerId}>{name}</PlayerLink>
+                                          <PlayerLink playerId={e.playerId}>
+                                            {name}
+                                          </PlayerLink>
                                         </span>
                                         <span className="shrink-0">{icon}</span>
                                         <span className="text-on-surface-variant/40 tabular-nums shrink-0">
@@ -6085,7 +6301,9 @@ function App() {
                                 player.position}
                             </td>
                             <td className="px-3 py-2 text-white text-sm md:text-base whitespace-nowrap">
-                              <PlayerLink playerId={player.id}>{player.name}</PlayerLink>
+                              <PlayerLink playerId={player.id}>
+                                {player.name}
+                              </PlayerLink>
                               {!!player.is_star &&
                                 (player.position === "MED" ||
                                   player.position === "ATA") && (
@@ -6312,7 +6530,9 @@ function App() {
                               player.position}
                           </span>
                           <span className="flex-1 text-white text-sm font-bold truncate">
-                            <PlayerLink playerId={player.id}>{player.name}</PlayerLink>
+                            <PlayerLink playerId={player.id}>
+                              {player.name}
+                            </PlayerLink>
                             {!!player.is_star &&
                               (player.position === "MED" ||
                                 player.position === "ATA") && (
@@ -6525,7 +6745,9 @@ function App() {
                               <td className="px-4 py-2">
                                 <div className="flex items-center gap-2">
                                   <p className="font-bold text-white text-sm leading-tight">
-                                    <PlayerLink playerId={player.id}>{player.name}</PlayerLink>
+                                    <PlayerLink playerId={player.id}>
+                                      {player.name}
+                                    </PlayerLink>
                                     {!!player.is_star &&
                                       (player.position === "MED" ||
                                         player.position === "ATA") && (
@@ -6796,7 +7018,11 @@ function App() {
                                           overflow: "hidden",
                                           textOverflow: "ellipsis",
                                         }}
-                                        onClick={() => socket.emit("requestPlayerHistory", { playerId: player.id })}
+                                        onClick={() =>
+                                          socket.emit("requestPlayerHistory", {
+                                            playerId: player.id,
+                                          })
+                                        }
                                       >
                                         {player.name.split(" ").pop()}
                                       </span>
@@ -7130,7 +7356,9 @@ function App() {
                                 {player.position}
                               </td>
                               <td className="px-4 py-2.5 font-bold text-white">
-                                <PlayerLink playerId={player.id}>{player.name}</PlayerLink>
+                                <PlayerLink playerId={player.id}>
+                                  {player.name}
+                                </PlayerLink>
                                 {!!player.is_star &&
                                   (player.position === "MED" ||
                                     player.position === "ATA") && (
@@ -7310,195 +7538,287 @@ function App() {
           selectedAuctionPlayer ? "translate-y-0" : "-translate-y-full"
         }`}
       >
-        {selectedAuctionPlayer && (() => {
-          const sellerTeam = teams.find((t) => t.id === selectedAuctionPlayer.sellerTeamId);
-          const startingPrice = selectedAuctionPlayer.startingPrice || selectedAuctionPlayer.transfer_price || 0;
-          const isSeller = selectedAuctionPlayer.sellerTeamId === me?.teamId;
-          return (
-            <div className="w-full border-b-2 border-amber-600 shadow-2xl overflow-hidden relative" style={{background: "linear-gradient(90deg, #fbbf24 0%, #fde68a 40%, #fbbf24 60%, #f59e0b 100%)", backgroundSize: "200% 100%", animation: "shimmer 2s linear infinite"}}>
-              <style>{`@keyframes shimmer { 0% { background-position: 200% 0; } 100% { background-position: -200% 0; } }`}</style>
-              {/* ── Collapsed strip — always visible ── */}
-              <button
-                type="button"
-                className="w-full flex items-center gap-3 px-4 py-2.5 text-left relative z-10"
-                onClick={() => setIsAuctionExpanded((v) => !v)}
+        {selectedAuctionPlayer &&
+          (() => {
+            const sellerTeam = teams.find(
+              (t) => t.id === selectedAuctionPlayer.sellerTeamId,
+            );
+            const startingPrice =
+              selectedAuctionPlayer.startingPrice ||
+              selectedAuctionPlayer.transfer_price ||
+              0;
+            const isSeller = selectedAuctionPlayer.sellerTeamId === me?.teamId;
+            return (
+              <div
+                className="w-full border-b-2 border-amber-600 shadow-2xl overflow-hidden relative"
+                style={{
+                  background:
+                    "linear-gradient(90deg, #fbbf24 0%, #fde68a 40%, #fbbf24 60%, #f59e0b 100%)",
+                  backgroundSize: "200% 100%",
+                  animation: "shimmer 2s linear infinite",
+                }}
               >
-                <span className="text-xs font-black uppercase tracking-widest bg-blue-700 text-white px-2 py-0.5 rounded shrink-0 shadow-md animate-pulse">
-                  Leilão
-                </span>
-                <span className="font-black text-zinc-950 truncate drop-shadow-sm">
-                  {selectedAuctionPlayer.name}
-                </span>
-                <span className="text-xs text-zinc-700 shrink-0">
-                  {selectedAuctionPlayer.position} · {selectedAuctionPlayer.skill}
-                </span>
-                <span className="font-black text-zinc-950 text-sm shrink-0 ml-auto">
-                  {formatCurrency(startingPrice)}
-                </span>
-                {auctionResult ? (
-                  <span className="text-xs font-black px-2 py-0.5 rounded shrink-0 ml-auto"
-                    style={{ background: auctionResult.sold ? "#16a34a" : "#7f1d1d", color: "#fff" }}>
-                    {auctionResult.sold
-                      ? `Vendido · ${auctionResult.buyerTeamName} · ${formatCurrency(auctionResult.finalBid)}`
-                      : "Sem licitações"}
+                <style>{`@keyframes shimmer { 0% { background-position: 200% 0; } 100% { background-position: -200% 0; } }`}</style>
+                {/* ── Collapsed strip — always visible ── */}
+                <button
+                  type="button"
+                  className="w-full flex items-center gap-3 px-4 py-2.5 text-left relative z-10"
+                  onClick={() => setIsAuctionExpanded((v) => !v)}
+                >
+                  <span className="text-xs font-black uppercase tracking-widest bg-blue-700 text-white px-2 py-0.5 rounded shrink-0 shadow-md animate-pulse">
+                    Leilão
                   </span>
-                ) : myAuctionBid != null ? (
-                  <span className="text-xs font-black uppercase px-2 py-0.5 rounded bg-emerald-600 text-white shrink-0">
-                    Lance: {formatCurrency(myAuctionBid)}
+                  <span className="font-black text-zinc-950 truncate drop-shadow-sm">
+                    {selectedAuctionPlayer.name}
                   </span>
-                ) : null}
-                <span className="text-zinc-600 text-sm shrink-0 ml-1">
-                  {isAuctionExpanded ? "▲" : "▼"}
-                </span>
-                {!auctionResult && (
-                  <button
-                    type="button"
-                    onClick={(e) => { e.stopPropagation(); closeAuctionBid(); }}
-                    className="text-zinc-600 hover:text-zinc-950 font-bold text-base leading-none px-1 shrink-0"
-                  >
-                    ✕
-                  </button>
-                )}
-              </button>
-
-              {/* ── Expanded panel ── */}
-              {isAuctionExpanded && (
-                <div className="border-t border-amber-500">
-                  {/* Player card */}
-                  <div className="p-3 sm:p-5 space-y-3 text-zinc-950">
-                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-x-6 gap-y-1.5 text-sm">
-                      <div className="flex flex-wrap items-baseline gap-x-2 gap-y-0.5">
-                        <span className="font-normal text-zinc-700 shrink-0">Equipa</span>
-                        <span
-                          className="font-black px-2 py-0.5 rounded text-xs leading-tight uppercase"
-                          style={{
-                            background: sellerTeam?.color_primary || "#1e3a8a",
-                            color: sellerTeam?.color_secondary || "#ffffff",
-                          }}
-                        >
-                          {selectedAuctionPlayer.team_name || "Sem clube"}
-                        </span>
-                      </div>
-                      <div className="flex flex-wrap items-baseline gap-x-2 gap-y-0.5">
-                        <span className="font-normal text-zinc-700 shrink-0">Nacionalidade</span>
-                        <span className="font-bold" title={FLAG_TO_COUNTRY[selectedAuctionPlayer.nationality] || ""}>
-                          {selectedAuctionPlayer.nationality || "—"}
-                        </span>
-                      </div>
-                      <div className="flex flex-wrap items-baseline gap-x-2 gap-y-0.5">
-                        <span className="font-normal text-zinc-700 shrink-0">Jogador</span>
-                        <span className="font-black text-lg leading-tight">{selectedAuctionPlayer.name}</span>
-                      </div>
-                      <div className="flex flex-wrap items-baseline gap-x-2 gap-y-0.5">
-                        <span className="font-normal text-zinc-700 shrink-0">Posição</span>
-                        <span className="font-bold">{selectedAuctionPlayer.position}</span>
-                      </div>
-                      <div className="flex flex-wrap items-baseline gap-x-2 gap-y-0.5">
-                        <span className="font-normal text-zinc-700 shrink-0">Força</span>
-                        <span className="font-black text-xl">{selectedAuctionPlayer.skill}</span>
-                      </div>
-                      <div className="flex flex-wrap items-baseline gap-x-2 gap-y-0.5">
-                        <span className="font-normal text-zinc-700 shrink-0">Agressividade</span>
-                        <span className="font-bold">
-                          <AggBadge value={selectedAuctionPlayer.aggressiveness} />
-                        </span>
-                      </div>
-                      <div className="flex flex-wrap items-baseline gap-x-2 gap-y-0.5">
-                        <span className="font-normal text-zinc-700 shrink-0">Salário pretendido</span>
-                        <span className="font-bold">{formatCurrency(selectedAuctionPlayer.wage || 0)} /sem</span>
-                      </div>
-                      <div className="flex flex-wrap items-baseline gap-x-2 gap-y-0.5">
-                        <span className="font-normal text-zinc-700 shrink-0">Preço base</span>
-                        <span className="font-black">{formatCurrency(startingPrice)}</span>
-                      </div>
-                      {selectedAuctionPlayer.is_star && (
-                        <div className="flex items-center gap-1">
-                          <span className="text-amber-600 font-black">★</span>
-                          <span className="font-bold text-amber-700">Craque</span>
-                        </div>
-                      )}
-                    </div>
-
-                    {/* Historial box */}
-                    <div className="border border-zinc-700 rounded-lg p-3 bg-amber-300/50 text-sm">
-                      <p className="font-bold text-zinc-700 mb-1.5">Historial</p>
-                      <div className="grid grid-cols-2 gap-x-4 gap-y-0.5">
-                        <div className="flex justify-between gap-2">
-                          <span>Jogos</span>
-                          <span className="font-bold">{selectedAuctionPlayer.games_played || 0}</span>
-                        </div>
-                        <div className="flex justify-between gap-2">
-                          <span>Golos</span>
-                          <span className="font-bold">{selectedAuctionPlayer.goals || 0}</span>
-                        </div>
-                        <div className="flex justify-between gap-2">
-                          <span>Vermelhos</span>
-                          <span className="font-bold">{selectedAuctionPlayer.red_cards || 0}</span>
-                        </div>
-                        <div className="flex justify-between gap-2">
-                          <span>Lesões</span>
-                          <span className="font-bold">{selectedAuctionPlayer.injuries || 0}</span>
-                        </div>
-                      </div>
-                    </div>
-                  </div>
-
-                  {/* Bottom section — bid or result */}
+                  <span className="text-xs text-zinc-700 shrink-0">
+                    {selectedAuctionPlayer.position} ·{" "}
+                    {selectedAuctionPlayer.skill}
+                  </span>
+                  <span className="font-black text-zinc-950 text-sm shrink-0 ml-auto">
+                    {formatCurrency(startingPrice)}
+                  </span>
                   {auctionResult ? (
-                    <div className="px-5 py-4 bg-linear-to-r from-amber-500 to-amber-400 border-t-2 border-amber-600 text-zinc-950">
-                      {auctionResult.sold ? (
-                        <p className="font-black text-lg">
-                          Vendido ao <span className="uppercase">{auctionResult.buyerTeamName}</span> por {formatCurrency(auctionResult.finalBid)}
-                        </p>
-                      ) : (
-                        <p className="font-black text-lg">Não recebeu lances e saiu do leilão.</p>
-                      )}
-                      <p className="text-xs text-zinc-700 mt-1 font-medium">A fechar automaticamente...</p>
-                    </div>
+                    <span
+                      className="text-xs font-black px-2 py-0.5 rounded shrink-0 ml-auto"
+                      style={{
+                        background: auctionResult.sold ? "#16a34a" : "#7f1d1d",
+                        color: "#fff",
+                      }}
+                    >
+                      {auctionResult.sold
+                        ? `Vendido · ${auctionResult.buyerTeamName} · ${formatCurrency(auctionResult.finalBid)}`
+                        : "Sem licitações"}
+                    </span>
                   ) : myAuctionBid != null ? (
-                    <div className="px-5 py-4 bg-linear-to-r from-emerald-600 to-emerald-500 border-t-2 border-emerald-700 text-white">
-                      <p className="font-black text-sm uppercase tracking-widest mb-1">Lance registado</p>
-                      <p className="font-black text-2xl font-mono">{formatCurrency(myAuctionBid)}</p>
-                      <p className="text-xs text-emerald-200 mt-1 font-medium">A aguardar o resultado do leilão...</p>
-                    </div>
-                  ) : isSeller ? (
-                    <div className="px-5 py-4 bg-linear-to-r from-emerald-600 to-emerald-500 border-t-2 border-emerald-700 text-white">
-                      <p className="font-black text-sm uppercase tracking-widest mb-1">O teu jogador</p>
-                      <p className="font-black text-2xl font-mono">Em Leilão</p>
-                      <p className="text-xs text-emerald-200 mt-1 font-medium">A aguardar as licitações dos outros treinadores...</p>
-                    </div>
-                  ) : (
-                    <div className="px-4 py-3 sm:px-5 sm:py-4 bg-linear-to-r from-red-600 to-red-500 border-t-2 border-red-700 text-white">
-                      <p className="font-bold text-sm mb-1.5">Oferta (€):</p>
-                      <div className="flex items-center gap-2 mb-2">
-                        <input
-                          type="number"
-                          min="0"
-                          value={auctionBid}
-                          onChange={(e) => setAuctionBid(e.target.value)}
-                          placeholder={String(startingPrice)}
-                          className="flex-1 min-w-0 bg-white border-2 border-zinc-300 rounded-lg px-3 py-2 text-zinc-950 font-mono text-lg outline-none focus:border-amber-500"
-                          autoFocus
-                        />
-                        <button
-                          onClick={submitAuctionBid}
-                          className="shrink-0 bg-emerald-500 hover:bg-emerald-400 text-white font-black uppercase text-sm px-5 py-2.5 rounded-lg flex items-center gap-1.5"
-                        >
-                          <span>✓</span> OK
-                        </button>
-                      </div>
-                      <p className="text-xs text-red-200 font-medium">
-                        Caixa: {formatCurrency(teamInfo?.budget || 0)}
-                        <span className="mx-1.5 opacity-50">·</span>
-                        Lance mais alto vence.
-                      </p>
-                    </div>
+                    <span className="text-xs font-black uppercase px-2 py-0.5 rounded bg-emerald-600 text-white shrink-0">
+                      Lance: {formatCurrency(myAuctionBid)}
+                    </span>
+                  ) : null}
+                  <span className="text-zinc-600 text-sm shrink-0 ml-1">
+                    {isAuctionExpanded ? "▲" : "▼"}
+                  </span>
+                  {!auctionResult && (
+                    <button
+                      type="button"
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        closeAuctionBid();
+                      }}
+                      className="text-zinc-600 hover:text-zinc-950 font-bold text-base leading-none px-1 shrink-0"
+                    >
+                      ✕
+                    </button>
                   )}
-                </div>
-              )}
-            </div>
-          );
-        })()}
+                </button>
+
+                {/* ── Expanded panel ── */}
+                {isAuctionExpanded && (
+                  <div className="border-t border-amber-500">
+                    {/* Player card */}
+                    <div className="p-3 sm:p-5 space-y-3 text-zinc-950">
+                      <div className="grid grid-cols-1 sm:grid-cols-2 gap-x-6 gap-y-1.5 text-sm">
+                        <div className="flex flex-wrap items-baseline gap-x-2 gap-y-0.5">
+                          <span className="font-normal text-zinc-700 shrink-0">
+                            Equipa
+                          </span>
+                          <span
+                            className="font-black px-2 py-0.5 rounded text-xs leading-tight uppercase"
+                            style={{
+                              background:
+                                sellerTeam?.color_primary || "#1e3a8a",
+                              color: sellerTeam?.color_secondary || "#ffffff",
+                            }}
+                          >
+                            {selectedAuctionPlayer.team_name || "Sem clube"}
+                          </span>
+                        </div>
+                        <div className="flex flex-wrap items-baseline gap-x-2 gap-y-0.5">
+                          <span className="font-normal text-zinc-700 shrink-0">
+                            Nacionalidade
+                          </span>
+                          <span
+                            className="font-bold"
+                            title={
+                              FLAG_TO_COUNTRY[
+                                selectedAuctionPlayer.nationality
+                              ] || ""
+                            }
+                          >
+                            {selectedAuctionPlayer.nationality || "—"}
+                          </span>
+                        </div>
+                        <div className="flex flex-wrap items-baseline gap-x-2 gap-y-0.5">
+                          <span className="font-normal text-zinc-700 shrink-0">
+                            Jogador
+                          </span>
+                          <span className="font-black text-lg leading-tight">
+                            {selectedAuctionPlayer.name}
+                          </span>
+                        </div>
+                        <div className="flex flex-wrap items-baseline gap-x-2 gap-y-0.5">
+                          <span className="font-normal text-zinc-700 shrink-0">
+                            Posição
+                          </span>
+                          <span className="font-bold">
+                            {selectedAuctionPlayer.position}
+                          </span>
+                        </div>
+                        <div className="flex flex-wrap items-baseline gap-x-2 gap-y-0.5">
+                          <span className="font-normal text-zinc-700 shrink-0">
+                            Força
+                          </span>
+                          <span className="font-black text-xl">
+                            {selectedAuctionPlayer.skill}
+                          </span>
+                        </div>
+                        <div className="flex flex-wrap items-baseline gap-x-2 gap-y-0.5">
+                          <span className="font-normal text-zinc-700 shrink-0">
+                            Agressividade
+                          </span>
+                          <span className="font-bold">
+                            <AggBadge
+                              value={selectedAuctionPlayer.aggressiveness}
+                            />
+                          </span>
+                        </div>
+                        <div className="flex flex-wrap items-baseline gap-x-2 gap-y-0.5">
+                          <span className="font-normal text-zinc-700 shrink-0">
+                            Salário pretendido
+                          </span>
+                          <span className="font-bold">
+                            {formatCurrency(selectedAuctionPlayer.wage || 0)}{" "}
+                            /sem
+                          </span>
+                        </div>
+                        <div className="flex flex-wrap items-baseline gap-x-2 gap-y-0.5">
+                          <span className="font-normal text-zinc-700 shrink-0">
+                            Preço base
+                          </span>
+                          <span className="font-black">
+                            {formatCurrency(startingPrice)}
+                          </span>
+                        </div>
+                        {selectedAuctionPlayer.is_star && (
+                          <div className="flex items-center gap-1">
+                            <span className="text-amber-600 font-black">★</span>
+                            <span className="font-bold text-amber-700">
+                              Craque
+                            </span>
+                          </div>
+                        )}
+                      </div>
+
+                      {/* Historial box */}
+                      <div className="border border-zinc-700 rounded-lg p-3 bg-amber-300/50 text-sm">
+                        <p className="font-bold text-zinc-700 mb-1.5">
+                          Historial
+                        </p>
+                        <div className="grid grid-cols-2 gap-x-4 gap-y-0.5">
+                          <div className="flex justify-between gap-2">
+                            <span>Jogos</span>
+                            <span className="font-bold">
+                              {selectedAuctionPlayer.games_played || 0}
+                            </span>
+                          </div>
+                          <div className="flex justify-between gap-2">
+                            <span>Golos</span>
+                            <span className="font-bold">
+                              {selectedAuctionPlayer.goals || 0}
+                            </span>
+                          </div>
+                          <div className="flex justify-between gap-2">
+                            <span>Vermelhos</span>
+                            <span className="font-bold">
+                              {selectedAuctionPlayer.red_cards || 0}
+                            </span>
+                          </div>
+                          <div className="flex justify-between gap-2">
+                            <span>Lesões</span>
+                            <span className="font-bold">
+                              {selectedAuctionPlayer.injuries || 0}
+                            </span>
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+
+                    {/* Bottom section — bid or result */}
+                    {auctionResult ? (
+                      <div className="px-5 py-4 bg-linear-to-r from-amber-500 to-amber-400 border-t-2 border-amber-600 text-zinc-950">
+                        {auctionResult.sold ? (
+                          <p className="font-black text-lg">
+                            Vendido ao{" "}
+                            <span className="uppercase">
+                              {auctionResult.buyerTeamName}
+                            </span>{" "}
+                            por {formatCurrency(auctionResult.finalBid)}
+                          </p>
+                        ) : (
+                          <p className="font-black text-lg">
+                            Não recebeu lances e saiu do leilão.
+                          </p>
+                        )}
+                        <p className="text-xs text-zinc-700 mt-1 font-medium">
+                          A fechar automaticamente...
+                        </p>
+                      </div>
+                    ) : myAuctionBid != null ? (
+                      <div className="px-5 py-4 bg-linear-to-r from-emerald-600 to-emerald-500 border-t-2 border-emerald-700 text-white">
+                        <p className="font-black text-sm uppercase tracking-widest mb-1">
+                          Lance registado
+                        </p>
+                        <p className="font-black text-2xl font-mono">
+                          {formatCurrency(myAuctionBid)}
+                        </p>
+                        <p className="text-xs text-emerald-200 mt-1 font-medium">
+                          A aguardar o resultado do leilão...
+                        </p>
+                      </div>
+                    ) : isSeller ? (
+                      <div className="px-5 py-4 bg-linear-to-r from-emerald-600 to-emerald-500 border-t-2 border-emerald-700 text-white">
+                        <p className="font-black text-sm uppercase tracking-widest mb-1">
+                          O teu jogador
+                        </p>
+                        <p className="font-black text-2xl font-mono">
+                          Em Leilão
+                        </p>
+                        <p className="text-xs text-emerald-200 mt-1 font-medium">
+                          A aguardar as licitações dos outros treinadores...
+                        </p>
+                      </div>
+                    ) : (
+                      <div className="px-4 py-3 sm:px-5 sm:py-4 bg-linear-to-r from-red-600 to-red-500 border-t-2 border-red-700 text-white">
+                        <p className="font-bold text-sm mb-1.5">Oferta (€):</p>
+                        <div className="flex items-center gap-2 mb-2">
+                          <input
+                            type="number"
+                            min="0"
+                            value={auctionBid}
+                            onChange={(e) => setAuctionBid(e.target.value)}
+                            placeholder={String(startingPrice)}
+                            className="flex-1 min-w-0 bg-white border-2 border-zinc-300 rounded-lg px-3 py-2 text-zinc-950 font-mono text-lg outline-none focus:border-amber-500"
+                            autoFocus
+                          />
+                          <button
+                            onClick={submitAuctionBid}
+                            className="shrink-0 bg-emerald-500 hover:bg-emerald-400 text-white font-black uppercase text-sm px-5 py-2.5 rounded-lg flex items-center gap-1.5"
+                          >
+                            <span>✓</span> OK
+                          </button>
+                        </div>
+                        <p className="text-xs text-red-200 font-medium">
+                          Caixa: {formatCurrency(teamInfo?.budget || 0)}
+                          <span className="mx-1.5 opacity-50">·</span>
+                          Lance mais alto vence.
+                        </p>
+                      </div>
+                    )}
+                  </div>
+                )}
+              </div>
+            );
+          })()}
       </div>
 
       {refereePopup && (
@@ -8047,7 +8367,9 @@ function App() {
                                   ↑
                                 </span>
                                 <span className="flex-1 truncate text-xs font-bold text-zinc-300">
-                                  <PlayerLink playerId={p.id}>{p.name}</PlayerLink>
+                                  <PlayerLink playerId={p.id}>
+                                    {p.name}
+                                  </PlayerLink>
                                 </span>
                                 {p.goals > 0 && (
                                   <span className="text-[10px]">
@@ -8103,7 +8425,9 @@ function App() {
                                   color: teamInfo?.color_primary || "#d4d4d8",
                                 }}
                               >
-                                <PlayerLink playerId={e.playerId}>{e.playerName || e.player_name || ""}</PlayerLink>
+                                <PlayerLink playerId={e.playerId}>
+                                  {e.playerName || e.player_name || ""}
+                                </PlayerLink>
                               </span>
                               <span
                                 className="text-[9px] font-black uppercase tracking-widest shrink-0"
@@ -8320,14 +8644,18 @@ function App() {
             <div
               key={newsTickerItems.length}
               className="absolute whitespace-nowrap flex items-center h-full gap-8 text-xs text-zinc-200"
-              style={{ animation: `tickerScroll ${Math.max(15, newsTickerItems.length * 8)}s linear` }}
+              style={{
+                animation: `tickerScroll ${Math.max(15, newsTickerItems.length * 8)}s linear`,
+              }}
             >
               {newsTickerItems.map((item) => {
                 const dotColor = getTeamColor(item.teamId);
                 if (!item.playerId || !item.playerName) {
                   return (
                     <span key={item.id}>
-                      <span className="mr-2" style={{ color: dotColor }}>◆</span>
+                      <span className="mr-2" style={{ color: dotColor }}>
+                        ◆
+                      </span>
                       {item.text}
                     </span>
                   );
@@ -8335,12 +8663,18 @@ function App() {
                 const parts = item.text.split(item.playerName);
                 return (
                   <span key={item.id}>
-                    <span className="mr-2" style={{ color: dotColor }}>◆</span>
+                    <span className="mr-2" style={{ color: dotColor }}>
+                      ◆
+                    </span>
                     {parts[0]}
                     <button
                       type="button"
                       className="text-amber-400 hover:text-amber-300 underline underline-offset-2 cursor-pointer font-semibold"
-                      onClick={() => socket.emit("requestPlayerHistory", { playerId: item.playerId })}
+                      onClick={() =>
+                        socket.emit("requestPlayerHistory", {
+                          playerId: item.playerId,
+                        })
+                      }
                     >
                       {item.playerName}
                     </button>
@@ -8354,243 +8688,301 @@ function App() {
       )}
 
       {/* ── Player history modal ──────────────────────────────────────────────── */}
-      {playerHistoryModal && (() => {
-        const { player, transfers } = playerHistoryModal;
-        if (!player) return null;
-        const positionLabels = { GK: "Guarda-redes", DEF: "Defesa", MID: "Médio", ATT: "Avançado" };
-        return (
-          <div
-            className="fixed inset-0 z-200 flex items-center justify-center bg-black/70 p-4"
-            onClick={() => setPlayerHistoryModal(null)}
-          >
+      {playerHistoryModal &&
+        (() => {
+          const { player, transfers } = playerHistoryModal;
+          if (!player) return null;
+          const positionLabels = {
+            GK: "Guarda-redes",
+            DEF: "Defesa",
+            MID: "Médio",
+            ATT: "Avançado",
+          };
+          return (
             <div
-              className="bg-zinc-900 border border-zinc-700 rounded-2xl w-full max-w-lg shadow-2xl overflow-hidden"
-              onClick={(e) => e.stopPropagation()}
+              className="fixed inset-0 z-200 flex items-center justify-center bg-black/70 p-4"
+              onClick={() => setPlayerHistoryModal(null)}
             >
-              {/* Header */}
-              <div className="flex items-center justify-between px-6 py-4 border-b border-zinc-700 bg-zinc-800">
-                <div>
-                  <div className="flex items-center gap-2">
-                    {player.is_star === 1 && <span className="text-amber-400 text-sm">★</span>}
-                    <span className="font-black text-white text-lg">{player.name}</span>
-                  </div>
-                  <div className="text-zinc-400 text-xs mt-0.5">
-                    {positionLabels[player.position] || player.position} · {player.nationality} · {player.age} anos
-                  </div>
-                </div>
-                <button
-                  type="button"
-                  className="text-zinc-400 hover:text-white text-xl leading-none"
-                  onClick={() => setPlayerHistoryModal(null)}
-                >
-                  ✕
-                </button>
-              </div>
-
-              {/* Stats */}
-              <div className="grid grid-cols-4 gap-0 border-b border-zinc-700">
-                {[
-                  { label: "Skill", value: player.skill },
-                  { label: "Golos", value: player.career_goals ?? player.goals ?? 0 },
-                  { label: "Vermelhos", value: player.career_reds ?? player.red_cards ?? 0 },
-                  { label: "Lesões", value: player.career_injuries ?? player.injuries ?? 0 },
-                ].map(({ label, value }) => (
-                  <div key={label} className="flex flex-col items-center py-3 border-r border-zinc-700 last:border-r-0">
-                    <span className="text-white font-black text-lg">{value}</span>
-                    <span className="text-zinc-500 text-xs">{label}</span>
-                  </div>
-                ))}
-              </div>
-
-              {/* Current club + value */}
-              <div className="flex items-center justify-between px-6 py-3 border-b border-zinc-700 text-sm">
-                <span className="text-zinc-400">Clube actual</span>
-                <span className="text-white font-semibold">{player.team_name || "Sem clube"}</span>
-              </div>
-              <div className="flex items-center justify-between px-6 py-3 border-b border-zinc-700 text-sm">
-                <span className="text-zinc-400">Valor de mercado</span>
-                <span className="text-amber-400 font-semibold">{formatCurrency(player.value || 0)}</span>
-              </div>
-
-              {/* Transfer history */}
-              <div className="px-6 py-4">
-                <div className="text-zinc-400 text-xs uppercase tracking-widest mb-3 font-semibold">
-                  Historial de transferências
-                </div>
-                {transfers.length === 0 ? (
-                  <div className="text-zinc-600 text-sm italic">Sem transferências registadas</div>
-                ) : (
-                  <div className="space-y-2">
-                    {transfers.map((t, i) => (
-                      <div key={i} className="flex items-center gap-3 text-sm">
-                        <span className="text-zinc-500 shrink-0 w-16 text-xs">
-                          Ano {t.year}{t.matchweek ? ` · J${t.matchweek}` : ""}
-                        </span>
-                        <span className="text-zinc-400 shrink-0 text-xs">
-                          {t.related_team_name || "—"} →
-                        </span>
-                        <span className="text-white font-semibold truncate">{t.team_name || "?"}</span>
-                        {t.amount > 0 && (
-                          <span className="text-amber-400 text-xs shrink-0 ml-auto">
-                            {formatCurrency(t.amount)}
-                          </span>
-                        )}
-                      </div>
-                    ))}
-                  </div>
-                )}
-              </div>
-            </div>
-          </div>
-        );
-      })()}
-
-      {/* ── CHAT WIDGET ────────────────────────────────────────────────────── */}
-      {me && (() => {
-        const totalUnread = unreadRoom + unreadGlobal;
-        const activeMessages = activeChatTab === "room" ? roomMessages : globalMessages;
-        const sendChat = () => {
-          const trimmed = chatInput.trim();
-          if (!trimmed) return;
-          socket.emit("sendChatMessage", { channel: activeChatTab, message: trimmed });
-          setChatInput("");
-        };
-        const formatChatTime = (ts) => {
-          const d = new Date(ts);
-          return d.toLocaleTimeString("pt-PT", { hour: "2-digit", minute: "2-digit" });
-        };
-        return (
-          <div className="fixed bottom-4 right-4 z-50 flex flex-col items-end gap-2">
-            {/* Expanded panel */}
-            {chatOpen && (
               <div
-                className="flex flex-col rounded-xl shadow-2xl overflow-hidden border border-outline-variant/40"
-                style={{ width: 340, height: 430, background: "#1a1a1a" }}
+                className="bg-zinc-900 border border-zinc-700 rounded-2xl w-full max-w-lg shadow-2xl overflow-hidden"
+                onClick={(e) => e.stopPropagation()}
               >
                 {/* Header */}
-                <div
-                  className="flex items-center justify-between px-4 py-2.5 shrink-0"
-                  style={{ background: "#111" }}
-                >
-                  <span className="text-sm font-black uppercase tracking-widest text-on-surface">Chat</span>
+                <div className="flex items-center justify-between px-6 py-4 border-b border-zinc-700 bg-zinc-800">
+                  <div>
+                    <div className="flex items-center gap-2">
+                      {player.is_star === 1 && (
+                        <span className="text-amber-400 text-sm">★</span>
+                      )}
+                      <span className="font-black text-white text-lg">
+                        {player.name}
+                      </span>
+                    </div>
+                    <div className="text-zinc-400 text-xs mt-0.5">
+                      {positionLabels[player.position] || player.position} ·{" "}
+                      {player.nationality} · {player.age} anos
+                    </div>
+                  </div>
                   <button
-                    onClick={() => setChatOpen(false)}
-                    className="text-on-surface-variant hover:text-on-surface transition-colors"
+                    type="button"
+                    className="text-zinc-400 hover:text-white text-xl leading-none"
+                    onClick={() => setPlayerHistoryModal(null)}
                   >
-                    <span className="material-symbols-outlined text-[18px] leading-none">close</span>
+                    ✕
                   </button>
                 </div>
 
-                {/* Tabs */}
-                <div className="flex shrink-0 border-b border-outline-variant/20" style={{ background: "#111" }}>
+                {/* Stats */}
+                <div className="grid grid-cols-4 gap-0 border-b border-zinc-700">
                   {[
-                    { key: "room", label: "Sala", unread: unreadRoom },
-                    { key: "global", label: "Global", unread: unreadGlobal },
-                  ].map(({ key, label, unread }) => (
-                    <button
-                      key={key}
-                      onClick={() => setActiveChatTab(key)}
-                      className={`flex-1 py-2 text-xs font-black uppercase tracking-widest transition-colors relative ${
-                        activeChatTab === key
-                          ? "text-primary border-b-2 border-primary"
-                          : "text-on-surface-variant hover:text-on-surface"
-                      }`}
+                    { label: "Skill", value: player.skill },
+                    {
+                      label: "Golos",
+                      value: player.career_goals ?? player.goals ?? 0,
+                    },
+                    {
+                      label: "Vermelhos",
+                      value: player.career_reds ?? player.red_cards ?? 0,
+                    },
+                    {
+                      label: "Lesões",
+                      value: player.career_injuries ?? player.injuries ?? 0,
+                    },
+                  ].map(({ label, value }) => (
+                    <div
+                      key={label}
+                      className="flex flex-col items-center py-3 border-r border-zinc-700 last:border-r-0"
                     >
-                      {label}
-                      {unread > 0 && (
-                        <span className="ml-1.5 inline-flex items-center justify-center rounded-full bg-rose-500 text-white text-[9px] font-black leading-none px-1.5 py-0.5">
-                          {unread > 9 ? "9+" : unread}
-                        </span>
-                      )}
-                    </button>
+                      <span className="text-white font-black text-lg">
+                        {value}
+                      </span>
+                      <span className="text-zinc-500 text-xs">{label}</span>
+                    </div>
                   ))}
                 </div>
 
-                {/* Messages */}
-                <div
-                  ref={chatMessagesRef}
-                  className="flex-1 overflow-y-auto px-3 py-3 space-y-2"
-                  style={{ scrollBehavior: "smooth" }}
-                >
-                  {activeMessages.length === 0 ? (
-                    <p className="text-center text-on-surface-variant text-xs italic mt-8">
-                      {activeChatTab === "room" ? "Nenhuma mensagem nesta sala ainda." : "Nenhuma mensagem global ainda."}
-                    </p>
+                {/* Current club + value */}
+                <div className="flex items-center justify-between px-6 py-3 border-b border-zinc-700 text-sm">
+                  <span className="text-zinc-400">Clube actual</span>
+                  <span className="text-white font-semibold">
+                    {player.team_name || "Sem clube"}
+                  </span>
+                </div>
+                <div className="flex items-center justify-between px-6 py-3 border-b border-zinc-700 text-sm">
+                  <span className="text-zinc-400">Valor de mercado</span>
+                  <span className="text-amber-400 font-semibold">
+                    {formatCurrency(player.value || 0)}
+                  </span>
+                </div>
+
+                {/* Transfer history */}
+                <div className="px-6 py-4">
+                  <div className="text-zinc-400 text-xs uppercase tracking-widest mb-3 font-semibold">
+                    Historial de transferências
+                  </div>
+                  {transfers.length === 0 ? (
+                    <div className="text-zinc-600 text-sm italic">
+                      Sem transferências registadas
+                    </div>
                   ) : (
-                    activeMessages.map((msg) => {
-                      const isOwn = msg.coachName === me.name;
-                      return (
+                    <div className="space-y-2">
+                      {transfers.map((t, i) => (
                         <div
-                          key={msg.id}
-                          className={`flex flex-col gap-0.5 ${isOwn ? "items-end" : "items-start"}`}
+                          key={i}
+                          className="flex items-center gap-3 text-sm"
                         >
-                          {!isOwn && (
-                            <span className="text-[10px] text-on-surface-variant font-semibold px-1">
-                              {msg.coachName}
+                          <span className="text-zinc-500 shrink-0 w-16 text-xs">
+                            Ano {t.year}
+                            {t.matchweek ? ` · J${t.matchweek}` : ""}
+                          </span>
+                          <span className="text-zinc-400 shrink-0 text-xs">
+                            {t.related_team_name || "—"} →
+                          </span>
+                          <span className="text-white font-semibold truncate">
+                            {t.team_name || "?"}
+                          </span>
+                          {t.amount > 0 && (
+                            <span className="text-amber-400 text-xs shrink-0 ml-auto">
+                              {formatCurrency(t.amount)}
                             </span>
                           )}
-                          <div
-                            className={`max-w-[80%] px-3 py-1.5 rounded-xl text-sm leading-snug ${
-                              isOwn
-                                ? "bg-primary text-on-primary rounded-br-sm"
-                                : "bg-surface-container text-on-surface rounded-bl-sm"
-                            }`}
-                          >
-                            {msg.message}
-                          </div>
-                          <span className="text-[9px] text-on-surface-variant px-1">
-                            {formatChatTime(msg.timestamp)}
-                          </span>
                         </div>
-                      );
-                    })
+                      ))}
+                    </div>
                   )}
                 </div>
-
-                {/* Input */}
-                <div
-                  className="flex items-center gap-2 px-3 py-2.5 shrink-0 border-t border-outline-variant/20"
-                  style={{ background: "#111" }}
-                >
-                  <input
-                    type="text"
-                    value={chatInput}
-                    onChange={(e) => setChatInput(e.target.value)}
-                    onKeyDown={(e) => { if (e.key === "Enter") sendChat(); }}
-                    placeholder="Escreve uma mensagem…"
-                    maxLength={500}
-                    className="flex-1 bg-surface-container text-on-surface text-sm px-3 py-1.5 rounded-lg outline-none placeholder:text-on-surface-variant/50 border border-outline-variant/30 focus:border-primary/60 transition-colors"
-                  />
-                  <button
-                    onClick={sendChat}
-                    disabled={!chatInput.trim()}
-                    className="shrink-0 p-1.5 rounded-lg bg-primary text-on-primary disabled:opacity-30 hover:opacity-90 transition-opacity"
-                  >
-                    <span className="material-symbols-outlined text-[18px] leading-none">send</span>
-                  </button>
-                </div>
               </div>
-            )}
+            </div>
+          );
+        })()}
 
-            {/* Toggle button */}
-            <button
-              onClick={() => setChatOpen((o) => !o)}
-              className="relative flex items-center justify-center w-12 h-12 rounded-full shadow-xl transition-all hover:scale-105 active:scale-95"
-              style={{ background: chatOpen ? "#3b3b3b" : "#2563eb" }}
-              title="Chat"
-            >
-              <span className="material-symbols-outlined text-white text-[22px] leading-none">
-                {chatOpen ? "close" : "chat"}
-              </span>
-              {!chatOpen && totalUnread > 0 && (
-                <span className="absolute -top-1 -right-1 flex items-center justify-center rounded-full bg-rose-500 text-white text-[9px] font-black leading-none min-w-[18px] h-[18px] px-1">
-                  {totalUnread > 9 ? "9+" : totalUnread}
-                </span>
+      {/* ── CHAT WIDGET ────────────────────────────────────────────────────── */}
+      {me &&
+        (() => {
+          const totalUnread = unreadRoom + unreadGlobal;
+          const activeMessages =
+            activeChatTab === "room" ? roomMessages : globalMessages;
+          const sendChat = () => {
+            const trimmed = chatInput.trim();
+            if (!trimmed) return;
+            socket.emit("sendChatMessage", {
+              channel: activeChatTab,
+              message: trimmed,
+            });
+            setChatInput("");
+          };
+          const formatChatTime = (ts) => {
+            const d = new Date(ts);
+            return d.toLocaleTimeString("pt-PT", {
+              hour: "2-digit",
+              minute: "2-digit",
+            });
+          };
+          return (
+            <div className="fixed bottom-4 right-4 z-50 flex flex-col items-end gap-2">
+              {/* Expanded panel */}
+              {chatOpen && (
+                <div
+                  className="flex flex-col rounded-xl shadow-2xl overflow-hidden border border-outline-variant/40"
+                  style={{ width: 340, height: 430, background: "#1a1a1a" }}
+                >
+                  {/* Header */}
+                  <div
+                    className="flex items-center justify-between px-4 py-2.5 shrink-0"
+                    style={{ background: "#111" }}
+                  >
+                    <span className="text-sm font-black uppercase tracking-widest text-on-surface">
+                      Chat
+                    </span>
+                    <button
+                      onClick={() => setChatOpen(false)}
+                      className="text-on-surface-variant hover:text-on-surface transition-colors"
+                    >
+                      <span className="material-symbols-outlined text-[18px] leading-none">
+                        close
+                      </span>
+                    </button>
+                  </div>
+
+                  {/* Tabs */}
+                  <div
+                    className="flex shrink-0 border-b border-outline-variant/20"
+                    style={{ background: "#111" }}
+                  >
+                    {[
+                      { key: "room", label: "Sala", unread: unreadRoom },
+                      { key: "global", label: "Global", unread: unreadGlobal },
+                    ].map(({ key, label, unread }) => (
+                      <button
+                        key={key}
+                        onClick={() => setActiveChatTab(key)}
+                        className={`flex-1 py-2 text-xs font-black uppercase tracking-widest transition-colors relative ${
+                          activeChatTab === key
+                            ? "text-primary border-b-2 border-primary"
+                            : "text-on-surface-variant hover:text-on-surface"
+                        }`}
+                      >
+                        {label}
+                        {unread > 0 && (
+                          <span className="ml-1.5 inline-flex items-center justify-center rounded-full bg-rose-500 text-white text-[9px] font-black leading-none px-1.5 py-0.5">
+                            {unread > 9 ? "9+" : unread}
+                          </span>
+                        )}
+                      </button>
+                    ))}
+                  </div>
+
+                  {/* Messages */}
+                  <div
+                    ref={chatMessagesRef}
+                    className="flex-1 overflow-y-auto px-3 py-3 space-y-2"
+                    style={{ scrollBehavior: "smooth" }}
+                  >
+                    {activeMessages.length === 0 ? (
+                      <p className="text-center text-on-surface-variant text-xs italic mt-8">
+                        {activeChatTab === "room"
+                          ? "Nenhuma mensagem nesta sala ainda."
+                          : "Nenhuma mensagem global ainda."}
+                      </p>
+                    ) : (
+                      activeMessages.map((msg) => {
+                        const isOwn = msg.coachName === me.name;
+                        return (
+                          <div
+                            key={msg.id}
+                            className={`flex flex-col gap-0.5 ${isOwn ? "items-end" : "items-start"}`}
+                          >
+                            {!isOwn && (
+                              <span className="text-[10px] text-on-surface-variant font-semibold px-1">
+                                {msg.coachName}
+                              </span>
+                            )}
+                            <div
+                              className={`max-w-[80%] px-3 py-1.5 rounded-xl text-sm leading-snug ${
+                                isOwn
+                                  ? "bg-primary text-on-primary rounded-br-sm"
+                                  : "bg-surface-container text-on-surface rounded-bl-sm"
+                              }`}
+                            >
+                              {msg.message}
+                            </div>
+                            <span className="text-[9px] text-on-surface-variant px-1">
+                              {formatChatTime(msg.timestamp)}
+                            </span>
+                          </div>
+                        );
+                      })
+                    )}
+                  </div>
+
+                  {/* Input */}
+                  <div
+                    className="flex items-center gap-2 px-3 py-2.5 shrink-0 border-t border-outline-variant/20"
+                    style={{ background: "#111" }}
+                  >
+                    <input
+                      type="text"
+                      value={chatInput}
+                      onChange={(e) => setChatInput(e.target.value)}
+                      onKeyDown={(e) => {
+                        if (e.key === "Enter") sendChat();
+                      }}
+                      placeholder="Escreve uma mensagem…"
+                      maxLength={500}
+                      className="flex-1 bg-surface-container text-on-surface text-sm px-3 py-1.5 rounded-lg outline-none placeholder:text-on-surface-variant/50 border border-outline-variant/30 focus:border-primary/60 transition-colors"
+                    />
+                    <button
+                      onClick={sendChat}
+                      disabled={!chatInput.trim()}
+                      className="shrink-0 p-1.5 rounded-lg bg-primary text-on-primary disabled:opacity-30 hover:opacity-90 transition-opacity"
+                    >
+                      <span className="material-symbols-outlined text-[18px] leading-none">
+                        send
+                      </span>
+                    </button>
+                  </div>
+                </div>
               )}
-            </button>
-          </div>
-        );
-      })()}
+
+              {/* Toggle button */}
+              <button
+                onClick={() => setChatOpen((o) => !o)}
+                className="relative flex items-center justify-center w-12 h-12 rounded-full shadow-xl transition-all hover:scale-105 active:scale-95"
+                style={{ background: chatOpen ? "#3b3b3b" : "#2563eb" }}
+                title="Chat"
+              >
+                <span className="material-symbols-outlined text-white text-[22px] leading-none">
+                  {chatOpen ? "close" : "chat"}
+                </span>
+                {!chatOpen && totalUnread > 0 && (
+                  <span className="absolute -top-1 -right-1 flex items-center justify-center rounded-full bg-rose-500 text-white text-[9px] font-black leading-none min-w-[18px] h-[18px] px-1">
+                    {totalUnread > 9 ? "9+" : totalUnread}
+                  </span>
+                )}
+              </button>
+            </div>
+          );
+        })()}
     </div>
   );
 }
