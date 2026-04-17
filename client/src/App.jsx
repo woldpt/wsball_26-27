@@ -6881,7 +6881,7 @@ function App() {
                             <div
                               className="relative w-full"
                               style={{
-                                aspectRatio: "16/9",
+                                aspectRatio: "16/7",
                                 background:
                                   "linear-gradient(180deg, #05430e 0%, #0b5e1a 50%, #05430e 100%)",
                               }}
@@ -7038,104 +7038,6 @@ function App() {
                             </div>
                           );
                         })()}
-
-                        {/* Tactical 3-column bar */}
-                        <div className="grid grid-cols-3 border-t border-outline-variant/15">
-                          {/* Em Posse */}
-                          <div className="px-3 py-3 border-r border-outline-variant/10">
-                            <p className="text-[7.5px] font-black uppercase tracking-[0.2em] text-primary/70 mb-2">
-                              Em Posse
-                            </p>
-                            <div className="space-y-1.5">
-                              <div className="flex justify-between items-center">
-                                <span className="text-[9px] text-on-surface-variant/70">
-                                  Largura
-                                </span>
-                                <span className="text-[9px] font-black text-on-surface">
-                                  {tactic.style === "Offensive"
-                                    ? "Alta"
-                                    : tactic.style === "Defensive"
-                                      ? "Baixa"
-                                      : "Média"}
-                                </span>
-                              </div>
-                              <div className="flex justify-between items-center">
-                                <span className="text-[9px] text-on-surface-variant/70">
-                                  Tempo
-                                </span>
-                                <span className="text-[9px] font-black text-on-surface">
-                                  {tactic.style === "Offensive"
-                                    ? "Rápido"
-                                    : tactic.style === "Defensive"
-                                      ? "Lento"
-                                      : "Normal"}
-                                </span>
-                              </div>
-                            </div>
-                          </div>
-                          {/* Em Transição */}
-                          <div className="px-3 py-3 border-r border-outline-variant/10">
-                            <p className="text-[7.5px] font-black uppercase tracking-[0.2em] text-tertiary/70 mb-2">
-                              Em Transição
-                            </p>
-                            <div className="space-y-1.5">
-                              <div className="flex justify-between items-center">
-                                <span className="text-[9px] text-on-surface-variant/70">
-                                  Perda
-                                </span>
-                                <span className="text-[9px] font-black text-on-surface">
-                                  {tactic.style === "Defensive"
-                                    ? "Bloco Baixo"
-                                    : tactic.style === "Offensive"
-                                      ? "Alta Press."
-                                      : "Press. Méd."}
-                                </span>
-                              </div>
-                              <div className="flex justify-between items-center">
-                                <span className="text-[9px] text-on-surface-variant/70">
-                                  Ganho
-                                </span>
-                                <span className="text-[9px] font-black text-on-surface">
-                                  {tactic.style === "Offensive"
-                                    ? "Rápido"
-                                    : "Construção"}
-                                </span>
-                              </div>
-                            </div>
-                          </div>
-                          {/* Sem Posse */}
-                          <div className="px-3 py-3">
-                            <p className="text-[7.5px] font-black uppercase tracking-[0.2em] text-on-surface-variant/50 mb-2">
-                              Sem Posse
-                            </p>
-                            <div className="space-y-1.5">
-                              <div className="flex justify-between items-center">
-                                <span className="text-[9px] text-on-surface-variant/70">
-                                  Linha def.
-                                </span>
-                                <span className="text-[9px] font-black text-on-surface">
-                                  {tactic.style === "Defensive"
-                                    ? "Muito Alta"
-                                    : tactic.style === "Offensive"
-                                      ? "Baixa"
-                                      : "Normal"}
-                                </span>
-                              </div>
-                              <div className="flex justify-between items-center">
-                                <span className="text-[9px] text-on-surface-variant/70">
-                                  Pressing
-                                </span>
-                                <span className="text-[9px] font-black text-on-surface">
-                                  {tactic.style === "Defensive"
-                                    ? "Baixo"
-                                    : tactic.style === "Offensive"
-                                      ? "Alto"
-                                      : "Médio"}
-                                </span>
-                              </div>
-                            </div>
-                          </div>
-                        </div>
                       </div>
                     </div>
                   )}
@@ -7441,345 +7343,266 @@ function App() {
                       </div>
 
                       {/* Squad list */}
-                      <div>
-                        {/* Column headers */}
-                        <div className="grid grid-cols-[30px_1fr_26px_26px_28px] gap-1 px-3 py-1.5 border-b border-outline-variant/20 bg-surface-container-lowest/40">
-                          <span className="text-[7.5px] font-black uppercase tracking-[0.18em] text-on-surface-variant/40">
-                            Pos
+                      <div className="divide-y divide-outline-variant/10">
+                        {/* Header counts */}
+                        <div className="px-4 py-2.5 flex items-center justify-between bg-surface-container-high/60">
+                          <span className="text-[9px] uppercase tracking-[0.2em] font-black text-on-surface-variant">
+                            Plantel convocado
                           </span>
-                          <span className="text-[7.5px] font-black uppercase tracking-[0.18em] text-on-surface-variant/40">
-                            Jogador
-                          </span>
-                          <span className="text-[7.5px] font-black uppercase tracking-[0.18em] text-on-surface-variant/40 text-center">
-                            Qual
-                          </span>
-                          <span className="text-[7.5px] font-black uppercase tracking-[0.18em] text-on-surface-variant/40 text-center">
-                            Form
-                          </span>
-                          <span></span>
-                        </div>
-
-                        {/* Onze Inicial */}
-                        <div className="px-3 py-1 flex items-center justify-between bg-primary/5 border-b border-outline-variant/10">
-                          <span className="text-[8px] font-black uppercase tracking-[0.2em] text-primary/80">
-                            Onze Inicial
-                          </span>
-                          <span className="text-[8px] font-black tabular-nums">
-                            <span
-                              className={
-                                annotatedSquad.filter(
-                                  (p) => p.status === "Titular",
-                                ).length === 11
-                                  ? "text-primary"
-                                  : "text-on-surface-variant/60"
-                              }
-                            >
+                          <span className="text-[9px] font-black text-on-surface-variant">
+                            <span className="text-emerald-400">
                               {
                                 annotatedSquad.filter(
                                   (p) => p.status === "Titular",
                                 ).length
                               }
                             </span>
-                            <span className="text-on-surface-variant/40">
-                              /11
+                            /11
+                            {" · "}
+                            <span className="text-amber-400">
+                              {
+                                annotatedSquad.filter(
+                                  (p) => p.status === "Suplente",
+                                ).length
+                              }
                             </span>
+                            /5
                           </span>
                         </div>
+
+                        {/* Titulares */}
                         {annotatedSquad
                           .filter((p) => p.status === "Titular")
-                          .map((player) => {
-                            const formVal = player.form ?? 10;
-                            const formPct = Math.round((formVal / 20) * 100);
-                            const formColor =
-                              formPct >= 70
-                                ? "text-emerald-400"
-                                : formPct >= 45
-                                  ? "text-amber-400"
-                                  : "text-red-400";
-                            return (
-                              <div
-                                key={player.id}
-                                className={`relative grid grid-cols-[30px_1fr_26px_26px_28px] gap-1 items-center px-3 py-2 border-b border-outline-variant/10 hover:bg-primary/5 transition-colors select-none ${player.isUnavailable ? "opacity-50" : ""}`}
+                          .map((player) => (
+                            <div
+                              key={player.id}
+                              className={`relative flex items-center gap-3 px-4 py-2.5 hover:bg-primary/5 transition-colors select-none ${player.isUnavailable ? "opacity-50" : ""}`}
+                            >
+                              <span
+                                className={`shrink-0 w-[22px] text-center text-[10px] font-black ${
+                                  player.position === "GR"
+                                    ? "text-amber-400"
+                                    : player.position === "DEF"
+                                      ? "text-sky-400"
+                                      : player.position === "MED"
+                                        ? "text-primary"
+                                        : "text-red-400"
+                                }`}
                               >
-                                <span
-                                  className={`shrink-0 text-[9px] font-black text-center py-0.5 rounded-sm ${
-                                    player.position === "GR"
-                                      ? "bg-amber-500/15 text-amber-400"
-                                      : player.position === "DEF"
-                                        ? "bg-sky-500/15 text-sky-400"
-                                        : player.position === "MED"
-                                          ? "bg-primary/15 text-primary"
-                                          : "bg-red-500/15 text-red-400"
-                                  }`}
-                                >
-                                  {player.position === "GR"
-                                    ? "GR"
-                                    : POSITION_SHORT_LABELS[player.position]}
-                                </span>
-                                <span className="text-xs font-bold text-on-surface truncate">
-                                  <PlayerLink playerId={player.id}>
-                                    {player.name}
-                                  </PlayerLink>
-                                  {!!player.is_star && (
-                                    <span className="ml-1 text-amber-400 text-[9px]">
+                                {POSITION_SHORT_LABELS[player.position]}
+                              </span>
+                              <span className="flex-1 text-sm font-bold text-on-surface truncate">
+                                <PlayerLink playerId={player.id}>
+                                  {player.name}
+                                </PlayerLink>
+                                {!!player.is_star &&
+                                  (player.position === "MED" ||
+                                    player.position === "ATA") && (
+                                    <span className="ml-1 text-amber-400 text-[10px]">
                                       ★
                                     </span>
                                   )}
-                                  {player.isUnavailable && (
-                                    <span className="ml-1 text-[10px]">
-                                      {(player.suspension_until_matchweek ||
-                                        0) > matchweekCount
-                                        ? "🟥"
-                                        : "🩹"}
+                                {player.isUnavailable && (
+                                  <span className="ml-1 text-xs">
+                                    {(player.suspension_until_matchweek || 0) >
+                                    matchweekCount
+                                      ? "🟥"
+                                      : "🩹"}
+                                  </span>
+                                )}
+                              </span>
+                              <span className="text-sm font-black text-primary shrink-0">
+                                {player.skill}
+                                {player.prev_skill != null &&
+                                  player.prev_skill !== player.skill && (
+                                    <span
+                                      className={`ml-0.5 text-[9px] ${player.skill > player.prev_skill ? "text-emerald-400" : "text-red-400"}`}
+                                    >
+                                      {player.skill > player.prev_skill
+                                        ? "▲"
+                                        : "▼"}
                                     </span>
                                   )}
-                                </span>
-                                <span className="text-xs font-black text-primary text-center tabular-nums">
-                                  {player.skill}
-                                  {player.prev_skill != null &&
-                                    player.prev_skill !== player.skill && (
-                                      <span
-                                        className={`text-[8px] ${player.skill > player.prev_skill ? "text-emerald-400" : "text-red-400"}`}
-                                      >
-                                        {player.skill > player.prev_skill
-                                          ? "▲"
-                                          : "▼"}
-                                      </span>
-                                    )}
-                                </span>
-                                <span
-                                  className={`text-xs font-black text-center tabular-nums ${formColor}`}
-                                >
-                                  {formPct}%
-                                </span>
-                                <span
-                                  className="shrink-0 w-5 h-5 rounded-full bg-emerald-500/15 flex items-center justify-center text-[10px] cursor-pointer hover:bg-emerald-500/25 transition-colors"
-                                  onClick={(e) => {
-                                    e.stopPropagation();
-                                    setOpenStatusPickerId((prev) =>
-                                      prev === player.id ? null : player.id,
-                                    );
-                                  }}
-                                >
-                                  🟢
-                                </span>
-                                {openStatusPickerId === player.id &&
-                                  (() => {
-                                    const subCount = Object.entries(
-                                      tactic.positions,
-                                    ).filter(
-                                      ([id, s]) =>
-                                        s === "Suplente" &&
-                                        Number(id) !== player.id,
-                                    ).length;
-                                    const titCount = Object.entries(
-                                      tactic.positions,
-                                    ).filter(
-                                      ([id, s]) =>
-                                        s === "Titular" &&
-                                        Number(id) !== player.id,
-                                    ).length;
-                                    const subsFull = subCount >= 5;
-                                    const titularesFull = titCount >= 11;
-                                    return (
-                                      <div
-                                        className="absolute right-4 top-full z-50 bg-surface-container-high border border-outline-variant/40 rounded-md shadow-xl p-1 flex flex-col gap-0.5 min-w-[140px]"
-                                        onClick={(e) => e.stopPropagation()}
-                                      >
-                                        {[
-                                          ["Titular", "🟢", "Titular"],
-                                          ["Suplente", "🟡", "Suplente"],
-                                          ["Excluído", "⚫️", "Não convocado"],
-                                        ].map(([status, emoji, label]) => {
-                                          const unavail =
-                                            player.isUnavailable &&
-                                            (status === "Titular" ||
-                                              status === "Suplente");
-                                          const disabled =
-                                            unavail ||
-                                            (status === "Titular" &&
-                                              titularesFull &&
-                                              player.status !== "Titular") ||
-                                            (status === "Suplente" &&
-                                              subsFull &&
-                                              player.status !== "Suplente");
-                                          return (
-                                            <button
-                                              key={status}
-                                              onClick={() =>
-                                                !disabled &&
-                                                handleSetPlayerStatus(
-                                                  player.id,
-                                                  status,
-                                                )
-                                              }
-                                              className={`px-3 py-2 rounded text-xs font-bold flex items-center gap-2 text-left ${disabled ? "opacity-40 cursor-not-allowed" : player.status === status ? "bg-surface-bright text-on-surface" : "hover:bg-surface-bright/60 text-on-surface-variant"}`}
-                                            >
-                                              {emoji} {label}
-                                            </button>
-                                          );
-                                        })}
-                                      </div>
-                                    );
-                                  })()}
-                              </div>
-                            );
-                          })}
+                              </span>
+                              <span
+                                className="shrink-0 w-6 h-6 rounded-full bg-emerald-500/15 flex items-center justify-center text-sm cursor-pointer"
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  setOpenStatusPickerId((prev) =>
+                                    prev === player.id ? null : player.id,
+                                  );
+                                }}
+                              >
+                                🟢
+                              </span>
+                              {openStatusPickerId === player.id &&
+                                (() => {
+                                  const subCount = Object.entries(
+                                    tactic.positions,
+                                  ).filter(
+                                    ([id, s]) =>
+                                      s === "Suplente" &&
+                                      Number(id) !== player.id,
+                                  ).length;
+                                  const titCount = Object.entries(
+                                    tactic.positions,
+                                  ).filter(
+                                    ([id, s]) =>
+                                      s === "Titular" &&
+                                      Number(id) !== player.id,
+                                  ).length;
+                                  const subsFull = subCount >= 5;
+                                  const titularesFull = titCount >= 11;
+                                  return (
+                                    <div
+                                      className="absolute right-4 top-full z-50 bg-surface-container-high border border-outline-variant/40 rounded-md shadow-xl p-1 flex flex-col gap-0.5 min-w-[140px]"
+                                      onClick={(e) => e.stopPropagation()}
+                                    >
+                                      {[
+                                        ["Titular", "🟢", "Titular"],
+                                        ["Suplente", "🟡", "Suplente"],
+                                        ["Excluído", "⚫️", "Não convocado"],
+                                      ].map(([status, emoji, label]) => {
+                                        const unavail =
+                                          player.isUnavailable &&
+                                          (status === "Titular" ||
+                                            status === "Suplente");
+                                        const disabled =
+                                          unavail ||
+                                          (status === "Titular" &&
+                                            titularesFull &&
+                                            player.status !== "Titular") ||
+                                          (status === "Suplente" &&
+                                            subsFull &&
+                                            player.status !== "Suplente");
+                                        return (
+                                          <button
+                                            key={status}
+                                            onClick={() =>
+                                              !disabled &&
+                                              handleSetPlayerStatus(
+                                                player.id,
+                                                status,
+                                              )
+                                            }
+                                            className={`px-3 py-2 rounded text-xs font-bold flex items-center gap-2 text-left ${disabled ? "opacity-40 cursor-not-allowed" : player.status === status ? "bg-surface-bright text-on-surface" : "hover:bg-surface-bright/60 text-on-surface-variant"}`}
+                                          >
+                                            {emoji} {label}
+                                          </button>
+                                        );
+                                      })}
+                                    </div>
+                                  );
+                                })()}
+                            </div>
+                          ))}
+
+                        {/* Suplentes */}
                         {annotatedSquad.filter((p) => p.status === "Suplente")
                           .length > 0 && (
                           <>
-                            <div className="px-3 py-1 flex items-center justify-between bg-amber-500/5 border-y border-outline-variant/10">
-                              <span className="text-[8px] font-black uppercase tracking-[0.2em] text-amber-400/80">
-                                Suplentes &amp; Reservas
-                              </span>
-                              <span className="text-[8px] font-black tabular-nums">
-                                <span className="text-amber-400">
-                                  {
-                                    annotatedSquad.filter(
-                                      (p) => p.status === "Suplente",
-                                    ).length
-                                  }
-                                </span>
-                                <span className="text-on-surface-variant/40">
-                                  /5
-                                </span>
-                              </span>
+                            <div className="px-4 py-1.5 bg-surface-container-lowest/80 text-[8px] font-black uppercase tracking-[0.2em] text-on-surface-variant/60">
+                              Suplentes
                             </div>
                             {annotatedSquad
                               .filter((p) => p.status === "Suplente")
-                              .map((player) => {
-                                const formVal = player.form ?? 10;
-                                const formPct = Math.round(
-                                  (formVal / 20) * 100,
-                                );
-                                const formColor =
-                                  formPct >= 70
-                                    ? "text-emerald-400"
-                                    : formPct >= 45
-                                      ? "text-amber-400"
-                                      : "text-red-400";
-                                return (
-                                  <div
-                                    key={player.id}
-                                    className={`relative grid grid-cols-[30px_1fr_26px_26px_28px] gap-1 items-center px-3 py-1.5 border-b border-outline-variant/10 hover:bg-amber-500/5 transition-colors select-none opacity-80 ${player.isUnavailable ? "opacity-35" : ""}`}
+                              .map((player) => (
+                                <div
+                                  key={player.id}
+                                  className={`relative flex items-center gap-3 px-4 py-2 hover:bg-primary/5 transition-colors select-none opacity-75 ${player.isUnavailable ? "opacity-35" : ""}`}
+                                >
+                                  <span className="shrink-0 w-[22px] text-center text-[10px] font-black text-on-surface-variant">
+                                    {POSITION_SHORT_LABELS[player.position]}
+                                  </span>
+                                  <span className="flex-1 text-sm font-medium text-on-surface truncate">
+                                    <PlayerLink playerId={player.id}>
+                                      {player.name}
+                                    </PlayerLink>
+                                    {player.isUnavailable && (
+                                      <span className="ml-1 text-xs">
+                                        {(player.suspension_until_matchweek ||
+                                          0) > matchweekCount
+                                          ? "🟥"
+                                          : "🩹"}
+                                      </span>
+                                    )}
+                                  </span>
+                                  <span className="text-sm font-bold text-on-surface-variant shrink-0">
+                                    {player.skill}
+                                  </span>
+                                  <span
+                                    className="shrink-0 w-6 h-6 rounded-full bg-amber-500/15 flex items-center justify-center text-sm cursor-pointer"
+                                    onClick={(e) => {
+                                      e.stopPropagation();
+                                      setOpenStatusPickerId((prev) =>
+                                        prev === player.id ? null : player.id,
+                                      );
+                                    }}
                                   >
-                                    <span
-                                      className={`shrink-0 text-[9px] font-black text-center py-0.5 rounded-sm ${
-                                        player.position === "GR"
-                                          ? "bg-amber-500/10 text-amber-400/60"
-                                          : player.position === "DEF"
-                                            ? "bg-sky-500/10 text-sky-400/60"
-                                            : player.position === "MED"
-                                              ? "bg-primary/10 text-primary/60"
-                                              : "bg-red-500/10 text-red-400/60"
-                                      }`}
-                                    >
-                                      {player.position === "GR"
-                                        ? "GR"
-                                        : POSITION_SHORT_LABELS[
-                                            player.position
-                                          ]}
-                                    </span>
-                                    <span className="text-xs font-medium text-on-surface-variant truncate">
-                                      <PlayerLink playerId={player.id}>
-                                        {player.name}
-                                      </PlayerLink>
-                                      {player.isUnavailable && (
-                                        <span className="ml-1 text-[10px]">
-                                          {(player.suspension_until_matchweek ||
-                                            0) > matchweekCount
-                                            ? "🟥"
-                                            : "🩹"}
-                                        </span>
-                                      )}
-                                    </span>
-                                    <span className="text-xs font-bold text-on-surface-variant text-center tabular-nums">
-                                      {player.skill}
-                                    </span>
-                                    <span
-                                      className={`text-xs font-bold text-center tabular-nums ${formColor} opacity-70`}
-                                    >
-                                      {formPct}%
-                                    </span>
-                                    <span
-                                      className="shrink-0 w-5 h-5 rounded-full bg-amber-500/15 flex items-center justify-center text-[10px] cursor-pointer hover:bg-amber-500/25 transition-colors"
-                                      onClick={(e) => {
-                                        e.stopPropagation();
-                                        setOpenStatusPickerId((prev) =>
-                                          prev === player.id ? null : player.id,
-                                        );
-                                      }}
-                                    >
-                                      🟡
-                                    </span>
-                                    {openStatusPickerId === player.id &&
-                                      (() => {
-                                        const titCount = Object.entries(
-                                          tactic.positions,
-                                        ).filter(
-                                          ([id, s]) =>
-                                            s === "Titular" &&
-                                            Number(id) !== player.id,
-                                        ).length;
-                                        const subCount = Object.entries(
-                                          tactic.positions,
-                                        ).filter(
-                                          ([id, s]) =>
-                                            s === "Suplente" &&
-                                            Number(id) !== player.id,
-                                        ).length;
-                                        const titularesFull = titCount >= 11;
-                                        const subsFull = subCount >= 5;
-                                        return (
-                                          <div
-                                            className="absolute right-4 top-full z-50 bg-surface-container-high border border-outline-variant/40 rounded-md shadow-xl p-1 flex flex-col gap-0.5 min-w-[140px]"
-                                            onClick={(e) => e.stopPropagation()}
-                                          >
-                                            {[
-                                              ["Titular", "🟢", "Titular"],
-                                              ["Suplente", "🟡", "Suplente"],
-                                              [
-                                                "Excluído",
-                                                "⚫️",
-                                                "Não convocado",
-                                              ],
-                                            ].map(([status, emoji, label]) => {
-                                              const disabled =
-                                                (status === "Titular" &&
-                                                  titularesFull &&
-                                                  player.status !==
-                                                    "Titular") ||
-                                                (status === "Suplente" &&
-                                                  subsFull &&
-                                                  player.status !== "Suplente");
-                                              return (
-                                                <button
-                                                  key={status}
-                                                  onClick={() =>
-                                                    !disabled &&
-                                                    handleSetPlayerStatus(
-                                                      player.id,
-                                                      status,
-                                                    )
-                                                  }
-                                                  className={`px-3 py-2 rounded text-xs font-bold flex items-center gap-2 ${
-                                                    disabled
-                                                      ? "opacity-40 cursor-not-allowed"
-                                                      : player.status === status
-                                                        ? "bg-surface-bright text-on-surface"
-                                                        : "hover:bg-surface-bright/60 text-on-surface-variant"
-                                                  }`}
-                                                >
-                                                  {emoji} {label}
-                                                </button>
-                                              );
-                                            })}
-                                          </div>
-                                        );
-                                      })()}
-                                  </div>
-                                );
-                              })}
+                                    🟡
+                                  </span>
+                                  {openStatusPickerId === player.id &&
+                                    (() => {
+                                      const titCount = Object.entries(
+                                        tactic.positions,
+                                      ).filter(
+                                        ([id, s]) =>
+                                          s === "Titular" &&
+                                          Number(id) !== player.id,
+                                      ).length;
+                                      const subCount = Object.entries(
+                                        tactic.positions,
+                                      ).filter(
+                                        ([id, s]) =>
+                                          s === "Suplente" &&
+                                          Number(id) !== player.id,
+                                      ).length;
+                                      const titularesFull = titCount >= 11;
+                                      const subsFull = subCount >= 5;
+                                      return (
+                                        <div
+                                          className="absolute right-4 top-full z-50 bg-surface-container-high border border-outline-variant/40 rounded-md shadow-xl p-1 flex flex-col gap-0.5 min-w-[140px]"
+                                          onClick={(e) => e.stopPropagation()}
+                                        >
+                                          {[
+                                            ["Titular", "🟢", "Titular"],
+                                            ["Suplente", "🟡", "Suplente"],
+                                            ["Excluído", "⚫️", "Não convocado"],
+                                          ].map(([status, emoji, label]) => {
+                                            const disabled =
+                                              (status === "Titular" &&
+                                                titularesFull &&
+                                                player.status !== "Titular") ||
+                                              (status === "Suplente" &&
+                                                subsFull &&
+                                                player.status !== "Suplente");
+                                            return (
+                                              <button
+                                                key={status}
+                                                onClick={() =>
+                                                  !disabled &&
+                                                  handleSetPlayerStatus(
+                                                    player.id,
+                                                    status,
+                                                  )
+                                                }
+                                                className={`px-3 py-2 rounded text-xs font-bold flex items-center gap-2 ${
+                                                  disabled
+                                                    ? "opacity-40 cursor-not-allowed"
+                                                    : player.status === status
+                                                      ? "bg-surface-bright text-on-surface"
+                                                      : "hover:bg-surface-bright/60 text-on-surface-variant"
+                                                }`}
+                                              >
+                                                {emoji} {label}
+                                              </button>
+                                            );
+                                          })}
+                                        </div>
+                                      );
+                                    })()}
+                                </div>
+                              ))}
                           </>
                         )}
 
@@ -7789,10 +7612,8 @@ function App() {
                             p.status !== "Titular" && p.status !== "Suplente",
                         ).length > 0 && (
                           <>
-                            <div className="px-3 py-1 bg-surface-container-lowest/50 border-y border-outline-variant/10">
-                              <span className="text-[8px] font-black uppercase tracking-[0.2em] text-on-surface-variant/30">
-                                Não convocados
-                              </span>
+                            <div className="px-4 py-1.5 bg-surface-container-lowest/80 text-[8px] font-black uppercase tracking-[0.2em] text-on-surface-variant/40">
+                              Não convocados
                             </div>
                             {annotatedSquad
                               .filter(
@@ -7803,24 +7624,19 @@ function App() {
                               .map((player) => (
                                 <div
                                   key={player.id}
-                                  className="relative grid grid-cols-[30px_1fr_26px_26px_28px] gap-1 items-center px-3 py-1.5 border-b border-outline-variant/10 select-none opacity-30 hover:opacity-55 transition-opacity"
+                                  className="relative flex items-center gap-3 px-4 py-2 select-none opacity-30 hover:opacity-60 transition-opacity cursor-pointer"
                                 >
-                                  <span className="shrink-0 text-[9px] font-black text-center py-0.5 rounded-sm bg-surface-bright/20 text-on-surface-variant/50">
-                                    {player.position === "GR"
-                                      ? "GR"
-                                      : POSITION_SHORT_LABELS[player.position]}
+                                  <span className="shrink-0 w-[22px] text-center text-[10px] font-black text-on-surface-variant">
+                                    {POSITION_SHORT_LABELS[player.position]}
                                   </span>
-                                  <span className="text-xs font-medium text-on-surface-variant truncate">
+                                  <span className="flex-1 text-sm font-medium text-on-surface-variant truncate">
                                     {player.name}
                                   </span>
-                                  <span className="text-xs font-bold text-on-surface-variant text-center tabular-nums">
+                                  <span className="text-xs font-bold text-on-surface-variant shrink-0">
                                     {player.skill}
                                   </span>
-                                  <span className="text-xs font-bold text-on-surface-variant/40 text-center">
-                                    —
-                                  </span>
                                   <span
-                                    className="shrink-0 w-5 h-5 rounded-full bg-zinc-800/50 flex items-center justify-center text-[10px] cursor-pointer hover:bg-zinc-700 transition-colors"
+                                    className="shrink-0 w-6 h-6 rounded-full bg-zinc-800 flex items-center justify-center text-sm cursor-pointer"
                                     onClick={(e) => {
                                       e.stopPropagation();
                                       setOpenStatusPickerId((prev) =>
