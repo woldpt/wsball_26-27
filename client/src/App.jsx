@@ -21,6 +21,7 @@ import { PenaltySuspensePopup } from "./components/modals/PenaltySuspensePopup.j
 import { PenaltyShootoutPopup } from "./components/modals/PenaltyShootoutPopup.jsx";
 import { MatchDetailModal } from "./components/modals/MatchDetailModal.jsx";
 import { RefereePopup } from "./components/modals/RefereePopup.jsx";
+import { GameDialog } from "./components/shared/GameDialog.jsx";
 import { TeamSquadModal } from "./components/modals/TeamSquadModal.jsx";
 import { TransferProposalModal } from "./components/modals/TransferProposalModal.jsx";
 import { AuctionNotification } from "./components/ui/AuctionNotification.jsx";
@@ -624,6 +625,7 @@ function App() {
   const [nextMatchSummary, setNextMatchSummary] = useState(null);
   const [nextMatchSummaryLoading, setNextMatchSummaryLoading] = useState(false);
   const [refereePopup, setRefereePopup] = useState(null);
+  const [gameDialog, setGameDialog] = useState(null);
   // Cup state
   const [cupDraw, setCupDraw] = useState(null); // { round, roundName, fixtures, humanInCup, season }
   const [showCupDrawPopup, setShowCupDrawPopup] = useState(false);
@@ -2277,51 +2279,73 @@ function App() {
     const defaultWage = Math.round(
       Math.max(player.wage || 0, (player.skill || 0) * 70) * 1.15,
     );
-    const wage = window.prompt(
-      `Novo salário semanal para ${player.name} (€/semana)`,
-      String(defaultWage),
-    );
-    if (wage === null) return;
-    const offeredWage = Number(wage);
-    if (!Number.isFinite(offeredWage) || offeredWage <= 0) return;
-    socket.emit("renewContract", { playerId: player.id, offeredWage });
+    setGameDialog({
+      mode: "prompt",
+      title: `Renovar Contrato — ${player.name}`,
+      description: `Proposta de salário semanal (€/semana). Posição: ${player.position} · Skill: ${player.skill}`,
+      defaultValue: String(defaultWage),
+      confirmLabel: "Renovar",
+      onConfirm: (val) => {
+        const offeredWage = Number(val);
+        if (!Number.isFinite(offeredWage) || offeredWage <= 0) return;
+        socket.emit("renewContract", { playerId: player.id, offeredWage });
+      },
+      onCancel: () => {},
+    });
   }, []);
 
   const listPlayerAuction = useCallback((player) => {
     const defaultPrice = Math.round((player.value || 0) * 0.8);
-    const startingPrice = window.prompt(
-      `Valor de licitação base para ${player.name} (€)`,
-      String(defaultPrice),
-    );
-    if (startingPrice === null) return;
-    const price = Number(startingPrice);
-    if (!Number.isFinite(price) || price <= 0) return;
-    socket.emit("listPlayerForTransfer", {
-      playerId: player.id,
-      mode: "auction",
-      startingPrice: price,
+    setGameDialog({
+      mode: "prompt",
+      title: `Leilão — ${player.name}`,
+      description: `Valor base de licitação (€). O jogador será leiloado ao melhor oferente.`,
+      defaultValue: String(defaultPrice),
+      confirmLabel: "Colocar em Leilão",
+      onConfirm: (val) => {
+        const price = Number(val);
+        if (!Number.isFinite(price) || price <= 0) return;
+        socket.emit("listPlayerForTransfer", {
+          playerId: player.id,
+          mode: "auction",
+          startingPrice: price,
+        });
+      },
+      onCancel: () => {},
     });
   }, []);
 
   const listPlayerFixed = useCallback((player) => {
     const defaultPrice = Math.round((player.value || 0) * 1.1);
-    const price = window.prompt(
-      `Preço fixo para ${player.name} (€)`,
-      String(defaultPrice),
-    );
-    if (price === null) return;
-    const fixedPrice = Number(price);
-    if (!Number.isFinite(fixedPrice) || fixedPrice <= 0) return;
-    socket.emit("listPlayerForTransfer", {
-      playerId: player.id,
-      mode: "fixed",
-      price: fixedPrice,
+    setGameDialog({
+      mode: "prompt",
+      title: `Venda Directa — ${player.name}`,
+      description: `Preço fixo de transferência (€). Qualquer clube pode comprar imediatamente por este valor.`,
+      defaultValue: String(defaultPrice),
+      confirmLabel: "Colocar à Venda",
+      onConfirm: (val) => {
+        const fixedPrice = Number(val);
+        if (!Number.isFinite(fixedPrice) || fixedPrice <= 0) return;
+        socket.emit("listPlayerForTransfer", {
+          playerId: player.id,
+          mode: "fixed",
+          price: fixedPrice,
+        });
+      },
+      onCancel: () => {},
     });
   }, []);
 
   const removeFromTransferList = useCallback((player) => {
-    if (!confirm(`Retirar ${player.name} da lista de transferências?`)) return;
-    socket.emit("removeFromTransferList", player.id);
+    setGameDialog({
+      mode: "confirm",
+      title: `Retirar da Lista`,
+      description: `Tens a certeza que queres retirar ${player.name} da lista de transferências?`,
+      confirmLabel: "Retirar",
+      danger: true,
+      onConfirm: () => socket.emit("removeFromTransferList", player.id),
+      onCancel: () => {},
+    });
   }, []);
 
   // ── AUCTION BID ───────────────────────────────────────────────────────────
@@ -7817,6 +7841,8 @@ function App() {
         teamInfo={teamInfo}
         nextMatchOpponent={nextMatchOpponent}
       />
+
+      <GameDialog dialog={gameDialog} onClose={() => setGameDialog(null)} />
 
       <PenaltySuspensePopup penaltySuspense={penaltySuspense} />
 
