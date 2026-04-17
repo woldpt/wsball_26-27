@@ -3565,9 +3565,7 @@ function App() {
               )}
             </div>
           )}
-          <div
-            className={`grid grid-cols-1 gap-6 ${activeTab === "tactic" ? "xl:grid-cols-[minmax(0,3fr)_320px]" : ""}`}
-          >
+          <div className="grid grid-cols-1 gap-6">
             <div>
               <AnimatePresence mode="wait" initial={false}>
                 <motion.div
@@ -6719,329 +6717,819 @@ function App() {
                     })()}
 
                   {activeTab === "tactic" && (
-                    <div className="grid grid-cols-1 xl:grid-cols-[260px_minmax(0,1fr)] gap-4 items-start">
-                      {/* ── COL 1: CONTROLO ── */}
-                      <div className="bg-surface-container rounded-lg overflow-hidden">
-                        {/* Header */}
-                        <div className="px-5 py-3 border-b border-outline-variant/20 flex items-center justify-between">
-                          <div className="flex items-center gap-3">
-                            <span className="font-headline text-xs font-black tracking-[0.2em] uppercase text-on-surface-variant">
-                              Formação
-                            </span>
-                            {tactic.formation && (
-                              <span className="px-2 py-0.5 bg-primary/15 text-primary text-[10px] font-black tracking-widest rounded-sm uppercase">
-                                {tactic.formation}
+                    <div>
+                      {/* Warnings full-width */}
+                      {disconnected && (
+                        <div className="mb-3 px-4 py-2 text-red-400 text-[10px] font-bold text-center bg-red-500/5 border border-red-500/20 rounded-lg">
+                          ⚠️ Desligado — a reconectar...
+                        </div>
+                      )}
+                      {nextMatchSummary?.isCup && !nextMatchOpponent ? (
+                        <div className="bg-surface-container rounded-lg flex flex-col items-center gap-4 py-8 text-center px-6">
+                          <p className="text-5xl">🏆</p>
+                          <p className="text-on-surface-variant font-bold text-sm leading-relaxed">
+                            Já foste eliminado desta ronda da Taça.
+                            <br />
+                            Aguarda os resultados dos outros jogos na aba LIVE.
+                          </p>
+                        </div>
+                      ) : (
+                        <div className="grid grid-cols-1 xl:grid-cols-[220px_1fr_1fr_240px] gap-4 items-start">
+                          {/* ── COL 1: CONTROLO ── */}
+                          <div className="bg-surface-container rounded-lg overflow-hidden">
+                            {/* Header */}
+                            <div className="px-5 py-3 border-b border-outline-variant/20 flex items-center justify-between">
+                              <div className="flex items-center gap-3">
+                                <span className="font-headline text-xs font-black tracking-[0.2em] uppercase text-on-surface-variant">
+                                  Formação
+                                </span>
+                                {tactic.formation && (
+                                  <span className="px-2 py-0.5 bg-primary/15 text-primary text-[10px] font-black tracking-widest rounded-sm uppercase">
+                                    {tactic.formation}
+                                  </span>
+                                )}
+                              </div>
+                              <button
+                                className="text-[9px] uppercase tracking-widest font-black text-on-surface-variant/50 hover:text-error transition-colors"
+                                onClick={() => {
+                                  setTactic((prev) => {
+                                    const allExcluded = Object.fromEntries(
+                                      mySquad.map((p) => [p.id, "Excluído"]),
+                                    );
+                                    const next = {
+                                      ...prev,
+                                      formation: "",
+                                      positions: allExcluded,
+                                    };
+                                    socket.emit("setTactic", next);
+                                    return next;
+                                  });
+                                }}
+                              >
+                                Limpar
+                              </button>
+                            </div>
+
+                            {/* Formation pill buttons */}
+                            <div className="px-5 py-3 border-b border-outline-variant/15 flex flex-wrap gap-2">
+                              {[
+                                { value: "4-4-2", label: "4-4-2 Clássico" },
+                                { value: "4-3-3", label: "4-3-3 Ofensivo" },
+                                { value: "3-5-2", label: "3-5-2 Controlo" },
+                                { value: "5-3-2", label: "5-3-2 Autocarro" },
+                                { value: "4-5-1", label: "4-5-1 Catenaccio" },
+                                { value: "3-4-3", label: "3-4-3 Total" },
+                                { value: "4-2-4", label: "4-2-4 Avassalador" },
+                                { value: "5-4-1", label: "5-4-1 Ferrolho" },
+                              ].map(({ value, label }) => (
+                                <button
+                                  key={value}
+                                  onClick={() => handleAutoPick(value)}
+                                  className={`px-3 py-1.5 text-[10px] font-black uppercase tracking-widest transition-all rounded-sm ${
+                                    tactic.formation === value
+                                      ? "bg-primary text-on-primary"
+                                      : "bg-surface-container-high hover:bg-surface-bright text-on-surface-variant hover:text-on-surface border border-outline-variant/20"
+                                  }`}
+                                >
+                                  {label}
+                                </button>
+                              ))}
+                            </div>
+
+                            {/* Estilo + Moral strip */}
+                            <div className="px-4 py-2.5 border-b border-outline-variant/15 bg-surface-container-high/20 flex flex-col gap-2">
+                              <div className="flex items-center gap-1.5">
+                                <span className="text-[9px] uppercase tracking-[0.2em] font-black text-on-surface-variant shrink-0 w-10">
+                                  Estilo
+                                </span>
+                                <div className="flex gap-1 flex-1">
+                                  {[
+                                    ["Defensive", "Def."],
+                                    ["Balanced", "Equil."],
+                                    ["Offensive", "Ofens."],
+                                  ].map(([val, lbl]) => (
+                                    <button
+                                      key={val}
+                                      onClick={() =>
+                                        updateTactic({ style: val })
+                                      }
+                                      className={`flex-1 py-1 text-[9px] font-black uppercase tracking-wide rounded-sm transition-all ${
+                                        tactic.style === val
+                                          ? "bg-primary text-on-primary shadow-sm"
+                                          : "bg-surface-container-high hover:bg-surface-bright text-on-surface-variant border border-outline-variant/20"
+                                      }`}
+                                    >
+                                      {lbl}
+                                    </button>
+                                  ))}
+                                </div>
+                              </div>
+                              {(() => {
+                                const morale = teamInfo?.morale ?? 75;
+                                const mc =
+                                  morale > 75
+                                    ? "bg-primary"
+                                    : morale >= 50
+                                      ? "bg-tertiary"
+                                      : "bg-error";
+                                const ml =
+                                  morale > 75
+                                    ? "Boa"
+                                    : morale >= 50
+                                      ? "Média"
+                                      : "Baixa";
+                                const tc =
+                                  morale > 75
+                                    ? "text-primary"
+                                    : morale >= 50
+                                      ? "text-tertiary"
+                                      : "text-error";
+                                return (
+                                  <div className="flex items-center gap-1.5">
+                                    <span className="text-[9px] uppercase tracking-[0.2em] font-black text-on-surface-variant shrink-0 w-10">
+                                      Moral
+                                    </span>
+                                    <div className="flex-1 bg-surface-bright rounded-full h-1.5 overflow-hidden">
+                                      <div
+                                        className={`h-full rounded-full transition-all duration-500 ${mc}`}
+                                        style={{ width: `${morale}%` }}
+                                      />
+                                    </div>
+                                    <span
+                                      className={`text-[10px] font-black shrink-0 ml-1 ${tc}`}
+                                    >
+                                      {ml}
+                                    </span>
+                                  </div>
+                                );
+                              })()}
+                            </div>
+                          </div>
+                          {/* ── COL 2: TITULARES ── */}
+                          <div className="bg-surface-container rounded-lg overflow-hidden">
+                            <div className="px-4 py-2.5 flex items-center justify-between bg-surface-container-high/60 border-b border-outline-variant/10">
+                              <span className="text-[9px] uppercase tracking-[0.2em] font-black text-on-surface-variant">
+                                Titulares
                               </span>
+                              <span className="text-[9px] font-black">
+                                <span
+                                  className={
+                                    annotatedSquad.filter(
+                                      (p) => p.status === "Titular",
+                                    ).length === 11
+                                      ? "text-primary"
+                                      : "text-emerald-400"
+                                  }
+                                >
+                                  {
+                                    annotatedSquad.filter(
+                                      (p) => p.status === "Titular",
+                                    ).length
+                                  }
+                                </span>
+                                <span className="text-on-surface-variant">
+                                  /11
+                                </span>
+                              </span>
+                            </div>
+                            <div className="divide-y divide-outline-variant/10">
+                              {annotatedSquad
+                                .filter((p) => p.status === "Titular")
+                                .map((player) => (
+                                  <div
+                                    key={player.id}
+                                    className={`relative flex items-center gap-3 px-4 py-2.5 hover:bg-primary/5 transition-colors select-none ${player.isUnavailable ? "opacity-50" : ""}`}
+                                  >
+                                    <span
+                                      className={`shrink-0 w-[22px] text-center text-[10px] font-black ${
+                                        player.position === "GR"
+                                          ? "text-amber-400"
+                                          : player.position === "DEF"
+                                            ? "text-sky-400"
+                                            : player.position === "MED"
+                                              ? "text-primary"
+                                              : "text-red-400"
+                                      }`}
+                                    >
+                                      {POSITION_SHORT_LABELS[player.position]}
+                                    </span>
+                                    <span className="flex-1 text-sm font-bold text-on-surface truncate">
+                                      <PlayerLink playerId={player.id}>
+                                        {player.name}
+                                      </PlayerLink>
+                                      {!!player.is_star &&
+                                        (player.position === "MED" ||
+                                          player.position === "ATA") && (
+                                          <span className="ml-1 text-amber-400 text-[10px]">
+                                            ★
+                                          </span>
+                                        )}
+                                      {player.isUnavailable && (
+                                        <span className="ml-1 text-xs">
+                                          {(player.suspension_until_matchweek ||
+                                            0) > matchweekCount
+                                            ? "🟥"
+                                            : "🩹"}
+                                        </span>
+                                      )}
+                                    </span>
+                                    <span className="text-sm font-black text-primary shrink-0">
+                                      {player.skill}
+                                      {player.prev_skill != null &&
+                                        player.prev_skill !== player.skill && (
+                                          <span
+                                            className={`ml-0.5 text-[9px] ${player.skill > player.prev_skill ? "text-emerald-400" : "text-red-400"}`}
+                                          >
+                                            {player.skill > player.prev_skill
+                                              ? "▲"
+                                              : "▼"}
+                                          </span>
+                                        )}
+                                    </span>
+                                    <span
+                                      className="shrink-0 w-6 h-6 rounded-full bg-emerald-500/15 flex items-center justify-center text-sm cursor-pointer"
+                                      onClick={(e) => {
+                                        e.stopPropagation();
+                                        setOpenStatusPickerId((prev) =>
+                                          prev === player.id ? null : player.id,
+                                        );
+                                      }}
+                                    >
+                                      🟢
+                                    </span>
+                                    {openStatusPickerId === player.id &&
+                                      (() => {
+                                        const subCount = Object.entries(
+                                          tactic.positions,
+                                        ).filter(
+                                          ([id, s]) =>
+                                            s === "Suplente" &&
+                                            Number(id) !== player.id,
+                                        ).length;
+                                        const titCount = Object.entries(
+                                          tactic.positions,
+                                        ).filter(
+                                          ([id, s]) =>
+                                            s === "Titular" &&
+                                            Number(id) !== player.id,
+                                        ).length;
+                                        const subsFull = subCount >= 5;
+                                        const titularesFull = titCount >= 11;
+                                        return (
+                                          <div
+                                            className="absolute right-4 top-full z-50 bg-surface-container-high border border-outline-variant/40 rounded-md shadow-xl p-1 flex flex-col gap-0.5 min-w-[140px]"
+                                            onClick={(e) => e.stopPropagation()}
+                                          >
+                                            {[
+                                              ["Titular", "🟢", "Titular"],
+                                              ["Suplente", "🟡", "Suplente"],
+                                              [
+                                                "Excluído",
+                                                "⚫️",
+                                                "Não convocado",
+                                              ],
+                                            ].map(([status, emoji, label]) => {
+                                              const unavail =
+                                                player.isUnavailable &&
+                                                (status === "Titular" ||
+                                                  status === "Suplente");
+                                              const disabled =
+                                                unavail ||
+                                                (status === "Titular" &&
+                                                  titularesFull &&
+                                                  player.status !==
+                                                    "Titular") ||
+                                                (status === "Suplente" &&
+                                                  subsFull &&
+                                                  player.status !== "Suplente");
+                                              return (
+                                                <button
+                                                  key={status}
+                                                  onClick={() =>
+                                                    !disabled &&
+                                                    handleSetPlayerStatus(
+                                                      player.id,
+                                                      status,
+                                                    )
+                                                  }
+                                                  className={`px-3 py-2 rounded text-xs font-bold flex items-center gap-2 text-left ${disabled ? "opacity-40 cursor-not-allowed" : player.status === status ? "bg-surface-bright text-on-surface" : "hover:bg-surface-bright/60 text-on-surface-variant"}`}
+                                                >
+                                                  {emoji} {label}
+                                                </button>
+                                              );
+                                            })}
+                                          </div>
+                                        );
+                                      })()}
+                                  </div>
+                                ))}
+                              {annotatedSquad.filter(
+                                (p) => p.status === "Titular",
+                              ).length === 0 && (
+                                <p className="px-4 py-6 text-center text-[11px] text-on-surface-variant/40 font-bold">
+                                  Nenhum titular designado
+                                </p>
+                              )}
+                            </div>
+                          </div>
+
+                          {/* ── COL 3: SUPLENTES + NÃO CONVOCADOS ── */}
+                          <div className="bg-surface-container rounded-lg overflow-hidden">
+                            <div className="px-4 py-2.5 flex items-center justify-between bg-surface-container-high/60 border-b border-outline-variant/10">
+                              <span className="text-[9px] uppercase tracking-[0.2em] font-black text-on-surface-variant">
+                                Suplentes
+                              </span>
+                              <span className="text-[9px] font-black">
+                                <span className="text-amber-400">
+                                  {
+                                    annotatedSquad.filter(
+                                      (p) => p.status === "Suplente",
+                                    ).length
+                                  }
+                                </span>
+                                <span className="text-on-surface-variant">
+                                  /5
+                                </span>
+                              </span>
+                            </div>
+                            <div className="divide-y divide-outline-variant/10">
+                              {annotatedSquad
+                                .filter((p) => p.status === "Suplente")
+                                .map((player) => (
+                                  <div
+                                    key={player.id}
+                                    className={`relative flex items-center gap-3 px-4 py-2.5 hover:bg-primary/5 transition-colors select-none ${player.isUnavailable ? "opacity-35" : ""}`}
+                                  >
+                                    <span className="shrink-0 w-[22px] text-center text-[10px] font-black text-on-surface-variant">
+                                      {POSITION_SHORT_LABELS[player.position]}
+                                    </span>
+                                    <span className="flex-1 text-sm font-medium text-on-surface truncate">
+                                      <PlayerLink playerId={player.id}>
+                                        {player.name}
+                                      </PlayerLink>
+                                      {player.isUnavailable && (
+                                        <span className="ml-1 text-xs">
+                                          {(player.suspension_until_matchweek ||
+                                            0) > matchweekCount
+                                            ? "🟥"
+                                            : "🩹"}
+                                        </span>
+                                      )}
+                                    </span>
+                                    <span className="text-sm font-bold text-on-surface-variant shrink-0">
+                                      {player.skill}
+                                    </span>
+                                    <span
+                                      className="shrink-0 w-6 h-6 rounded-full bg-amber-500/15 flex items-center justify-center text-sm cursor-pointer"
+                                      onClick={(e) => {
+                                        e.stopPropagation();
+                                        setOpenStatusPickerId((prev) =>
+                                          prev === player.id ? null : player.id,
+                                        );
+                                      }}
+                                    >
+                                      🟡
+                                    </span>
+                                    {openStatusPickerId === player.id &&
+                                      (() => {
+                                        const titCount = Object.entries(
+                                          tactic.positions,
+                                        ).filter(
+                                          ([id, s]) =>
+                                            s === "Titular" &&
+                                            Number(id) !== player.id,
+                                        ).length;
+                                        const subCount = Object.entries(
+                                          tactic.positions,
+                                        ).filter(
+                                          ([id, s]) =>
+                                            s === "Suplente" &&
+                                            Number(id) !== player.id,
+                                        ).length;
+                                        const titularesFull = titCount >= 11;
+                                        const subsFull = subCount >= 5;
+                                        return (
+                                          <div
+                                            className="absolute right-4 top-full z-50 bg-surface-container-high border border-outline-variant/40 rounded-md shadow-xl p-1 flex flex-col gap-0.5 min-w-[140px]"
+                                            onClick={(e) => e.stopPropagation()}
+                                          >
+                                            {[
+                                              ["Titular", "🟢", "Titular"],
+                                              ["Suplente", "🟡", "Suplente"],
+                                              [
+                                                "Excluído",
+                                                "⚫️",
+                                                "Não convocado",
+                                              ],
+                                            ].map(([status, emoji, label]) => {
+                                              const disabled =
+                                                (status === "Titular" &&
+                                                  titularesFull &&
+                                                  player.status !==
+                                                    "Titular") ||
+                                                (status === "Suplente" &&
+                                                  subsFull &&
+                                                  player.status !== "Suplente");
+                                              return (
+                                                <button
+                                                  key={status}
+                                                  onClick={() =>
+                                                    !disabled &&
+                                                    handleSetPlayerStatus(
+                                                      player.id,
+                                                      status,
+                                                    )
+                                                  }
+                                                  className={`px-3 py-2 rounded text-xs font-bold flex items-center gap-2 ${disabled ? "opacity-40 cursor-not-allowed" : player.status === status ? "bg-surface-bright text-on-surface" : "hover:bg-surface-bright/60 text-on-surface-variant"}`}
+                                                >
+                                                  {emoji} {label}
+                                                </button>
+                                              );
+                                            })}
+                                          </div>
+                                        );
+                                      })()}
+                                  </div>
+                                ))}
+                              {annotatedSquad.filter(
+                                (p) => p.status === "Suplente",
+                              ).length === 0 && (
+                                <p className="px-4 py-4 text-center text-[11px] text-on-surface-variant/40 font-bold">
+                                  Nenhum suplente
+                                </p>
+                              )}
+                            </div>
+                            {annotatedSquad.filter(
+                              (p) =>
+                                p.status !== "Titular" &&
+                                p.status !== "Suplente",
+                            ).length > 0 && (
+                              <>
+                                <div className="px-4 py-1.5 bg-surface-container-lowest/80 text-[8px] font-black uppercase tracking-[0.2em] text-on-surface-variant/40 border-t border-outline-variant/10">
+                                  Não convocados
+                                </div>
+                                {annotatedSquad
+                                  .filter(
+                                    (p) =>
+                                      p.status !== "Titular" &&
+                                      p.status !== "Suplente",
+                                  )
+                                  .map((player) => (
+                                    <div
+                                      key={player.id}
+                                      className="relative flex items-center gap-3 px-4 py-2 select-none opacity-40 hover:opacity-70 transition-opacity cursor-pointer"
+                                    >
+                                      <span className="shrink-0 w-[22px] text-center text-[10px] font-black text-on-surface-variant">
+                                        {POSITION_SHORT_LABELS[player.position]}
+                                      </span>
+                                      <span className="flex-1 text-sm font-medium text-on-surface-variant truncate">
+                                        {player.name}
+                                      </span>
+                                      <span className="text-xs font-bold text-on-surface-variant shrink-0">
+                                        {player.skill}
+                                      </span>
+                                      <span
+                                        className="shrink-0 w-6 h-6 rounded-full bg-zinc-800 flex items-center justify-center text-sm cursor-pointer"
+                                        onClick={(e) => {
+                                          e.stopPropagation();
+                                          setOpenStatusPickerId((prev) =>
+                                            prev === player.id
+                                              ? null
+                                              : player.id,
+                                          );
+                                        }}
+                                      >
+                                        ⚫️
+                                      </span>
+                                      {openStatusPickerId === player.id &&
+                                        (() => {
+                                          const subCount = Object.entries(
+                                            tactic.positions,
+                                          ).filter(
+                                            ([id, s]) =>
+                                              s === "Suplente" &&
+                                              Number(id) !== player.id,
+                                          ).length;
+                                          const titCount = Object.entries(
+                                            tactic.positions,
+                                          ).filter(
+                                            ([id, s]) =>
+                                              s === "Titular" &&
+                                              Number(id) !== player.id,
+                                          ).length;
+                                          const subsFull = subCount >= 5;
+                                          const titularesFull = titCount >= 11;
+                                          return (
+                                            <div
+                                              className="absolute right-4 bottom-full mb-1 z-50 bg-surface-container-high border border-outline-variant/40 rounded-md shadow-xl p-1 flex flex-col gap-0.5 min-w-[140px]"
+                                              onClick={(e) =>
+                                                e.stopPropagation()
+                                              }
+                                            >
+                                              {[
+                                                ["Titular", "🟢", "Titular"],
+                                                ["Suplente", "🟡", "Suplente"],
+                                                [
+                                                  "Excluído",
+                                                  "⚫️",
+                                                  "Não convocado",
+                                                ],
+                                              ].map(
+                                                ([status, emoji, label]) => {
+                                                  const unavail =
+                                                    player.isUnavailable &&
+                                                    (status === "Titular" ||
+                                                      status === "Suplente");
+                                                  const disabled =
+                                                    unavail ||
+                                                    (status === "Titular" &&
+                                                      titularesFull) ||
+                                                    (status === "Suplente" &&
+                                                      subsFull);
+                                                  return (
+                                                    <button
+                                                      key={status}
+                                                      onClick={() =>
+                                                        !disabled &&
+                                                        handleSetPlayerStatus(
+                                                          player.id,
+                                                          status,
+                                                        )
+                                                      }
+                                                      className={`px-3 py-2 rounded text-xs font-bold flex items-center gap-2 ${disabled ? "opacity-40 cursor-not-allowed" : "hover:bg-surface-bright/60 text-on-surface-variant"}`}
+                                                    >
+                                                      {emoji} {label}
+                                                    </button>
+                                                  );
+                                                },
+                                              )}
+                                            </div>
+                                          );
+                                        })()}
+                                    </div>
+                                  ))}
+                              </>
                             )}
                           </div>
-                          <button
-                            className="text-[9px] uppercase tracking-widest font-black text-on-surface-variant/50 hover:text-error transition-colors"
-                            onClick={() => {
-                              setTactic((prev) => {
-                                const allExcluded = Object.fromEntries(
-                                  mySquad.map((p) => [p.id, "Excluído"]),
+
+                          {/* ── COL 4: CAMPO + JOGAR ── */}
+                          <div className="flex flex-col gap-3">
+                            {/* JOGAR button */}
+                            <div className="bg-surface-container rounded-lg p-4">
+                              {(() => {
+                                const isReady = players.find(
+                                  (p) => p.name === me.name,
+                                )?.ready;
+                                const isHalftime =
+                                  showHalftimePanel && !isPlayingMatch;
+                                const isEliminatedCupSpectator =
+                                  nextMatchSummary?.isCup && !nextMatchOpponent;
+                                const isDisabled = isEliminatedCupSpectator
+                                  ? !!isReady
+                                  : !isHalftime &&
+                                    !isReady &&
+                                    !isLineupComplete;
+                                return (
+                                  <>
+                                    <button
+                                      onClick={
+                                        isHalftime
+                                          ? handleHalftimeReady
+                                          : handleReady
+                                      }
+                                      disabled={isDisabled}
+                                      className={`w-full py-3.5 font-headline font-black rounded-sm text-base uppercase tracking-widest transition-all ${
+                                        isReady
+                                          ? "bg-surface-bright text-on-surface-variant"
+                                          : isDisabled
+                                            ? "bg-surface-bright text-on-surface-variant cursor-not-allowed opacity-40"
+                                            : "bg-primary text-on-primary hover:brightness-110"
+                                      }`}
+                                    >
+                                      {isReady
+                                        ? "⏳ A aguardar..."
+                                        : isEliminatedCupSpectator
+                                          ? "Avançar para Taça"
+                                          : isHalftime && isCupMatch
+                                            ? "2ª Parte — Taça"
+                                            : isHalftime
+                                              ? "2ª Parte"
+                                              : "Jogar Jornada"}
+                                    </button>
+                                    {isDisabled &&
+                                      !isEliminatedCupSpectator &&
+                                      !isReady && (
+                                        <p className="text-[10px] font-bold text-red-400 mt-2 text-center">
+                                          Faltam titulares: 1 GR + 10 de campo
+                                        </p>
+                                      )}
+                                    {!isDisabled && !isReady && (
+                                      <p className="text-[10px] text-zinc-600 mt-2 text-center">
+                                        A jornada avança quando todos clicarem.
+                                      </p>
+                                    )}
+                                  </>
                                 );
-                                const next = {
-                                  ...prev,
-                                  formation: "",
-                                  positions: allExcluded,
+                              })()}
+                            </div>
+                            {/* Campo mini */}
+                            <div className="bg-surface-container rounded-lg overflow-hidden">
+                              {/* 2D Pitch */}
+                              {(() => {
+                                const titulares = annotatedSquad.filter(
+                                  (p) => p.status === "Titular",
+                                );
+                                const grPlayers = titulares.filter(
+                                  (p) => p.position === "GR",
+                                );
+                                const defPlayers = titulares.filter(
+                                  (p) => p.position === "DEF",
+                                );
+                                const medPlayers = titulares.filter(
+                                  (p) => p.position === "MED",
+                                );
+                                const ataPlayers = titulares.filter(
+                                  (p) => p.position === "ATA",
+                                );
+                                const rows = [
+                                  ataPlayers,
+                                  medPlayers,
+                                  defPlayers,
+                                  grPlayers,
+                                ];
+                                const rowYs = ["7%", "30%", "55%", "79%"];
+                                const posColors = {
+                                  GR: "bg-amber-500 text-zinc-900",
+                                  DEF: "bg-sky-500 text-zinc-900",
+                                  MED: "bg-primary text-on-primary",
+                                  ATA: "bg-red-500 text-white",
                                 };
-                                socket.emit("setTactic", next);
-                                return next;
-                              });
-                            }}
-                          >
-                            Limpar
-                          </button>
-                        </div>
-
-                        {/* Formation pill buttons */}
-                        <div className="px-5 py-3 border-b border-outline-variant/15 flex flex-wrap gap-2">
-                          {[
-                            { value: "4-4-2", label: "4-4-2 Clássico" },
-                            { value: "4-3-3", label: "4-3-3 Ofensivo" },
-                            { value: "3-5-2", label: "3-5-2 Controlo" },
-                            { value: "5-3-2", label: "5-3-2 Autocarro" },
-                            { value: "4-5-1", label: "4-5-1 Catenaccio" },
-                            { value: "3-4-3", label: "3-4-3 Total" },
-                            { value: "4-2-4", label: "4-2-4 Avassalador" },
-                            { value: "5-4-1", label: "5-4-1 Ferrolho" },
-                          ].map(({ value, label }) => (
-                            <button
-                              key={value}
-                              onClick={() => handleAutoPick(value)}
-                              className={`px-3 py-1.5 text-[10px] font-black uppercase tracking-widest transition-all rounded-sm ${
-                                tactic.formation === value
-                                  ? "bg-primary text-on-primary"
-                                  : "bg-surface-container-high hover:bg-surface-bright text-on-surface-variant hover:text-on-surface border border-outline-variant/20"
-                              }`}
-                            >
-                              {label}
-                            </button>
-                          ))}
-                        </div>
-
-                        {/* Estilo + Moral strip */}
-                        <div className="px-5 py-2.5 border-b border-outline-variant/15 bg-surface-container-high/20 flex items-center gap-3">
-                          <span className="text-[9px] uppercase tracking-[0.2em] font-black text-on-surface-variant shrink-0">
-                            Estilo
-                          </span>
-                          <div className="flex gap-1">
-                            {[
-                              ["Defensive", "Def."],
-                              ["Balanced", "Equil."],
-                              ["Offensive", "Ofens."],
-                            ].map(([val, lbl]) => (
-                              <button
-                                key={val}
-                                onClick={() => updateTactic({ style: val })}
-                                className={`px-2.5 py-1 text-[9px] font-black uppercase tracking-wide rounded-sm transition-all ${
-                                  tactic.style === val
-                                    ? "bg-primary text-on-primary shadow-sm"
-                                    : "bg-surface-container-high hover:bg-surface-bright text-on-surface-variant border border-outline-variant/20"
-                                }`}
-                              >
-                                {lbl}
-                              </button>
-                            ))}
-                          </div>
-                          <div className="w-px h-4 bg-outline-variant/30 shrink-0 ml-1" />
-                          <span className="text-[9px] uppercase tracking-[0.2em] font-black text-on-surface-variant shrink-0">
-                            Moral
-                          </span>
-                          {(() => {
-                            const morale = teamInfo?.morale ?? 75;
-                            const mc =
-                              morale > 75
-                                ? "bg-primary"
-                                : morale >= 50
-                                  ? "bg-tertiary"
-                                  : "bg-error";
-                            const ml =
-                              morale > 75
-                                ? "Boa"
-                                : morale >= 50
-                                  ? "Média"
-                                  : "Baixa";
-                            const tc =
-                              morale > 75
-                                ? "text-primary"
-                                : morale >= 50
-                                  ? "text-tertiary"
-                                  : "text-error";
-                            return (
-                              <div className="flex items-center gap-2 flex-1">
-                                <div className="flex-1 bg-surface-bright rounded-full h-1.5 overflow-hidden">
+                                return (
                                   <div
-                                    className={`h-full rounded-full transition-all duration-500 ${mc}`}
-                                    style={{ width: `${morale}%` }}
-                                  />
-                                </div>
-                                <span
-                                  className={`text-[10px] font-black shrink-0 ${tc}`}
-                                >
-                                  {ml}
-                                </span>
-                              </div>
-                            );
-                          })()}
-                        </div>
-                      </div>
-
-                      {/* ── COL 2: CAMPO ── */}
-                      <div className="bg-surface-container rounded-lg overflow-hidden">
-                        {/* 2D Pitch */}
-                        {(() => {
-                          const titulares = annotatedSquad.filter(
-                            (p) => p.status === "Titular",
-                          );
-                          const grPlayers = titulares.filter(
-                            (p) => p.position === "GR",
-                          );
-                          const defPlayers = titulares.filter(
-                            (p) => p.position === "DEF",
-                          );
-                          const medPlayers = titulares.filter(
-                            (p) => p.position === "MED",
-                          );
-                          const ataPlayers = titulares.filter(
-                            (p) => p.position === "ATA",
-                          );
-                          const rows = [
-                            ataPlayers,
-                            medPlayers,
-                            defPlayers,
-                            grPlayers,
-                          ];
-                          const rowYs = ["7%", "30%", "55%", "79%"];
-                          const posColors = {
-                            GR: "bg-amber-500 text-zinc-900",
-                            DEF: "bg-sky-500 text-zinc-900",
-                            MED: "bg-primary text-on-primary",
-                            ATA: "bg-red-500 text-white",
-                          };
-                          return (
-                            <div
-                              className="relative w-full"
-                              style={{
-                                aspectRatio: "9/16",
-                                background:
-                                  "linear-gradient(180deg, #05430e 0%, #0b5e1a 50%, #05430e 100%)",
-                              }}
-                            >
-                              <svg
-                                className="absolute inset-0 w-full h-full"
-                                viewBox="0 0 560 315"
-                                preserveAspectRatio="none"
-                                aria-hidden="true"
-                              >
-                                <rect
-                                  x="10"
-                                  y="10"
-                                  width="540"
-                                  height="295"
-                                  fill="none"
-                                  stroke="rgba(255,255,255,0.18)"
-                                  strokeWidth="1.5"
-                                  rx="2"
-                                />
-                                <line
-                                  x1="10"
-                                  y1="157"
-                                  x2="550"
-                                  y2="157"
-                                  stroke="rgba(255,255,255,0.15)"
-                                  strokeWidth="1"
-                                />
-                                <circle
-                                  cx="280"
-                                  cy="157"
-                                  r="50"
-                                  fill="none"
-                                  stroke="rgba(255,255,255,0.12)"
-                                  strokeWidth="1"
-                                />
-                                <circle
-                                  cx="280"
-                                  cy="157"
-                                  r="3"
-                                  fill="rgba(255,255,255,0.18)"
-                                />
-                                <rect
-                                  x="168"
-                                  y="10"
-                                  width="224"
-                                  height="70"
-                                  fill="none"
-                                  stroke="rgba(255,255,255,0.12)"
-                                  strokeWidth="1"
-                                />
-                                <rect
-                                  x="224"
-                                  y="10"
-                                  width="112"
-                                  height="26"
-                                  fill="none"
-                                  stroke="rgba(255,255,255,0.1)"
-                                  strokeWidth="1"
-                                />
-                                <rect
-                                  x="168"
-                                  y="235"
-                                  width="224"
-                                  height="70"
-                                  fill="none"
-                                  stroke="rgba(255,255,255,0.12)"
-                                  strokeWidth="1"
-                                />
-                                <rect
-                                  x="224"
-                                  y="289"
-                                  width="112"
-                                  height="26"
-                                  fill="none"
-                                  stroke="rgba(255,255,255,0.1)"
-                                  strokeWidth="1"
-                                />
-                              </svg>
-                              {rows.map((rowPlayers, ri) =>
-                                rowPlayers.length > 0 ? (
-                                  <div
-                                    key={ri}
-                                    className="absolute w-full flex justify-evenly items-start px-4"
-                                    style={{ top: rowYs[ri] }}
-                                  >
-                                    {rowPlayers.map((player) => (
-                                      <div
-                                        key={player.id}
-                                        className="flex flex-col items-center gap-0.5"
-                                        style={{ maxWidth: "80px" }}
-                                      >
-                                        <div
-                                          className={`w-11 h-11 rounded-full flex items-center justify-center font-black text-xs border-2 border-white/20 shrink-0 relative shadow-lg group-hover:scale-110 transition-transform ${posColors[player.position] || "bg-zinc-500 text-white"} ${player.isUnavailable ? "opacity-50 ring-2 ring-red-500" : ""}`}
-                                        >
-                                          {POSITION_SHORT_LABELS[
-                                            player.position
-                                          ] || "?"}
-                                          {player.isUnavailable && (
-                                            <span className="absolute -top-1 -right-1 text-[9px] leading-none">
-                                              {(player.suspension_until_matchweek ||
-                                                0) > matchweekCount
-                                                ? "🟥"
-                                                : "🩹"}
-                                            </span>
-                                          )}
-                                        </div>
-                                        <div
-                                          className="bg-black/70 backdrop-blur-sm px-1.5 py-0.5 rounded text-[9px] font-black text-white text-center cursor-pointer hover:text-primary transition-colors"
-                                          style={{
-                                            maxWidth: "72px",
-                                            whiteSpace: "nowrap",
-                                            overflow: "hidden",
-                                            textOverflow: "ellipsis",
-                                          }}
-                                          onClick={() =>
-                                            socket.emit(
-                                              "requestPlayerHistory",
-                                              { playerId: player.id },
-                                            )
-                                          }
-                                        >
-                                          {player.name.split(" ").pop()}
-                                        </div>
-                                        <span
-                                          className="text-[9px] font-black"
-                                          style={{
-                                            color: "var(--color-primary)",
-                                            textShadow:
-                                              "0 1px 4px rgba(0,0,0,0.95)",
-                                          }}
-                                        >
-                                          {player.skill}
-                                        </span>
-                                      </div>
-                                    ))}
-                                  </div>
-                                ) : null,
-                              )}
-                              {!tactic.formation && (
-                                <div className="absolute inset-0 flex items-center justify-center">
-                                  <p
-                                    className="text-zinc-300 text-sm font-bold text-center px-8 leading-relaxed"
+                                    className="relative w-full"
                                     style={{
-                                      textShadow: "0 1px 4px rgba(0,0,0,0.9)",
+                                      aspectRatio: "9/16",
+                                      background:
+                                        "linear-gradient(180deg, #05430e 0%, #0b5e1a 50%, #05430e 100%)",
                                     }}
                                   >
-                                    Escolhe uma formação para ver os jogadores
-                                    em campo
-                                  </p>
-                                </div>
-                              )}
-                              <div className="absolute inset-0 bg-gradient-to-t from-black/30 to-transparent pointer-events-none" />
+                                    <svg
+                                      className="absolute inset-0 w-full h-full"
+                                      viewBox="0 0 560 315"
+                                      preserveAspectRatio="none"
+                                      aria-hidden="true"
+                                    >
+                                      <rect
+                                        x="10"
+                                        y="10"
+                                        width="540"
+                                        height="295"
+                                        fill="none"
+                                        stroke="rgba(255,255,255,0.18)"
+                                        strokeWidth="1.5"
+                                        rx="2"
+                                      />
+                                      <line
+                                        x1="10"
+                                        y1="157"
+                                        x2="550"
+                                        y2="157"
+                                        stroke="rgba(255,255,255,0.15)"
+                                        strokeWidth="1"
+                                      />
+                                      <circle
+                                        cx="280"
+                                        cy="157"
+                                        r="50"
+                                        fill="none"
+                                        stroke="rgba(255,255,255,0.12)"
+                                        strokeWidth="1"
+                                      />
+                                      <circle
+                                        cx="280"
+                                        cy="157"
+                                        r="3"
+                                        fill="rgba(255,255,255,0.18)"
+                                      />
+                                      <rect
+                                        x="168"
+                                        y="10"
+                                        width="224"
+                                        height="70"
+                                        fill="none"
+                                        stroke="rgba(255,255,255,0.12)"
+                                        strokeWidth="1"
+                                      />
+                                      <rect
+                                        x="224"
+                                        y="10"
+                                        width="112"
+                                        height="26"
+                                        fill="none"
+                                        stroke="rgba(255,255,255,0.1)"
+                                        strokeWidth="1"
+                                      />
+                                      <rect
+                                        x="168"
+                                        y="235"
+                                        width="224"
+                                        height="70"
+                                        fill="none"
+                                        stroke="rgba(255,255,255,0.12)"
+                                        strokeWidth="1"
+                                      />
+                                      <rect
+                                        x="224"
+                                        y="289"
+                                        width="112"
+                                        height="26"
+                                        fill="none"
+                                        stroke="rgba(255,255,255,0.1)"
+                                        strokeWidth="1"
+                                      />
+                                    </svg>
+                                    {rows.map((rowPlayers, ri) =>
+                                      rowPlayers.length > 0 ? (
+                                        <div
+                                          key={ri}
+                                          className="absolute w-full flex justify-evenly items-start px-4"
+                                          style={{ top: rowYs[ri] }}
+                                        >
+                                          {rowPlayers.map((player) => (
+                                            <div
+                                              key={player.id}
+                                              className="flex flex-col items-center gap-0.5"
+                                              style={{ maxWidth: "80px" }}
+                                            >
+                                              <div
+                                                className={`w-11 h-11 rounded-full flex items-center justify-center font-black text-xs border-2 border-white/20 shrink-0 relative shadow-lg group-hover:scale-110 transition-transform ${posColors[player.position] || "bg-zinc-500 text-white"} ${player.isUnavailable ? "opacity-50 ring-2 ring-red-500" : ""}`}
+                                              >
+                                                {POSITION_SHORT_LABELS[
+                                                  player.position
+                                                ] || "?"}
+                                                {player.isUnavailable && (
+                                                  <span className="absolute -top-1 -right-1 text-[9px] leading-none">
+                                                    {(player.suspension_until_matchweek ||
+                                                      0) > matchweekCount
+                                                      ? "🟥"
+                                                      : "🩹"}
+                                                  </span>
+                                                )}
+                                              </div>
+                                              <div
+                                                className="bg-black/70 backdrop-blur-sm px-1.5 py-0.5 rounded text-[9px] font-black text-white text-center cursor-pointer hover:text-primary transition-colors"
+                                                style={{
+                                                  maxWidth: "72px",
+                                                  whiteSpace: "nowrap",
+                                                  overflow: "hidden",
+                                                  textOverflow: "ellipsis",
+                                                }}
+                                                onClick={() =>
+                                                  socket.emit(
+                                                    "requestPlayerHistory",
+                                                    { playerId: player.id },
+                                                  )
+                                                }
+                                              >
+                                                {player.name.split(" ").pop()}
+                                              </div>
+                                              <span
+                                                className="text-[9px] font-black"
+                                                style={{
+                                                  color: "var(--color-primary)",
+                                                  textShadow:
+                                                    "0 1px 4px rgba(0,0,0,0.95)",
+                                                }}
+                                              >
+                                                {player.skill}
+                                              </span>
+                                            </div>
+                                          ))}
+                                        </div>
+                                      ) : null,
+                                    )}
+                                    {!tactic.formation && (
+                                      <div className="absolute inset-0 flex items-center justify-center">
+                                        <p
+                                          className="text-zinc-300 text-sm font-bold text-center px-8 leading-relaxed"
+                                          style={{
+                                            textShadow:
+                                              "0 1px 4px rgba(0,0,0,0.9)",
+                                          }}
+                                        >
+                                          Escolhe uma formação para ver os
+                                          jogadores em campo
+                                        </p>
+                                      </div>
+                                    )}
+                                    <div className="absolute inset-0 bg-gradient-to-t from-black/30 to-transparent pointer-events-none" />
+                                  </div>
+                                );
+                              })()}
                             </div>
-                          );
-                        })()}
-                      </div>
+                          </div>
+                        </div>
+                      )}
                     </div>
                   )}
 
@@ -7270,452 +7758,6 @@ function App() {
                 </motion.div>
               </AnimatePresence>
             </div>
-
-            {activeTab === "tactic" && (
-              <div>
-                <div className="bg-surface-container rounded-lg overflow-hidden sticky top-23 flex flex-col">
-                  {disconnected && (
-                    <div className="px-4 py-2 text-red-400 text-[10px] font-bold text-center bg-red-500/5 border-b border-red-500/20">
-                      ⚠️ Desligado — a reconectar...
-                    </div>
-                  )}
-                  {nextMatchSummary?.isCup && !nextMatchOpponent ? (
-                    <div className="flex flex-col items-center gap-4 py-8 text-center px-6">
-                      <p className="text-5xl">🏆</p>
-                      <p className="text-on-surface-variant font-bold text-sm leading-relaxed">
-                        Já foste eliminado desta ronda da Taça.
-                        <br />
-                        Aguarda os resultados dos outros jogos na aba LIVE.
-                      </p>
-                    </div>
-                  ) : (
-                    <div className="w-full">
-                      {/* JOGAR button */}
-                      <div className="p-4 border-b border-outline-variant/15">
-                        {(() => {
-                          const isReady = players.find(
-                            (p) => p.name === me.name,
-                          )?.ready;
-                          const isHalftime =
-                            showHalftimePanel && !isPlayingMatch;
-                          const isEliminatedCupSpectator =
-                            nextMatchSummary?.isCup && !nextMatchOpponent;
-                          const isDisabled = isEliminatedCupSpectator
-                            ? !!isReady
-                            : !isHalftime && !isReady && !isLineupComplete;
-                          return (
-                            <>
-                              <button
-                                onClick={
-                                  isHalftime ? handleHalftimeReady : handleReady
-                                }
-                                disabled={isDisabled}
-                                className={`w-full py-3.5 font-headline font-black rounded-sm text-base uppercase tracking-widest transition-all ${
-                                  isReady
-                                    ? "bg-surface-bright text-on-surface-variant"
-                                    : isDisabled
-                                      ? "bg-surface-bright text-on-surface-variant cursor-not-allowed opacity-40"
-                                      : "bg-primary text-on-primary hover:brightness-110"
-                                }`}
-                              >
-                                {isReady
-                                  ? "⏳ A aguardar..."
-                                  : isEliminatedCupSpectator
-                                    ? "Avançar para Taça"
-                                    : isHalftime && isCupMatch
-                                      ? "2ª Parte — Taça"
-                                      : isHalftime
-                                        ? "2ª Parte"
-                                        : "Jogar Jornada"}
-                              </button>
-                              {isDisabled &&
-                                !isEliminatedCupSpectator &&
-                                !isReady && (
-                                  <p className="text-[10px] font-bold text-red-400 mt-2 text-center">
-                                    Faltam titulares: 1 GR + 10 de campo
-                                  </p>
-                                )}
-                              {!isDisabled && !isReady && (
-                                <p className="text-[10px] text-zinc-600 mt-2 text-center">
-                                  A jornada avança quando todos clicarem.
-                                </p>
-                              )}
-                            </>
-                          );
-                        })()}
-                      </div>
-
-                      {/* Squad list */}
-                      <div className="divide-y divide-outline-variant/10">
-                        {/* Header counts */}
-                        <div className="px-4 py-2.5 flex items-center justify-between bg-surface-container-high/60">
-                          <span className="text-[9px] uppercase tracking-[0.2em] font-black text-on-surface-variant">
-                            Plantel convocado
-                          </span>
-                          <span className="text-[9px] font-black text-on-surface-variant">
-                            <span className="text-emerald-400">
-                              {
-                                annotatedSquad.filter(
-                                  (p) => p.status === "Titular",
-                                ).length
-                              }
-                            </span>
-                            /11
-                            {" · "}
-                            <span className="text-amber-400">
-                              {
-                                annotatedSquad.filter(
-                                  (p) => p.status === "Suplente",
-                                ).length
-                              }
-                            </span>
-                            /5
-                          </span>
-                        </div>
-
-                        {/* Titulares */}
-                        {annotatedSquad
-                          .filter((p) => p.status === "Titular")
-                          .map((player) => (
-                            <div
-                              key={player.id}
-                              className={`relative flex items-center gap-3 px-4 py-2.5 hover:bg-primary/5 transition-colors select-none ${player.isUnavailable ? "opacity-50" : ""}`}
-                            >
-                              <span
-                                className={`shrink-0 w-[22px] text-center text-[10px] font-black ${
-                                  player.position === "GR"
-                                    ? "text-amber-400"
-                                    : player.position === "DEF"
-                                      ? "text-sky-400"
-                                      : player.position === "MED"
-                                        ? "text-primary"
-                                        : "text-red-400"
-                                }`}
-                              >
-                                {POSITION_SHORT_LABELS[player.position]}
-                              </span>
-                              <span className="flex-1 text-sm font-bold text-on-surface truncate">
-                                <PlayerLink playerId={player.id}>
-                                  {player.name}
-                                </PlayerLink>
-                                {!!player.is_star &&
-                                  (player.position === "MED" ||
-                                    player.position === "ATA") && (
-                                    <span className="ml-1 text-amber-400 text-[10px]">
-                                      ★
-                                    </span>
-                                  )}
-                                {player.isUnavailable && (
-                                  <span className="ml-1 text-xs">
-                                    {(player.suspension_until_matchweek || 0) >
-                                    matchweekCount
-                                      ? "🟥"
-                                      : "🩹"}
-                                  </span>
-                                )}
-                              </span>
-                              <span className="text-sm font-black text-primary shrink-0">
-                                {player.skill}
-                                {player.prev_skill != null &&
-                                  player.prev_skill !== player.skill && (
-                                    <span
-                                      className={`ml-0.5 text-[9px] ${player.skill > player.prev_skill ? "text-emerald-400" : "text-red-400"}`}
-                                    >
-                                      {player.skill > player.prev_skill
-                                        ? "▲"
-                                        : "▼"}
-                                    </span>
-                                  )}
-                              </span>
-                              <span
-                                className="shrink-0 w-6 h-6 rounded-full bg-emerald-500/15 flex items-center justify-center text-sm cursor-pointer"
-                                onClick={(e) => {
-                                  e.stopPropagation();
-                                  setOpenStatusPickerId((prev) =>
-                                    prev === player.id ? null : player.id,
-                                  );
-                                }}
-                              >
-                                🟢
-                              </span>
-                              {openStatusPickerId === player.id &&
-                                (() => {
-                                  const subCount = Object.entries(
-                                    tactic.positions,
-                                  ).filter(
-                                    ([id, s]) =>
-                                      s === "Suplente" &&
-                                      Number(id) !== player.id,
-                                  ).length;
-                                  const titCount = Object.entries(
-                                    tactic.positions,
-                                  ).filter(
-                                    ([id, s]) =>
-                                      s === "Titular" &&
-                                      Number(id) !== player.id,
-                                  ).length;
-                                  const subsFull = subCount >= 5;
-                                  const titularesFull = titCount >= 11;
-                                  return (
-                                    <div
-                                      className="absolute right-4 top-full z-50 bg-surface-container-high border border-outline-variant/40 rounded-md shadow-xl p-1 flex flex-col gap-0.5 min-w-[140px]"
-                                      onClick={(e) => e.stopPropagation()}
-                                    >
-                                      {[
-                                        ["Titular", "🟢", "Titular"],
-                                        ["Suplente", "🟡", "Suplente"],
-                                        ["Excluído", "⚫️", "Não convocado"],
-                                      ].map(([status, emoji, label]) => {
-                                        const unavail =
-                                          player.isUnavailable &&
-                                          (status === "Titular" ||
-                                            status === "Suplente");
-                                        const disabled =
-                                          unavail ||
-                                          (status === "Titular" &&
-                                            titularesFull &&
-                                            player.status !== "Titular") ||
-                                          (status === "Suplente" &&
-                                            subsFull &&
-                                            player.status !== "Suplente");
-                                        return (
-                                          <button
-                                            key={status}
-                                            onClick={() =>
-                                              !disabled &&
-                                              handleSetPlayerStatus(
-                                                player.id,
-                                                status,
-                                              )
-                                            }
-                                            className={`px-3 py-2 rounded text-xs font-bold flex items-center gap-2 text-left ${disabled ? "opacity-40 cursor-not-allowed" : player.status === status ? "bg-surface-bright text-on-surface" : "hover:bg-surface-bright/60 text-on-surface-variant"}`}
-                                          >
-                                            {emoji} {label}
-                                          </button>
-                                        );
-                                      })}
-                                    </div>
-                                  );
-                                })()}
-                            </div>
-                          ))}
-
-                        {/* Suplentes */}
-                        {annotatedSquad.filter((p) => p.status === "Suplente")
-                          .length > 0 && (
-                          <>
-                            <div className="px-4 py-1.5 bg-surface-container-lowest/80 text-[8px] font-black uppercase tracking-[0.2em] text-on-surface-variant/60">
-                              Suplentes
-                            </div>
-                            {annotatedSquad
-                              .filter((p) => p.status === "Suplente")
-                              .map((player) => (
-                                <div
-                                  key={player.id}
-                                  className={`relative flex items-center gap-3 px-4 py-2 hover:bg-primary/5 transition-colors select-none opacity-75 ${player.isUnavailable ? "opacity-35" : ""}`}
-                                >
-                                  <span className="shrink-0 w-[22px] text-center text-[10px] font-black text-on-surface-variant">
-                                    {POSITION_SHORT_LABELS[player.position]}
-                                  </span>
-                                  <span className="flex-1 text-sm font-medium text-on-surface truncate">
-                                    <PlayerLink playerId={player.id}>
-                                      {player.name}
-                                    </PlayerLink>
-                                    {player.isUnavailable && (
-                                      <span className="ml-1 text-xs">
-                                        {(player.suspension_until_matchweek ||
-                                          0) > matchweekCount
-                                          ? "🟥"
-                                          : "🩹"}
-                                      </span>
-                                    )}
-                                  </span>
-                                  <span className="text-sm font-bold text-on-surface-variant shrink-0">
-                                    {player.skill}
-                                  </span>
-                                  <span
-                                    className="shrink-0 w-6 h-6 rounded-full bg-amber-500/15 flex items-center justify-center text-sm cursor-pointer"
-                                    onClick={(e) => {
-                                      e.stopPropagation();
-                                      setOpenStatusPickerId((prev) =>
-                                        prev === player.id ? null : player.id,
-                                      );
-                                    }}
-                                  >
-                                    🟡
-                                  </span>
-                                  {openStatusPickerId === player.id &&
-                                    (() => {
-                                      const titCount = Object.entries(
-                                        tactic.positions,
-                                      ).filter(
-                                        ([id, s]) =>
-                                          s === "Titular" &&
-                                          Number(id) !== player.id,
-                                      ).length;
-                                      const subCount = Object.entries(
-                                        tactic.positions,
-                                      ).filter(
-                                        ([id, s]) =>
-                                          s === "Suplente" &&
-                                          Number(id) !== player.id,
-                                      ).length;
-                                      const titularesFull = titCount >= 11;
-                                      const subsFull = subCount >= 5;
-                                      return (
-                                        <div
-                                          className="absolute right-4 top-full z-50 bg-surface-container-high border border-outline-variant/40 rounded-md shadow-xl p-1 flex flex-col gap-0.5 min-w-[140px]"
-                                          onClick={(e) => e.stopPropagation()}
-                                        >
-                                          {[
-                                            ["Titular", "🟢", "Titular"],
-                                            ["Suplente", "🟡", "Suplente"],
-                                            ["Excluído", "⚫️", "Não convocado"],
-                                          ].map(([status, emoji, label]) => {
-                                            const disabled =
-                                              (status === "Titular" &&
-                                                titularesFull &&
-                                                player.status !== "Titular") ||
-                                              (status === "Suplente" &&
-                                                subsFull &&
-                                                player.status !== "Suplente");
-                                            return (
-                                              <button
-                                                key={status}
-                                                onClick={() =>
-                                                  !disabled &&
-                                                  handleSetPlayerStatus(
-                                                    player.id,
-                                                    status,
-                                                  )
-                                                }
-                                                className={`px-3 py-2 rounded text-xs font-bold flex items-center gap-2 ${
-                                                  disabled
-                                                    ? "opacity-40 cursor-not-allowed"
-                                                    : player.status === status
-                                                      ? "bg-surface-bright text-on-surface"
-                                                      : "hover:bg-surface-bright/60 text-on-surface-variant"
-                                                }`}
-                                              >
-                                                {emoji} {label}
-                                              </button>
-                                            );
-                                          })}
-                                        </div>
-                                      );
-                                    })()}
-                                </div>
-                              ))}
-                          </>
-                        )}
-
-                        {/* Não convocados */}
-                        {annotatedSquad.filter(
-                          (p) =>
-                            p.status !== "Titular" && p.status !== "Suplente",
-                        ).length > 0 && (
-                          <>
-                            <div className="px-4 py-1.5 bg-surface-container-lowest/80 text-[8px] font-black uppercase tracking-[0.2em] text-on-surface-variant/40">
-                              Não convocados
-                            </div>
-                            {annotatedSquad
-                              .filter(
-                                (p) =>
-                                  p.status !== "Titular" &&
-                                  p.status !== "Suplente",
-                              )
-                              .map((player) => (
-                                <div
-                                  key={player.id}
-                                  className="relative flex items-center gap-3 px-4 py-2 select-none opacity-30 hover:opacity-60 transition-opacity cursor-pointer"
-                                >
-                                  <span className="shrink-0 w-[22px] text-center text-[10px] font-black text-on-surface-variant">
-                                    {POSITION_SHORT_LABELS[player.position]}
-                                  </span>
-                                  <span className="flex-1 text-sm font-medium text-on-surface-variant truncate">
-                                    {player.name}
-                                  </span>
-                                  <span className="text-xs font-bold text-on-surface-variant shrink-0">
-                                    {player.skill}
-                                  </span>
-                                  <span
-                                    className="shrink-0 w-6 h-6 rounded-full bg-zinc-800 flex items-center justify-center text-sm cursor-pointer"
-                                    onClick={(e) => {
-                                      e.stopPropagation();
-                                      setOpenStatusPickerId((prev) =>
-                                        prev === player.id ? null : player.id,
-                                      );
-                                    }}
-                                  >
-                                    ⚫️
-                                  </span>
-                                  {openStatusPickerId === player.id &&
-                                    (() => {
-                                      const subCount = Object.entries(
-                                        tactic.positions,
-                                      ).filter(
-                                        ([id, s]) =>
-                                          s === "Suplente" &&
-                                          Number(id) !== player.id,
-                                      ).length;
-                                      const titCount = Object.entries(
-                                        tactic.positions,
-                                      ).filter(
-                                        ([id, s]) =>
-                                          s === "Titular" &&
-                                          Number(id) !== player.id,
-                                      ).length;
-                                      const subsFull = subCount >= 5;
-                                      const titularesFull = titCount >= 11;
-                                      return (
-                                        <div
-                                          className="absolute right-4 bottom-full mb-1 z-50 bg-surface-container-high border border-outline-variant/40 rounded-md shadow-xl p-1 flex flex-col gap-0.5 min-w-[140px]"
-                                          onClick={(e) => e.stopPropagation()}
-                                        >
-                                          {[
-                                            ["Titular", "🟢", "Titular"],
-                                            ["Suplente", "🟡", "Suplente"],
-                                            ["Excluído", "⚫️", "Não convocado"],
-                                          ].map(([status, emoji, label]) => {
-                                            const unavail =
-                                              player.isUnavailable &&
-                                              (status === "Titular" ||
-                                                status === "Suplente");
-                                            const disabled =
-                                              unavail ||
-                                              (status === "Titular" &&
-                                                titularesFull) ||
-                                              (status === "Suplente" &&
-                                                subsFull);
-                                            return (
-                                              <button
-                                                key={status}
-                                                onClick={() =>
-                                                  !disabled &&
-                                                  handleSetPlayerStatus(
-                                                    player.id,
-                                                    status,
-                                                  )
-                                                }
-                                                className={`px-3 py-2 rounded text-xs font-bold flex items-center gap-2 ${disabled ? "opacity-40 cursor-not-allowed" : "hover:bg-surface-bright/60 text-on-surface-variant"}`}
-                                              >
-                                                {emoji} {label}
-                                              </button>
-                                            );
-                                          })}
-                                        </div>
-                                      );
-                                    })()}
-                                </div>
-                              ))}
-                          </>
-                        )}
-                      </div>
-                    </div>
-                  )}
-                </div>
-              </div>
-            )}
           </div>
         </div>
       </main>
