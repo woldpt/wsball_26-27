@@ -6868,158 +6868,211 @@ function App() {
 
                   {activeTab === "tactic" && (
                     <div>
-                      {/* ── COMPACT PLAYER LIST ──────────────────────────── */}
-                      <div className="bg-surface-container rounded-lg">
-                        <div className="px-4 py-3 border-b border-outline-variant/20 bg-surface/40 rounded-t-lg flex items-center justify-between">
-                          <p className="text-[10px] uppercase tracking-widest text-zinc-500 font-black">
-                            Plantel
-                          </p>
-                          <p className="text-[10px] font-black text-zinc-500">
-                            <span className="text-emerald-400">
-                              {
-                                annotatedSquad.filter(
-                                  (p) => p.status === "Titular",
-                                ).length
-                              }
-                            </span>
-                            /11 titulares ·{" "}
-                            <span className="text-amber-400">
-                              {
-                                annotatedSquad.filter(
-                                  (p) => p.status === "Suplente",
-                                ).length
-                              }
-                            </span>
-                            /5 suplentes
-                          </p>
+                      {/* ── FORMATION EDITOR (inspired by Stitch redesign) ── */}
+                      <div className="bg-surface-container rounded-lg overflow-hidden">
+                        {/* Header */}
+                        <div className="px-5 py-4 border-b border-outline-variant/20 bg-surface/40 flex items-center justify-between">
+                          <div className="flex items-center gap-3">
+                            <h2 className="font-headline text-xl font-black tracking-tighter uppercase text-on-surface">
+                              Editor de Formação
+                            </h2>
+                            {tactic.formation && (
+                              <span className="px-2 py-0.5 bg-primary-container/30 text-primary text-[10px] font-black tracking-widest rounded border border-primary/20 uppercase">
+                                {tactic.formation}
+                              </span>
+                            )}
+                          </div>
+                          <button
+                            className="text-[10px] uppercase tracking-widest font-black text-on-surface-variant hover:text-error transition-colors flex items-center gap-1"
+                            onClick={() => {
+                              setTactic((prev) => {
+                                const allExcluded = Object.fromEntries(
+                                  mySquad.map((p) => [p.id, "Excluído"]),
+                                );
+                                const next = { ...prev, formation: "", positions: allExcluded };
+                                socket.emit("setTactic", next);
+                                return next;
+                              });
+                            }}
+                          >
+                            <span className="material-symbols-outlined text-sm">clear</span>
+                            Limpar
+                          </button>
                         </div>
-                        <div className="divide-y divide-outline-variant/10">
-                          {annotatedSquad.map((player) => (
-                            <div
-                              key={player.id}
-                              className={`flex items-center gap-3 px-4 py-2.5 transition-colors hover:bg-surface-bright/20 select-none relative ${player.isUnavailable ? "opacity-60" : ""}`}
+
+                        {/* Formation pill buttons */}
+                        <div className="px-5 py-3 border-b border-outline-variant/15 flex flex-wrap gap-2">
+                          {[
+                            { value: "4-4-2", label: "4-4-2 Clássico" },
+                            { value: "4-3-3", label: "4-3-3 Ofensivo" },
+                            { value: "3-5-2", label: "3-5-2 Controlo" },
+                            { value: "5-3-2", label: "5-3-2 Autocarro" },
+                            { value: "4-5-1", label: "4-5-1 Catenaccio" },
+                            { value: "3-4-3", label: "3-4-3 Total" },
+                            { value: "4-2-4", label: "4-2-4 Avassalador" },
+                            { value: "5-4-1", label: "5-4-1 Ferrolho" },
+                          ].map(({ value, label }) => (
+                            <button
+                              key={value}
+                              onClick={() => handleAutoPick(value)}
+                              className={`px-3 py-1.5 text-[10px] font-black uppercase tracking-widest transition-all rounded-sm ${
+                                tactic.formation === value
+                                  ? "bg-primary text-on-primary"
+                                  : "bg-surface-container-high hover:bg-surface-bright text-on-surface-variant hover:text-on-surface border border-outline-variant/20"
+                              }`}
                             >
-                              <span
-                                className={`cursor-pointer text-base leading-none shrink-0 inline-flex items-center justify-center w-7 h-7 rounded-full ${player.status === "Titular" ? "bg-emerald-500/15" : player.status === "Suplente" ? "bg-amber-500/15" : "bg-zinc-900/80"}`}
-                                onClick={(e) => {
-                                  e.stopPropagation();
-                                  setOpenStatusPickerId((prev) =>
-                                    prev === player.id ? null : player.id,
-                                  );
-                                }}
-                              >
-                                {player.status === "Titular"
-                                  ? "🟢"
-                                  : player.status === "Suplente"
-                                    ? "🟡"
-                                    : "⚫️"}
-                              </span>
-                              <span
-                                className={`text-xs font-black w-5 text-center shrink-0 ${POSITION_TEXT_CLASS[player.position] || "text-zinc-400"}`}
-                              >
-                                {POSITION_SHORT_LABELS[player.position] ||
-                                  player.position}
-                              </span>
-                              <span className="flex-1 text-white text-sm font-bold truncate">
-                                <PlayerLink playerId={player.id}>
-                                  {player.name}
-                                </PlayerLink>
-                                {!!player.is_star &&
-                                  (player.position === "MED" ||
-                                    player.position === "ATA") && (
-                                    <span
-                                      className="ml-1 text-amber-400 font-black"
-                                      title="Craque"
-                                    >
-                                      *
-                                    </span>
-                                  )}
-                                {player.isUnavailable && (
-                                  <span className="ml-1.5 text-xs font-bold text-red-400">
-                                    {(player.suspension_until_matchweek || 0) >
-                                    matchweekCount
-                                      ? "🟥"
-                                      : "🩹"}
-                                  </span>
-                                )}
-                              </span>
-                              <span className="text-primary font-black text-sm shrink-0">
-                                {player.skill}
-                                {player.prev_skill !== null &&
-                                  player.prev_skill !== undefined &&
-                                  player.prev_skill !== player.skill && (
-                                    <span
-                                      className={`ml-0.5 text-[10px] ${player.skill > player.prev_skill ? "text-emerald-400" : "text-red-400"}`}
-                                    >
-                                      {player.skill > player.prev_skill
-                                        ? "▲"
-                                        : "▼"}
-                                    </span>
-                                  )}
-                              </span>
-                              {openStatusPickerId === player.id &&
-                                (() => {
-                                  const subCount = Object.entries(
-                                    tactic.positions,
-                                  ).filter(
-                                    ([id, s]) =>
-                                      s === "Suplente" &&
-                                      Number(id) !== player.id,
-                                  ).length;
-                                  const subsFull = subCount >= 5;
-                                  return (
-                                    <div
-                                      className="absolute left-10 top-full z-50 bg-surface-container-high border border-outline-variant/40 rounded-md shadow-xl p-1 flex flex-col gap-0.5 min-w-36"
-                                      onClick={(e) => e.stopPropagation()}
-                                    >
-                                      {[
-                                        ["Titular", "🟢", "Convocado"],
-                                        ["Suplente", "🟡", "Suplente"],
-                                        ["Excluído", "⚫️", "Não convocado"],
-                                      ].map(([status, emoji, label]) => {
-                                        const unavailable =
-                                          player.isUnavailable &&
-                                          (status === "Titular" ||
-                                            status === "Suplente");
-                                        const disabled =
-                                          unavailable ||
-                                          (status === "Suplente" &&
-                                            subsFull &&
-                                            player.status !== "Suplente");
-                                        return (
-                                          <button
-                                            key={status}
-                                            onClick={() =>
-                                              !disabled &&
-                                              handleSetPlayerStatus(
-                                                player.id,
-                                                status,
-                                              )
-                                            }
-                                            title={
-                                              unavailable
-                                                ? "Jogador indisponível (lesão/suspensão)"
-                                                : disabled
-                                                  ? "Máximo de 5 suplentes atingido"
-                                                  : undefined
-                                            }
-                                            className={`px-3 py-2 rounded-md text-xs font-bold flex items-center gap-2 text-left ${
-                                              disabled
-                                                ? "opacity-40 cursor-not-allowed text-on-surface-variant"
-                                                : player.status === status
-                                                  ? "bg-surface-bright text-on-surface"
-                                                  : "hover:bg-surface-bright/60 text-on-surface-variant"
-                                            }`}
-                                          >
-                                            {emoji} {label}
-                                          </button>
-                                        );
-                                      })}
-                                    </div>
-                                  );
-                                })()}
-                            </div>
+                              {label}
+                            </button>
                           ))}
+                        </div>
+
+                        {/* 2D Pitch */}
+                        {(() => {
+                          const titulares = annotatedSquad.filter((p) => p.status === "Titular");
+                          const grPlayers = titulares.filter((p) => p.position === "GR");
+                          const defPlayers = titulares.filter((p) => p.position === "DEF");
+                          const medPlayers = titulares.filter((p) => p.position === "MED");
+                          const ataPlayers = titulares.filter((p) => p.position === "ATA");
+                          const rows = [ataPlayers, medPlayers, defPlayers, grPlayers];
+                          const rowYs = ["7%", "30%", "55%", "79%"];
+                          const posColors = {
+                            GR: "bg-amber-500 text-zinc-900",
+                            DEF: "bg-sky-500 text-zinc-900",
+                            MED: "bg-primary text-on-primary",
+                            ATA: "bg-red-500 text-white",
+                          };
+                          return (
+                            <div
+                              className="relative w-full"
+                              style={{
+                                aspectRatio: "16/9",
+                                background: "linear-gradient(180deg, #05430e 0%, #0b5e1a 50%, #05430e 100%)",
+                              }}
+                            >
+                              <svg
+                                className="absolute inset-0 w-full h-full"
+                                viewBox="0 0 560 315"
+                                preserveAspectRatio="none"
+                                aria-hidden="true"
+                              >
+                                <rect x="10" y="10" width="540" height="295" fill="none" stroke="rgba(255,255,255,0.18)" strokeWidth="1.5" rx="2" />
+                                <line x1="10" y1="157" x2="550" y2="157" stroke="rgba(255,255,255,0.15)" strokeWidth="1" />
+                                <circle cx="280" cy="157" r="50" fill="none" stroke="rgba(255,255,255,0.12)" strokeWidth="1" />
+                                <circle cx="280" cy="157" r="3" fill="rgba(255,255,255,0.18)" />
+                                <rect x="168" y="10" width="224" height="70" fill="none" stroke="rgba(255,255,255,0.12)" strokeWidth="1" />
+                                <rect x="224" y="10" width="112" height="26" fill="none" stroke="rgba(255,255,255,0.1)" strokeWidth="1" />
+                                <rect x="168" y="235" width="224" height="70" fill="none" stroke="rgba(255,255,255,0.12)" strokeWidth="1" />
+                                <rect x="224" y="289" width="112" height="26" fill="none" stroke="rgba(255,255,255,0.1)" strokeWidth="1" />
+                              </svg>
+                              {rows.map((rowPlayers, ri) =>
+                                rowPlayers.length > 0 ? (
+                                  <div
+                                    key={ri}
+                                    className="absolute w-full flex justify-evenly items-start px-4"
+                                    style={{ top: rowYs[ri] }}
+                                  >
+                                    {rowPlayers.map((player) => (
+                                      <div
+                                        key={player.id}
+                                        className="flex flex-col items-center gap-0.5"
+                                        style={{ maxWidth: "80px" }}
+                                      >
+                                        <div
+                                          className={`w-11 h-11 rounded-full flex items-center justify-center font-black text-xs border-2 border-white/20 shrink-0 relative shadow-lg group-hover:scale-110 transition-transform ${posColors[player.position] || "bg-zinc-500 text-white"} ${player.isUnavailable ? "opacity-50 ring-2 ring-red-500" : ""}`}
+                                        >
+                                          {POSITION_SHORT_LABELS[player.position] || "?"}
+                                          {player.isUnavailable && (
+                                            <span className="absolute -top-1 -right-1 text-[9px] leading-none">
+                                              {(player.suspension_until_matchweek || 0) > matchweekCount ? "🟥" : "🩹"}
+                                            </span>
+                                          )}
+                                        </div>
+                                        <div
+                                          className="bg-black/70 backdrop-blur-sm px-1.5 py-0.5 rounded text-[9px] font-black text-white text-center cursor-pointer hover:text-primary transition-colors"
+                                          style={{ maxWidth: "72px", whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}
+                                          onClick={() => socket.emit("requestPlayerHistory", { playerId: player.id })}
+                                        >
+                                          {player.name.split(" ").pop()}
+                                        </div>
+                                        <span
+                                          className="text-[9px] font-black"
+                                          style={{ color: "var(--color-primary)", textShadow: "0 1px 4px rgba(0,0,0,0.95)" }}
+                                        >
+                                          {player.skill}
+                                        </span>
+                                      </div>
+                                    ))}
+                                  </div>
+                                ) : null,
+                              )}
+                              {!tactic.formation && (
+                                <div className="absolute inset-0 flex items-center justify-center">
+                                  <p
+                                    className="text-zinc-300 text-sm font-bold text-center px-8 leading-relaxed"
+                                    style={{ textShadow: "0 1px 4px rgba(0,0,0,0.9)" }}
+                                  >
+                                    Escolhe uma formação para ver os jogadores em campo
+                                  </p>
+                                </div>
+                              )}
+                              <div className="absolute inset-0 bg-gradient-to-t from-black/30 to-transparent pointer-events-none" />
+                            </div>
+                          );
+                        })()}
+
+                        {/* Tactical instructions bar */}
+                        <div className="px-5 py-4 grid grid-cols-2 gap-6 border-t border-outline-variant/15 bg-surface-container-high/40">
+                          {/* Style selector */}
+                          <div>
+                            <p className="text-[10px] font-black text-tertiary uppercase tracking-widest mb-2">
+                              Estilo de Jogo
+                            </p>
+                            <div className="flex items-center gap-1">
+                              {[
+                                { value: "Defensive", label: "Defensivo" },
+                                { value: "Balanced", label: "Equilibrado" },
+                                { value: "Offensive", label: "Ofensivo" },
+                              ].map(({ value, label }) => (
+                                <button
+                                  key={value}
+                                  onClick={() => updateTactic({ style: value })}
+                                  className={`flex-1 py-2 text-[9px] font-black uppercase tracking-wide rounded-sm transition-all ${
+                                    tactic.style === value
+                                      ? "bg-primary text-on-primary shadow-sm"
+                                      : "bg-surface-container-low text-on-surface-variant hover:bg-surface-bright"
+                                  }`}
+                                >
+                                  {label}
+                                </button>
+                              ))}
+                            </div>
+                          </div>
+                          {/* Morale bar */}
+                          <div>
+                            {(() => {
+                              const morale = teamInfo?.morale ?? 75;
+                              const moraleColor = morale > 75 ? "bg-primary" : morale >= 50 ? "bg-tertiary" : "bg-error";
+                              const moraleLabel = morale > 75 ? "Boa" : morale >= 50 ? "Média" : "Baixa";
+                              return (
+                                <>
+                                  <p className="text-[10px] font-black text-tertiary uppercase tracking-widest mb-2">
+                                    Moral da Equipa
+                                  </p>
+                                  <div className="flex items-center gap-2 mt-1">
+                                    <div className="flex-1 bg-surface-bright rounded-full h-2 overflow-hidden">
+                                      <div
+                                        className={`h-2 rounded-full transition-all duration-500 ${moraleColor}`}
+                                        style={{ width: `${morale}%` }}
+                                      />
+                                    </div>
+                                    <span className={`text-xs font-headline font-black tracking-wider w-10 text-right ${morale > 75 ? "text-primary" : morale >= 50 ? "text-tertiary" : "text-error"}`}>
+                                      {moraleLabel}
+                                    </span>
+                                  </div>
+                                </>
+                              );
+                            })()}
+                          </div>
                         </div>
                       </div>
                     </div>
