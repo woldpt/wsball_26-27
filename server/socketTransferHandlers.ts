@@ -57,10 +57,18 @@ export function registerTransferSocketHandlers(
     if (!playerState) return;
 
     try {
-      const player = await runGet<any>(game.db, "SELECT * FROM players WHERE id = ?", [playerId]);
+      const player = await runGet<any>(
+        game.db,
+        "SELECT * FROM players WHERE id = ?",
+        [playerId],
+      );
       if (!player) return;
 
-      const team = await runGet<any>(game.db, "SELECT budget FROM teams WHERE id = ?", [playerState.teamId]);
+      const team = await runGet<any>(
+        game.db,
+        "SELECT budget FROM teams WHERE id = ?",
+        [playerState.teamId],
+      );
       if (!team) return;
 
       const listedPrice =
@@ -76,14 +84,27 @@ export function registerTransferSocketHandlers(
 
       await runExec(game.db, "BEGIN");
       try {
-        await runExec(game.db, "UPDATE teams SET budget = budget - ? WHERE id = ?", [price, playerState.teamId]);
+        await runExec(
+          game.db,
+          "UPDATE teams SET budget = budget - ? WHERE id = ?",
+          [price, playerState.teamId],
+        );
         if (player.team_id && player.team_id !== playerState.teamId) {
-          await runExec(game.db, "UPDATE teams SET budget = budget + ? WHERE id = ?", [price, player.team_id]);
+          await runExec(
+            game.db,
+            "UPDATE teams SET budget = budget + ? WHERE id = ?",
+            [price, player.team_id],
+          );
         }
         await runExec(
           game.db,
           "UPDATE players SET team_id = ?, contract_until_matchweek = ?, signed_season = ?, transfer_status = 'none', transfer_price = 0, contract_request_pending = 0, contract_requested_wage = 0 WHERE id = ?",
-          [playerState.teamId, getSeasonEndMatchweek(game.matchweek), Math.ceil(Math.max(1, game.matchweek) / 14), playerId],
+          [
+            playerState.teamId,
+            getSeasonEndMatchweek(game.matchweek),
+            Math.ceil(Math.max(1, game.matchweek) / 14),
+            playerId,
+          ],
         );
         await runExec(game.db, "COMMIT");
       } catch (txErr) {
@@ -92,24 +113,52 @@ export function registerTransferSocketHandlers(
       }
 
       // Log transfer news (outside transaction — non-critical)
-      const buyingTeam = await runGet<any>(game.db, "SELECT name FROM teams WHERE id = ?", [playerState.teamId]);
-      logClubNews(game, "transfer_in", `${player.name} contratado (Listagem)`, playerState.teamId, {
-        player_name: player.name, player_id: playerId, related_team_id: player.team_id,
-        related_team_name: player.team_name, amount: price,
-        description: `${player.name} foi contratado por €${price}.`,
-      }, io);
+      const buyingTeam = await runGet<any>(
+        game.db,
+        "SELECT name FROM teams WHERE id = ?",
+        [playerState.teamId],
+      );
+      logClubNews(
+        game,
+        "transfer_in",
+        `${player.name} contratado (Listagem)`,
+        playerState.teamId,
+        {
+          player_name: player.name,
+          player_id: playerId,
+          related_team_id: player.team_id,
+          related_team_name: player.team_name,
+          amount: price,
+          description: `${player.name} foi contratado por €${price}.`,
+        },
+        io,
+      );
       if (player.team_id) {
-        logClubNews(game, "transfer_out", `${player.name} vendido (Listagem)`, player.team_id, {
-          player_name: player.name, player_id: playerId, related_team_id: playerState.teamId,
-          related_team_name: buyingTeam?.name, amount: price,
-          description: `${player.name} foi vendido por €${price}.`,
-        }, io);
+        logClubNews(
+          game,
+          "transfer_out",
+          `${player.name} vendido (Listagem)`,
+          player.team_id,
+          {
+            player_name: player.name,
+            player_id: playerId,
+            related_team_id: playerState.teamId,
+            related_team_name: buyingTeam?.name,
+            amount: price,
+            description: `${player.name} foi vendido por €${price}.`,
+          },
+          io,
+        );
       }
 
       refreshMarket(game);
       const teams = await runAll(game.db, "SELECT * FROM teams");
       io.to(game.roomCode).emit("teamsData", teams);
-      const squad = await runAll(game.db, "SELECT * FROM players WHERE team_id = ?", [playerState.teamId]);
+      const squad = await runAll(
+        game.db,
+        "SELECT * FROM players WHERE team_id = ?",
+        [playerState.teamId],
+      );
       socket.emit("mySquad", squad);
       socket.emit("systemMessage", `Contrataste ${player.name} por €${price}!`);
     } catch (err) {
@@ -118,56 +167,63 @@ export function registerTransferSocketHandlers(
     }
   });
 
-  socket.on("listPlayerForTransfer", ({ playerId, mode, price, startingPrice }) => {
-    const game = getGameBySocket(socket.id);
-    if (!game) return;
-    const playerState = getPlayerBySocket(game, socket.id);
-    if (!playerState) return;
+  socket.on(
+    "listPlayerForTransfer",
+    ({ playerId, mode, price, startingPrice }) => {
+      const game = getGameBySocket(socket.id);
+      if (!game) return;
+      const playerState = getPlayerBySocket(game, socket.id);
+      if (!playerState) return;
 
-    const finalMode = mode === "auction" ? "auction" : "fixed";
-    if (finalMode === "auction" && isMatchInProgress(game)) {
-      socket.emit(
-        "systemMessage",
-        "Leilões só são permitidos após o final das partidas.",
-      );
-      return;
-    }
-
-    game.db.get(
-      "SELECT p.*, t.name as team_name FROM players p LEFT JOIN teams t ON p.team_id = t.id WHERE p.id = ? AND p.team_id = ?",
-      [playerId, playerState.teamId],
-      (err, player) => {
-        if (!player) return;
-        const finalPrice = Math.max(
-          0,
-          Math.round(
-            startingPrice || price || player.value * (finalMode === "auction" ? 0.75 : 1.0),
-          ),
+      const finalMode = mode === "auction" ? "auction" : "fixed";
+      if (finalMode === "auction" && isMatchInProgress(game)) {
+        socket.emit(
+          "systemMessage",
+          "Leilões só são permitidos após o final das partidas.",
         );
+        return;
+      }
 
-        if (finalMode === "auction") {
-          startAuction(game, player, finalPrice, () => {
-            socket.emit(
-              "systemMessage",
-              `${player.name} colocado em leilão por €${finalPrice}.`,
-            );
-          });
-        } else {
-          game.db.run(
-            "UPDATE players SET transfer_status = ?, transfer_price = ? WHERE id = ?",
-            [finalMode, finalPrice, playerId],
-            () => {
-              refreshMarket(game);
+      game.db.get(
+        "SELECT p.*, t.name as team_name FROM players p LEFT JOIN teams t ON p.team_id = t.id WHERE p.id = ? AND p.team_id = ?",
+        [playerId, playerState.teamId],
+        (err, player) => {
+          if (!player) return;
+          const finalPrice = Math.max(
+            0,
+            Math.round(
+              startingPrice ||
+                price ||
+                player.value * (finalMode === "auction" ? 0.75 : 1.0),
+            ),
+          );
+
+          if (finalMode === "auction") {
+            startAuction(game, player, finalPrice, () => {
+              emitSquadForPlayer(game, playerState.teamId);
               socket.emit(
                 "systemMessage",
-                `${player.name} colocado na lista por €${finalPrice}.`,
+                `${player.name} colocado em leilão por €${finalPrice}.`,
               );
-            },
-          );
-        }
-      },
-    );
-  });
+            });
+          } else {
+            game.db.run(
+              "UPDATE players SET transfer_status = ?, transfer_price = ? WHERE id = ?",
+              [finalMode, finalPrice, playerId],
+              () => {
+                refreshMarket(game);
+                emitSquadForPlayer(game, playerState.teamId);
+                socket.emit(
+                  "systemMessage",
+                  `${player.name} colocado na lista por €${finalPrice}.`,
+                );
+              },
+            );
+          }
+        },
+      );
+    },
+  );
 
   socket.on("removeFromTransferList", (playerId) => {
     const game = getGameBySocket(socket.id);
@@ -181,6 +237,7 @@ export function registerTransferSocketHandlers(
       function () {
         if (this.changes > 0) {
           refreshMarket(game);
+          emitSquadForPlayer(game, playerState.teamId);
           socket.emit(
             "systemMessage",
             "Jogador retirado da lista de transferências.",
@@ -231,6 +288,9 @@ export function registerTransferSocketHandlers(
             game.db.run(
               "UPDATE players SET contract_request_pending = 0, contract_requested_wage = 0 WHERE id = ?",
               [playerId],
+              () => {
+                emitSquadForPlayer(game, playerState.teamId);
+              },
             );
             socket.emit(
               "systemMessage",
@@ -258,8 +318,8 @@ export function registerTransferSocketHandlers(
     const playerState = getPlayerBySocket(game, socket.id);
     if (!playerState) return;
 
-    placeAuctionBid(game, playerState.teamId, playerId, bidAmount).then(
-      (result) => {
+    placeAuctionBid(game, playerState.teamId, playerId, bidAmount)
+      .then((result) => {
         const bidResult: any = result;
         if (!bidResult.ok) {
           socket.emit("systemMessage", bidResult.error);
@@ -269,11 +329,11 @@ export function registerTransferSocketHandlers(
             bidAmount: bidResult.bidAmount,
           });
         }
-      },
-    ).catch((err) => {
-      console.error("[placeAuctionBid] Error:", err);
-      socket.emit("systemMessage", "Erro ao processar o lance.");
-    });
+      })
+      .catch((err) => {
+        console.error("[placeAuctionBid] Error:", err);
+        socket.emit("systemMessage", "Erro ao processar o lance.");
+      });
   });
 
   socket.on("makeTransferProposal", ({ playerId }) => {
