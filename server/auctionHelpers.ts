@@ -1,51 +1,11 @@
 import type { ActiveGame, PlayerSession } from "./types";
+import { logClubNews } from "./coreHelpers";
 
 interface AuctionDeps {
   io: any;
   isMatchInProgress: (game: ActiveGame) => boolean;
   getSeasonEndMatchweek: (matchweek: number) => number;
   scheduleNpcAuctionBids: (game: ActiveGame, playerId: number) => void;
-}
-
-function logClubNews(
-  game: ActiveGame,
-  type: string,
-  title: string,
-  teamId: number,
-  data: {
-    player_name?: string;
-    player_id?: number;
-    related_team_name?: string;
-    related_team_id?: number;
-    amount?: number;
-    description?: string;
-  },
-  io?: any,
-) {
-  const description = data.description || null;
-  game.db.run(
-    `INSERT INTO club_news (team_id, type, title, description, player_id, player_name, related_team_id, related_team_name, amount, matchweek, year)
-     VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
-    [
-      teamId,
-      type,
-      title,
-      description,
-      data.player_id || null,
-      data.player_name || null,
-      data.related_team_id || null,
-      data.related_team_name || null,
-      data.amount || null,
-      game.matchweek,
-      game.year || 0,
-    ],
-    () => {
-      // Notify team coaches that news was updated
-      if (io) {
-        io.to(game.roomCode).emit("clubNewsUpdated", { teamId, type, title, playerId: data.player_id || null, playerName: data.player_name || null, isAuction: true });
-      }
-    },
-  );
 }
 
 export function createAuctionHelpers(deps: AuctionDeps) {
@@ -153,6 +113,7 @@ export function createAuctionHelpers(deps: AuctionDeps) {
                   description: "Nenhum lance recebido",
                 },
                 io,
+                { isAuction: true },
               );
 
               delete game.auctions![playerId];
@@ -231,6 +192,7 @@ export function createAuctionHelpers(deps: AuctionDeps) {
                             amount: finalBid,
                           },
                           io,
+                          { isAuction: true },
                         );
 
                         // Log club news for seller (transfer_out)
@@ -247,6 +209,7 @@ export function createAuctionHelpers(deps: AuctionDeps) {
                             amount: finalBid,
                           },
                           io,
+                          { isAuction: true },
                         );
 
                         delete game.auctions?.[playerId];

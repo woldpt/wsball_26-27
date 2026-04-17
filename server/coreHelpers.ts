@@ -1,3 +1,5 @@
+import type { ActiveGame } from "./types";
+
 type Db = any;
 type AnyRow = Record<string, any>;
 
@@ -70,6 +72,19 @@ export function runGet<T extends AnyRow = AnyRow>(
     db.get(sql, params, (err: Error | null, row: T | null) => {
       if (err) return reject(err);
       resolve(row || null);
+    });
+  });
+}
+
+export function runExec(
+  db: Db,
+  sql: string,
+  params: any[] = [],
+): Promise<{ changes: number }> {
+  return new Promise<{ changes: number }>((resolve, reject) => {
+    db.run(sql, params, function (this: any, err: Error | null) {
+      if (err) return reject(err);
+      resolve({ changes: this.changes ?? 0 });
     });
   });
 }
@@ -183,4 +198,52 @@ export async function calculateMatchAttendance(db: Db, homeTeamId: number) {
   // Ocupação do estádio: mínimo 30%, máximo 100%
   const occupancyRate = 0.3 + formPoints * 0.7;
   return Math.floor(capacity * occupancyRate);
+}
+
+export function logClubNews(
+  game: ActiveGame,
+  type: string,
+  title: string,
+  teamId: number,
+  data: {
+    player_name?: string;
+    player_id?: number;
+    related_team_name?: string;
+    related_team_id?: number;
+    amount?: number;
+    description?: string;
+  },
+  io?: any,
+  extra?: Record<string, any>,
+) {
+  const description = data.description || null;
+  game.db.run(
+    `INSERT INTO club_news (team_id, type, title, description, player_id, player_name, related_team_id, related_team_name, amount, matchweek, year)
+     VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+    [
+      teamId,
+      type,
+      title,
+      description,
+      data.player_id || null,
+      data.player_name || null,
+      data.related_team_id || null,
+      data.related_team_name || null,
+      data.amount || null,
+      game.matchweek,
+      game.year || 0,
+    ],
+    () => {
+      if (io) {
+        io.to(game.roomCode).emit("clubNewsUpdated", {
+          teamId,
+          type,
+          title,
+          playerId: data.player_id || null,
+          playerName: data.player_name || null,
+          ...extra,
+        });
+      }
+    },
+  );
 }

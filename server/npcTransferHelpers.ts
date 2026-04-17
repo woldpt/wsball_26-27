@@ -1,4 +1,5 @@
 import type { ActiveGame } from "./types";
+import { logClubNews } from "./coreHelpers";
 
 type AnyRow = Record<string, any>;
 
@@ -12,45 +13,6 @@ interface NpcTransferDeps {
   runAll: RunAll;
   getSeasonEndMatchweek: (matchweek: number) => number;
   io: any;
-}
-
-function logClubNews(
-  game: ActiveGame,
-  type: string,
-  title: string,
-  teamId: number,
-  data: {
-    player_name?: string;
-    player_id?: number;
-    related_team_name?: string;
-    related_team_id?: number;
-    amount?: number;
-    description?: string;
-  },
-  io?: any,
-) {
-  game.db.run(
-    `INSERT INTO club_news (team_id, type, title, description, player_id, player_name, related_team_id, related_team_name, amount, matchweek, year)
-     VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
-    [
-      teamId,
-      type,
-      title,
-      data.description || null,
-      data.player_id || null,
-      data.player_name || null,
-      data.related_team_id || null,
-      data.related_team_name || null,
-      data.amount || null,
-      game.matchweek,
-      game.year || 0,
-    ],
-    () => {
-      if (io) {
-        io.to(game.roomCode).emit("clubNewsUpdated", { teamId, type, title, playerId: data.player_id || null, playerName: data.player_name || null });
-      }
-    },
-  );
 }
 
 export function createNpcTransferHelpers(deps: NpcTransferDeps) {

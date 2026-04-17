@@ -544,8 +544,11 @@ async function simulateMatchSegment(
       }
     }
     homeSquad = await new Promise<any[]>((resolve) => {
+      const ids = Array.from(homeIds);
+      const ph = ids.length > 0 ? ids.map(() => "?").join(",") : "0";
       db.all(
-        `SELECT * FROM players WHERE id IN (${Array.from(homeIds).join(",") || "0"})`,
+        `SELECT * FROM players WHERE id IN (${ph})`,
+        ids.length > 0 ? ids : [],
         (_, r) => resolve(r || []),
       );
     });
@@ -573,8 +576,11 @@ async function simulateMatchSegment(
       }
     }
     awaySquad = await new Promise<any[]>((resolve) => {
+      const ids = Array.from(awayIds);
+      const ph = ids.length > 0 ? ids.map(() => "?").join(",") : "0";
       db.all(
-        `SELECT * FROM players WHERE id IN (${Array.from(awayIds).join(",") || "0"})`,
+        `SELECT * FROM players WHERE id IN (${ph})`,
+        ids.length > 0 ? ids : [],
         (_, r) => resolve(r || []),
       );
     });
@@ -600,8 +606,10 @@ async function simulateMatchSegment(
       ...Array.from(new Set((awaySquad || []).map((p: any) => p.id))),
     ].filter(Boolean);
     if (participantIds.length > 0) {
+      const ph = participantIds.map(() => "?").join(",");
       db.run(
-        `UPDATE players SET games_played = games_played + 1 WHERE id IN (${participantIds.join(",")})`,
+        `UPDATE players SET games_played = games_played + 1 WHERE id IN (${ph})`,
+        participantIds,
       );
     }
   }
