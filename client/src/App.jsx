@@ -2461,7 +2461,6 @@ function App() {
               </p>
             </div>
           </div>
-          <NewsTicker newsTickerItems={[]} />
         </>
       );
     }
@@ -3036,7 +3035,6 @@ function App() {
             </div>
           </footer>
         </div>
-        <NewsTicker newsTickerItems={[]} />
       </>
     );
   }
@@ -3417,7 +3415,7 @@ function App() {
       </nav>
 
       {/* ── MOBILE BOTTOM NAV ────────────────────────────────────────────── */}
-      <nav className="lg:hidden fixed bottom-0 left-0 right-0 h-16 bg-surface-container-low/95 backdrop-blur-sm border-t border-outline-variant/30 z-10 flex overflow-x-auto [scrollbar-width:none] [-ms-overflow-style:none] [&::-webkit-scrollbar]:hidden">
+      <nav className="lg:hidden fixed bottom-8 left-0 right-0 h-16 bg-surface-container-low/95 backdrop-blur-sm border-t border-outline-variant/30 z-40 flex overflow-x-auto [scrollbar-width:none] [-ms-overflow-style:none] [&::-webkit-scrollbar]:hidden">
         {[
           { key: "club", label: "Clube", icon: "groups_3" },
           { key: "finances", label: "Finanças", icon: "payments" },
@@ -3469,7 +3467,7 @@ function App() {
         ))}
       </nav>
 
-      <main className="pt-14 pb-28 lg:pb-12 lg:ml-64">
+      <main className="pt-14 pb-24 lg:pb-12 lg:ml-64">
         <div className="p-4 lg:p-6">
           {/* ─── TACTIC: HORIZONTAL ADVERSARY BANNER ──────────────────── */}
           {activeTab === "tactic" && (
