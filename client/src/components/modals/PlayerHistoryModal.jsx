@@ -144,7 +144,7 @@ export function PlayerHistoryModal({
       onClick={() => setPlayerHistoryModal(null)}
     >
       <div
-        className="bg-surface-container-low border border-outline-variant/20 rounded-xl w-full max-w-xl shadow-2xl overflow-hidden flex flex-col"
+        className="bg-surface-container-low border border-outline-variant/20 rounded-xl w-full max-w-3xl shadow-2xl overflow-hidden flex flex-col"
         style={{ maxHeight: "90vh" }}
         onClick={(e) => e.stopPropagation()}
       >
@@ -202,82 +202,152 @@ export function PlayerHistoryModal({
             </button>
           </div>
 
-          {/* Value strip */}
-          <div className="grid grid-cols-2 gap-4 px-6 py-3 border-t border-outline-variant/15 bg-surface-container-high/30">
-            <div className="min-w-0">
-              <p className="text-[10px] font-black uppercase tracking-widest text-on-surface-variant">
-                Valor de mercado
-              </p>
-              <p className="font-black font-headline text-lg tracking-tighter text-tertiary truncate">
-                {formatCurrency(player.value || 0)}
-              </p>
-            </div>
-            <div className="min-w-0 text-right">
-              <p className="text-[10px] font-black uppercase tracking-widest text-on-surface-variant">
-                Ordenado/sem
-              </p>
-              <p className="font-bold font-mono text-sm text-on-surface truncate">
-                {formatCurrency(player.wage || 0)}
-              </p>
-            </div>
-          </div>
         </div>
 
         {/* ── SCROLLABLE BODY ── */}
         <div className="overflow-y-auto flex-1">
 
-          {/* ── SKILL BAR ── */}
-          <div className="px-6 py-5 border-b border-outline-variant/10">
-            <p className="text-[10px] font-black uppercase tracking-widest text-primary mb-4">
-              Qualidade
-            </p>
-            <SkillBar label="Skill" value={skill} color={barColor} />
-          </div>
+          {/* ── 2-COLUMN LAYOUT (md+) ── */}
+          <div className="md:grid md:grid-cols-2 md:divide-x md:divide-outline-variant/10">
 
-          {/* ── SEASON STATS ── */}
-          <div className="px-6 py-5 border-b border-outline-variant/10">
-            <p className="text-[10px] font-black uppercase tracking-widest text-primary mb-4">
-              Época Actual
-            </p>
-            <div className="grid grid-cols-4 gap-2">
-              <StatCard label="Jogos" value={sGames} />
-              <StatCard label="Golos" value={sGoals} color="text-tertiary" />
-              <StatCard
-                label="Vermelhos"
-                value={sReds}
-                color={sReds > 0 ? "text-error" : "text-on-surface"}
-              />
-              <StatCard
-                label="Lesões"
-                value={sInjuries}
-                color={sInjuries > 0 ? "text-amber-400" : "text-on-surface"}
-              />
+            {/* LEFT COLUMN: Financial + Contract */}
+            <div className="flex flex-col">
+
+              {/* Value / Wage */}
+              <div className="px-6 py-5 border-b border-outline-variant/10">
+                <p className="text-[10px] font-black uppercase tracking-widest text-primary mb-4">
+                  Financeiro
+                </p>
+                <div className="grid grid-cols-2 gap-4 mb-4">
+                  <div className="min-w-0">
+                    <p className="text-[10px] font-black uppercase tracking-widest text-on-surface-variant">
+                      Valor de mercado
+                    </p>
+                    <p className="font-black font-headline text-lg tracking-tighter text-tertiary truncate">
+                      {formatCurrency(player.value || 0)}
+                    </p>
+                  </div>
+                  <div className="min-w-0">
+                    <p className="text-[10px] font-black uppercase tracking-widest text-on-surface-variant">
+                      Ordenado/sem
+                    </p>
+                    <p className="font-bold font-mono text-sm text-on-surface truncate">
+                      {formatCurrency(player.wage || 0)}
+                    </p>
+                  </div>
+                </div>
+                <SkillBar label="Skill" value={skill} color={barColor} />
+              </div>
+
+              {/* Contract management */}
+              {isMyPlayer && (
+                <div className="px-6 py-5 border-b border-outline-variant/10 md:border-b-0 flex-1">
+                  <p className="text-[10px] font-black uppercase tracking-widest text-primary mb-3">
+                    Gestão Contratual
+                  </p>
+                  {canAct ? (
+                    <div className="flex flex-col gap-2">
+                      <button
+                        onClick={() => {
+                          renewPlayerContract?.(player);
+                          setPlayerHistoryModal(null);
+                        }}
+                        className="w-full px-4 py-2.5 bg-primary text-on-primary hover:brightness-110 text-[10px] uppercase font-black rounded-sm transition-all"
+                      >
+                        Renovar Contrato
+                      </button>
+                      <button
+                        onClick={() => {
+                          listPlayerAuction?.(player);
+                          setPlayerHistoryModal(null);
+                        }}
+                        disabled={matchInProgress}
+                        title={matchInProgress ? "Disponível após as partidas" : "Vender em Leilão"}
+                        className="w-full px-4 py-2.5 bg-secondary-container hover:bg-surface-bright disabled:opacity-30 text-on-surface text-[10px] uppercase font-black rounded-sm transition-all"
+                      >
+                        Vender em Leilão
+                      </button>
+                      {player.transfer_status === "fixed" ? (
+                        <button
+                          onClick={() => {
+                            removeFromTransferList?.(player);
+                            setPlayerHistoryModal(null);
+                          }}
+                          className="w-full px-4 py-2.5 bg-error-container text-on-error-container hover:brightness-110 text-[10px] uppercase font-black rounded-sm transition-all"
+                        >
+                          ✕ Retirar da Lista
+                        </button>
+                      ) : (
+                        <button
+                          onClick={() => {
+                            listPlayerFixed?.(player);
+                            setPlayerHistoryModal(null);
+                          }}
+                          className="w-full px-4 py-2.5 bg-secondary-container hover:bg-surface-bright text-on-surface text-[10px] uppercase font-black rounded-sm transition-all"
+                        >
+                          Listar para Transferência
+                        </button>
+                      )}
+                    </div>
+                  ) : (
+                    <p className="text-xs text-on-surface-variant italic">
+                      Gestão contratual indisponível — jogador contratado nesta época.
+                    </p>
+                  )}
+                </div>
+              )}
+            </div>
+
+            {/* RIGHT COLUMN: Stats */}
+            <div className="flex flex-col">
+
+              {/* Season stats */}
+              <div className="px-6 py-5 border-b border-outline-variant/10">
+                <p className="text-[10px] font-black uppercase tracking-widest text-primary mb-4">
+                  Época Actual
+                </p>
+                <div className="grid grid-cols-4 gap-2">
+                  <StatCard label="Jogos" value={sGames} />
+                  <StatCard label="Golos" value={sGoals} color="text-tertiary" />
+                  <StatCard
+                    label="Vermelhos"
+                    value={sReds}
+                    color={sReds > 0 ? "text-error" : "text-on-surface"}
+                  />
+                  <StatCard
+                    label="Lesões"
+                    value={sInjuries}
+                    color={sInjuries > 0 ? "text-amber-400" : "text-on-surface"}
+                  />
+                </div>
+              </div>
+
+              {/* Career stats */}
+              <div className="px-6 py-5">
+                <p className="text-[10px] font-black uppercase tracking-widest text-primary mb-4">
+                  Carreira Total
+                </p>
+                <div className="grid grid-cols-4 gap-2">
+                  <StatCard label="Jogos" value={cGames} />
+                  <StatCard label="Golos" value={cGoals} color="text-tertiary" />
+                  <StatCard
+                    label="Vermelhos"
+                    value={cReds}
+                    color={cReds > 0 ? "text-error" : "text-on-surface"}
+                  />
+                  <StatCard
+                    label="Lesões"
+                    value={cInjuries}
+                    color={cInjuries > 0 ? "text-amber-400" : "text-on-surface"}
+                  />
+                </div>
+              </div>
+
             </div>
           </div>
 
-          {/* ── CAREER STATS ── */}
-          <div className="px-6 py-5 border-b border-outline-variant/10">
-            <p className="text-[10px] font-black uppercase tracking-widest text-primary mb-4">
-              Carreira Total
-            </p>
-            <div className="grid grid-cols-4 gap-2">
-              <StatCard label="Jogos" value={cGames} />
-              <StatCard label="Golos" value={cGoals} color="text-tertiary" />
-              <StatCard
-                label="Vermelhos"
-                value={cReds}
-                color={cReds > 0 ? "text-error" : "text-on-surface"}
-              />
-              <StatCard
-                label="Lesões"
-                value={cInjuries}
-                color={cInjuries > 0 ? "text-amber-400" : "text-on-surface"}
-              />
-            </div>
-          </div>
-
-          {/* ── TRANSFER HISTORY ── */}
-          <div className="px-6 py-5 border-b border-outline-variant/10">
+          {/* ── TRANSFER HISTORY (full width below) ── */}
+          <div className="px-6 py-5 border-t border-outline-variant/10">
             <p className="text-[10px] font-black uppercase tracking-widest text-primary mb-4">
               Historial de Transferências
             </p>
@@ -325,63 +395,6 @@ export function PlayerHistoryModal({
             )}
           </div>
 
-          {/* ── CONTRACT MANAGEMENT ── */}
-          {isMyPlayer && (
-            <div className="px-6 py-5">
-              <p className="text-[10px] font-black uppercase tracking-widest text-primary mb-3">
-                Gestão Contratual
-              </p>
-              {canAct ? (
-                <div className="flex flex-wrap gap-2">
-                  <button
-                    onClick={() => {
-                      renewPlayerContract?.(player);
-                      setPlayerHistoryModal(null);
-                    }}
-                    className="flex-1 min-w-[100px] px-4 py-2.5 bg-primary text-on-primary hover:brightness-110 text-[10px] uppercase font-black rounded-sm transition-all"
-                  >
-                    Renovar Contrato
-                  </button>
-                  <button
-                    onClick={() => {
-                      listPlayerAuction?.(player);
-                      setPlayerHistoryModal(null);
-                    }}
-                    disabled={matchInProgress}
-                    title={matchInProgress ? "Disponível após as partidas" : "Vender em Leilão"}
-                    className="flex-1 min-w-[100px] px-4 py-2.5 bg-secondary-container hover:bg-surface-bright disabled:opacity-30 text-on-surface text-[10px] uppercase font-black rounded-sm transition-all"
-                  >
-                    Vender em Leilão
-                  </button>
-                  {player.transfer_status === "fixed" ? (
-                    <button
-                      onClick={() => {
-                        removeFromTransferList?.(player);
-                        setPlayerHistoryModal(null);
-                      }}
-                      className="flex-1 min-w-[100px] px-4 py-2.5 bg-error-container text-on-error-container hover:brightness-110 text-[10px] uppercase font-black rounded-sm transition-all"
-                    >
-                      ✕ Retirar da Lista
-                    </button>
-                  ) : (
-                    <button
-                      onClick={() => {
-                        listPlayerFixed?.(player);
-                        setPlayerHistoryModal(null);
-                      }}
-                      className="flex-1 min-w-[100px] px-4 py-2.5 bg-secondary-container hover:bg-surface-bright text-on-surface text-[10px] uppercase font-black rounded-sm transition-all"
-                    >
-                      Listar para Transferência
-                    </button>
-                  )}
-                </div>
-              ) : (
-                <p className="text-xs text-on-surface-variant italic">
-                  Gestão contratual indisponível — jogador contratado nesta época.
-                </p>
-              )}
-            </div>
-          )}
         </div>
       </div>
     </div>
