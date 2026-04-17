@@ -90,7 +90,8 @@ export function PlayerHistoryModal({
 }) {
   if (!playerHistoryModal) return null;
 
-  const { player, transfers } = playerHistoryModal;
+  const { player, transfers: rawTransfers } = playerHistoryModal;
+  const transfers = rawTransfers || [];
   if (!player) return null;
 
   const pos = player.position;
@@ -369,7 +370,7 @@ export function PlayerHistoryModal({
                   <tbody>
                     {transfers.map((t, i) => (
                       <tr
-                        key={i}
+                        key={`${t.year ?? "?"}-${t.matchweek ?? "?"}-${t.related_team_name ?? "?"}-${t.team_name ?? "?"}-${i}`}
                         className="border-t border-outline-variant/10 hover:bg-primary-container/10 transition-colors text-sm"
                       >
                         <td className="px-3 py-2.5 text-on-surface-variant text-xs tabular-nums">

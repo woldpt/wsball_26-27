@@ -3228,7 +3228,7 @@ function App() {
                         : null;
                       return (
                         <div
-                          key={i}
+                          key={coach.name || i}
                           className="flex items-center gap-3 px-4 py-2.5"
                         >
                           <span
@@ -3803,7 +3803,7 @@ function App() {
                                             "?";
                                           return (
                                             <div
-                                              key={i}
+                                              key={`${e.minute}-${e.type}-${e.playerId || name}-${i}`}
                                               className={`flex items-center gap-1.5 ${isHome ? "justify-start" : "justify-end text-right"}`}
                                             >
                                               {isHome && (
@@ -3854,7 +3854,7 @@ function App() {
                                       );
                                       return (
                                         <div
-                                          key={i}
+                                          key={`${sub.out}-${sub.in}`}
                                           className="flex items-center gap-1 bg-zinc-800 rounded-full pl-2 pr-2.5 py-0.5 text-[10px] font-bold"
                                         >
                                           <span className="text-zinc-600 shrink-0">
@@ -4316,7 +4316,7 @@ function App() {
                                             "?";
                                           return (
                                             <div
-                                              key={i}
+                                              key={`${e.minute}-${e.type}-${e.playerId || name}-${i}`}
                                               className="flex items-center gap-1 text-[9px] leading-tight w-full"
                                             >
                                               <span className="text-on-surface-variant/40 tabular-nums shrink-0">
@@ -4456,7 +4456,7 @@ function App() {
                                             "?";
                                           return (
                                             <div
-                                              key={i}
+                                              key={`${e.minute}-${e.type}-${e.playerId || name}-${i}`}
                                               className="flex items-center gap-1 text-[9px] leading-tight w-full justify-end"
                                             >
                                               <span
@@ -4502,7 +4502,7 @@ function App() {
                                       )
                                       .map((e, i) => (
                                         <span
-                                          key={i}
+                                          key={`${e.minute}-${e.type}-${e.playerId || i}`}
                                           className="absolute top-1/2 -translate-y-1/2 -translate-x-1/2"
                                           style={{
                                             left: `${Math.min(98, Math.max(2, (e.minute / 90) * 100))}%`,

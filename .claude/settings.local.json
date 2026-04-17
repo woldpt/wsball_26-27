@@ -27,7 +27,16 @@
       "Read(//usr/local/lib/node_modules/typescript/bin/**)",
       "Read(//home/woldpt/.local/lib/node_modules/typescript/bin/**)",
       "Bash(grep -n \"INSERT INTO matches\\\\|SELECT.*FROM matches\" /home/woldpt/git/wsball_26-27/server/*.ts)",
-      "Bash(grep -n \"getAllTeamForms\" /home/woldpt/git/wsball_26-27/server/*.ts)"
+      "Bash(grep -n \"getAllTeamForms\" /home/woldpt/git/wsball_26-27/server/*.ts)",
+      "Read(//home/woldpt/.nvm/versions/**)",
+      "Read(//usr/local/bin/**)",
+      "Bash(command -v npm)",
+      "Bash(fish -c 'which npm')",
+      "Bash(fish -c 'type -a npm')",
+      "Bash(command -v docker)",
+      "Bash(docker --version)",
+      "Bash(systemctl is-active *)",
+      "Bash(sudo -n systemctl start docker)"
     ]
   }
 }
