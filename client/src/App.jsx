@@ -6881,7 +6881,7 @@ function App() {
                             <div
                               className="relative w-full"
                               style={{
-                                aspectRatio: "16/7",
+                                aspectRatio: "9/16",
                                 background:
                                   "linear-gradient(180deg, #05430e 0%, #0b5e1a 50%, #05430e 100%)",
                               }}
