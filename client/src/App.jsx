@@ -6929,6 +6929,72 @@ function App() {
                           ))}
                         </div>
 
+                        {/* Estilo + Moral strip */}
+                        <div className="px-5 py-2.5 border-b border-outline-variant/15 bg-surface-container-high/20 flex items-center gap-3">
+                          <span className="text-[9px] uppercase tracking-[0.2em] font-black text-on-surface-variant shrink-0">
+                            Estilo
+                          </span>
+                          <div className="flex gap-1">
+                            {[
+                              ["Defensive", "Def."],
+                              ["Balanced", "Equil."],
+                              ["Offensive", "Ofens."],
+                            ].map(([val, lbl]) => (
+                              <button
+                                key={val}
+                                onClick={() => updateTactic({ style: val })}
+                                className={`px-2.5 py-1 text-[9px] font-black uppercase tracking-wide rounded-sm transition-all ${
+                                  tactic.style === val
+                                    ? "bg-primary text-on-primary shadow-sm"
+                                    : "bg-surface-container-high hover:bg-surface-bright text-on-surface-variant border border-outline-variant/20"
+                                }`}
+                              >
+                                {lbl}
+                              </button>
+                            ))}
+                          </div>
+                          <div className="w-px h-4 bg-outline-variant/30 shrink-0 ml-1" />
+                          <span className="text-[9px] uppercase tracking-[0.2em] font-black text-on-surface-variant shrink-0">
+                            Moral
+                          </span>
+                          {(() => {
+                            const morale = teamInfo?.morale ?? 75;
+                            const mc =
+                              morale > 75
+                                ? "bg-primary"
+                                : morale >= 50
+                                  ? "bg-tertiary"
+                                  : "bg-error";
+                            const ml =
+                              morale > 75
+                                ? "Boa"
+                                : morale >= 50
+                                  ? "Média"
+                                  : "Baixa";
+                            const tc =
+                              morale > 75
+                                ? "text-primary"
+                                : morale >= 50
+                                  ? "text-tertiary"
+                                  : "text-error";
+                            return (
+                              <div className="flex items-center gap-2 flex-1">
+                                <div className="flex-1 bg-surface-bright rounded-full h-1.5 overflow-hidden">
+                                  <div
+                                    className={`h-full rounded-full transition-all duration-500 ${mc}`}
+                                    style={{ width: `${morale}%` }}
+                                  />
+                                </div>
+                                <span
+                                  className={`text-[10px] font-black shrink-0 ${tc}`}
+                                >
+                                  {ml}
+                                </span>
+                              </div>
+                            );
+                          })()}
+                        </div>
+
                         {/* 2D Pitch */}
                         {(() => {
                           const titulares = annotatedSquad.filter(
@@ -7120,73 +7186,6 @@ function App() {
                             </div>
                           );
                         })()}
-
-                        {/* Tactical instructions bar */}
-                        <div className="px-5 py-4 grid grid-cols-2 gap-6 border-t border-outline-variant/15 bg-surface-container-high/40">
-                          {/* Style selector */}
-                          <div>
-                            <p className="text-[10px] font-black text-tertiary uppercase tracking-widest mb-2">
-                              Estilo de Jogo
-                            </p>
-                            <div className="flex items-center gap-1">
-                              {[
-                                { value: "Defensive", label: "Defensivo" },
-                                { value: "Balanced", label: "Equilibrado" },
-                                { value: "Offensive", label: "Ofensivo" },
-                              ].map(({ value, label }) => (
-                                <button
-                                  key={value}
-                                  onClick={() => updateTactic({ style: value })}
-                                  className={`flex-1 py-2 text-[9px] font-black uppercase tracking-wide rounded-sm transition-all ${
-                                    tactic.style === value
-                                      ? "bg-primary text-on-primary shadow-sm"
-                                      : "bg-surface-container-low text-on-surface-variant hover:bg-surface-bright"
-                                  }`}
-                                >
-                                  {label}
-                                </button>
-                              ))}
-                            </div>
-                          </div>
-                          {/* Morale bar */}
-                          <div>
-                            {(() => {
-                              const morale = teamInfo?.morale ?? 75;
-                              const moraleColor =
-                                morale > 75
-                                  ? "bg-primary"
-                                  : morale >= 50
-                                    ? "bg-tertiary"
-                                    : "bg-error";
-                              const moraleLabel =
-                                morale > 75
-                                  ? "Boa"
-                                  : morale >= 50
-                                    ? "Média"
-                                    : "Baixa";
-                              return (
-                                <>
-                                  <p className="text-[10px] font-black text-tertiary uppercase tracking-widest mb-2">
-                                    Moral da Equipa
-                                  </p>
-                                  <div className="flex items-center gap-2 mt-1">
-                                    <div className="flex-1 bg-surface-bright rounded-full h-2 overflow-hidden">
-                                      <div
-                                        className={`h-2 rounded-full transition-all duration-500 ${moraleColor}`}
-                                        style={{ width: `${morale}%` }}
-                                      />
-                                    </div>
-                                    <span
-                                      className={`text-xs font-headline font-black tracking-wider w-10 text-right ${morale > 75 ? "text-primary" : morale >= 50 ? "text-tertiary" : "text-error"}`}
-                                    >
-                                      {moraleLabel}
-                                    </span>
-                                  </div>
-                                </>
-                              );
-                            })()}
-                          </div>
-                        </div>
                       </div>
                     </div>
                   )}
@@ -7436,6 +7435,61 @@ function App() {
                     </div>
                   ) : (
                     <div className="w-full">
+                      {/* JOGAR button */}
+                      <div className="p-4 border-b border-outline-variant/15">
+                        {(() => {
+                          const isReady = players.find(
+                            (p) => p.name === me.name,
+                          )?.ready;
+                          const isHalftime =
+                            showHalftimePanel && !isPlayingMatch;
+                          const isEliminatedCupSpectator =
+                            nextMatchSummary?.isCup && !nextMatchOpponent;
+                          const isDisabled = isEliminatedCupSpectator
+                            ? !!isReady
+                            : !isHalftime && !isReady && !isLineupComplete;
+                          return (
+                            <>
+                              <button
+                                onClick={
+                                  isHalftime ? handleHalftimeReady : handleReady
+                                }
+                                disabled={isDisabled}
+                                className={`w-full py-3.5 font-headline font-black rounded-sm text-base uppercase tracking-widest transition-all ${
+                                  isReady
+                                    ? "bg-surface-bright text-on-surface-variant"
+                                    : isDisabled
+                                      ? "bg-surface-bright text-on-surface-variant cursor-not-allowed opacity-40"
+                                      : "bg-primary text-on-primary hover:brightness-110"
+                                }`}
+                              >
+                                {isReady
+                                  ? "⏳ A aguardar..."
+                                  : isEliminatedCupSpectator
+                                    ? "Avançar para Taça"
+                                    : isHalftime && isCupMatch
+                                      ? "2ª Parte — Taça"
+                                      : isHalftime
+                                        ? "2ª Parte"
+                                        : "Jogar Jornada"}
+                              </button>
+                              {isDisabled &&
+                                !isEliminatedCupSpectator &&
+                                !isReady && (
+                                  <p className="text-[10px] font-bold text-red-400 mt-2 text-center">
+                                    Faltam titulares: 1 GR + 10 de campo
+                                  </p>
+                                )}
+                              {!isDisabled && !isReady && (
+                                <p className="text-[10px] text-zinc-600 mt-2 text-center">
+                                  A jornada avança quando todos clicarem.
+                                </p>
+                              )}
+                            </>
+                          );
+                        })()}
+                      </div>
+
                       {/* Squad list */}
                       <div className="divide-y divide-outline-variant/10">
                         {/* Header counts */}
@@ -7746,122 +7800,8 @@ function App() {
                           </>
                         )}
                       </div>
-
-                      {/* Style + Morale footer */}
-                      <div className="px-4 py-4 border-t border-outline-variant/15 space-y-3">
-                        <div>
-                          <p className="text-[9px] uppercase tracking-[0.2em] font-black text-on-surface-variant mb-1.5">
-                            Estilo
-                          </p>
-                          <div className="flex gap-1">
-                            {[
-                              ["Defensive", "Defensivo"],
-                              ["Balanced", "Equilibrado"],
-                              ["Offensive", "Ofensivo"],
-                            ].map(([val, lbl]) => (
-                              <button
-                                key={val}
-                                onClick={() => updateTactic({ style: val })}
-                                className={`flex-1 py-1.5 text-[9px] font-black uppercase tracking-wide rounded-sm transition-all ${
-                                  tactic.style === val
-                                    ? "bg-primary text-on-primary"
-                                    : "bg-surface-container-high hover:bg-surface-bright text-on-surface-variant"
-                                }`}
-                              >
-                                {lbl}
-                              </button>
-                            ))}
-                          </div>
-                        </div>
-                        {(() => {
-                          const morale = teamInfo?.morale ?? 75;
-                          const mc =
-                            morale > 75
-                              ? "bg-primary"
-                              : morale >= 50
-                                ? "bg-tertiary"
-                                : "bg-error";
-                          const ml =
-                            morale > 75
-                              ? "Boa"
-                              : morale >= 50
-                                ? "Média"
-                                : "Baixa";
-                          return (
-                            <div className="flex items-center gap-3">
-                              <p className="text-[9px] uppercase tracking-[0.2em] font-black text-on-surface-variant shrink-0">
-                                Moral
-                              </p>
-                              <div className="flex-1 bg-surface-bright rounded-full h-1.5 overflow-hidden">
-                                <div
-                                  className={`h-full rounded-full transition-all duration-500 ${mc}`}
-                                  style={{ width: `${morale}%` }}
-                                />
-                              </div>
-                              <span
-                                className={`text-[10px] font-black shrink-0 ${morale > 75 ? "text-primary" : morale >= 50 ? "text-tertiary" : "text-error"}`}
-                              >
-                                {ml}
-                              </span>
-                            </div>
-                          );
-                        })()}
-                      </div>
                     </div>
                   )}
-                  {/* JOGAR button */}
-                  <div className="p-4 border-t border-outline-variant/15">
-                    {(() => {
-                      const isReady = players.find(
-                        (p) => p.name === me.name,
-                      )?.ready;
-                      const isHalftime = showHalftimePanel && !isPlayingMatch;
-                      const isEliminatedCupSpectator =
-                        nextMatchSummary?.isCup && !nextMatchOpponent;
-                      const isDisabled = isEliminatedCupSpectator
-                        ? !!isReady
-                        : !isHalftime && !isReady && !isLineupComplete;
-                      return (
-                        <>
-                          <button
-                            onClick={
-                              isHalftime ? handleHalftimeReady : handleReady
-                            }
-                            disabled={isDisabled}
-                            className={`w-full py-4 font-headline font-black rounded-sm text-base uppercase tracking-widest transition-all ${
-                              isReady
-                                ? "bg-surface-bright text-on-surface-variant"
-                                : isDisabled
-                                  ? "bg-surface-bright text-on-surface-variant cursor-not-allowed opacity-40"
-                                  : "bg-primary text-on-primary hover:brightness-110"
-                            }`}
-                          >
-                            {isReady
-                              ? "⏳ A aguardar..."
-                              : isEliminatedCupSpectator
-                                ? "Avançar para Taça"
-                                : isHalftime && isCupMatch
-                                  ? "2ª Parte — Taça"
-                                  : isHalftime
-                                    ? "2ª Parte"
-                                    : "Jogar Jornada"}
-                          </button>
-                          {isDisabled &&
-                            !isEliminatedCupSpectator &&
-                            !isReady && (
-                              <p className="text-[10px] font-bold text-red-400 mt-2 text-center">
-                                Faltam titulares: 1 GR + 10 de campo
-                              </p>
-                            )}
-                          {!isDisabled && !isReady && (
-                            <p className="text-[10px] text-zinc-600 mt-2 text-center">
-                              A jornada avança quando todos clicarem.
-                            </p>
-                          )}
-                        </>
-                      );
-                    })()}
-                  </div>
                 </div>
               </div>
             )}
