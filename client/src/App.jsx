@@ -5161,16 +5161,6 @@ function App() {
                         .filter(Boolean);
 
                       // ── STATS ─────────────────────────────────────────────
-                      const playedLeague = calEntries.filter(
-                        (e) =>
-                          e.type === "league" &&
-                          e.status === "done" &&
-                          e.myScore !== null,
-                      );
-                      const goalDiff = playedLeague.reduce(
-                        (acc, e) => acc + (e.myScore - e.opScore),
-                        0,
-                      );
                       // Unbeaten run: count from end of list until first loss
                       const playedAll = calEntries.filter(
                         (e) => e.status === "done" && e.myScore !== null,
@@ -5255,6 +5245,50 @@ function App() {
                               <p className="text-on-surface-variant font-bold text-sm">
                                 A carregar calendário…
                               </p>
+                            </div>
+                          )}
+
+                          {/* ── SEASON STATS ──────────────────────────────────── */}
+                          {cal && (
+                            <div className="grid grid-cols-2 gap-3">
+                              {/* Unbeaten run */}
+                              <div className="bg-surface-container rounded-lg p-4">
+                                <div className="flex items-center justify-between mb-2">
+                                  <span className="text-[9px] font-black uppercase tracking-widest text-on-surface-variant/60">
+                                    Invencibilidade
+                                  </span>
+                                  <span className="material-symbols-outlined text-base text-amber-400">
+                                    emoji_events
+                                  </span>
+                                </div>
+                                <p className="text-3xl font-headline font-black leading-none mb-1 text-on-surface">
+                                  {String(unbeatenRun).padStart(2, "0")}
+                                </p>
+                                <p className="text-[9px] text-on-surface-variant/60 uppercase tracking-wide font-bold">
+                                  {unbeatenRun === 1
+                                    ? "1 jogo"
+                                    : `${unbeatenRun} jogos`}{" "}
+                                  sem derrota
+                                </p>
+                              </div>
+                              {/* Next away */}
+                              <div className="bg-surface-container rounded-lg p-4">
+                                <div className="flex items-center justify-between mb-2">
+                                  <span className="text-[9px] font-black uppercase tracking-widest text-on-surface-variant/60">
+                                    Próxima Viagem
+                                  </span>
+                                  <span className="material-symbols-outlined text-base text-on-surface-variant/60">
+                                    flight_takeoff
+                                  </span>
+                                </div>
+                                <p className="text-base font-headline font-black leading-tight mb-1 text-on-surface truncate">
+                                  {nextAwayOpponent?.name ?? "—"}
+                                </p>
+                                <p className="text-[9px] text-on-surface-variant/60 uppercase tracking-wide font-bold">
+                                  {nextAwayOpponent?.stadium_name ??
+                                    "Deslocação"}
+                                </p>
+                              </div>
                             </div>
                           )}
 
@@ -5448,79 +5482,6 @@ function App() {
                             </div>
                           )}
 
-                          {/* ── SEASON STATS ──────────────────────────────────── */}
-                          {cal && (
-                            <div className="grid grid-cols-3 gap-3">
-                              {/* Goal diff */}
-                              <div className="bg-surface-container rounded-lg p-4">
-                                <div className="flex items-center justify-between mb-2">
-                                  <span className="text-[9px] font-black uppercase tracking-widest text-on-surface-variant/60">
-                                    Saldo de Gols
-                                  </span>
-                                  <span className="material-symbols-outlined text-base text-emerald-400">
-                                    trending_up
-                                  </span>
-                                </div>
-                                <p
-                                  className={`text-3xl font-headline font-black leading-none mb-1 ${
-                                    goalDiff > 0
-                                      ? "text-emerald-400"
-                                      : goalDiff < 0
-                                        ? "text-red-400"
-                                        : "text-on-surface-variant"
-                                  }`}
-                                >
-                                  {goalDiff > 0 ? "+" : ""}
-                                  {goalDiff}
-                                </p>
-                                <p className="text-[9px] text-on-surface-variant/60 uppercase tracking-wide font-bold">
-                                  {goalDiff > 0
-                                    ? "Saldo positivo"
-                                    : goalDiff < 0
-                                      ? "Saldo negativo"
-                                      : "Saldo neutro"}
-                                </p>
-                              </div>
-                              {/* Unbeaten run */}
-                              <div className="bg-surface-container rounded-lg p-4">
-                                <div className="flex items-center justify-between mb-2">
-                                  <span className="text-[9px] font-black uppercase tracking-widest text-on-surface-variant/60">
-                                    Invencibilidade
-                                  </span>
-                                  <span className="material-symbols-outlined text-base text-amber-400">
-                                    emoji_events
-                                  </span>
-                                </div>
-                                <p className="text-3xl font-headline font-black leading-none mb-1 text-on-surface">
-                                  {String(unbeatenRun).padStart(2, "0")}
-                                </p>
-                                <p className="text-[9px] text-on-surface-variant/60 uppercase tracking-wide font-bold">
-                                  {unbeatenRun === 1
-                                    ? "1 jogo"
-                                    : `${unbeatenRun} jogos`}{" "}
-                                  sem derrota
-                                </p>
-                              </div>
-                              {/* Next away */}
-                              <div className="bg-surface-container rounded-lg p-4">
-                                <div className="flex items-center justify-between mb-2">
-                                  <span className="text-[9px] font-black uppercase tracking-widest text-on-surface-variant/60">
-                                    Próxima Viagem
-                                  </span>
-                                  <span className="material-symbols-outlined text-base text-on-surface-variant/60">
-                                    flight_takeoff
-                                  </span>
-                                </div>
-                                <p className="text-base font-headline font-black leading-tight mb-1 text-on-surface truncate">
-                                  {nextAwayOpponent?.name ?? "—"}
-                                </p>
-                                <p className="text-[9px] text-on-surface-variant/60 uppercase tracking-wide font-bold">
-                                  {nextAwayOpponent?.stadium_name ??
-                                    "Deslocação"}
-                                </p>
-                              </div>
-                            </div>
-                          )}
                           {/* ── END OF CALENDAR ────────── */}
                         </div>
                       );
