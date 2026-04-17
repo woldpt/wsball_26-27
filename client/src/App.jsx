@@ -6766,21 +6766,45 @@ function App() {
                             {/* Moral bar */}
                             {(() => {
                               const morale = teamInfo?.morale ?? 75;
-                              const mc = morale > 75 ? "bg-primary" : morale >= 50 ? "bg-tertiary" : "bg-error";
-                              const ml = morale > 75 ? "Boa" : morale >= 50 ? "Média" : "Baixa";
-                              const tc = morale > 75 ? "text-primary" : morale >= 50 ? "text-tertiary" : "text-error";
+                              const mc =
+                                morale > 75
+                                  ? "bg-primary"
+                                  : morale >= 50
+                                    ? "bg-tertiary"
+                                    : "bg-error";
+                              const ml =
+                                morale > 75
+                                  ? "Boa"
+                                  : morale >= 50
+                                    ? "Média"
+                                    : "Baixa";
+                              const tc =
+                                morale > 75
+                                  ? "text-primary"
+                                  : morale >= 50
+                                    ? "text-tertiary"
+                                    : "text-error";
                               return (
                                 <div className="px-4 py-2 border-b border-outline-variant/15 flex items-center gap-2">
-                                  <span className="text-[9px] uppercase tracking-[0.2em] font-black text-on-surface-variant shrink-0">Moral</span>
+                                  <span className="text-[9px] uppercase tracking-[0.2em] font-black text-on-surface-variant shrink-0">
+                                    Moral
+                                  </span>
                                   <div className="flex-1 bg-surface-bright rounded-full h-1.5 overflow-hidden">
-                                    <div className={`h-full rounded-full transition-all duration-500 ${mc}`} style={{ width: `${morale}%` }} />
+                                    <div
+                                      className={`h-full rounded-full transition-all duration-500 ${mc}`}
+                                      style={{ width: `${morale}%` }}
+                                    />
                                   </div>
-                                  <span className={`text-[10px] font-black shrink-0 ${tc}`}>{ml}</span>
+                                  <span
+                                    className={`text-[10px] font-black shrink-0 ${tc}`}
+                                  >
+                                    {ml}
+                                  </span>
                                 </div>
                               );
                             })()}
 
-                            {/* Formation pill buttons */}}
+                            {/* Formation pill buttons */}
                             <div className="px-5 py-3 border-b border-outline-variant/15 flex flex-wrap gap-2">
                               {[
                                 { value: "4-4-2", label: "4-4-2 Clássico" },
@@ -6808,7 +6832,9 @@ function App() {
 
                             {/* Estilo strip */}
                             <div className="px-4 py-2.5 border-b border-outline-variant/15 bg-surface-container-high/20 flex items-center gap-2">
-                              <span className="text-[9px] uppercase tracking-[0.2em] font-black text-on-surface-variant shrink-0">Estilo</span>
+                              <span className="text-[9px] uppercase tracking-[0.2em] font-black text-on-surface-variant shrink-0">
+                                Estilo
+                              </span>
                               <div className="flex gap-1 flex-1">
                                 {[
                                   ["Defensive", "Def."],
