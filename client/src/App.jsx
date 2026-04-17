@@ -6734,7 +6734,7 @@ function App() {
                           </p>
                         </div>
                       ) : (
-                        <div className="grid grid-cols-1 xl:grid-cols-[220px_1fr_1fr_240px] gap-4 items-start">
+                        <div className="grid grid-cols-1 xl:grid-cols-[220px_minmax(0,0.8fr)_minmax(0,0.8fr)_320px] gap-4 items-start">
                           {/* ── COL 1: CONTROLO ── */}
                           <div className="bg-surface-container rounded-lg overflow-hidden">
                             {/* Header */}
