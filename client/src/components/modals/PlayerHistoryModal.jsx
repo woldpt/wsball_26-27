@@ -203,20 +203,20 @@ export function PlayerHistoryModal({
           </div>
 
           {/* Value strip */}
-          <div className="flex items-center justify-between px-6 py-3 border-t border-outline-variant/15 bg-surface-container-high/30">
-            <div>
+          <div className="grid grid-cols-2 gap-4 px-6 py-3 border-t border-outline-variant/15 bg-surface-container-high/30">
+            <div className="min-w-0">
               <p className="text-[10px] font-black uppercase tracking-widest text-on-surface-variant">
                 Valor de mercado
               </p>
-              <p className="font-black font-headline text-xl tracking-tighter text-tertiary">
+              <p className="font-black font-headline text-lg tracking-tighter text-tertiary truncate">
                 {formatCurrency(player.value || 0)}
               </p>
             </div>
-            <div className="text-right">
+            <div className="min-w-0 text-right">
               <p className="text-[10px] font-black uppercase tracking-widest text-on-surface-variant">
                 Ordenado/sem
               </p>
-              <p className="font-bold font-mono text-sm text-on-surface">
+              <p className="font-bold font-mono text-sm text-on-surface truncate">
                 {formatCurrency(player.wage || 0)}
               </p>
             </div>
