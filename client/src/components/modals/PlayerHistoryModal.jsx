@@ -29,7 +29,7 @@ const POS_BAR = {
   ATA: "#f43f5e",
 };
 
-function SkillBar({ label, value, maxValue = 20, color }) {
+function SkillBar({ label, value, maxValue = 50, color }) {
   const pct = Math.min(100, Math.round((value / maxValue) * 100));
   return (
     <div>

@@ -545,6 +545,33 @@ const playNotification = () => {
   }
 };
 
+// Som especial para golos — mais grave, forte e memorável
+const playGoalSound = () => {
+  try {
+    const ctx = new (window.AudioContext || window.webkitAudioContext)();
+    // Sequência: nota curta de impacto + nota longa de celebração
+    const sequence = [
+      { freq: 523, time: 0,    dur: 0.12, vol: 0.25 },  // Dó
+      { freq: 659, time: 0.10, dur: 0.12, vol: 0.22 },  // Mi
+      { freq: 784, time: 0.20, dur: 0.35, vol: 0.28 },  // Sol (nota de celebração)
+    ];
+    sequence.forEach(({ freq, time, dur, vol }) => {
+      const osc = ctx.createOscillator();
+      const gain = ctx.createGain();
+      osc.connect(gain);
+      gain.connect(ctx.destination);
+      osc.type = "triangle";
+      osc.frequency.setValueAtTime(freq, ctx.currentTime + time);
+      gain.gain.setValueAtTime(vol, ctx.currentTime + time);
+      gain.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + time + dur);
+      osc.start(ctx.currentTime + time);
+      osc.stop(ctx.currentTime + time + dur);
+    });
+  } catch {
+    // ignore
+  }
+};
+
 function App() {
   const savedSessionRef = React.useRef(loadSavedSession());
   const savedSession = savedSessionRef.current;
@@ -707,6 +734,12 @@ function App() {
   // Online players dropdown (header widget)
   const [showOnlineDropdown, setShowOnlineDropdown] = useState(false);
   const onlineDropdownRef = React.useRef(null);
+  // Sidebar collapsed state — persisted in localStorage, auto-collapses during Live matches
+  const [sidebarCollapsed, setSidebarCollapsed] = React.useState(
+    () => localStorage.getItem("sidebarCollapsed") === "true"
+  );
+  // Track user's preferred state before Live auto-collapse
+  const sidebarUserPrefRef = React.useRef(sidebarCollapsed);
 
   const meRef = React.useRef(null);
   const isPlayingMatchRef = React.useRef(false);
@@ -1909,10 +1942,14 @@ function App() {
         (p) => p.teamId === match.homeTeamId || p.teamId === match.awayTeamId,
       );
       if (hasHuman) {
-        const notifiable = events.some((e) =>
-          ["goal", "red", "injury"].includes(e.type),
+        const hasGoal = events.some((e) =>
+          ["goal", "penalty_goal"].includes(e.type),
         );
-        if (notifiable) playNotification();
+        const hasOtherEvent = events.some((e) =>
+          ["red", "injury"].includes(e.type),
+        );
+        if (hasGoal) playGoalSound();
+        else if (hasOtherEvent) playNotification();
       }
     });
     if (didFlashGoal) {
@@ -3279,6 +3316,17 @@ function App() {
   // Oculta o menu e expande a janela de jogo durante a simulação
   const isMatchInProgress =
     isPlayingMatch || showHalftimePanel || !!matchAction;
+
+  // Auto-collapse sidebar during Live; restore user preference when Live ends
+  React.useEffect(() => {
+    if (isMatchInProgress) {
+      sidebarUserPrefRef.current = sidebarCollapsed;
+      setSidebarCollapsed(true);
+    } else {
+      setSidebarCollapsed(sidebarUserPrefRef.current);
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [isMatchInProgress]);
 
   return (
     <div className="min-h-screen bg-surface text-on-surface font-body tracking-tight">
@@ -5300,13 +5348,6 @@ function App() {
                                             >
                                               {hInfo?.name || r.homeTeamId}
                                             </span>
-                                            {isWinnerHome && (
-                                              <span className="text-[9px] font-black uppercase tracking-widest text-primary bg-primary/15 px-2 py-0.5 rounded">
-                                                {cupRoundResults.isFinal
-                                                  ? "🏆 Campeão"
-                                                  : "Apurado"}
-                                              </span>
-                                            )}
                                           </div>
 
                                           {/* Score */}
@@ -5322,6 +5363,16 @@ function App() {
                                               <span className="text-[10px] text-amber-400 font-bold">
                                                 ({r.penaltyHomeGoals}–
                                                 {r.penaltyAwayGoals} g.p.)
+                                              </span>
+                                            )}
+                                            {/* Badge apurado centrado no score */}
+                                            {r.winnerId && (
+                                              <span className="text-[9px] font-black uppercase tracking-widest text-primary bg-primary/15 px-2 py-0.5 rounded mt-0.5">
+                                                {cupRoundResults.isFinal
+                                                  ? "🏆 Campeão"
+                                                  : isWinnerHome
+                                                  ? `✓ ${hInfo?.name?.split(" ")[0] || "Casa"}`
+                                                  : `✓ ${aInfo?.name?.split(" ")[0] || "Fora"}`}
                                               </span>
                                             )}
                                           </div>
@@ -5351,13 +5402,6 @@ function App() {
                                             >
                                               {aInfo?.name || r.awayTeamId}
                                             </span>
-                                            {!isWinnerHome && r.winnerId && (
-                                              <span className="text-[9px] font-black uppercase tracking-widest text-primary bg-primary/15 px-2 py-0.5 rounded">
-                                                {cupRoundResults.isFinal
-                                                  ? "🏆 Campeão"
-                                                  : "Apurado"}
-                                              </span>
-                                            )}
                                           </div>
                                         </div>
                                       </div>
@@ -6446,7 +6490,7 @@ function App() {
                                   <div className="w-1 bg-primary h-8 rounded-t-sm" />
                                 </div>
                                 <span className="text-[10px] text-primary font-bold font-label">
-                                  época {seasonYear}/{seasonYear + 1}
+                                  época {seasonYear}
                                 </span>
                               </div>
                             </div>
@@ -7050,8 +7094,7 @@ function App() {
                                                     className="text-red-400 text-xs font-bold"
                                                     title={`Indisponível até jornada ${Math.max(inj, susp) + 1}`}
                                                   >
-                                                    {isSuspended ? "🟥" : "🩹"}
-                                                    {gamesLeft}j
+                                                    {`${isSuspended ? "🟥" : "🩹"} (${gamesLeft})`}
                                                   </span>
                                                 );
                                               })()}

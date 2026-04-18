@@ -260,7 +260,7 @@ export function createAuctionHelpers(deps: AuctionDeps) {
     const otherHumans = Object.values(game.playersByName).filter(
       (p: any) => p.socketId && p.teamId !== player.team_id,
     );
-    const durationMs = otherHumans.length > 0 ? 15000 : 3000;
+    const durationMs = otherHumans.length > 0 ? 20000 : 3000;
     const now = Date.now();
     const actualDurationMs = durationMs;
 

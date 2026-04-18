@@ -28,7 +28,14 @@ export function registerChatHandlers(
       const game = getGameBySocket(socket.id);
       if (!game) return;
       const player = getPlayerBySocket(game, socket.id);
-      if (!player) return;
+
+      // Fallback: player lookup via socketToName directly (handles mid-reconnect edge case)
+      const coachNameFallback = game.socketToName?.[socket.id];
+      const coachName = player?.name || coachNameFallback;
+      if (!coachName) {
+        console.warn(`[chat] socket ${socket.id} has no player/name in game ${game.roomCode}`);
+        return;
+      }
 
       // Rate limit: 1 message per second per socket
       const now = Date.now();
@@ -50,7 +57,6 @@ export function registerChatHandlers(
         return;
       }
 
-      const coachName = player.name;
       const roomCode = game.roomCode;
       const timestamp = now;
 
@@ -70,6 +76,7 @@ export function registerChatHandlers(
               message: trimmed,
               timestamp,
             };
+            console.log(`[chat] Room msg from ${coachName} in ${roomCode} → broadcasting to room`);
             io.to(roomCode).emit("chatMessage", msgData);
           },
         );

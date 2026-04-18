@@ -688,9 +688,9 @@ async function simulateMatchSegment(
     fixture._yellowCards = {};
   }
 
-  // Track games played — increment once per match (startMin === 0 only)
+  // Track games played — increment once per match (startMin === 1, first minute of first half only)
   // Exclude junior GR negative IDs — they are ephemeral and have no DB row.
-  if (startMin === 0) {
+  if (startMin === 1) {
     const participantIds = [
       ...Array.from(new Set((homeSquad || []).map((p: any) => p.id))),
       ...Array.from(new Set((awaySquad || []).map((p: any) => p.id))),
