@@ -2260,6 +2260,15 @@ function App() {
   // Confirm the pending swap
   const handleConfirmSub = useCallback(() => {
     if (!swapSource || !swapTarget || subsMade >= MAX_MATCH_SUBS) return;
+    // Prevent GR ↔ non-GR swaps
+    const srcPlayer = mySquad.find((p) => p.id === swapSource);
+    const tgtPlayer = mySquad.find((p) => p.id === swapTarget);
+    if (
+      srcPlayer &&
+      tgtPlayer &&
+      (srcPlayer.position === "GR") !== (tgtPlayer.position === "GR")
+    )
+      return;
     setTactic((prevTactic) => {
       const newPositions = { ...prevTactic.positions };
       newPositions[swapSource] = "Suplente";
@@ -2273,7 +2282,7 @@ function App() {
     setSubsMade((n) => n + 1);
     setSwapSource(null);
     setSwapTarget(null);
-  }, [swapSource, swapTarget, subsMade]);
+  }, [swapSource, swapTarget, subsMade, mySquad]);
 
   // Reset pending selection without applying
   const handleResetSub = useCallback(() => {
@@ -4032,7 +4041,7 @@ function App() {
                                 {/* ── Confirmed subs strip ── */}
                                 {confirmedSubs.length > 0 && (
                                   <div className="shrink-0 px-3 py-2 bg-surface-container/60 border-b border-outline-variant/20 flex flex-wrap gap-1.5">
-                                    {confirmedSubs.map((sub, i) => {
+                                    {confirmedSubs.map((sub) => {
                                       const outP = mySquad.find(
                                         (p) => p.id === sub.out,
                                       );
@@ -4119,53 +4128,74 @@ function App() {
                                             !subbedOut.includes(p.id) &&
                                             !redCardedHalftimeIds.has(p.id),
                                         )
-                                        .map((p) => (
-                                          <div
-                                            key={p.id}
-                                            onClick={() =>
-                                              subsMade < MAX_MATCH_SUBS &&
-                                              handleSelectOut(p.id)
-                                            }
-                                            className={`flex items-center gap-2 px-2 py-1.5 border-b border-zinc-800/40 select-none transition-all border-l-2 ${
-                                              swapSource === p.id
-                                                ? "bg-red-500/15 border-l-red-500"
-                                                : subsMade < MAX_MATCH_SUBS
-                                                  ? "cursor-pointer hover:bg-zinc-800/50 border-l-transparent"
-                                                  : "opacity-40 cursor-not-allowed border-l-transparent"
-                                            }`}
-                                          >
-                                            <span
-                                              className={`shrink-0 px-1 py-0.5 rounded-sm text-[8px] font-black border-l-2 ${
+                                        .map((p) => {
+                                          const grAvailableOnBench =
+                                            annotatedSquad.some(
+                                              (bp) =>
+                                                tactic.positions[bp.id] ===
+                                                  "Suplente" &&
+                                                bp.position === "GR" &&
+                                                !subbedOut.includes(bp.id),
+                                            );
+                                          const noGrReplacement =
+                                            p.position === "GR" &&
+                                            !grAvailableOnBench;
+                                          const canSelectOut =
+                                            subsMade < MAX_MATCH_SUBS &&
+                                            !noGrReplacement;
+                                          return (
+                                            <div
+                                              key={p.id}
+                                              onClick={() =>
+                                                canSelectOut &&
+                                                handleSelectOut(p.id)
+                                              }
+                                              title={
+                                                noGrReplacement
+                                                  ? "Não há GR no banco para substituir"
+                                                  : undefined
+                                              }
+                                              className={`flex items-center gap-2 px-2 py-1.5 border-b border-zinc-800/40 select-none transition-all border-l-2 ${
                                                 swapSource === p.id
-                                                  ? "bg-red-500/20 text-red-300 border-l-red-400"
-                                                  : `bg-surface-bright ${POSITION_BORDER_CLASS[p.position] || "border-zinc-500"} ${POSITION_TEXT_CLASS[p.position]}`
+                                                  ? "bg-red-500/15 border-l-red-500"
+                                                  : canSelectOut
+                                                    ? "cursor-pointer hover:bg-zinc-800/50 border-l-transparent"
+                                                    : "opacity-40 cursor-not-allowed border-l-transparent"
                                               }`}
                                             >
-                                              {
-                                                POSITION_SHORT_LABELS[
-                                                  p.position
-                                                ]
-                                              }
-                                            </span>
-                                            <span
-                                              className={`flex-1 truncate text-[11px] font-bold ${swapSource === p.id ? "text-red-200" : "text-zinc-200"}`}
-                                            >
-                                              {p.name}
-                                              {!!p.is_star &&
-                                                (p.position === "MED" ||
-                                                  p.position === "ATA") && (
-                                                  <span className="ml-0.5 text-amber-400 font-black">
-                                                    *
-                                                  </span>
-                                                )}
-                                            </span>
-                                            <span
-                                              className={`shrink-0 text-[10px] font-black tabular-nums ${swapSource === p.id ? "text-red-400" : "text-zinc-600"}`}
-                                            >
-                                              {p.skill}
-                                            </span>
-                                          </div>
-                                        ))}
+                                              <span
+                                                className={`shrink-0 px-1 py-0.5 rounded-sm text-[8px] font-black border-l-2 ${
+                                                  swapSource === p.id
+                                                    ? "bg-red-500/20 text-red-300 border-l-red-400"
+                                                    : `bg-surface-bright ${POSITION_BORDER_CLASS[p.position] || "border-zinc-500"} ${POSITION_TEXT_CLASS[p.position]}`
+                                                }`}
+                                              >
+                                                {
+                                                  POSITION_SHORT_LABELS[
+                                                    p.position
+                                                  ]
+                                                }
+                                              </span>
+                                              <span
+                                                className={`flex-1 truncate text-[11px] font-bold ${swapSource === p.id ? "text-red-200" : "text-zinc-200"}`}
+                                              >
+                                                {p.name}
+                                                {!!p.is_star &&
+                                                  (p.position === "MED" ||
+                                                    p.position === "ATA") && (
+                                                    <span className="ml-0.5 text-amber-400 font-black">
+                                                      *
+                                                    </span>
+                                                  )}
+                                              </span>
+                                              <span
+                                                className={`shrink-0 text-[10px] font-black tabular-nums ${swapSource === p.id ? "text-red-400" : "text-zinc-600"}`}
+                                              >
+                                                {p.skill}
+                                              </span>
+                                            </div>
+                                          );
+                                        })}
                                     </div>
                                   </div>
 
@@ -4187,10 +4217,21 @@ function App() {
                                         .map((p) => {
                                           const alreadyUsed =
                                             subbedOut.includes(p.id);
+                                          const sourcePlayer = swapSource
+                                            ? annotatedSquad.find(
+                                                (sp) => sp.id === swapSource,
+                                              )
+                                            : null;
+                                          const positionMismatch =
+                                            !!swapSource &&
+                                            !!sourcePlayer &&
+                                            (sourcePlayer.position === "GR") !==
+                                              (p.position === "GR");
                                           const disabled =
                                             alreadyUsed ||
                                             !swapSource ||
-                                            subsMade >= MAX_MATCH_SUBS;
+                                            subsMade >= MAX_MATCH_SUBS ||
+                                            positionMismatch;
                                           return (
                                             <div
                                               key={p.id}
@@ -5836,7 +5877,7 @@ function App() {
                                           </button>
                                           <span className="text-[10px] text-on-surface-variant/60 truncate">
                                             {stadiumTeam?.stadium_name
-                                              ? `${stadiumTeam.stadium_name.toUpperCase()} (${imHome ? "H" : "A"})`
+                                              ? `${stadiumTeam.stadium_name.toUpperCase()} (${imHome ? "Casa" : "Fora"})`
                                               : imHome
                                                 ? "Casa"
                                                 : "Fora"}
