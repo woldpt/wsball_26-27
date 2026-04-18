@@ -182,7 +182,8 @@ export function MatchDetailModal({
             <div className="flex items-center justify-center gap-4 px-4 py-2 border-b border-zinc-800 bg-zinc-950/50 shrink-0">
               {fx?.attendance ? (
                 <span className="text-zinc-400 text-[11px] font-bold">
-                  🏟 {fx?.attendance.toLocaleString("pt-PT")} adeptos
+                  {hInfo?.stadium_name ? `${hInfo.stadium_name} ` : ""}🏟{" "}
+                  {fx?.attendance.toLocaleString("pt-PT")} adeptos
                 </span>
               ) : null}
               {ref?.refereeName ? (
