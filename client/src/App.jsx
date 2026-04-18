@@ -713,6 +713,11 @@ function App() {
   const isCupDrawRef = React.useRef(false);
   const teamsRef = React.useRef([]);
   const isLiveSimulationRef = React.useRef(false);
+  // matchReplayActiveRef: true between receiving matchReplay and matchResults
+  // Used to prevent gameState from resetting isPlayingMatch after a mid-match reconnect
+  const matchReplayActiveRef = React.useRef(false);
+  // liveMinuteRef: keeps a ref-copy of liveMinute for use inside socket closures
+  const liveMinuteRef = React.useRef(0);
   const selectedTeamRef = React.useRef(null);
   const marketPairsRef = React.useRef([]);
   const mySquadRef = React.useRef([]);
@@ -765,6 +770,10 @@ function App() {
   useEffect(() => {
     isLiveSimulationRef.current = isLiveSimulation;
   }, [isLiveSimulation]);
+
+  useEffect(() => {
+    liveMinuteRef.current = liveMinute;
+  }, [liveMinute]);
 
   useEffect(() => {
     teamsRef.current = teams;
@@ -1264,10 +1273,14 @@ function App() {
       ) {
         // Match is computing server-side but client has no match data.
         // Keep UI unlocked; halfTimeResults/matchResults will arrive shortly.
-        setIsPlayingMatch(false);
-        setShowHalftimePanel(false);
-        setMatchAction(null);
-        setIsMatchActionPending(false);
+        // Exception: if matchReplay was already received for this half, don't
+        // reset isPlayingMatch — the replay is already running correctly.
+        if (!matchReplayActiveRef.current) {
+          setIsPlayingMatch(false);
+          setShowHalftimePanel(false);
+          setMatchAction(null);
+          setIsMatchActionPending(false);
+        }
       } else {
         // Reset match-in-progress flags on (re)join so the sidebar is never
         // stuck hidden after a disconnect/reconnect between matches.
@@ -1288,6 +1301,7 @@ function App() {
 
     socket.on("matchReplay", (data) => {
       // Reconnected mid-match: fast-forward to current minute without animation
+      matchReplayActiveRef.current = true;
       setLiveMinute(data.minute);
       setIsPlayingMatch(true);
       setIsLiveSimulation(false);
@@ -1321,6 +1335,7 @@ function App() {
     socket.on("matchSegmentStart", (data) => {
       setIsMatchActionPending(false);
       setIsLiveSimulation(true);
+      matchReplayActiveRef.current = false;
       setLiveMinute(data.startMin);
       setIsPlayingMatch(true);
       setActiveTab("live");
@@ -1570,8 +1585,15 @@ function App() {
         setIsLiveSimulation(false);
         setLiveMinute(90);
         setIsPlayingMatch(true);
+      } else if (liveMinuteRef.current >= 45) {
+        // Reconnect mid-second-half: replay was already past halftime.
+        // Go straight to 90 — don't restart the replay from 45.
+        matchReplayActiveRef.current = false;
+        setLiveMinute(90);
+        setIsPlayingMatch(true);
       } else {
         // Reconnect/fallback: no live simulation was in progress, start a replay
+        matchReplayActiveRef.current = false;
         setLiveMinute(45);
         setIsPlayingMatch(true);
       }
@@ -4719,34 +4741,37 @@ function App() {
                                             "goal",
                                             "penalty_goal",
                                             "own_goal",
-                                            "yellow",
                                             "red",
+                                            "penalty_miss",
                                           ].includes(e.type),
                                       )
-                                      .map((e, i) => (
-                                        <span
-                                          key={`${e.minute}-${e.type}-${e.playerId || i}`}
-                                          className="absolute top-1/2 -translate-y-1/2 -translate-x-1/2"
-                                          style={{
-                                            left: `${Math.min(98, Math.max(2, (e.minute / 90) * 100))}%`,
-                                          }}
-                                        >
+                                      .map((e, i) => {
+                                        const isHomeEvent = e.team === "home";
+                                        const dotColor =
+                                          e.type === "goal" ||
+                                          e.type === "penalty_goal" ||
+                                          e.type === "own_goal"
+                                            ? isHomeEvent
+                                              ? hInfo?.color_primary || "#fff"
+                                              : aInfo?.color_primary || "#aaa"
+                                            : e.type === "red"
+                                              ? "#ef4444"
+                                              : "#a855f7"; // penalty_miss → purple
+                                        return (
                                           <span
-                                            className={`block w-1.5 h-1.5 rounded-full ${
-                                              e.type === "goal" ||
-                                              e.type === "penalty_goal"
-                                                ? "bg-primary"
-                                                : e.type === "own_goal"
-                                                  ? "bg-orange-400"
-                                                  : e.type === "yellow"
-                                                    ? "bg-yellow-400"
-                                                    : e.type === "red"
-                                                      ? "bg-red-500"
-                                                      : "bg-blue-400"
-                                            }`}
-                                          />
-                                        </span>
-                                      ))}
+                                            key={`${e.minute}-${e.type}-${e.playerId || i}`}
+                                            className="absolute top-1/2 -translate-y-1/2 -translate-x-1/2"
+                                            style={{
+                                              left: `${Math.min(98, Math.max(2, (e.minute / 90) * 100))}%`,
+                                            }}
+                                          >
+                                            <span
+                                              className="block w-1.5 h-1.5 rounded-full"
+                                              style={{ backgroundColor: dotColor }}
+                                            />
+                                          </span>
+                                        );
+                                      })}
                                   </div>
                                   <div className="flex justify-between text-[8px] text-on-surface-variant/30">
                                     <span>0'</span>
