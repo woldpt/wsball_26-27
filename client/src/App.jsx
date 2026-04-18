@@ -1257,6 +1257,7 @@ function App() {
         setIsPlayingMatch(true);
         setShowHalftimePanel(true);
         setActiveTab("live");
+        setLiveMinute(45); // ensure replay effect enters halftime path on reconnect
       } else if (
         data.matchState === "running_first_half" ||
         data.matchState === "playing_second_half"
@@ -1425,6 +1426,7 @@ function App() {
       setSwapTarget(null);
       setShowHalftimePanel(true);
       setIsPlayingMatch(true);
+      setLiveMinute(45); // ensure replay effect enters halftime path (not end-of-match) on reconnect
       setActiveTab("live");
     });
 

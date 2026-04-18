@@ -643,6 +643,13 @@ export function createCupFlowHelpers(deps: CupFlowDeps) {
       return;
     }
 
+    if (game.gamePhase === "match_et_gate") {
+      if (game.lastHalftimePayload) {
+        socket.emit("cupETHalfTime", game.lastHalftimePayload);
+      }
+      return;
+    }
+
   }
 
   /**
