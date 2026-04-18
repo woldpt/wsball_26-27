@@ -202,9 +202,11 @@ export function WelcomeModal({ welcomeModal, me, setWelcomeModal }) {
                 }}
                 className="w-full font-black py-4 rounded-lg text-sm uppercase tracking-widest transition-all active:scale-95 hover:-translate-y-px shadow-lg"
                 style={{
-                  backgroundColor: welcomeModal.colorPrimary || "#95d4b3",
+                  backgroundColor: welcomeModal.isNew
+                    ? welcomeModal.colorPrimary || "#95d4b3"
+                    : welcomeModal.colorSecondary || "#ffffff",
                   color: "#003824",
-                  boxShadow: `0 8px 24px ${welcomeModal.colorPrimary || "#95d4b3"}30`,
+                  boxShadow: `0 8px 24px ${welcomeModal.isNew ? welcomeModal.colorPrimary || "#95d4b3" : welcomeModal.colorSecondary || "#ffffff"}30`,
                 }}
               >
                 {welcomeModal.isNew ? "Vamos lá! 🚀" : "Continuar 🎯"}
