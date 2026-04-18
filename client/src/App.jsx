@@ -713,6 +713,7 @@ function App() {
   const isCupDrawRef = React.useRef(false);
   const teamsRef = React.useRef([]);
   const isLiveSimulationRef = React.useRef(false);
+  const isCupExtraTimeRef = React.useRef(false);
   // matchReplayActiveRef: true between receiving matchReplay and matchResults
   // Used to prevent gameState from resetting isPlayingMatch after a mid-match reconnect
   const matchReplayActiveRef = React.useRef(false);
@@ -770,6 +771,10 @@ function App() {
   useEffect(() => {
     isLiveSimulationRef.current = isLiveSimulation;
   }, [isLiveSimulation]);
+
+  useEffect(() => {
+    isCupExtraTimeRef.current = isCupExtraTime;
+  }, [isCupExtraTime]);
 
   useEffect(() => {
     liveMinuteRef.current = liveMinute;
@@ -1012,6 +1017,7 @@ function App() {
       setCupExtraTimeBadge(true);
       setLiveMinute(90);
       setIsPlayingMatch(true);
+      setIsLiveSimulation(true);
       if (data) {
         setMatchResults((prev) => {
           if (!prev) return prev;
@@ -1376,7 +1382,11 @@ function App() {
     });
 
     socket.on("matchMinuteUpdate", (data) => {
-      setLiveMinute(data.minute);
+      // Don't let ET minutes from another fixture advance the clock for coaches
+      // whose match already ended in regulation (isCupExtraTime would be false).
+      if (data.minute <= 90 || isCupExtraTimeRef.current) {
+        setLiveMinute(data.minute);
+      }
       // Check for penalty suspense events — only show for the player's own match
       const myTeamId = meRef.current?.teamId;
       for (const f of data.fixtures || []) {
@@ -4470,9 +4480,10 @@ function App() {
                                 e.type === "penalty_goal") &&
                               e.team === "away",
                           );
+                          const maxMinute = isCupExtraTime ? 120 : 90;
                           const progress = Math.min(
                             100,
-                            (liveMinute / 90) * 100,
+                            (liveMinute / maxMinute) * 100,
                           );
 
                           return (
@@ -4767,7 +4778,7 @@ function App() {
                                             key={`${e.minute}-${e.type}-${e.playerId || i}`}
                                             className="absolute top-1/2 -translate-y-1/2 -translate-x-1/2"
                                             style={{
-                                              left: `${Math.min(98, Math.max(2, (e.minute / 90) * 100))}%`,
+                                              left: `${Math.min(98, Math.max(2, (e.minute / maxMinute) * 100))}%`,
                                             }}
                                           >
                                             <span
@@ -4783,7 +4794,7 @@ function App() {
                                     <span className="font-bold text-primary/60">
                                       {liveMinute}'
                                     </span>
-                                    <span>90'</span>
+                                    <span>{isCupExtraTime ? "120'" : "90'"}</span>
                                   </div>
                                   {myMatch.attendance && (
                                     <div className="flex items-center justify-center gap-1 text-[10px] text-on-surface-variant/50 pt-0.5">
@@ -5215,7 +5226,7 @@ function App() {
                               </div>
 
                               {/* Results cards */}
-                              <div className="space-y-3">
+                              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                                 {shown.map((r, idx) => {
                                   const hInfo =
                                     r.homeTeam ||
