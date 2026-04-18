@@ -8,6 +8,8 @@ import {
   ENABLE_ROW_BG,
   POSITION_TEXT_CLASS,
   POSITION_BG_CLASS,
+  POSITION_BORDER_CLASS,
+  POSITION_LABEL_MAP,
 } from "../../constants/index.js";
 import { getPlayerStat } from "../../utils/playerHelpers.js";
 import { isSameTeamId } from "../../utils/teamHelpers.js";
@@ -172,10 +174,10 @@ export function TeamSquadModal({
                           key={player.id}
                           className={`hover:bg-zinc-800/50 transition-colors ${ENABLE_ROW_BG ? POSITION_BG_CLASS[player.position] : ""}`}
                         >
-                          <td
-                            className={`px-4 py-2.5 font-black text-sm tracking-wider ${POSITION_TEXT_CLASS[player.position] || "text-zinc-300"}`}
-                          >
-                            {player.position}
+                          <td className="px-4 py-2.5 text-center">
+                            <span className={`px-2 py-0.5 bg-surface-bright rounded-sm text-[10px] font-black border-l-2 ${POSITION_BORDER_CLASS[player.position] || "border-zinc-500"} ${POSITION_TEXT_CLASS[player.position] || "text-zinc-300"}`}>
+                              {POSITION_LABEL_MAP[player.position] || player.position}
+                            </span>
                           </td>
                           <td className="px-4 py-2.5 font-bold text-white">
                             <PlayerLink playerId={player.id}>

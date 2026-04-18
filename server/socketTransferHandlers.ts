@@ -276,8 +276,10 @@ export function registerTransferSocketHandlers(
       (err, player) => {
         if (err || !player) return;
 
+        const value = player.value || (player.skill || 0) * 20000;
+        const fairWage = Math.round(Math.pow(value, 0.62) / 2.5);
         const demandedWage = Math.max(
-          Math.round((player.skill || 0) * 70),
+          fairWage,
           Math.round((player.wage || 0) * 1.05),
         );
         const acceptedWage = Math.max(0, Math.round(offeredWage || 0));

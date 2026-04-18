@@ -30,13 +30,13 @@ export function createContractHelpers(deps: ContractDeps) {
     if (player.contract_request_pending) return;
 
     const wage = player.wage || 0;
-    const demandBase = Math.max(
-      Math.round((player.skill || 0) * 70),
-      wage + 200,
-    );
-    if (wage >= demandBase * 0.85 && Math.random() > 0.08) return;
+    const value = player.value || (player.skill || 0) * 20000;
+    // Non-linear demand base: mirrors the seeding wage formula with a small premium
+    const fairWage = Math.round(Math.pow(value, 0.62) / 2.5);
+    const demandBase = Math.max(fairWage, Math.round(wage * 1.05), wage + 100);
+    if (wage >= demandBase * 0.88 && Math.random() > 0.08) return;
 
-    const requestedWage = Math.round(demandBase * (1.05 + Math.random() * 0.2));
+    const requestedWage = Math.round(demandBase * (1.05 + Math.random() * 0.15));
     game.db.run(
       "UPDATE players SET contract_request_pending = 1, contract_requested_wage = ? WHERE id = ?",
       [requestedWage, player.id],
@@ -93,9 +93,11 @@ export function createContractHelpers(deps: ContractDeps) {
       if (!coach) continue;
 
       const wage = player.wage || 0;
+      const value = player.value || (player.skill || 0) * 20000;
       // Agente exige mais do que na renovação por expiração: jogador valorizado
+      const fairWage = Math.round(Math.pow(value, 0.62) / 2.5);
       const demandBase = Math.max(
-        Math.round((player.skill || 0) * 85),
+        Math.round(fairWage * 1.15),
         Math.round(wage * 1.3),
       );
       // Apenas aciona se diferença significativa (>20% acima do salário actual)

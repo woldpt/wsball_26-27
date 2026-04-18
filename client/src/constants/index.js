@@ -31,6 +31,20 @@ export const POSITION_TEXT_CLASS = {
   ATA: "text-rose-500",
 };
 
+export const POSITION_BORDER_CLASS = {
+  GR: "border-yellow-500",
+  DEF: "border-blue-500",
+  MED: "border-emerald-500",
+  ATA: "border-rose-500",
+};
+
+export const POSITION_LABEL_MAP = {
+  GR: "GR",
+  DEF: "DEF",
+  MED: "MED",
+  ATA: "ATA",
+};
+
 // Background color classes for each position (soft, subtle)
 export const POSITION_BG_CLASS = {
   GR: "bg-yellow-500/8",

@@ -1187,17 +1187,22 @@ function App() {
       }
     });
     socket.on("systemMessage", (msg) => addToast(msg));
-    socket.on("renewContractCounterOffer", ({ playerId, playerName, demandedWage }) => {
-      setGameDialog({
-        mode: "confirm",
-        title: `Contra-proposta — ${playerName}`,
-        description: `${playerName} recusou a tua oferta e exige €${demandedWage.toLocaleString("pt-PT")}/sem. Aceitas ou deixas ir a leilão?`,
-        confirmLabel: "Aceitar",
-        cancelLabel: "Leilão",
-        onConfirm: () => socket.emit("acceptCounterOffer", { playerId, accepted: true }),
-        onCancel: () => socket.emit("acceptCounterOffer", { playerId, accepted: false }),
-      });
-    });
+    socket.on(
+      "renewContractCounterOffer",
+      ({ playerId, playerName, demandedWage }) => {
+        setGameDialog({
+          mode: "confirm",
+          title: `Contra-proposta — ${playerName}`,
+          description: `${playerName} recusou a tua oferta e exige €${demandedWage.toLocaleString("pt-PT")}/sem. Aceitas ou deixas ir a leilão?`,
+          confirmLabel: "Aceitar",
+          cancelLabel: "Leilão",
+          onConfirm: () =>
+            socket.emit("acceptCounterOffer", { playerId, accepted: true }),
+          onCancel: () =>
+            socket.emit("acceptCounterOffer", { playerId, accepted: false }),
+        });
+      },
+    );
     socket.on("transferProposalResult", ({ ok, message }) => {
       addToast(message);
       if (ok) setTransferProposalModal(null);
@@ -2368,11 +2373,19 @@ function App() {
         // Block injured/suspended from becoming Titular or Suplente
         if (targetStatus === "Titular" || targetStatus === "Suplente") {
           const draggedPlayer = mySquad.find((p) => p.id === draggedId);
-          if (draggedPlayer && !isPlayerAvailable(draggedPlayer, matchweekCount + 1)) return prev;
+          if (
+            draggedPlayer &&
+            !isPlayerAvailable(draggedPlayer, matchweekCount + 1)
+          )
+            return prev;
         }
         if (draggedStatus === "Titular" || draggedStatus === "Suplente") {
           const targetPlayer = mySquad.find((p) => p.id === targetId);
-          if (targetPlayer && !isPlayerAvailable(targetPlayer, matchweekCount + 1)) return prev;
+          if (
+            targetPlayer &&
+            !isPlayerAvailable(targetPlayer, matchweekCount + 1)
+          )
+            return prev;
         }
         newPositions[draggedId] = targetStatus;
         newPositions[targetId] = draggedStatus;
@@ -3301,15 +3314,34 @@ function App() {
                   style={{ background: "#1a1a1a" }}
                 >
                   <div
-                    className="px-4 py-2.5 flex items-center justify-between border-b border-outline-variant/20"
+                    className="px-4 py-2.5 flex flex-col gap-1.5 border-b border-outline-variant/20"
                     style={{ background: "#111" }}
                   >
-                    <span className="text-[10px] uppercase tracking-widest font-black text-on-surface-variant">
-                      Sala {me.roomName || me.roomCode}
-                    </span>
-                    <span className="text-[10px] font-black text-emerald-400 uppercase tracking-widest">
-                      {players.length} online
-                    </span>
+                    <div className="flex items-center justify-between">
+                      <span className="text-[10px] uppercase tracking-widest font-black text-on-surface-variant truncate">
+                        {me.roomName || me.roomCode}
+                      </span>
+                      <span className="text-[10px] font-black text-emerald-400 uppercase tracking-widest shrink-0 ml-2">
+                        {players.length} online
+                      </span>
+                    </div>
+                    <div className="flex items-center gap-1.5">
+                      <span className="font-mono text-xs font-black text-primary tracking-widest">
+                        {me.roomCode?.toUpperCase()}
+                      </span>
+                      <button
+                        onClick={() => {
+                          navigator.clipboard
+                            .writeText(me.roomCode?.toUpperCase() || "")
+                            .then(() => addToast("Código copiado!"))
+                            .catch(() => {});
+                        }}
+                        className="text-[9px] font-black uppercase tracking-widest text-zinc-500 hover:text-primary transition-colors px-1.5 py-0.5 rounded bg-zinc-800 hover:bg-zinc-700"
+                        title="Copiar código de convite"
+                      >
+                        Copiar
+                      </button>
+                    </div>
                   </div>
                   <div className="divide-y divide-outline-variant/10 max-h-80 overflow-y-auto">
                     {[
@@ -3811,8 +3843,8 @@ function App() {
                           );
 
                           return (
-                            <div className="fixed inset-0 top-14 bg-zinc-950/90 backdrop-blur-sm z-[25] flex items-center justify-center p-2">
-                              <div className="w-full max-w-lg max-h-[85vh] flex flex-col overflow-hidden bg-surface-container rounded-lg border border-outline-variant/40 shadow-2xl">
+                            <div className="fixed inset-0 top-14 z-[25] overflow-y-auto bg-zinc-950/95 backdrop-blur-sm sm:overflow-hidden sm:flex sm:items-center sm:justify-center sm:p-4 sm:bg-zinc-950/90">
+                              <div className="w-full flex flex-col bg-surface-container sm:max-w-lg sm:max-h-[90vh] sm:overflow-hidden sm:rounded-lg sm:border sm:border-outline-variant/40 sm:shadow-2xl">
                                 {/* ── Header ── */}
                                 <div className="shrink-0 flex items-center justify-between px-3 py-2 bg-surface-container-high border-b border-outline-variant/20">
                                   <div className="flex items-center gap-2.5">
@@ -4019,16 +4051,16 @@ function App() {
                                 </div>
 
                                 {/* ── Two-column player list ── */}
-                                <div className="flex flex-1 min-h-0 overflow-hidden">
+                                <div className="flex flex-col sm:flex-row sm:flex-1 sm:min-h-0 sm:overflow-hidden">
                                   {/* Em Campo */}
-                                  <div className="flex-1 flex flex-col min-w-0 overflow-hidden border-r border-zinc-800">
+                                  <div className="flex flex-col min-w-0 border-b border-zinc-800 sm:border-b-0 sm:border-r sm:flex-1 sm:overflow-hidden">
                                     <div className="shrink-0 flex items-center gap-1.5 px-3 py-1.5 bg-surface-container/40 border-b border-outline-variant/20">
                                       <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 shrink-0" />
                                       <span className="text-[9px] font-black uppercase tracking-widest text-emerald-500">
                                         Em Campo
                                       </span>
                                     </div>
-                                    <div className="flex-1 overflow-y-auto">
+                                    <div className="sm:flex-1 overflow-y-auto">
                                       {annotatedSquad
                                         .filter(
                                           (p) =>
@@ -4053,10 +4085,10 @@ function App() {
                                             }`}
                                           >
                                             <span
-                                              className={`w-4 h-4 rounded-sm shrink-0 flex items-center justify-center text-[8px] font-black ${
+                                              className={`shrink-0 px-1 py-0.5 rounded-sm text-[8px] font-black border-l-2 ${
                                                 swapSource === p.id
-                                                  ? "bg-red-500/25 text-red-300"
-                                                  : `bg-zinc-800 ${POSITION_TEXT_CLASS[p.position]}`
+                                                  ? "bg-red-500/20 text-red-300 border-l-red-400"
+                                                  : `bg-surface-bright ${POSITION_BORDER_CLASS[p.position] || "border-zinc-500"} ${POSITION_TEXT_CLASS[p.position]}`
                                               }`}
                                             >
                                               {
@@ -4088,14 +4120,14 @@ function App() {
                                   </div>
 
                                   {/* Banco */}
-                                  <div className="flex-1 flex flex-col min-w-0 overflow-hidden">
+                                  <div className="flex flex-col min-w-0 sm:flex-1 sm:overflow-hidden">
                                     <div className="shrink-0 flex items-center gap-1.5 px-3 py-1.5 bg-surface-container/40 border-b border-outline-variant/20">
                                       <span className="w-1.5 h-1.5 rounded-full bg-zinc-600 shrink-0" />
                                       <span className="text-[9px] font-black uppercase tracking-widest text-zinc-500">
                                         Banco
                                       </span>
                                     </div>
-                                    <div className="flex-1 overflow-y-auto">
+                                    <div className="sm:flex-1 overflow-y-auto">
                                       {annotatedSquad
                                         .filter(
                                           (p) =>
@@ -4127,12 +4159,12 @@ function App() {
                                               }`}
                                             >
                                               <span
-                                                className={`w-4 h-4 rounded-sm shrink-0 flex items-center justify-center text-[8px] font-black ${
+                                                className={`shrink-0 px-1 py-0.5 rounded-sm text-[8px] font-black border-l-2 ${
                                                   alreadyUsed
-                                                    ? "bg-zinc-800/50 text-zinc-700"
+                                                    ? "bg-zinc-800/40 text-zinc-700 border-zinc-700"
                                                     : swapTarget === p.id
-                                                      ? "bg-emerald-500/25 text-emerald-300"
-                                                      : `bg-zinc-800 ${POSITION_TEXT_CLASS[p.position]}`
+                                                      ? "bg-emerald-500/20 text-emerald-300 border-l-emerald-400"
+                                                      : `bg-surface-bright ${POSITION_BORDER_CLASS[p.position] || "border-zinc-500"} ${POSITION_TEXT_CLASS[p.position]}`
                                                 }`}
                                               >
                                                 {
@@ -4390,7 +4422,7 @@ function App() {
                                       </span>
                                       {myMatch.homeTeamId === me.teamId && (
                                         <div className="absolute -bottom-2.5 left-1/2 -translate-x-1/2 bg-primary text-on-primary px-2 py-0.5 rounded-sm font-black text-[8px] tracking-widest uppercase whitespace-nowrap shadow-lg">
-                                          HUMANO
+                                          {me.name}
                                         </div>
                                       )}
                                     </div>
@@ -4530,7 +4562,7 @@ function App() {
                                       </span>
                                       {myMatch.awayTeamId === me.teamId && (
                                         <div className="absolute -bottom-2.5 left-1/2 -translate-x-1/2 bg-primary text-on-primary px-2 py-0.5 rounded-sm font-black text-[8px] tracking-widest uppercase whitespace-nowrap shadow-lg">
-                                          HUMANO
+                                          {me.name}
                                         </div>
                                       )}
                                     </div>
@@ -4964,7 +4996,7 @@ function App() {
                                     </span>
                                     {isHumanMatch && (
                                       <span className="text-primary/40 font-bold text-[8px] uppercase">
-                                        Humano
+                                        {me.name}
                                       </span>
                                     )}
                                     <span className="flex-1 truncate text-right">
@@ -6789,8 +6821,9 @@ function App() {
                                           <span
                                             className={`px-2 py-0.5 bg-surface-bright rounded-sm text-[10px] font-black border-l-2 ${POSITION_BORDER_CLASS[player.position] || "border-zinc-500"} ${POSITION_TEXT_CLASS[player.position] || "text-zinc-300"}`}
                                           >
-                                            {POSITION_LABEL_MAP[player.position] ||
-                                              player.position}
+                                            {POSITION_LABEL_MAP[
+                                              player.position
+                                            ] || player.position}
                                           </span>
                                         </td>
                                         {/* Jogador */}
@@ -7139,8 +7172,12 @@ function App() {
                                         : "bg-surface-container-high hover:bg-surface-bright text-on-surface-variant border border-outline-variant/20"
                                     }`}
                                   >
-                                    <span className="text-base leading-none">{icon}</span>
-                                    <span className="text-[9px] font-black uppercase tracking-wide leading-none">{lbl}</span>
+                                    <span className="text-base leading-none">
+                                      {icon}
+                                    </span>
+                                    <span className="text-[9px] font-black uppercase tracking-wide leading-none">
+                                      {lbl}
+                                    </span>
                                   </button>
                                 ))}
                               </div>
@@ -7184,22 +7221,36 @@ function App() {
                                       dragPlayerIdRef.current = player.id;
                                       dragPlayerStatusRef.current = "Titular";
                                     }}
-                                    onDragOver={(e) => { e.preventDefault(); setDragOverPlayerId(player.id); }}
-                                    onDragLeave={() => setDragOverPlayerId(null)}
-                                    onDrop={(e) => { e.preventDefault(); if (dragPlayerIdRef.current && dragPlayerIdRef.current !== player.id) handleSwapPlayerStatuses(dragPlayerIdRef.current, player.id); else { setDragOverPlayerId(null); dragPlayerIdRef.current = null; } }}
-                                    onDragEnd={() => { setDragOverPlayerId(null); dragPlayerIdRef.current = null; }}
+                                    onDragOver={(e) => {
+                                      e.preventDefault();
+                                      setDragOverPlayerId(player.id);
+                                    }}
+                                    onDragLeave={() =>
+                                      setDragOverPlayerId(null)
+                                    }
+                                    onDrop={(e) => {
+                                      e.preventDefault();
+                                      if (
+                                        dragPlayerIdRef.current &&
+                                        dragPlayerIdRef.current !== player.id
+                                      )
+                                        handleSwapPlayerStatuses(
+                                          dragPlayerIdRef.current,
+                                          player.id,
+                                        );
+                                      else {
+                                        setDragOverPlayerId(null);
+                                        dragPlayerIdRef.current = null;
+                                      }
+                                    }}
+                                    onDragEnd={() => {
+                                      setDragOverPlayerId(null);
+                                      dragPlayerIdRef.current = null;
+                                    }}
                                     className={`relative flex items-center gap-3 px-4 py-2.5 hover:bg-primary/5 transition-colors select-none cursor-grab active:cursor-grabbing ${player.isUnavailable ? "opacity-50" : ""} ${dragOverPlayerId === player.id && dragPlayerIdRef.current !== player.id ? "bg-primary/10 ring-1 ring-primary/40" : ""}`}
                                   >
                                     <span
-                                      className={`shrink-0 w-[22px] text-center text-[10px] font-black ${
-                                        player.position === "GR"
-                                          ? "text-amber-400"
-                                          : player.position === "DEF"
-                                            ? "text-sky-400"
-                                            : player.position === "MED"
-                                              ? "text-primary"
-                                              : "text-red-400"
-                                      }`}
+                                      className={`shrink-0 px-1.5 py-0.5 bg-surface-bright rounded-sm text-[9px] font-black border-l-2 ${POSITION_BORDER_CLASS[player.position] || "border-zinc-500"} ${POSITION_TEXT_CLASS[player.position] || "text-zinc-300"}`}
                                     >
                                       {POSITION_SHORT_LABELS[player.position]}
                                     </span>
@@ -7353,22 +7404,36 @@ function App() {
                                       dragPlayerIdRef.current = player.id;
                                       dragPlayerStatusRef.current = "Suplente";
                                     }}
-                                    onDragOver={(e) => { e.preventDefault(); setDragOverPlayerId(player.id); }}
-                                    onDragLeave={() => setDragOverPlayerId(null)}
-                                    onDrop={(e) => { e.preventDefault(); if (dragPlayerIdRef.current && dragPlayerIdRef.current !== player.id) handleSwapPlayerStatuses(dragPlayerIdRef.current, player.id); else { setDragOverPlayerId(null); dragPlayerIdRef.current = null; } }}
-                                    onDragEnd={() => { setDragOverPlayerId(null); dragPlayerIdRef.current = null; }}
+                                    onDragOver={(e) => {
+                                      e.preventDefault();
+                                      setDragOverPlayerId(player.id);
+                                    }}
+                                    onDragLeave={() =>
+                                      setDragOverPlayerId(null)
+                                    }
+                                    onDrop={(e) => {
+                                      e.preventDefault();
+                                      if (
+                                        dragPlayerIdRef.current &&
+                                        dragPlayerIdRef.current !== player.id
+                                      )
+                                        handleSwapPlayerStatuses(
+                                          dragPlayerIdRef.current,
+                                          player.id,
+                                        );
+                                      else {
+                                        setDragOverPlayerId(null);
+                                        dragPlayerIdRef.current = null;
+                                      }
+                                    }}
+                                    onDragEnd={() => {
+                                      setDragOverPlayerId(null);
+                                      dragPlayerIdRef.current = null;
+                                    }}
                                     className={`relative flex items-center gap-3 px-4 py-2.5 hover:bg-primary/5 transition-colors select-none cursor-grab active:cursor-grabbing ${player.isUnavailable ? "opacity-35" : ""} ${dragOverPlayerId === player.id && dragPlayerIdRef.current !== player.id ? "bg-amber-500/10 ring-1 ring-amber-500/40" : ""}`}
                                   >
                                     <span
-                                      className={`shrink-0 w-[22px] text-center text-[10px] font-black ${
-                                        player.position === "GR"
-                                          ? "text-amber-400"
-                                          : player.position === "DEF"
-                                            ? "text-sky-400"
-                                            : player.position === "MED"
-                                              ? "text-primary"
-                                              : "text-red-400"
-                                      }`}
+                                      className={`shrink-0 px-1.5 py-0.5 bg-surface-bright rounded-sm text-[9px] font-black border-l-2 ${POSITION_BORDER_CLASS[player.position] || "border-zinc-500"} ${POSITION_TEXT_CLASS[player.position] || "text-zinc-300"}`}
                                     >
                                       {POSITION_SHORT_LABELS[player.position]}
                                     </span>
@@ -7489,12 +7554,35 @@ function App() {
                                       draggable
                                       onDragStart={() => {
                                         dragPlayerIdRef.current = player.id;
-                                        dragPlayerStatusRef.current = "Excluído";
+                                        dragPlayerStatusRef.current =
+                                          "Excluído";
                                       }}
-                                      onDragOver={(e) => { e.preventDefault(); setDragOverPlayerId(player.id); }}
-                                      onDragLeave={() => setDragOverPlayerId(null)}
-                                      onDrop={(e) => { e.preventDefault(); if (dragPlayerIdRef.current && dragPlayerIdRef.current !== player.id) handleSwapPlayerStatuses(dragPlayerIdRef.current, player.id); else { setDragOverPlayerId(null); dragPlayerIdRef.current = null; } }}
-                                      onDragEnd={() => { setDragOverPlayerId(null); dragPlayerIdRef.current = null; }}
+                                      onDragOver={(e) => {
+                                        e.preventDefault();
+                                        setDragOverPlayerId(player.id);
+                                      }}
+                                      onDragLeave={() =>
+                                        setDragOverPlayerId(null)
+                                      }
+                                      onDrop={(e) => {
+                                        e.preventDefault();
+                                        if (
+                                          dragPlayerIdRef.current &&
+                                          dragPlayerIdRef.current !== player.id
+                                        )
+                                          handleSwapPlayerStatuses(
+                                            dragPlayerIdRef.current,
+                                            player.id,
+                                          );
+                                        else {
+                                          setDragOverPlayerId(null);
+                                          dragPlayerIdRef.current = null;
+                                        }
+                                      }}
+                                      onDragEnd={() => {
+                                        setDragOverPlayerId(null);
+                                        dragPlayerIdRef.current = null;
+                                      }}
                                       className={`relative flex items-center gap-3 px-4 py-2 select-none transition-all cursor-grab active:cursor-grabbing ${dragOverPlayerId === player.id && dragPlayerIdRef.current !== player.id ? "opacity-100 bg-zinc-700/40 ring-1 ring-zinc-500/40" : "opacity-40 hover:opacity-70"}`}
                                     >
                                       <span
@@ -7964,8 +8052,11 @@ function App() {
                                   className="hover:bg-surface-bright/20 transition-colors"
                                 >
                                   <td className="px-4 py-2 text-center">
-                                    <span className={`px-2 py-0.5 bg-surface-bright rounded-sm text-[10px] font-black border-l-2 ${POSITION_BORDER_CLASS[player.position] || "border-zinc-500"} ${POSITION_TEXT_CLASS[player.position] || "text-zinc-300"}`}>
-                                      {POSITION_LABEL_MAP[player.position] || player.position}
+                                    <span
+                                      className={`px-2 py-0.5 bg-surface-bright rounded-sm text-[10px] font-black border-l-2 ${POSITION_BORDER_CLASS[player.position] || "border-zinc-500"} ${POSITION_TEXT_CLASS[player.position] || "text-zinc-300"}`}
+                                    >
+                                      {POSITION_LABEL_MAP[player.position] ||
+                                        player.position}
                                     </span>
                                   </td>
                                   <td

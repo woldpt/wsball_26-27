@@ -183,7 +183,8 @@ db.serialize(() => {
       const agg = randomAggressiveness();
       const nat = p.nationality || p.country || "🇵🇹";
       const value = skill * 20000;
-      const wage = skill * 200;
+      // Non-linear wage: progressive curve so top players cost disproportionately more
+      const wage = Math.round(Math.pow(value, 0.62) / 2.5);
       const isStar =
         (pos === "MED" || pos === "ATA") && Math.random() < 0.1 ? 1 : 0;
 
