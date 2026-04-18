@@ -27,6 +27,7 @@ import { motion, AnimatePresence } from "framer-motion";
  *   palmaresTeamId: number|null,
  *   handleCloseTeamSquad: function,
  *   setTransferProposalModal: function,
+ *   myBudget: number,
  * }} props
  */
 export function TeamSquadModal({
@@ -39,6 +40,7 @@ export function TeamSquadModal({
   palmaresTeamId,
   handleCloseTeamSquad,
   setTransferProposalModal,
+  myBudget = 0,
 }) {
   const isOwnTeam = isSameTeamId(selectedTeam?.id, me?.teamId);
   const isNpcTeam =
@@ -244,19 +246,25 @@ export function TeamSquadModal({
                           </td>
                           {showProposalCol && (
                             <td className="px-4 py-2.5 text-center">
-                              <button
-                                onClick={() =>
-                                  setTransferProposalModal({
-                                    player,
-                                    suggestedPrice: Math.round(
-                                      (player.value || 0) * 1.35,
-                                    ),
-                                  })
-                                }
-                                className="px-3 py-1.5 rounded text-xs font-black uppercase bg-emerald-700 hover:bg-emerald-600 text-white border border-emerald-500 transition-colors whitespace-nowrap"
-                              >
-                                Proposta
-                              </button>
+                              {Math.round((player.value || 0) * 1.35) <= myBudget ? (
+                                <button
+                                  onClick={() =>
+                                    setTransferProposalModal({
+                                      player,
+                                      suggestedPrice: Math.round(
+                                        (player.value || 0) * 1.35,
+                                      ),
+                                    })
+                                  }
+                                  className="px-3 py-1.5 rounded text-xs font-black uppercase bg-emerald-700 hover:bg-emerald-600 text-white border border-emerald-500 transition-colors whitespace-nowrap"
+                                >
+                                  Proposta
+                                </button>
+                              ) : (
+                                <span className="text-[10px] text-zinc-600 font-bold uppercase">
+                                  Sem saldo
+                                </span>
+                              )}
                             </td>
                           )}
                         </tr>

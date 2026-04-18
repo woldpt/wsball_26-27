@@ -6708,7 +6708,17 @@ function App() {
                                     Pagar -500K
                                   </button>
                                   <button
-                                    onClick={() => socket.emit("takeLoan")}
+                                    onClick={() => {
+                                      setGameDialog({
+                                        mode: "confirm",
+                                        title: "Pedir Empréstimo de 500.000€",
+                                        description: `Juros semanais: ${formatCurrency(Math.round((loanAmount + 500000) * 0.025))}. Dívida total após: ${formatCurrency(loanAmount + 500000)}.`,
+                                        confirmLabel: "Confirmar Empréstimo",
+                                        danger: true,
+                                        onConfirm: () => socket.emit("takeLoan"),
+                                        onCancel: () => {},
+                                      });
+                                    }}
                                     disabled={loanAmount >= 2500000}
                                     className="bg-surface-bright py-2 text-xs font-headline font-bold uppercase tracking-wider rounded hover:brightness-110 disabled:opacity-40 disabled:cursor-not-allowed transition-all border border-outline-variant/30"
                                   >
@@ -6768,7 +6778,16 @@ function App() {
                                 </div>
                               </div>
                               <button
-                                onClick={() => socket.emit("buildStadium")}
+                                onClick={() => {
+                                  setGameDialog({
+                                    mode: "confirm",
+                                    title: "Expandir Estádio — 300.000€",
+                                    description: `Aumenta a capacidade em 5.000 lugares. Receita máxima por jogo sobe ${formatCurrency(5000 * 15)}.`,
+                                    confirmLabel: "Confirmar Expansão",
+                                    onConfirm: () => socket.emit("buildStadium"),
+                                    onCancel: () => {},
+                                  });
+                                }}
                                 disabled={currentBudget < 300000}
                                 className="w-full bg-primary hover:brightness-110 disabled:opacity-40 disabled:cursor-not-allowed text-on-primary font-headline font-bold py-3 rounded text-sm transition-all uppercase tracking-wide"
                               >
@@ -8258,7 +8277,17 @@ function App() {
                                       )
                                     ) : (
                                       <button
-                                        onClick={() => buyPlayer(player.id)}
+                                        onClick={() => {
+                                          if (!canAfford) return;
+                                          setGameDialog({
+                                            mode: "confirm",
+                                            title: `Comprar ${player.name}`,
+                                            description: `${player.position} · Qualidade ${player.skill} · Preço: ${formatCurrency(price)}`,
+                                            confirmLabel: "Confirmar Compra",
+                                            onConfirm: () => buyPlayer(player.id),
+                                            onCancel: () => {},
+                                          });
+                                        }}
                                         disabled={!canAfford}
                                         className="bg-primary hover:brightness-110 disabled:opacity-30 disabled:hover:bg-primary text-on-primary font-black uppercase text-[10px] px-3 py-1.5 rounded-md tracking-wide"
                                       >
@@ -8291,6 +8320,7 @@ function App() {
         palmaresTeamId={palmaresTeamId}
         handleCloseTeamSquad={handleCloseTeamSquad}
         setTransferProposalModal={setTransferProposalModal}
+        myBudget={teamInfo?.budget ?? 0}
       />
 
       <TransferProposalModal
@@ -8300,7 +8330,7 @@ function App() {
 
       {/* ── Auction notification (persiana) ───────────────────────────────── */}
       <div
-        className={`fixed top-14 left-0 right-0 z-130 transition-transform duration-300 ${
+        className={`fixed top-14 left-0 lg:left-64 right-0 z-130 transition-transform duration-300 ${
           selectedAuctionPlayer ? "translate-y-0" : "-translate-y-full"
         }`}
       >

@@ -105,15 +105,19 @@ export function AuctionNotification({
 
   return (
     <div
-      className="w-full shadow-2xl overflow-hidden"
-      style={{ background: "#0d0d14", borderTop: `2px solid ${accent.border}` }}
+      className="w-full overflow-hidden"
+      style={{
+        background: "#0d0d14",
+        borderTop: `2px solid ${accent.border}`,
+        boxShadow: `0 4px 32px 0 ${accent.border}55, 0 2px 8px 0 #000a`,
+      }}
     >
       {/* ── Collapsed strip — always visible ──────────────────────────── */}
       <button
         type="button"
-        className="w-full flex items-center gap-3 px-4 py-2.5 text-left transition-colors hover:brightness-110"
+        className="w-full flex items-center gap-3 px-4 py-2.5 text-left transition-all hover:brightness-125"
         style={{
-          background: "linear-gradient(90deg, #13131f 0%, #0d0d14 100%)",
+          background: `linear-gradient(90deg, ${accent.border}18 0%, #13131f 40%, #0d0d14 100%)`,
         }}
         onClick={() => setIsAuctionExpanded((v) => !v)}
       >
@@ -209,11 +213,18 @@ export function AuctionNotification({
         <div style={{ borderTop: "1px solid #1e1e2e" }}>
           {/* ── Hero header ── */}
           <div
-            className="px-5 pt-6 pb-5"
+            className="px-5 pt-6 pb-5 relative overflow-hidden"
             style={{
-              background: `linear-gradient(180deg, ${accent.border}12 0%, transparent 100%)`,
+              background: `linear-gradient(135deg, ${accent.border}22 0%, ${accent.border}08 50%, transparent 100%)`,
             }}
           >
+            {/* Glow orb */}
+            <div
+              className="absolute -top-8 -left-8 w-40 h-40 rounded-full pointer-events-none"
+              style={{
+                background: `radial-gradient(circle, ${accent.border}30 0%, transparent 70%)`,
+              }}
+            />
             <p
               className="text-[10px] font-black uppercase tracking-[0.25em] mb-2"
               style={{ color: accent.text }}
