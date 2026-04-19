@@ -71,6 +71,13 @@ export function createCupFlowHelpers(deps: CupFlowDeps) {
       byDiv[Number(div)] = getStandingsRows(byDiv[Number(div)]);
     }
 
+    const CHAMPION_PRIZE: Record<number, number> = {
+      1: 2000000,
+      2: 1000000,
+      3: 500000,
+      4: 250000,
+    };
+
     const iLigaWinner = byDiv[1] && byDiv[1][0];
     if (iLigaWinner) {
       await new Promise((resolve) => {
@@ -82,14 +89,14 @@ export function createCupFlowHelpers(deps: CupFlowDeps) {
       });
       await new Promise((resolve) => {
         game.db.run(
-          "UPDATE teams SET budget = budget + 1000000 WHERE id = ?",
-          [iLigaWinner.id],
+          "UPDATE teams SET budget = budget + ? WHERE id = ?",
+          [CHAMPION_PRIZE[1], iLigaWinner.id],
           resolve,
         );
       });
       io.to(game.roomCode).emit(
         "systemMessage",
-        `🏆 ${iLigaWinner.name} é o Campeão Nacional de ${year}!`,
+        `🏆 ${iLigaWinner.name} é o Campeão Nacional de ${year}! (+2.000.000€)`,
       );
     }
 
@@ -103,6 +110,19 @@ export function createCupFlowHelpers(deps: CupFlowDeps) {
             resolve,
           );
         });
+        const prize = CHAMPION_PRIZE[div];
+        await new Promise((resolve) => {
+          game.db.run(
+            "UPDATE teams SET budget = budget + ? WHERE id = ?",
+            [prize, winner.id],
+            resolve,
+          );
+        });
+        const prizeFormatted = new Intl.NumberFormat("pt-PT").format(prize);
+        io.to(game.roomCode).emit(
+          "systemMessage",
+          `🥇 ${winner.name} é Campeão ${DIVISION_NAMES[div]} de ${year}! (+${prizeFormatted}€)`,
+        );
       }
     }
 
