@@ -33,11 +33,11 @@ function randomAggressiveness() {
   return 1 + Math.floor(Math.random() * 5);
 }
 const skillRanges = {
-  1: [42, 50],
-  2: [32, 42],
-  3: [20, 32],
-  4: [8, 20],
-  5: [1, 7],
+  1: [36, 50],
+  2: [26, 35],
+  3: [16, 25],
+  4: [5, 15],
+  5: [5, 15],
 };
 
 function randomSkill(min, max) {
