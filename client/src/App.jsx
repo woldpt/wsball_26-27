@@ -779,14 +779,7 @@ function App() {
       }, 400);
       return () => clearTimeout(timeout);
     } else if (joinMode === "saved-game" && !name) {
-      // No name entered yet — show all saves so the dropdown is populated
-      fetch(`${backendUrl}/saves`)
-        .then((r) => r.json())
-        .then((data) => {
-          setAvailableSaves(data);
-          if (data.length > 0 && !roomCode) setRoomCode(data[0].code);
-        })
-        .catch(() => {});
+      setAvailableSaves([]);
     }
   }, [name, joinMode, adminSession]); // eslint-disable-line react-hooks/exhaustive-deps
 
@@ -3083,7 +3076,9 @@ function App() {
                         </label>
                         {availableSaves.length === 0 ? (
                           <p className="text-on-surface-variant text-sm mt-2">
-                            Nenhum save encontrado para este treinador.
+                            {name
+                              ? "Nenhum save encontrado para este treinador."
+                              : "Introduz o teu nome para ver as tuas salas."}
                           </p>
                         ) : (
                           <div className="space-y-2">

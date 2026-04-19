@@ -166,10 +166,7 @@ app.get("/saves", apiLimiter, async (req, res) => {
 
     if (managerName) {
       const mySaves = await getManagerRooms(managerName as string);
-      const filtered = mySaves.filter((r) => allSaves.includes(r));
-      // Fallback: if manager has no room_managers records (e.g. accounts.db was reset),
-      // return all saves so coaches can still find their rooms
-      roomCodes = filtered.length > 0 ? filtered : allSaves;
+      roomCodes = mySaves.filter((r) => allSaves.includes(r));
     }
 
     // Load room names for each room
