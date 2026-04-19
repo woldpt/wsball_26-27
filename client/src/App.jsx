@@ -5589,6 +5589,21 @@ function App() {
                         return "future";
                       };
 
+                      // Find the cup round in which my team was eliminated
+                      const eliminatedCupRound = (() => {
+                        const cupEntries = SEASON_CALENDAR.filter((e) => e.type === "cup");
+                        for (const e of cupEntries) {
+                          const fixtures = cal?.cupMatches?.filter((m) => m.round === e.round) ?? [];
+                          const myMatch = fixtures.find(
+                            (f) => f.home_team_id === myTeamId || f.away_team_id === myTeamId,
+                          );
+                          if (myMatch?.played && myMatch.winner_team_id !== myTeamId) {
+                            return e.round;
+                          }
+                        }
+                        return null;
+                      })();
+
                       // Build flat list of MY matches across season
                       const calEntries = SEASON_CALENDAR.filter((entry) => {
                         if (calFilter === "league")
@@ -5599,6 +5614,10 @@ function App() {
                         .map((entry) => {
                           const status = getStatus(entry);
                           if (entry.type === "cup") {
+                            // Rounds after elimination → show eliminated placeholder
+                            if (eliminatedCupRound !== null && entry.round > eliminatedCupRound) {
+                              return { entry, status, type: "cup", eliminated: true };
+                            }
                             const cupFixtures =
                               cal?.cupMatches?.filter(
                                 (m) => m.round === entry.round,
@@ -5886,6 +5905,7 @@ function App() {
                                   entry,
                                   status,
                                   type,
+                                  eliminated,
                                   opponent,
                                   imHome,
                                   stadiumTeam,
@@ -5897,6 +5917,47 @@ function App() {
                                   myPen,
                                   opPen,
                                 }) => {
+                                  // ── Eliminated from cup ──────────────────
+                                  if (eliminated) {
+                                    const weekLabel = entry.roundName
+                                      .split(" ")
+                                      .slice(-2)
+                                      .join(" ");
+                                    return (
+                                      <div
+                                        key={entry.calendarIndex}
+                                        className="flex items-stretch gap-0 rounded-lg overflow-hidden opacity-40 bg-surface-container border-l-2 border-l-red-800"
+                                      >
+                                        <div className="w-28 shrink-0 flex flex-col justify-center gap-1 px-3 py-3 border-r border-outline-variant/10">
+                                          <span className="text-[8px] font-black uppercase tracking-widest px-1.5 py-0.5 rounded self-start bg-red-900/30 text-red-400">
+                                            Taça
+                                          </span>
+                                          <span className="text-[10px] font-black text-on-surface leading-tight">
+                                            {weekLabel}
+                                          </span>
+                                        </div>
+                                        <div className="flex-1 flex items-center gap-3 px-4 py-3 min-w-0">
+                                          <div className="shrink-0 w-8 h-8 rounded flex items-center justify-center text-xs font-black border border-red-800/30 text-red-600 bg-red-900/10">
+                                            🏆
+                                          </div>
+                                          <div className="flex flex-col min-w-0">
+                                            <span className="text-sm font-black text-red-500 leading-tight">
+                                              Eliminado da Taça
+                                            </span>
+                                            <span className="text-[10px] text-on-surface-variant/40">
+                                              {entry.roundName}
+                                            </span>
+                                          </div>
+                                        </div>
+                                        <div className="shrink-0 flex items-center justify-end px-4 py-3">
+                                          <span className="text-[9px] font-black uppercase tracking-widest px-2 py-0.5 rounded bg-red-900/20 text-red-600">
+                                            Eliminado
+                                          </span>
+                                        </div>
+                                      </div>
+                                    );
+                                  }
+
                                   const isCurrent = status === "current";
                                   const isDone = status === "done";
 
