@@ -338,7 +338,7 @@ function buildAutoPositions(
 // initialLineup: [{id, name, position, is_star, skill}]
 // events: match event array (includes substitution, red, injury events)
 // side: "home" | "away" — filters events to the right team
-function getEffectiveLineup(
+function _getEffectiveLineup(
   initialLineup = [],
   events = [],
   liveMinute = 90,
@@ -488,7 +488,7 @@ function hasSeenWelcome(coachName, roomCode) {
   }
 }
 
-function markWelcomeSeen(coachName, roomCode) {
+function _markWelcomeSeen(coachName, roomCode) {
   try {
     window.localStorage.setItem(
       `cashball_welcome:${coachName}:${roomCode}`,
@@ -511,7 +511,7 @@ function hasSeenWelcomeThisSession(coachName, roomCode) {
   }
 }
 
-function markWelcomeSeenThisSession(coachName, roomCode) {
+function _markWelcomeSeenThisSession(coachName, roomCode) {
   try {
     window.sessionStorage.setItem(
       `cashball_welcome_session:${coachName}:${roomCode}`,
@@ -551,9 +551,9 @@ const playGoalSound = () => {
     const ctx = new (window.AudioContext || window.webkitAudioContext)();
     // Sequência: nota curta de impacto + nota longa de celebração
     const sequence = [
-      { freq: 523, time: 0,    dur: 0.12, vol: 0.25 },  // Dó
-      { freq: 659, time: 0.10, dur: 0.12, vol: 0.22 },  // Mi
-      { freq: 784, time: 0.20, dur: 0.35, vol: 0.28 },  // Sol (nota de celebração)
+      { freq: 523, time: 0, dur: 0.12, vol: 0.25 }, // Dó
+      { freq: 659, time: 0.1, dur: 0.12, vol: 0.22 }, // Mi
+      { freq: 784, time: 0.2, dur: 0.35, vol: 0.28 }, // Sol (nota de celebração)
     ];
     sequence.forEach(({ freq, time, dur, vol }) => {
       const osc = ctx.createOscillator();
@@ -563,7 +563,10 @@ const playGoalSound = () => {
       osc.type = "triangle";
       osc.frequency.setValueAtTime(freq, ctx.currentTime + time);
       gain.gain.setValueAtTime(vol, ctx.currentTime + time);
-      gain.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + time + dur);
+      gain.gain.exponentialRampToValueAtTime(
+        0.001,
+        ctx.currentTime + time + dur,
+      );
       osc.start(ctx.currentTime + time);
       osc.stop(ctx.currentTime + time + dur);
     });
@@ -604,7 +607,7 @@ function App() {
   const [disconnected, setDisconnected] = useState(false);
   const [joinError, setJoinError] = useState("");
   const [toasts, setToasts] = useState([]);
-  const [lockedCoaches, setLockedCoaches] = useState([]);
+  const [_lockedCoaches, setLockedCoaches] = useState([]);
   const [awaitingCoaches, setAwaitingCoaches] = useState([]);
   const joinTimerRef = React.useRef(null);
 
@@ -637,7 +640,7 @@ function App() {
     "#6ee7b7",
     "#93c5fd",
   ];
-  const getTeamColor = (teamId) =>
+  const _getTeamColor = (teamId) =>
     teamId ? TICKER_TEAM_COLORS[teamId % TICKER_TEAM_COLORS.length] : "#ef4444";
 
   const pushTickerItem = (
@@ -736,7 +739,7 @@ function App() {
   const onlineDropdownRef = React.useRef(null);
   // Sidebar collapsed state — persisted in localStorage, auto-collapses during Live matches
   const [sidebarCollapsed, setSidebarCollapsed] = React.useState(
-    () => localStorage.getItem("sidebarCollapsed") === "true"
+    () => localStorage.getItem("sidebarCollapsed") === "true",
   );
   // Track user's preferred state before Live auto-collapse
   const sidebarUserPrefRef = React.useRef(sidebarCollapsed);
@@ -758,7 +761,7 @@ function App() {
   const tacticRef = React.useRef({ positions: {} });
   // goalFlashRef: { [key]: timestamp } – key = `${homeId}_${awayId}_home|away`
   const goalFlashRef = React.useRef({});
-  const formationSelectRef = React.useRef(null);
+  const _formationSelectRef = React.useRef(null);
 
   const backendUrl =
     (typeof import.meta !== "undefined" && import.meta.env?.VITE_BACKEND_URL) ||
@@ -1742,6 +1745,7 @@ function App() {
       socket.off("connect", onConnect);
       socket.off("disconnect", onDisconnect);
     };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []); // empty deps — register once only
 
   // Keep meRef in sync so the onConnect closure above always has the latest me
@@ -3560,7 +3564,9 @@ function App() {
                               </p>
                             )}
                           </div>
-                          <span className={`shrink-0 text-[10px] font-black ${statusColor}`}>
+                          <span
+                            className={`shrink-0 text-[10px] font-black ${statusColor}`}
+                          >
                             {statusLabel}
                           </span>
                         </div>
@@ -3619,14 +3625,20 @@ function App() {
       </header>
 
       {/* ── LEFT SIDEBAR ─────────────────────────────────────────────────── */}
-      <nav className={`hidden lg:flex fixed left-0 top-14 bottom-0 bg-surface-container-low flex-col z-10 transition-all duration-200 ${sidebarCollapsed ? "w-14" : "w-64"}`}>
+      <nav
+        className={`hidden lg:flex fixed left-0 top-14 bottom-0 bg-surface-container-low flex-col z-10 transition-all duration-200 ${sidebarCollapsed ? "w-14" : "w-64"}`}
+      >
         {/* Toggle button */}
         <button
           onClick={() => {
             const next = !sidebarCollapsed;
             setSidebarCollapsed(next);
             sidebarUserPrefRef.current = next;
-            try { localStorage.setItem("sidebarCollapsed", String(next)); } catch {}
+            try {
+              localStorage.setItem("sidebarCollapsed", String(next));
+            } catch {
+              /* ignore */
+            }
           }}
           title={sidebarCollapsed ? "Expandir sidebar" : "Recolher sidebar"}
           className="shrink-0 flex items-center justify-center h-10 border-b border-outline-variant/20 text-on-surface-variant hover:text-on-surface hover:bg-surface-bright transition-colors"
@@ -3698,7 +3710,13 @@ function App() {
                 setActiveTab("tactic");
                 window.scrollTo(0, 0);
               }}
-              title={sidebarCollapsed ? (isMatchInProgress ? "AO VIVO" : "JOGAR") : undefined}
+              title={
+                sidebarCollapsed
+                  ? isMatchInProgress
+                    ? "AO VIVO"
+                    : "JOGAR"
+                  : undefined
+              }
               className={`w-full flex items-center gap-3 px-2 py-3.5 text-sm font-black uppercase tracking-widest transition-all rounded-sm ${sidebarCollapsed ? "justify-center" : ""} ${
                 isMatchInProgress
                   ? "bg-red-500/15 text-red-400 border border-red-500/30 cursor-not-allowed"
@@ -3751,7 +3769,7 @@ function App() {
               setActiveTab(key);
               window.scrollTo(0, 0);
             }}
-            className={`flex-1 shrink-0 min-w-[72px] flex flex-col items-center justify-center gap-0.5 text-[10px] font-bold uppercase tracking-wider transition-colors relative ${
+            className={`flex-1 shrink-0 min-w-18 flex flex-col items-center justify-center gap-0.5 text-[10px] font-bold uppercase tracking-wider transition-colors relative ${
               isMatchInProgress
                 ? key === "tactic"
                   ? "text-red-400 cursor-not-allowed"
@@ -3926,7 +3944,7 @@ function App() {
                       className={`bg-surface-container text-on-surface font-body p-6 border border-outline-variant/20 shadow-sm relative overflow-hidden${isMatchInProgress ? " rounded-lg" : " min-h-150 rounded-lg"}`}
                     >
                       {matchAction && (
-                        <div className="fixed inset-0 top-14 z-[150] bg-surface/95 backdrop-blur-sm p-6 flex flex-col justify-center">
+                        <div className="fixed inset-0 top-14 z-150 bg-surface/95 backdrop-blur-sm p-6 flex flex-col justify-center">
                           <h2 className="text-3xl font-black text-amber-500 mb-2 tracking-widest text-center uppercase">
                             {matchAction.type === "injury"
                               ? "LESÃO"
@@ -4025,7 +4043,7 @@ function App() {
                           );
 
                           return (
-                            <div className="fixed inset-0 top-14 z-[25] overflow-y-auto bg-zinc-950/95 backdrop-blur-sm sm:overflow-hidden sm:flex sm:items-center sm:justify-center sm:p-4 sm:bg-zinc-950/90">
+                            <div className="fixed inset-0 top-14 z-25 overflow-y-auto bg-zinc-950/95 backdrop-blur-sm sm:overflow-hidden sm:flex sm:items-center sm:justify-center sm:p-4 sm:bg-zinc-950/90">
                               <div className="w-full flex flex-col bg-surface-container sm:max-w-lg sm:max-h-[90vh] sm:overflow-hidden sm:rounded-lg sm:border sm:border-outline-variant/40 sm:shadow-2xl">
                                 {/* ── Header ── */}
                                 <div className="shrink-0 flex items-center justify-between px-3 py-2 bg-surface-container-high border-b border-outline-variant/20">
@@ -4136,7 +4154,7 @@ function App() {
                                                 </span>
                                               )}
                                               <span
-                                                className={`truncate max-w-[120px] ${e.type === "goal" || e.type === "penalty_goal" ? "text-primary font-bold" : e.type === "red" ? "text-red-400 font-bold" : "text-on-surface-variant"}`}
+                                                className={`truncate max-w-30 ${e.type === "goal" || e.type === "penalty_goal" ? "text-primary font-bold" : e.type === "red" ? "text-red-400 font-bold" : "text-on-surface-variant"}`}
                                               >
                                                 <PlayerLink
                                                   playerId={e.playerId}
@@ -4179,13 +4197,13 @@ function App() {
                                           <span className="text-zinc-600 shrink-0">
                                             🔄
                                           </span>
-                                          <span className="text-red-400 truncate max-w-[5.5rem]">
+                                          <span className="text-red-400 truncate max-w-22">
                                             {outP?.name ?? "?"}
                                           </span>
                                           <span className="text-zinc-600 shrink-0 mx-0.5">
                                             →
                                           </span>
-                                          <span className="text-emerald-400 truncate max-w-[5.5rem]">
+                                          <span className="text-emerald-400 truncate max-w-22">
                                             {inP?.name ?? "?"}
                                           </span>
                                         </div>
@@ -5166,7 +5184,7 @@ function App() {
                                         setShowMatchDetail(true);
                                       }}
                                       title="Ver detalhes da partida"
-                                      className="px-3 py-1.5 bg-surface-container hover:bg-surface-bright text-on-surface text-center font-headline min-w-[52px] flex gap-1 items-center justify-center text-sm leading-none transition-colors cursor-pointer"
+                                      className="px-3 py-1.5 bg-surface-container hover:bg-surface-bright text-on-surface text-center font-headline min-w-13 flex gap-1 items-center justify-center text-sm leading-none transition-colors cursor-pointer"
                                     >
                                       <span
                                         className="font-black"
@@ -5372,7 +5390,7 @@ function App() {
                                               {hInfo?.name?.[0] ?? "?"}
                                             </div>
                                             <span
-                                              className="font-black text-sm text-right truncate max-w-[100px]"
+                                              className="font-black text-sm text-right truncate max-w-25"
                                               style={{
                                                 color:
                                                   hInfo?.color_primary ||
@@ -5404,8 +5422,8 @@ function App() {
                                                 {cupRoundResults.isFinal
                                                   ? "🏆 Campeão"
                                                   : isWinnerHome
-                                                  ? `✓ ${hInfo?.name?.split(" ")[0] || "Casa"}`
-                                                  : `✓ ${aInfo?.name?.split(" ")[0] || "Fora"}`}
+                                                    ? `✓ ${hInfo?.name?.split(" ")[0] || "Casa"}`
+                                                    : `✓ ${aInfo?.name?.split(" ")[0] || "Fora"}`}
                                               </span>
                                             )}
                                           </div>
@@ -5426,7 +5444,7 @@ function App() {
                                               {aInfo?.name?.[0] ?? "?"}
                                             </div>
                                             <span
-                                              className="font-black text-sm text-left truncate max-w-[100px]"
+                                              className="font-black text-sm text-left truncate max-w-25"
                                               style={{
                                                 color:
                                                   aInfo?.color_primary ||
@@ -7034,7 +7052,7 @@ function App() {
                               </span>
                             </div>
                             <div className="overflow-x-auto">
-                              <table className="w-full min-w-[700px] text-left border-separate border-spacing-y-0.5 px-2 pb-2">
+                              <table className="w-full min-w-175 text-left border-separate border-spacing-y-0.5 px-2 pb-2">
                                 <thead>
                                   <tr className="text-[10px] uppercase tracking-widest text-on-surface-variant font-black">
                                     <th className="py-3 px-3 text-center w-14">
@@ -7066,7 +7084,8 @@ function App() {
                                         Math.ceil((matchweekCount + 1) / 14);
                                     const alreadyAuctionedThisWeek =
                                       matchweekCount > 0 &&
-                                      (player.last_auctioned_matchweek || 0) >= matchweekCount;
+                                      (player.last_auctioned_matchweek || 0) >=
+                                        matchweekCount;
                                     return (
                                       <tr
                                         key={player.id}
@@ -7529,17 +7548,23 @@ function App() {
                                             ★
                                           </span>
                                         )}
-                                      {player.isUnavailable && (() => {
-                                        const susp = player.suspension_until_matchweek || 0;
-                                        const inj = player.injury_until_matchweek || 0;
-                                        const isSusp = susp > matchweekCount;
-                                        const left = isSusp ? susp - matchweekCount : inj - matchweekCount;
-                                        return (
-                                          <span className="ml-1 text-xs">
-                                            {isSusp ? "🟥" : "🩹"} ({left})
-                                          </span>
-                                        );
-                                      })()}
+                                      {player.isUnavailable &&
+                                        (() => {
+                                          const susp =
+                                            player.suspension_until_matchweek ||
+                                            0;
+                                          const inj =
+                                            player.injury_until_matchweek || 0;
+                                          const isSusp = susp > matchweekCount;
+                                          const left = isSusp
+                                            ? susp - matchweekCount
+                                            : inj - matchweekCount;
+                                          return (
+                                            <span className="ml-1 text-xs">
+                                              {isSusp ? "🟥" : "🩹"} ({left})
+                                            </span>
+                                          );
+                                        })()}
                                     </span>
                                     <span className="text-sm font-black text-primary shrink-0">
                                       {player.skill}
@@ -7590,7 +7615,7 @@ function App() {
                                         const titularesFull = titCount >= 11;
                                         return (
                                           <div
-                                            className="absolute right-4 top-full z-50 bg-surface-container-high border border-outline-variant/40 rounded-md shadow-xl p-1 flex flex-col gap-0.5 min-w-[140px]"
+                                            className="absolute right-4 top-full z-50 bg-surface-container-high border border-outline-variant/40 rounded-md shadow-xl p-1 flex flex-col gap-0.5 min-w-35"
                                             onClick={(e) => e.stopPropagation()}
                                           >
                                             {[
@@ -7714,17 +7739,23 @@ function App() {
                                       <PlayerLink playerId={player.id}>
                                         {player.name}
                                       </PlayerLink>
-                                      {player.isUnavailable && (() => {
-                                        const susp = player.suspension_until_matchweek || 0;
-                                        const inj = player.injury_until_matchweek || 0;
-                                        const isSusp = susp > matchweekCount;
-                                        const left = isSusp ? susp - matchweekCount : inj - matchweekCount;
-                                        return (
-                                          <span className="ml-1 text-xs">
-                                            {isSusp ? "🟥" : "🩹"} ({left})
-                                          </span>
-                                        );
-                                      })()}
+                                      {player.isUnavailable &&
+                                        (() => {
+                                          const susp =
+                                            player.suspension_until_matchweek ||
+                                            0;
+                                          const inj =
+                                            player.injury_until_matchweek || 0;
+                                          const isSusp = susp > matchweekCount;
+                                          const left = isSusp
+                                            ? susp - matchweekCount
+                                            : inj - matchweekCount;
+                                          return (
+                                            <span className="ml-1 text-xs">
+                                              {isSusp ? "🟥" : "🩹"} ({left})
+                                            </span>
+                                          );
+                                        })()}
                                     </span>
                                     <span className="text-sm font-bold text-on-surface-variant shrink-0">
                                       {player.skill}
@@ -7765,7 +7796,7 @@ function App() {
                                         const subsFull = subCount >= 5;
                                         return (
                                           <div
-                                            className="absolute right-4 top-full z-50 bg-surface-container-high border border-outline-variant/40 rounded-md shadow-xl p-1 flex flex-col gap-0.5 min-w-[140px]"
+                                            className="absolute right-4 top-full z-50 bg-surface-container-high border border-outline-variant/40 rounded-md shadow-xl p-1 flex flex-col gap-0.5 min-w-35"
                                             onClick={(e) => e.stopPropagation()}
                                           >
                                             {[
@@ -7869,7 +7900,7 @@ function App() {
                                       className={`relative flex items-center gap-3 px-4 py-2 select-none transition-all cursor-grab active:cursor-grabbing ${dragOverPlayerId === player.id && dragPlayerIdRef.current !== player.id ? "opacity-100 bg-zinc-700/40 ring-1 ring-zinc-500/40" : "opacity-40 hover:opacity-70"}`}
                                     >
                                       <span
-                                        className={`shrink-0 w-[22px] text-center text-[10px] font-black ${
+                                        className={`shrink-0 w-5.5 text-center text-[10px] font-black ${
                                           player.position === "GR"
                                             ? "text-amber-400"
                                             : player.position === "DEF"
@@ -7920,7 +7951,7 @@ function App() {
                                           const titularesFull = titCount >= 11;
                                           return (
                                             <div
-                                              className="absolute right-4 bottom-full mb-1 z-50 bg-surface-container-high border border-outline-variant/40 rounded-md shadow-xl p-1 flex flex-col gap-0.5 min-w-[140px]"
+                                              className="absolute right-4 bottom-full mb-1 z-50 bg-surface-container-high border border-outline-variant/40 rounded-md shadow-xl p-1 flex flex-col gap-0.5 min-w-35"
                                               onClick={(e) =>
                                                 e.stopPropagation()
                                               }
@@ -8221,7 +8252,7 @@ function App() {
                                         </p>
                                       </div>
                                     )}
-                                    <div className="absolute inset-0 bg-gradient-to-t from-black/30 to-transparent pointer-events-none" />
+                                    <div className="absolute inset-0 bg-linear-to-t from-black/30 to-transparent pointer-events-none" />
                                   </div>
                                 );
                               })()}
@@ -8291,7 +8322,7 @@ function App() {
                         </div>
                       </div>
                       <div className="overflow-x-auto">
-                        <table className="w-full min-w-[760px] text-left text-xs md:text-sm">
+                        <table className="w-full min-w-190 text-left text-xs md:text-sm">
                           <thead>
                             <tr className="bg-surface/50 text-on-surface-variant uppercase text-[10px] md:text-[11px] border-b border-outline-variant/20">
                               <th className="px-4 py-2.5 font-black">Pos</th>

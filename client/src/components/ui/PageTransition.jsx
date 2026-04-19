@@ -1,3 +1,4 @@
+// eslint-disable-next-line no-unused-vars
 import { motion, AnimatePresence } from "framer-motion";
 
 /**
@@ -35,6 +36,7 @@ export function StaggerList({ children, className = "" }) {
     },
   };
   const itemVariants = {
+    // eslint-disable-line no-unused-vars
     hidden: { opacity: 0, y: 10 },
     visible: { opacity: 1, y: 0, transition: { duration: 0.2 } },
   };
@@ -50,5 +52,3 @@ export function StaggerList({ children, className = "" }) {
     </motion.div>
   );
 }
-
-export { motion, AnimatePresence };

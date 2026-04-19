@@ -54,7 +54,9 @@ function SkillBar({ label, value, maxValue = 50, color }) {
 function StatCard({ label, value, color = "text-on-surface" }) {
   return (
     <div className="bg-surface-container rounded-lg p-3 flex flex-col items-center gap-1">
-      <span className={`font-black font-headline text-xl ${color}`}>{value}</span>
+      <span className={`font-black font-headline text-xl ${color}`}>
+        {value}
+      </span>
       <span className="text-[9px] font-black uppercase tracking-widest text-on-surface-variant text-center leading-tight">
         {label}
       </span>
@@ -172,7 +174,9 @@ export function PlayerHistoryModal({
                   {player.name}
                 </h2>
                 {isStar && (
-                  <span className="text-amber-400 text-sm" title="Craque">★</span>
+                  <span className="text-amber-400 text-sm" title="Craque">
+                    ★
+                  </span>
                 )}
                 {availBadge}
               </div>
@@ -202,18 +206,14 @@ export function PlayerHistoryModal({
               ✕
             </button>
           </div>
-
         </div>
 
         {/* ── SCROLLABLE BODY ── */}
         <div className="overflow-y-auto flex-1">
-
           {/* ── 2-COLUMN LAYOUT (md+) ── */}
           <div className="md:grid md:grid-cols-2 md:divide-x md:divide-outline-variant/10">
-
             {/* LEFT COLUMN: Financial + Contract */}
             <div className="flex flex-col">
-
               {/* Value / Wage */}
               <div className="px-6 py-5 border-b border-outline-variant/10">
                 <p className="text-[10px] font-black uppercase tracking-widest text-primary mb-4">
@@ -263,7 +263,11 @@ export function PlayerHistoryModal({
                           setPlayerHistoryModal(null);
                         }}
                         disabled={matchInProgress}
-                        title={matchInProgress ? "Disponível após as partidas" : "Vender em Leilão"}
+                        title={
+                          matchInProgress
+                            ? "Disponível após as partidas"
+                            : "Vender em Leilão"
+                        }
                         className="w-full px-4 py-2.5 bg-secondary-container hover:bg-surface-bright disabled:opacity-30 text-on-surface text-[10px] uppercase font-black rounded-sm transition-all"
                       >
                         Vender em Leilão
@@ -292,7 +296,8 @@ export function PlayerHistoryModal({
                     </div>
                   ) : (
                     <p className="text-xs text-on-surface-variant italic">
-                      Gestão contratual indisponível — jogador contratado nesta época.
+                      Gestão contratual indisponível — jogador contratado nesta
+                      época.
                     </p>
                   )}
                 </div>
@@ -301,7 +306,6 @@ export function PlayerHistoryModal({
 
             {/* RIGHT COLUMN: Stats */}
             <div className="flex flex-col">
-
               {/* Season stats */}
               <div className="px-6 py-5 border-b border-outline-variant/10">
                 <p className="text-[10px] font-black uppercase tracking-widest text-primary mb-4">
@@ -309,7 +313,11 @@ export function PlayerHistoryModal({
                 </p>
                 <div className="grid grid-cols-4 gap-2">
                   <StatCard label="Jogos" value={sGames} />
-                  <StatCard label="Golos" value={sGoals} color="text-tertiary" />
+                  <StatCard
+                    label="Golos"
+                    value={sGoals}
+                    color="text-tertiary"
+                  />
                   <StatCard
                     label="Vermelhos"
                     value={sReds}
@@ -330,7 +338,11 @@ export function PlayerHistoryModal({
                 </p>
                 <div className="grid grid-cols-4 gap-2">
                   <StatCard label="Jogos" value={cGames} />
-                  <StatCard label="Golos" value={cGoals} color="text-tertiary" />
+                  <StatCard
+                    label="Golos"
+                    value={cGoals}
+                    color="text-tertiary"
+                  />
                   <StatCard
                     label="Vermelhos"
                     value={cReds}
@@ -343,7 +355,6 @@ export function PlayerHistoryModal({
                   />
                 </div>
               </div>
-
             </div>
           </div>
 
@@ -379,10 +390,10 @@ export function PlayerHistoryModal({
                             <span className="opacity-50"> J{t.matchweek}</span>
                           ) : null}
                         </td>
-                        <td className="px-3 py-2.5 text-on-surface-variant text-xs truncate max-w-[90px]">
+                        <td className="px-3 py-2.5 text-on-surface-variant text-xs truncate max-w-22.5">
                           {t.related_team_name || "—"}
                         </td>
-                        <td className="px-3 py-2.5 font-bold text-on-surface truncate max-w-[90px]">
+                        <td className="px-3 py-2.5 font-bold text-on-surface truncate max-w-22.5">
                           {t.team_name || "?"}
                         </td>
                         <td className="px-3 py-2.5 text-right text-tertiary font-black text-xs tabular-nums">
@@ -395,7 +406,6 @@ export function PlayerHistoryModal({
               </div>
             )}
           </div>
-
         </div>
       </div>
     </div>

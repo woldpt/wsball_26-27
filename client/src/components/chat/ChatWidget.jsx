@@ -1,4 +1,3 @@
-import { useRef } from "react";
 import { socket } from "../../socket.js";
 
 /**
@@ -33,7 +32,6 @@ export function ChatWidget({
 }) {
   if (!me) return null;
 
-  const totalUnread = unreadRoom + unreadGlobal;
   const activeMessages =
     activeChatTab === "room" ? roomMessages : globalMessages;
 

@@ -1,3 +1,4 @@
+// eslint-disable-next-line no-unused-vars
 import { motion, AnimatePresence } from "framer-motion";
 import { DIVISION_NAMES } from "../../constants/index.js";
 import { formatCurrency } from "../../utils/formatters.js";

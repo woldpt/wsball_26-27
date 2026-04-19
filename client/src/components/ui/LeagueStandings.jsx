@@ -1,4 +1,3 @@
-import { socket } from "../../socket.js";
 import { PlayerLink } from "../shared/PlayerLink.jsx";
 
 const DIVISION_NAMES = {
@@ -35,7 +34,14 @@ function FormDots({ form = "" }) {
   );
 }
 
-function DivisionTable({ div, teams, teamForms, myTeamId, humanTeamIds, onTeamClick }) {
+function DivisionTable({
+  div,
+  teams,
+  teamForms,
+  myTeamId,
+  humanTeamIds,
+  onTeamClick,
+}) {
   const divTeams = teams
     .filter((t) => t.division === div)
     .sort(
@@ -156,7 +162,12 @@ function DivisionTable({ div, teams, teamForms, myTeamId, humanTeamIds, onTeamCl
                         </span>
                       )}
                       {!isMe && isHuman && (
-                        <span className="shrink-0 text-amber-400 text-[8px]" title="Treinador humano">👤</span>
+                        <span
+                          className="shrink-0 text-amber-400 text-[8px]"
+                          title="Treinador humano"
+                        >
+                          👤
+                        </span>
                       )}
                     </div>
                   </td>

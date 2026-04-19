@@ -203,11 +203,8 @@ export function MatchDetailModal({
               {[
                 { info: hInfo, lineup: homeLineup, side: "home" },
                 { info: aInfo, lineup: awayLineup, side: "away" },
-              ].map(({ info, lineup }) => (
-                <div
-                  key={info?.id ?? Math.random()}
-                  className="flex-1 flex flex-col min-w-0"
-                >
+              ].map(({ info, lineup, side }) => (
+                <div key={side} className="flex-1 flex flex-col min-w-0">
                   <p
                     className="text-[9px] font-black uppercase tracking-widest px-2.5 py-1 border-b border-zinc-800"
                     style={{ color: info?.color_primary || "#f59e0b" }}

@@ -96,7 +96,7 @@ export function TransferHub({
   players,
   budget,
   me,
-  teams,
+  // teams, -- reserved for future use
   marketPositionFilter,
   setMarketPositionFilter,
   marketSort,
@@ -254,6 +254,7 @@ export function TransferHub({
                 const price = player.marketPrice;
                 const affordable = canAfford(price);
                 const isMyAuction = isSameTeamId(
+                  // eslint-disable-line no-unused-vars
                   player.auction_seller_team_id,
                   me?.teamId,
                 );
