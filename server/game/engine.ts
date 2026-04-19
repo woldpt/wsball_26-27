@@ -327,6 +327,21 @@ function clampSkill(value: number) {
   return Math.max(0, Math.min(50, Math.round(value)));
 }
 
+// Per-minute goal probability multiplier based on real football time distribution.
+// Weights are normalised so the average across 90 min = 1.0 (total goals unchanged).
+function getGoalTimeMultiplier(minute: number): number {
+  if (minute <= 10) return 0.66;  // 00'–10' ~7-8%
+  if (minute <= 20) return 0.83;  // 11'–20' ~9-10%
+  if (minute <= 30) return 0.94;  // 21'–30' ~11%
+  if (minute <= 40) return 1.02;  // 31'–40' ~12%
+  if (minute <= 45) return 1.11;  // 41'–HT  ~13%
+  if (minute <= 55) return 0.85;  // 46'–55' ~10%
+  if (minute <= 65) return 0.94;  // 56'–65' ~11%
+  if (minute <= 75) return 1.11;  // 66'–75' ~13%
+  if (minute <= 85) return 1.28;  // 76'–85' ~15%
+  return 1.62;                    // 86'–FT  ~18-20%
+}
+
 function normaliseStyle(style: unknown) {
   const raw = String(style || "Balanced")
     .trim()
@@ -882,7 +897,7 @@ async function simulateMatchSegment(
 
       const ratio =
         adjustedAttack / (adjustedAttack + (defending.defense || 1) * 2);
-        let probGoal = ratio * 0.03; // Base chance of a goal in any given minute, scaled by power ratio
+        let probGoal = ratio * 0.03 * getGoalTimeMultiplier(fixture._minute);
       probGoal *= isHome ? 1.05 : 0.95;
 
       // Ego conflict penalty: 3+ craques no onze titular reduzem probabilidade
