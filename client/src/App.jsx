@@ -3496,7 +3496,7 @@ function App() {
                         name: p.name,
                         teamId: p.teamId,
                         online: true,
-                        submitted: lockedCoaches.includes(p.name) || p.ready,
+                        submitted: p.ready,
                       })),
                       ...awaitingCoaches
                         .filter((n) => !players.some((p) => p.name === n))
