@@ -3362,7 +3362,13 @@ function App() {
             >
               CashBall <span style={{ opacity: 0.55 }}>26/27</span>
             </h1>
-            <span className="hidden md:block text-[10px] font-bold text-on-surface-variant uppercase tracking-[0.2em]">
+            <span
+              className="hidden md:block text-[10px] font-bold uppercase tracking-[0.2em]"
+              style={{
+                color: teamInfo?.color_secondary || "#e5e2e1",
+                opacity: 0.7,
+              }}
+            >
               {seasonYear} · J{currentJornada} · {me.roomName || me.roomCode}
             </span>
           </div>
