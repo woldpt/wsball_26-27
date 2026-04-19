@@ -40,5 +40,6 @@
       "Bash(npx eslint *)",
       "Bash(node -e ' *)"
     ]
-  }
+  },
+  "outputStyle": "default"
 }

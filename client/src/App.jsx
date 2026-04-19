@@ -5255,6 +5255,7 @@ function App() {
                       matchweekCount={matchweekCount}
                       palmares={palmares}
                       onTeamClick={handleOpenTeamSquad}
+                      players={players}
                     />
                   )}
 

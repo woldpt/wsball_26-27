@@ -35,7 +35,7 @@ function FormDots({ form = "" }) {
   );
 }
 
-function DivisionTable({ div, teams, teamForms, myTeamId, onTeamClick }) {
+function DivisionTable({ div, teams, teamForms, myTeamId, humanTeamIds, onTeamClick }) {
   const divTeams = teams
     .filter((t) => t.division === div)
     .sort(
@@ -97,7 +97,7 @@ function DivisionTable({ div, teams, teamForms, myTeamId, onTeamClick }) {
           <tbody>
             {divTeams.map((t, idx) => {
               const isMe = String(t.id) === String(myTeamId);
-              const isHuman = t.manager_id != null;
+              const isHuman = humanTeamIds.has(String(t.id));
               const gd = (t.goals_for || 0) - (t.goals_against || 0);
               const played = (t.wins || 0) + (t.draws || 0) + (t.losses || 0);
               const isPromo = div > 1 && idx < 2;
@@ -354,7 +354,12 @@ export function LeagueStandings({
   matchweekCount,
   palmares,
   onTeamClick,
+  players = [],
 }) {
+  const humanTeamIds = new Set(
+    players.filter((p) => p.teamId != null).map((p) => String(p.teamId)),
+  );
+
   return (
     <div className="space-y-4">
       {/* Page header */}
@@ -388,6 +393,7 @@ export function LeagueStandings({
               teams={teams}
               teamForms={teamForms}
               myTeamId={myTeamId}
+              humanTeamIds={humanTeamIds}
               onTeamClick={onTeamClick}
             />
           ))}
