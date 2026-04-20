@@ -3255,7 +3255,7 @@ function App() {
   const currentBudget = teamInfo?.budget || 0;
 
   return (
-    <div className="min-h-screen bg-surface text-on-surface font-body tracking-tight">
+    <div className="min-h-dvh bg-surface text-on-surface font-body tracking-tight">
       {/* Toast notifications */}
       <div className="fixed top-16 right-4 z-100 flex flex-col gap-2 pointer-events-none">
         {toasts.map((t) => (
@@ -3953,7 +3953,7 @@ function App() {
       )}
 
       <main
-        className={`pt-14 lg:pb-12 transition-all duration-200 ${sidebarCollapsed ? "lg:ml-14" : "lg:ml-64"} ${isMatchInProgress ? "pb-8" : "pb-24"}`}
+        className={`pt-14 pb-24 lg:pb-12 transition-all duration-200 ${sidebarCollapsed ? "lg:ml-14" : "lg:ml-64"}`}
       >
         <div className="p-4 lg:p-6">
           {/* ─── TACTIC: HORIZONTAL ADVERSARY BANNER ──────────────────── */}
