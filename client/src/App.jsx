@@ -7537,8 +7537,24 @@ function App() {
                           <p className="text-on-surface-variant font-bold text-sm leading-relaxed">
                             Já foste eliminado desta ronda da Taça.
                             <br />
-                            Aguarda os resultados dos outros jogos na aba LIVE.
+                            Podes observar as partidas dos outros jogos na aba LIVE.
                           </p>
+                          {(() => {
+                            const isReady = players.find((p) => p.name === me?.name)?.ready;
+                            return (
+                              <button
+                                onClick={handleReady}
+                                disabled={!!isReady}
+                                className={`mt-2 px-8 py-3.5 font-headline font-black rounded-sm text-base uppercase tracking-widest transition-all ${
+                                  isReady
+                                    ? "bg-surface-bright text-on-surface-variant cursor-not-allowed opacity-60"
+                                    : "bg-primary text-on-primary hover:brightness-110"
+                                }`}
+                              >
+                                {isReady ? "⏳ A aguardar..." : "Ver jogos da Taça"}
+                              </button>
+                            );
+                          })()}
                         </div>
                       ) : (
                         <div className="grid grid-cols-1 xl:grid-cols-[220px_minmax(0,0.8fr)_minmax(0,0.8fr)_320px] gap-4 items-start">
