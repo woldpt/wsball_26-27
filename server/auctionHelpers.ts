@@ -54,7 +54,11 @@ export function createAuctionHelpers(deps: AuctionDeps) {
       "SELECT * FROM players WHERE team_id = ?",
       [teamId],
       (err: Error | null, squad: any[]) => {
-        if (!err) io.to(player.socketId as string).emit("mySquad", withJuniorGRs(squad || [], teamId, game.matchweek || 1));
+        if (!err)
+          io.to(player.socketId as string).emit(
+            "mySquad",
+            withJuniorGRs(squad || [], teamId, game.matchweek || 1),
+          );
       },
     );
   };
@@ -268,9 +272,10 @@ export function createAuctionHelpers(deps: AuctionDeps) {
     const existingTimer = game.auctionTimers?.[player.id];
     if (existingTimer) clearTimeout(existingTimer as any);
 
+    const currentMw = game.matchweek || 0;
     game.db.run(
-      "UPDATE players SET transfer_status = 'auction', transfer_price = ? WHERE id = ?",
-      [startingPrice, player.id],
+      "UPDATE players SET transfer_status = 'auction', transfer_price = ?, last_auctioned_matchweek = ? WHERE id = ?",
+      [startingPrice, currentMw, player.id],
       () => {
         if (!game.auctions) game.auctions = {};
         if (!game.auctionTimers) game.auctionTimers = {};
@@ -341,8 +346,15 @@ export function createAuctionHelpers(deps: AuctionDeps) {
         }
         if (mode === "auction") {
           const currentMw = game.matchweek || 0;
-          if ((player.last_auctioned_matchweek || 0) >= currentMw && currentMw > 0) {
-            if (callback) callback(false, "Este jogador já foi a leilão nesta jornada. Aguarda a próxima jornada.");
+          if (
+            (player.last_auctioned_matchweek || 0) >= currentMw &&
+            currentMw > 0
+          ) {
+            if (callback)
+              callback(
+                false,
+                "Este jogador já foi a leilão nesta jornada. Aguarda a próxima jornada.",
+              );
             return;
           }
         }

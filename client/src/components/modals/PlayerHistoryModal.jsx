@@ -124,6 +124,9 @@ export function PlayerHistoryModal({
   const currentSeason = Math.ceil((matchweekCount + 1) / 14);
   const canAct = isMyPlayer && player.signed_season !== currentSeason;
   const matchInProgress = isPlayingMatch || showHalftimePanel;
+  const alreadyAuctionedThisWeek =
+    matchweekCount > 0 &&
+    (player.last_auctioned_matchweek || 0) >= matchweekCount;
 
   // Availability badge
   let availBadge = null;
@@ -262,11 +265,13 @@ export function PlayerHistoryModal({
                           listPlayerAuction?.(player);
                           setPlayerHistoryModal(null);
                         }}
-                        disabled={matchInProgress}
+                        disabled={matchInProgress || alreadyAuctionedThisWeek}
                         title={
                           matchInProgress
                             ? "Disponível após as partidas"
-                            : "Vender em Leilão"
+                            : alreadyAuctionedThisWeek
+                              ? "Já foi a leilão nesta jornada"
+                              : "Vender em Leilão"
                         }
                         className="w-full px-4 py-2.5 bg-secondary-container hover:bg-surface-bright disabled:opacity-30 text-on-surface text-[10px] uppercase font-black rounded-sm transition-all"
                       >
