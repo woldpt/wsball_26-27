@@ -172,7 +172,6 @@ function generateLeagueFixtures(teamsInDivision, matchweek, myTeamId) {
 }
 const DEFAULT_TACTIC = { formation: "4-4-2", style: "Balanced", positions: {} };
 
-
 function formatCurrency(value) {
   return new Intl.NumberFormat("pt-PT", {
     style: "currency",
@@ -2869,98 +2868,107 @@ function App() {
 
                 {/* ─── MODE PHASE ────────────────────────── */}
                 {authPhase === "mode" && (
-                  <div className="p-8 space-y-5">
-                    <div className="flex items-start justify-between gap-4">
-                      <div>
+                  <div className="p-6 space-y-5">
+                    {/* Header: name + account actions */}
+                    <div className="space-y-3">
+                      <div className="text-center">
                         <p className="text-[10px] text-on-surface-variant uppercase font-black tracking-[0.4em] mb-1">
                           Sessão autenticada
                         </p>
-                        <h2 className="text-2xl font-headline font-black text-on-surface tracking-tight">
-                          Escolhe como jogar
+                        <h2 className="text-xl font-headline font-black text-on-surface tracking-tight">
+                          Olá, <span className="text-primary">{name}</span>
                         </h2>
-                        <p className="text-sm text-zinc-400 font-medium mt-1">
-                          {name} já está autenticado.
+                        <p className="text-xs text-on-surface-variant mt-0.5">
+                          Como queres jogar hoje?
                         </p>
                       </div>
-                      <button
-                        onClick={resetAuthFlow}
-                        className="shrink-0 text-xs text-on-surface-variant hover:text-on-surface font-black uppercase tracking-widest"
-                      >
-                        Trocar conta
-                      </button>
-                      <button
-                        onClick={handleLogout}
-                        className="shrink-0 text-xs text-error/60 hover:text-error font-black uppercase tracking-widest"
-                        title="Terminar sessão completamente"
-                      >
-                        Terminar Sessão
-                      </button>
+                      <div className="flex items-center justify-center gap-3">
+                        <button
+                          onClick={resetAuthFlow}
+                          className="flex items-center gap-1 text-[10px] text-on-surface-variant hover:text-on-surface font-black uppercase tracking-widest px-3 py-1.5 rounded-full border border-outline-variant/30 hover:border-outline-variant transition-colors"
+                        >
+                          <span className="material-symbols-outlined text-[13px] leading-none">
+                            swap_horiz
+                          </span>
+                          Trocar conta
+                        </button>
+                        <button
+                          onClick={handleLogout}
+                          className="flex items-center gap-1 text-[10px] text-error/60 hover:text-error font-black uppercase tracking-widest px-3 py-1.5 rounded-full border border-error/20 hover:border-error/40 transition-colors"
+                          title="Terminar sessão completamente"
+                        >
+                          <span className="material-symbols-outlined text-[13px] leading-none">
+                            logout
+                          </span>
+                          Sair
+                        </button>
+                      </div>
                     </div>
 
-                    <div className="grid gap-3 sm:grid-cols-3">
-                      <button
-                        onClick={() => selectJoinMode("new-game")}
-                        className={`rounded-lg border p-4 text-left transition-all ${joinMode === "new-game" ? "border-primary bg-primary/10" : "border-outline-variant/20 bg-surface hover:border-outline-variant"}`}
-                      >
-                        <div className="mb-3 inline-flex h-9 w-9 items-center justify-center rounded bg-primary/15 text-primary">
-                          ✦
-                        </div>
-                        <p className="text-[10px] uppercase tracking-[0.3em] text-primary font-black mb-0.5">
-                          Novo jogo
-                        </p>
-                        <p className="text-sm font-black text-white">
-                          Novo jogo
-                        </p>
-                        <p className="mt-1 text-xs text-on-surface-variant leading-relaxed">
-                          Começa do zero e recebe uma nova sala.
-                        </p>
-                      </button>
-
-                      <button
-                        onClick={() => selectJoinMode("saved-game")}
-                        className={`rounded-lg border p-4 text-left transition-all ${joinMode === "saved-game" ? "border-primary bg-primary/10" : "border-outline-variant/20 bg-surface hover:border-outline-variant"}`}
-                      >
-                        <div className="mb-3 inline-flex h-9 w-9 items-center justify-center rounded bg-primary/15 text-primary">
-                          ⟲
-                        </div>
-                        <p className="text-[10px] uppercase tracking-[0.3em] text-primary font-black mb-0.5">
-                          Save
-                        </p>
-                        <p className="text-sm font-black text-white">
-                          Continuar jogo
-                        </p>
-                        <p className="mt-1 text-xs text-on-surface-variant leading-relaxed">
-                          Reabre uma época guardada.
-                        </p>
-                      </button>
-
-                      <button
-                        onClick={() => selectJoinMode("friend-room")}
-                        className={`rounded-lg border p-4 text-left transition-all ${joinMode === "friend-room" ? "border-primary bg-primary/10" : "border-outline-variant/20 bg-surface hover:border-outline-variant"}`}
-                      >
-                        <div className="mb-3 inline-flex h-9 w-9 items-center justify-center rounded bg-primary/15 text-primary">
-                          ↗
-                        </div>
-                        <p className="text-[10px] uppercase tracking-[0.3em] text-primary font-black mb-0.5">
-                          Amigos
-                        </p>
-                        <p className="text-sm font-black text-white">
-                          Juntar a amigos
-                        </p>
-                        <p className="mt-1 text-xs text-on-surface-variant leading-relaxed">
-                          Junta-te com um código de sala.
-                        </p>
-                      </button>
+                    {/* Mode selector — stacked on mobile, row on sm+ */}
+                    <div className="flex flex-col sm:flex-row gap-2">
+                      {[
+                        {
+                          mode: "new-game",
+                          icon: "add_circle",
+                          label: "Novo Jogo",
+                          sub: "Começa do zero",
+                        },
+                        {
+                          mode: "saved-game",
+                          icon: "history",
+                          label: "Continuar",
+                          sub: "Época guardada",
+                        },
+                        {
+                          mode: "friend-room",
+                          icon: "group_add",
+                          label: "Amigos",
+                          sub: "Código de sala",
+                        },
+                      ].map(({ mode, icon, label, sub }) => (
+                        <button
+                          key={mode}
+                          onClick={() => selectJoinMode(mode)}
+                          className={`flex-1 flex items-center sm:flex-col sm:items-start gap-3 sm:gap-1 rounded-xl border px-4 py-3 sm:p-4 text-left transition-all ${
+                            joinMode === mode
+                              ? "border-primary bg-primary/10"
+                              : "border-outline-variant/20 bg-surface hover:border-outline-variant/50"
+                          }`}
+                        >
+                          <span
+                            className={`material-symbols-outlined text-[22px] shrink-0 leading-none ${joinMode === mode ? "text-primary" : "text-on-surface-variant"}`}
+                          >
+                            {icon}
+                          </span>
+                          <div className="min-w-0">
+                            <p
+                              className={`text-sm font-black leading-tight ${joinMode === mode ? "text-primary" : "text-on-surface"}`}
+                            >
+                              {label}
+                            </p>
+                            <p className="text-[10px] text-on-surface-variant leading-tight mt-0.5 hidden sm:block">
+                              {sub}
+                            </p>
+                          </div>
+                          {joinMode === mode && (
+                            <span className="ml-auto sm:hidden material-symbols-outlined text-primary text-[18px] leading-none">
+                              check_circle
+                            </span>
+                          )}
+                        </button>
+                      ))}
                     </div>
 
+                    {/* Sub-panels */}
                     {joinMode === "new-game" && (
-                      <div className="space-y-3 rounded-lg border border-primary/30 bg-primary/8 p-4">
-                        <label className="block text-[10px] uppercase text-on-surface-variant mb-2 font-bold tracking-[0.3em]">
+                      <div className="space-y-3 rounded-xl border border-primary/30 bg-primary/5 p-4">
+                        <label className="block text-[10px] uppercase text-on-surface-variant font-bold tracking-[0.3em]">
                           Nome do novo jogo
                         </label>
                         <input
                           type="text"
-                          className="w-full bg-surface border border-outline-variant p-4 rounded-sm text-on-surface text-lg font-black outline-none transition-all placeholder:text-on-surface-variant/40 focus:ring-2 focus:ring-primary uppercase"
+                          className="w-full bg-surface border border-outline-variant p-3.5 rounded-lg text-on-surface text-base font-black outline-none transition-all placeholder:text-on-surface-variant/40 focus:ring-2 focus:ring-primary uppercase"
                           value={roomCode}
                           placeholder="INVERNO"
                           onChange={(e) =>
@@ -2970,40 +2978,40 @@ function App() {
                             if (e.key === "Enter") handleJoin();
                           }}
                         />
-                        <p className="text-sm font-bold text-on-surface-variant/80">
-                          Ficarás com um clube mágico da 4ª Divisão.
+                        <p className="text-xs text-on-surface-variant/70">
+                          Recebes um clube aleatório da 4ª Divisão.
                         </p>
                       </div>
                     )}
 
                     {joinMode === "saved-game" && (
-                      <div className="space-y-3 rounded-lg border border-primary/20 bg-surface-container p-4">
-                        <label className="block text-[10px] uppercase text-cyan-300 mb-2 font-bold tracking-[0.3em]">
+                      <div className="space-y-3 rounded-xl border border-outline-variant/20 bg-surface-container p-4">
+                        <label className="block text-[10px] uppercase text-cyan-300 font-bold tracking-[0.3em]">
                           As tuas Salas Gravadas
                         </label>
                         {availableSaves.length === 0 ? (
-                          <p className="text-on-surface-variant text-sm mt-2">
+                          <p className="text-on-surface-variant text-sm py-2">
                             {name
                               ? "Nenhum save encontrado para este treinador."
                               : "Introduz o teu nome para ver as tuas salas."}
                           </p>
                         ) : (
-                          <div className="space-y-2">
+                          <div className="space-y-2 max-h-48 overflow-y-auto">
                             {availableSaves.map((save) => (
                               <div
                                 key={save.code}
                                 onClick={() => setRoomCode(save.code)}
-                                className={`flex items-center justify-between gap-3 px-4 py-3 rounded-xl border cursor-pointer transition-all ${
+                                className={`flex items-center justify-between gap-3 px-4 py-3 rounded-lg border cursor-pointer transition-all ${
                                   roomCode === save.code
                                     ? "border-cyan-500 bg-cyan-500/15 text-white"
                                     : "border-outline-variant/20 bg-surface text-on-surface-variant hover:border-outline-variant hover:text-on-surface"
                                 }`}
                               >
                                 <div className="flex flex-col flex-1 min-w-0">
-                                  <span className="font-black text-sm uppercase tracking-widest">
+                                  <span className="font-black text-sm uppercase tracking-widest truncate">
                                     {save.name}
                                   </span>
-                                  <span className="text-xs text-on-surface-variant/60">
+                                  <span className="text-[10px] text-on-surface-variant/60 font-mono">
                                     {save.code}
                                   </span>
                                 </div>
@@ -3050,10 +3058,12 @@ function App() {
                                         alert("Erro de ligação ao servidor."),
                                       );
                                   }}
-                                  className="shrink-0 text-on-surface-variant/50 hover:text-error transition-colors p-1"
+                                  className="shrink-0 text-on-surface-variant/40 hover:text-error transition-colors p-1.5 rounded"
                                   title="Apagar sala"
                                 >
-                                  🗑️
+                                  <span className="material-symbols-outlined text-[16px] leading-none">
+                                    delete
+                                  </span>
                                 </button>
                               </div>
                             ))}
@@ -3063,13 +3073,13 @@ function App() {
                     )}
 
                     {joinMode === "friend-room" && (
-                      <div className="space-y-3 rounded-lg border border-primary/20 bg-surface-container p-4">
-                        <label className="block text-[10px] uppercase text-emerald-300 mb-2 font-bold tracking-[0.3em]">
-                          Código da Sala do Amigo
+                      <div className="space-y-3 rounded-xl border border-outline-variant/20 bg-surface-container p-4">
+                        <label className="block text-[10px] uppercase text-emerald-300 font-bold tracking-[0.3em]">
+                          Código da Sala
                         </label>
                         <input
                           type="text"
-                          className="w-full bg-surface border border-outline-variant p-4 rounded-sm text-on-surface text-lg font-black outline-none transition-all placeholder:text-on-surface-variant/40 focus:ring-2 focus:ring-primary uppercase"
+                          className="w-full bg-surface border border-outline-variant p-3.5 rounded-lg text-on-surface text-base font-black outline-none transition-all placeholder:text-on-surface-variant/40 focus:ring-2 focus:ring-primary uppercase tracking-widest"
                           value={roomCode}
                           placeholder="INVERNO"
                           onChange={(e) =>
@@ -3079,6 +3089,9 @@ function App() {
                             if (e.key === "Enter") handleJoin();
                           }}
                         />
+                        <p className="text-xs text-on-surface-variant/70">
+                          Pede o código ao teu amigo que criou a sala.
+                        </p>
                       </div>
                     )}
 
@@ -3086,7 +3099,11 @@ function App() {
                       <button
                         onClick={handleJoin}
                         disabled={!roomCode || joining}
-                        className={`w-full disabled:bg-surface-container disabled:text-on-surface-variant py-4 rounded font-black text-base uppercase tracking-[0.2em] transition-all active:scale-95 ${joinMode === "new-game" ? "bg-primary hover:brightness-110 text-on-primary" : joinMode === "saved-game" ? "bg-cyan-500 hover:bg-cyan-400 text-zinc-950" : "bg-primary hover:brightness-110 text-on-primary"}`}
+                        className={`w-full disabled:bg-surface-container disabled:text-on-surface-variant py-4 rounded-lg font-black text-sm uppercase tracking-[0.2em] transition-all active:scale-95 ${
+                          joinMode === "saved-game"
+                            ? "bg-cyan-500 hover:bg-cyan-400 text-zinc-950"
+                            : "bg-primary hover:brightness-110 text-on-primary"
+                        }`}
                       >
                         {joining
                           ? "A GERAR CONTRATO..."
@@ -3097,6 +3114,7 @@ function App() {
                               : "JUNTAR A AMIGOS"}
                       </button>
                     )}
+
                     {joinError && (
                       <p className="text-red-400 text-sm text-center font-bold">
                         ⚠️ {joinError}
@@ -4711,10 +4729,16 @@ function App() {
                           // If ET is running for other fixtures but my match was decided at 90', hide this block
                           if (isCupExtraTime) {
                             const reg90Home = matchEvents.filter(
-                              (e) => e.minute <= 90 && e.type === "goal" && e.team === "home",
+                              (e) =>
+                                e.minute <= 90 &&
+                                e.type === "goal" &&
+                                e.team === "home",
                             ).length;
                             const reg90Away = matchEvents.filter(
-                              (e) => e.minute <= 90 && e.type === "goal" && e.team === "away",
+                              (e) =>
+                                e.minute <= 90 &&
+                                e.type === "goal" &&
+                                e.team === "away",
                             ).length;
                             if (reg90Home !== reg90Away) return null;
                           }
