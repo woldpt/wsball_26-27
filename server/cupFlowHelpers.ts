@@ -171,7 +171,12 @@ export function createCupFlowHelpers(deps: CupFlowDeps) {
       );
     }
 
-    const promotions: Array<{ teamId: number; toDiv: number }> = [];
+    const promotions: Array<{
+      teamId: number;
+      toDiv: number;
+      fromDiv: number;
+      teamName: string;
+    }> = [];
     for (const [upperDiv, lowerDiv] of [
       [1, 2],
       [2, 3],
@@ -183,12 +188,24 @@ export function createCupFlowHelpers(deps: CupFlowDeps) {
       if (!upper.length || !lower.length) continue;
       const relegated = upper.slice(-2).map((team) => team.id);
       const promoted = lower.slice(0, 2).map((team) => team.id);
-      relegated.forEach((id) =>
-        promotions.push({ teamId: id, toDiv: lowerDiv }),
-      );
-      promoted.forEach((id) =>
-        promotions.push({ teamId: id, toDiv: upperDiv }),
-      );
+      relegated.forEach((id) => {
+        const team = allTeams.find((t: any) => t.id === id);
+        promotions.push({
+          teamId: id,
+          toDiv: lowerDiv,
+          fromDiv: upperDiv,
+          teamName: team?.name || `Equipa ${id}`,
+        });
+      });
+      promoted.forEach((id) => {
+        const team = allTeams.find((t: any) => t.id === id);
+        promotions.push({
+          teamId: id,
+          toDiv: upperDiv,
+          fromDiv: lowerDiv,
+          teamName: team?.name || `Equipa ${id}`,
+        });
+      });
     }
 
     for (const promotion of promotions) {
@@ -240,6 +257,31 @@ export function createCupFlowHelpers(deps: CupFlowDeps) {
     io.to(game.roomCode).emit("teamsData", updatedTeams);
     io.to(game.roomCode).emit("topScorers", []); // Reset top scorers for new season
     io.to(game.roomCode).emit("teamForms", {}); // Reset form display for new season
+
+    // Build season-end summary for the modal
+    const divisionChampions = ([1, 2, 3, 4] as number[])
+      .map((div) => {
+        const winner = byDiv[div]?.[0];
+        if (!winner) return null;
+        return {
+          divId: div,
+          divName: DIVISION_NAMES[div] || `Divisão ${div}`,
+          teamId: winner.id,
+          teamName: winner.name,
+          prize: CHAMPION_PRIZE[div] || 0,
+        };
+      })
+      .filter(Boolean);
+    const cupWinnerRow = await runGet(
+      game.db,
+      `SELECT p.team_id, t.name as team_name
+       FROM palmares p
+       JOIN teams t ON p.team_id = t.id
+       WHERE p.season = ? AND p.achievement = 'Vencedor da Taça de Portugal'
+       LIMIT 1`,
+      [year],
+    );
+
     io.to(game.roomCode).emit("seasonEnd", {
       season,
       year,
@@ -247,6 +289,23 @@ export function createCupFlowHelpers(deps: CupFlowDeps) {
         ? { id: iLigaWinner.id, name: iLigaWinner.name }
         : null,
       promotions,
+      divisionChampions,
+      cupWinner: cupWinnerRow
+        ? {
+            teamId: cupWinnerRow.team_id,
+            teamName: cupWinnerRow.team_name,
+            prize: 500000,
+          }
+        : null,
+      topScorer: topScorer
+        ? {
+            name: topScorer.name,
+            teamId: topScorer.team_id,
+            teamName: topScorer.team_name,
+            goals: topScorer.goals,
+            prize: 500000,
+          }
+        : null,
     });
   }
 

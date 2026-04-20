@@ -18,6 +18,7 @@ import { PlayerLink } from "./components/shared/PlayerLink.jsx";
 // eslint-disable-next-line no-unused-vars
 import { motion, AnimatePresence } from "framer-motion";
 import { WelcomeModal } from "./components/modals/WelcomeModal.jsx";
+import { SeasonEndModal } from "./components/modals/SeasonEndModal.jsx";
 import { JobOfferModal } from "./components/modals/JobOfferModal.jsx";
 import { PlayerHistoryModal } from "./components/modals/PlayerHistoryModal.jsx";
 import { CupDrawPopup } from "./components/modals/CupDrawPopup.jsx";
@@ -679,6 +680,7 @@ function App() {
   const [cupPenaltyKickIdx, setCupPenaltyKickIdx] = useState(0); // how many kicks revealed
   const [welcomeModal, setWelcomeModal] = useState(null); // { teamName }
   const [jobOfferModal, setJobOfferModal] = useState(null); // null | { fromTeam, toTeam, expiresAtMatchweek }
+  const [seasonEndModal, setSeasonEndModal] = useState(null); // seasonEnd payload
   // Cup match live state
   const [isCupMatch, setIsCupMatch] = useState(false);
   const [cupPreMatch, setCupPreMatch] = useState(false);
@@ -879,6 +881,9 @@ function App() {
     });
     socket.on("topScorers", (data) => setTopScorers(data));
     socket.on("seasonEnd", (data) => {
+      // Show the season-end awards modal
+      setSeasonEndModal(data);
+      // Also push ticker items for context
       if (data.champion) {
         pushTickerItem(
           `Campeão: ${data.champion.name}`,
@@ -889,6 +894,7 @@ function App() {
       }
       for (const p of data.promotions || []) {
         const teamName =
+          p.teamName ||
           teamsRef.current.find((t) => t.id === p.teamId)?.name ||
           `Equipa ${p.teamId}`;
         pushTickerItem(
@@ -9112,6 +9118,13 @@ function App() {
       <JobOfferModal
         jobOfferModal={jobOfferModal}
         setJobOfferModal={setJobOfferModal}
+      />
+
+      <SeasonEndModal
+        data={seasonEndModal}
+        teams={teams}
+        me={me}
+        onClose={() => setSeasonEndModal(null)}
       />
 
       <NewsTicker
