@@ -7,6 +7,10 @@ import React, {
   useRef,
 } from "react";
 import { socket } from "./socket";
+import estadio5000 from "./assets/estadio5000.jpg";
+import estadio15000 from "./assets/estadio15000.jpg";
+import estadio30000 from "./assets/estadio30000.jpg";
+import estadio50000 from "./assets/estadio50000.jpg";
 import { COUNTRY_FLAGS } from "./countryFlags.js";
 // ── Extracted components ───────────────────────────────────────────────────
 import { AggBadge } from "./components/shared/AggBadge.jsx";
@@ -6559,27 +6563,29 @@ function App() {
                         {/* Estádio */}
                         <div className="bg-surface-container rounded-lg overflow-hidden flex flex-col">
                           <div
-                            className="h-24 relative flex items-end"
+                            className="h-32 relative flex items-end"
                             style={{
-                              background: teamInfo?.color_primary
-                                ? `linear-gradient(135deg, ${teamInfo.color_primary}40 0%, #201f1f 100%)`
-                                : "linear-gradient(135deg, #2d6a4f40 0%, #201f1f 100%)",
+                              backgroundImage: `url(${
+                                (teamInfo?.stadium_capacity || 0) >= 50000
+                                  ? estadio50000
+                                  : (teamInfo?.stadium_capacity || 0) >= 30000
+                                    ? estadio30000
+                                    : (teamInfo?.stadium_capacity || 0) >= 15000
+                                      ? estadio15000
+                                      : estadio5000
+                              })`,
+                              backgroundSize: "cover",
+                              backgroundPosition: "center",
                             }}
                           >
-                            <div
-                              className="absolute inset-0 opacity-5"
-                              style={{
-                                backgroundImage:
-                                  "radial-gradient(circle, rgba(255,255,255,0.2) 1px, transparent 1px)",
-                                backgroundSize: "16px 16px",
-                              }}
-                            />
+                            {/* dark gradient so text is always legible */}
+                            <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/30 to-transparent" />
                             <div className="relative px-5 pb-4">
-                              <h3 className="font-headline text-lg font-black text-on-surface leading-tight">
+                              <h3 className="font-headline text-lg font-black text-white leading-tight drop-shadow">
                                 {teamInfo?.stadium_name || "Estádio Municipal"}
                               </h3>
                               <p
-                                className="text-xs font-bold"
+                                className="text-xs font-bold drop-shadow"
                                 style={{
                                   color: teamInfo?.color_primary || "#95d4b3",
                                 }}
