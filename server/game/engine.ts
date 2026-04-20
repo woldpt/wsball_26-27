@@ -1303,7 +1303,7 @@ module.exports = {
 };
 
 // ─── EXTRA TIME ──────────────────────────────────────────────────────────────
-// Simulates two 15-minute extra-time periods (91-105 and 106-120).
+// Simulates one 30-minute extra-time period (91-120).
 // Returns { firstHalfEvents, secondHalfEvents } after updating fixture goals.
 async function simulateExtraTime(
   db: Db,
