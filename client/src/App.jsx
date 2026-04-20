@@ -5786,11 +5786,13 @@ function App() {
                         if (e.won === false && e.drew !== true) break;
                         unbeatenRun++;
                       }
-                      // Next away game
-                      const nextAway = calEntries.find(
-                        (e) => e.status !== "done" && !e.imHome,
+                      // Next game (home or away)
+                      const nextGame = calEntries.find(
+                        (e) => e.status !== "done" && !e.eliminated,
                       );
-                      const nextAwayOpponent = nextAway?.stadiumTeam;
+                      const nextGameOpponent = nextGame?.opponent;
+                      const nextGameVenue = nextGame?.stadiumTeam?.stadium_name ?? null;
+                      const nextGameIsHome = nextGame?.imHome;
 
                       // Team logo circle helper
                       const TeamCircle = ({ team, size = "lg" }) => {
@@ -5886,22 +5888,21 @@ function App() {
                                   sem derrota
                                 </p>
                               </div>
-                              {/* Next away */}
+                              {/* Next game */}
                               <div className="bg-surface-container rounded-lg p-4">
                                 <div className="flex items-center justify-between mb-2">
                                   <span className="text-[9px] font-black uppercase tracking-widest text-on-surface-variant/60">
-                                    Próxima Viagem
+                                    Próximo Jogo
                                   </span>
                                   <span className="material-symbols-outlined text-base text-on-surface-variant/60">
-                                    flight_takeoff
+                                    {nextGameIsHome === false ? "flight_takeoff" : "home"}
                                   </span>
                                 </div>
                                 <p className="text-base font-headline font-black leading-tight mb-1 text-on-surface truncate">
-                                  {nextAwayOpponent?.name ?? "—"}
+                                  {nextGameOpponent?.name ?? "—"}
                                 </p>
-                                <p className="text-[9px] text-on-surface-variant/60 uppercase tracking-wide font-bold">
-                                  {nextAwayOpponent?.stadium_name ??
-                                    "Deslocação"}
+                                <p className="text-[9px] text-on-surface-variant/60 uppercase tracking-wide font-bold truncate">
+                                  {nextGameVenue ?? (nextGameIsHome ? "Casa" : nextGameIsHome === false ? "Deslocação" : "—")}
                                 </p>
                               </div>
                             </div>
@@ -5945,7 +5946,7 @@ function App() {
                                         key={entry.calendarIndex}
                                         className="flex items-stretch gap-0 rounded-lg overflow-hidden opacity-40 bg-surface-container border-l-2 border-l-red-800"
                                       >
-                                        <div className="w-28 shrink-0 flex flex-col justify-center gap-1 px-3 py-3 border-r border-outline-variant/10">
+                                        <div className="w-16 sm:w-28 shrink-0 flex flex-col justify-center gap-1 px-2 sm:px-3 py-3 border-r border-outline-variant/10">
                                           <span className="text-[8px] font-black uppercase tracking-widest px-1.5 py-0.5 rounded self-start bg-red-900/30 text-red-400">
                                             Taça
                                           </span>
@@ -6073,7 +6074,7 @@ function App() {
                                       className={cardBase}
                                     >
                                       {/* Left: matchweek + competition type */}
-                                      <div className="w-28 shrink-0 flex flex-col justify-center gap-1 px-3 py-3 border-r border-outline-variant/10">
+                                      <div className="w-16 sm:w-28 shrink-0 flex flex-col justify-center gap-1 px-2 sm:px-3 py-3 border-r border-outline-variant/10">
                                         <span
                                           className={`text-[8px] font-black uppercase tracking-widest px-1.5 py-0.5 rounded self-start ${
                                             type === "cup"
@@ -6087,7 +6088,7 @@ function App() {
                                           {weekLabel}
                                         </span>
                                         <span
-                                          className={`text-[8px] font-black uppercase tracking-widest px-1.5 py-0.5 rounded self-start ${
+                                          className={`hidden sm:inline-block text-[8px] font-black uppercase tracking-widest px-1.5 py-0.5 rounded self-start ${
                                             imHome
                                               ? "bg-emerald-500/20 text-emerald-400"
                                               : "bg-sky-500/20 text-sky-400"
@@ -6103,10 +6104,10 @@ function App() {
                                       </div>
 
                                       {/* Center: teams + stadium */}
-                                      <div className="flex-1 flex items-center gap-3 px-4 py-3 min-w-0">
-                                        {/* Type icon */}
+                                      <div className="flex-1 flex items-center gap-2 sm:gap-3 px-2 sm:px-4 py-3 min-w-0">
+                                        {/* Type icon — hidden on mobile */}
                                         <div
-                                          className={`shrink-0 w-8 h-8 rounded flex items-center justify-center text-xs font-black border ${
+                                          className={`hidden sm:flex shrink-0 w-8 h-8 rounded items-center justify-center text-xs font-black border ${
                                             type === "cup"
                                               ? "border-amber-500/30 text-amber-400 bg-amber-500/10"
                                               : "border-primary/30 text-primary bg-primary/10"
@@ -6127,18 +6128,26 @@ function App() {
                                           >
                                             {opponent?.name ?? "TBD"}
                                           </button>
-                                          <span className="text-[10px] text-on-surface-variant/60 truncate">
+                                          <span className="hidden sm:block text-[10px] text-on-surface-variant/60 truncate">
                                             {stadiumTeam?.stadium_name
                                               ? `${stadiumTeam.stadium_name.toUpperCase()} (${imHome ? "Casa" : "Fora"})`
                                               : imHome
                                                 ? "Casa"
                                                 : "Fora"}
                                           </span>
+                                          {/* Mobile-only home/away indicator */}
+                                          <span
+                                            className={`sm:hidden text-[8px] font-black uppercase tracking-widest ${
+                                              imHome ? "text-emerald-400" : "text-sky-400"
+                                            }`}
+                                          >
+                                            {imHome ? "Casa" : "Fora"}
+                                          </span>
                                         </div>
                                       </div>
 
                                       {/* Right: score/status */}
-                                      <div className="shrink-0 flex items-center justify-end px-4 py-3">
+                                      <div className="shrink-0 flex items-center justify-end px-2 sm:px-4 py-3">
                                         {scoreBlock}
                                       </div>
                                     </div>
