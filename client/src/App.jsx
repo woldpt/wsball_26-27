@@ -3787,7 +3787,8 @@ function App() {
                         key={key}
                         onClick={() => {
                           setActiveTab(key);
-                          if (key === "bracket") socket.emit("requestCupBracket");
+                          if (key === "bracket")
+                            socket.emit("requestCupBracket");
                           setMobileSubMenu(null);
                           window.scrollTo(0, 0);
                         }}
@@ -4243,15 +4244,23 @@ function App() {
                           const homeGoals = matchEvents.filter(
                             (e) =>
                               (e.minute <= 45 || e.minute <= liveMinute) &&
-                              e.type === "goal" &&
+                              (e.type === "goal" ||
+                                e.type === "penalty_goal") &&
                               e.team === "home",
                           );
                           const awayGoals = matchEvents.filter(
                             (e) =>
                               (e.minute <= 45 || e.minute <= liveMinute) &&
-                              e.type === "goal" &&
+                              (e.type === "goal" ||
+                                e.type === "penalty_goal") &&
                               e.team === "away",
                           );
+                          // Use authoritative server score when available (includes
+                          // penalty goals and any discrepancies in event tracking)
+                          const displayHomeGoals =
+                            myMatch?.finalHomeGoals ?? homeGoals.length;
+                          const displayAwayGoals =
+                            myMatch?.finalAwayGoals ?? awayGoals.length;
 
                           return (
                             <div className="fixed inset-0 top-14 z-25 overflow-y-auto bg-zinc-950/95 backdrop-blur-sm sm:overflow-hidden sm:flex sm:items-center sm:justify-center sm:p-4 sm:bg-zinc-950/90">
@@ -4298,13 +4307,13 @@ function App() {
                                       </span>
                                       <div className="mx-3 flex items-center gap-1.5 text-lg">
                                         <span className="text-primary">
-                                          {homeGoals.length}
+                                          {displayHomeGoals}
                                         </span>
                                         <span className="text-on-surface-variant/30 text-sm">
                                           -
                                         </span>
                                         <span className="text-primary">
-                                          {awayGoals.length}
+                                          {displayAwayGoals}
                                         </span>
                                       </div>
                                       <span className="flex-1 text-on-surface truncate text-left text-xs uppercase tracking-wide">
