@@ -1033,14 +1033,7 @@ function App() {
       }
     });
     socket.on("cupExtraTimeStart", (data) => {
-      // Cup match went to extra time — only animate if the coach's own team is in this fixture
-      if (
-        data &&
-        me.teamId &&
-        data.homeTeamId !== me.teamId &&
-        data.awayTeamId !== me.teamId
-      )
-        return;
+      // Cup match went to extra time — show animation to all connected coaches, including observers
       setShowHalftimePanel(false);
       setIsCupExtraTime(true);
       setCupExtraTimeBadge(true);

@@ -388,12 +388,12 @@ export function createCupFlowHelpers(deps: CupFlowDeps) {
         console.log(
           `[${game.roomCode}] 🏆 Draw at 90 min — checking for ET/penalties`,
         );
-        // Only process ET for fixtures involving human players
+        hasAnyET = true;
+
         const humanInFixture = (Object.values(game.playersByName) as PlayerSession[])
           .some((p) => p.socketId && (p.teamId === fixture.homeTeamId || p.teamId === fixture.awayTeamId));
 
         if (humanInFixture) {
-          hasAnyET = true;
           etHumanTeamIds.push(fixture.homeTeamId, fixture.awayTeamId);
           console.log(
             `[${game.roomCode}] ⏸ ET gate: waiting for coaches to ready up (human in fixture)`,
@@ -435,14 +435,15 @@ export function createCupFlowHelpers(deps: CupFlowDeps) {
           console.log(
             `[${game.roomCode}] ⏩ ET gate resolved — starting extra time`,
           );
-
-          io.to(game.roomCode).emit("cupExtraTimeStart", {
-            homeTeamId: fixture.homeTeamId,
-            awayTeamId: fixture.awayTeamId,
-            homeGoals: fixture.finalHomeGoals,
-            awayGoals: fixture.finalAwayGoals,
-          });
         }
+
+        // Always emit cupExtraTimeStart so observers (eliminated coaches) also see the animation
+        io.to(game.roomCode).emit("cupExtraTimeStart", {
+          homeTeamId: fixture.homeTeamId,
+          awayTeamId: fixture.awayTeamId,
+          homeGoals: fixture.finalHomeGoals,
+          awayGoals: fixture.finalAwayGoals,
+        });
 
         game.gamePhase = "match_extra_time";
         console.log(
@@ -589,10 +590,10 @@ export function createCupFlowHelpers(deps: CupFlowDeps) {
 
     // ET animation gate: wait for all connected coaches to ack before advancing
     if (hasAnyET) {
-      const humanInCup = (Object.values(game.playersByName) as PlayerSession[])
-        .some((p) => p.socketId && game.cupTeamIds.includes(p.teamId));
-      if (humanInCup) {
-        await cupETAnimGate(game, etHumanTeamIds, 45000);
+      const anyHumanConnected = (Object.values(game.playersByName) as PlayerSession[])
+        .some((p) => !!p.socketId);
+      if (anyHumanConnected) {
+        await cupETAnimGate(game, 45000);
       }
     }
 
@@ -632,7 +633,7 @@ export function createCupFlowHelpers(deps: CupFlowDeps) {
 
   // ─── ET ANIMATION GATE ───────────────────────────────────────────────────────
 
-  function cupETAnimGate(game: ActiveGame, etTeamIds: number[], timeoutMs = 45000): Promise<void> {
+  function cupETAnimGate(game: ActiveGame, timeoutMs = 45000): Promise<void> {
     return new Promise<void>((resolve) => {
       const acks = new Set<string>();
       const timeout = setTimeout(() => {
@@ -642,9 +643,9 @@ export function createCupFlowHelpers(deps: CupFlowDeps) {
 
       game._cupETAnimHandler = (socketId: string) => {
         acks.add(socketId);
-        // Only wait for coaches whose team was in an ET fixture
+        // Wait for ALL connected coaches (including eliminated observers)
         const connected = (Object.values(game.playersByName) as PlayerSession[]).filter(
-          (p) => p.socketId && etTeamIds.includes(p.teamId),
+          (p) => !!p.socketId,
         );
         if (
           connected.length > 0 &&

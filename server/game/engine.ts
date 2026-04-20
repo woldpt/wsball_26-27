@@ -1227,16 +1227,12 @@ async function simulateExtraTime(
   awayTactic: Tactic | null,
   context: any,
 ) {
-  // Detect whether a human coach is in this fixture so we can match the
-  // real-time speed used by runMatchSegment (1 s/min for human, 100 ms for AI).
-  const humanInFixture =
+  // Use real-time speed if any human coach is connected (even as observer),
+  // fast speed (100 ms/min) only when no humans are watching at all.
+  const anyHumanConnected =
     context.game &&
-    Object.values(context.game.playersByName).some(
-      (p: any) =>
-        p.socketId &&
-        (p.teamId === fixture.homeTeamId || p.teamId === fixture.awayTeamId),
-    );
-  const msPerMinute = humanInFixture ? 1000 : 100;
+    Object.values(context.game.playersByName).some((p: any) => !!p.socketId);
+  const msPerMinute = anyHumanConnected ? 1000 : 100;
 
   const emitMinuteUpdate = (minute: number) => {
     if (!context.io || !context.game) return;
