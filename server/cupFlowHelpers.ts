@@ -383,15 +383,21 @@ export function createCupFlowHelpers(deps: CupFlowDeps) {
     const fixtures = game.currentFixtures;
     const roundName = CUP_ROUND_NAMES[round] || `Ronda ${round}`;
     const results: any[] = [];
-    let hasAnyET = false;
 
     console.log(
       `[${game.roomCode}] 🏆 finalizeCupRound | round=${round} (${roundName}) | fixtures=${fixtures.length}`,
     );
 
-    for (const fixture of fixtures) {
-      // Re-read tactics from live player state so ET uses any changes made
-      // during the ET halftime interval (tactic changes, style adjustments).
+    // ── Phase 1: Setup tactics and snapshot 90-min scores ────────────────────
+    type FixtureSetup = {
+      fixture: any;
+      t1: any;
+      t2: any;
+      ctx: any;
+      goals90Home: number;
+      goals90Away: number;
+    };
+    const setups: FixtureSetup[] = fixtures.map((fixture) => {
       const p1 = Object.values(game.playersByName).find(
         (p: any) => p.teamId === fixture.homeTeamId,
       );
@@ -404,111 +410,118 @@ export function createCupFlowHelpers(deps: CupFlowDeps) {
         fixture._t2 || { formation: "4-4-2", style: "Balanced" };
       if (p1) fixture._t1 = t1;
       if (p2) fixture._t2 = t2;
-      const ctx = { game, io, matchweek: game.matchweek };
-
-      const goals90Home = fixture.finalHomeGoals;
-      const goals90Away = fixture.finalAwayGoals;
-      let winnerId;
-
       console.log(
-        `[${game.roomCode}] 🏆 Cup fixture result: ${fixture.homeTeam?.name ?? fixture.homeTeamId} ${goals90Home}-${goals90Away} ${fixture.awayTeam?.name ?? fixture.awayTeamId}`,
+        `[${game.roomCode}] 🏆 Cup fixture result: ${fixture.homeTeam?.name ?? fixture.homeTeamId} ${fixture.finalHomeGoals}-${fixture.finalAwayGoals} ${fixture.awayTeam?.name ?? fixture.awayTeamId}`,
+      );
+      return {
+        fixture,
+        t1,
+        t2,
+        ctx: { game, io, matchweek: game.matchweek },
+        goals90Home: fixture.finalHomeGoals,
+        goals90Away: fixture.finalAwayGoals,
+      };
+    });
+
+    // ── Phase 2: Extra time — all drawn fixtures batched ─────────────────────
+    const drawnSetups = setups.filter((s) => s.goals90Home === s.goals90Away);
+    const hasAnyET = drawnSetups.length > 0;
+
+    if (hasAnyET) {
+      console.log(
+        `[${game.roomCode}] 🏆 ${drawnSetups.length} fixture(s) drawn at 90 min — ET`,
       );
 
-      if (fixture.finalHomeGoals !== fixture.finalAwayGoals) {
-        winnerId =
-          fixture.finalHomeGoals > fixture.finalAwayGoals
-            ? fixture.homeTeamId
-            : fixture.awayTeamId;
-        console.log(
-          `[${game.roomCode}] 🏆 Winner decided in 90 min: teamId=${winnerId}`,
-        );
-      } else {
-        console.log(
-          `[${game.roomCode}] 🏆 Draw at 90 min — checking for ET/penalties`,
-        );
-        hasAnyET = true;
-
-        const humanInFixture = (
-          Object.values(game.playersByName) as PlayerSession[]
-        ).some(
+      // ET gate: show substitution screen ONCE for all coaches if any human is in a drawn fixture
+      const humanInAnyDraw = drawnSetups.some(({ fixture }) =>
+        (Object.values(game.playersByName) as PlayerSession[]).some(
           (p) =>
             p.socketId &&
             (p.teamId === fixture.homeTeamId ||
               p.teamId === fixture.awayTeamId),
-        );
+        ),
+      );
 
-        if (humanInFixture) {
-          console.log(
-            `[${game.roomCode}] ⏸ ET gate: waiting for coaches to ready up (human in fixture)`,
-          );
-
-          // Reset ready states BEFORE changing phase to prevent premature gate resolution
-          // (a coach whose ready=true from the previous phase must not skip the gate).
-          Object.values(game.playersByName).forEach((p: any) => {
-            p.ready = false;
-          });
-
-          // Gate: show substitution screen before extra time starts
-          game.gamePhase = "match_et_gate";
-          const etGatePayload = {
-            round,
-            roundName,
-            season,
-            fixtures: fixtures.map((fx: any) => ({
-              homeTeam: fx.homeTeam || null,
-              awayTeam: fx.awayTeam || null,
-              homeGoals: fx.finalHomeGoals,
-              awayGoals: fx.finalAwayGoals,
-              events: (fx.events || []).slice(),
-              homeLineup: fx.homeLineup || [],
-              awayLineup: fx.awayLineup || [],
-              attendance: fx.attendance || null,
-            })),
-          };
-          game.lastHalftimePayload = etGatePayload;
-          io.to(game.roomCode).emit("playerListUpdate", getPlayerList(game));
-          io.to(game.roomCode).emit("cupETHalfTime", etGatePayload);
-
-          // Wait for all coaches to mark ready (90s fallback timeout)
-          await new Promise<void>((resolve) => {
-            game._etGateResolve = resolve;
-            game._etGateTimer = setTimeout(() => {
-              game._etGateResolve = null;
-              game._etGateTimer = null;
-              resolve();
-            }, 90_000);
-          });
-          if (game._etGateTimer) {
-            clearTimeout(game._etGateTimer);
-            game._etGateTimer = null;
-          }
-          game._etGateResolve = null;
-          console.log(
-            `[${game.roomCode}] ⏩ ET gate resolved — starting extra time`,
-          );
-          // Sync ready state to all coaches before ET animation starts
-          io.to(game.roomCode).emit("playerListUpdate", getPlayerList(game));
-        }
-
-        // Always emit cupExtraTimeStart so observers (eliminated coaches) also see the animation
-        io.to(game.roomCode).emit("cupExtraTimeStart", {
-          homeTeamId: fixture.homeTeamId,
-          awayTeamId: fixture.awayTeamId,
-          homeGoals: fixture.finalHomeGoals,
-          awayGoals: fixture.finalAwayGoals,
-        });
-
-        game.gamePhase = "match_extra_time";
-        console.log(`[${game.roomCode}] 🏆 Simulating extra time...`);
-        await simulateExtraTime(game.db, fixture, t1, t2, ctx);
-
-        const etGoalsHome = fixture.finalHomeGoals;
-        const etGoalsAway = fixture.finalAwayGoals;
+      if (humanInAnyDraw) {
         console.log(
-          `[${game.roomCode}] 🏆 ET result: ${etGoalsHome}-${etGoalsAway}`,
+          `[${game.roomCode}] ⏸ ET gate: waiting for coaches to ready up`,
         );
+        // Reset ready states BEFORE changing phase
+        Object.values(game.playersByName).forEach((p: any) => {
+          p.ready = false;
+        });
+        game.gamePhase = "match_et_gate";
+        const etGatePayload = {
+          round,
+          roundName,
+          season,
+          fixtures: fixtures.map((fx: any) => ({
+            homeTeam: fx.homeTeam || null,
+            awayTeam: fx.awayTeam || null,
+            homeGoals: fx.finalHomeGoals,
+            awayGoals: fx.finalAwayGoals,
+            events: (fx.events || []).slice(),
+            homeLineup: fx.homeLineup || [],
+            awayLineup: fx.awayLineup || [],
+            attendance: fx.attendance || null,
+          })),
+        };
+        game.lastHalftimePayload = etGatePayload;
+        io.to(game.roomCode).emit("playerListUpdate", getPlayerList(game));
+        io.to(game.roomCode).emit("cupETHalfTime", etGatePayload);
 
-        // Notify that ET is over and show final score
+        await new Promise<void>((resolve) => {
+          game._etGateResolve = resolve;
+          game._etGateTimer = setTimeout(() => {
+            game._etGateResolve = null;
+            game._etGateTimer = null;
+            resolve();
+          }, 90_000);
+        });
+        if (game._etGateTimer) {
+          clearTimeout(game._etGateTimer);
+          game._etGateTimer = null;
+        }
+        game._etGateResolve = null;
+        console.log(
+          `[${game.roomCode}] ⏩ ET gate resolved — starting extra time`,
+        );
+        io.to(game.roomCode).emit("playerListUpdate", getPlayerList(game));
+      }
+
+      // Emit cupExtraTimeStart ONCE — use the human's drawn fixture if available
+      const primaryDrawn =
+        drawnSetups.find(({ fixture }) =>
+          (Object.values(game.playersByName) as PlayerSession[]).some(
+            (p) =>
+              p.socketId &&
+              (p.teamId === fixture.homeTeamId ||
+                p.teamId === fixture.awayTeamId),
+          ),
+        )?.fixture ?? drawnSetups[0].fixture;
+      io.to(game.roomCode).emit("cupExtraTimeStart", {
+        homeTeamId: primaryDrawn.homeTeamId,
+        awayTeamId: primaryDrawn.awayTeamId,
+        homeGoals: primaryDrawn.finalHomeGoals,
+        awayGoals: primaryDrawn.finalAwayGoals,
+      });
+
+      game.gamePhase = "match_extra_time";
+      console.log(
+        `[${game.roomCode}] 🏆 Simulating ET for ${drawnSetups.length} fixture(s) in parallel...`,
+      );
+      // Simulate ALL drawn fixtures' ET simultaneously so the clock only runs once
+      await Promise.all(
+        drawnSetups.map(({ fixture, t1, t2, ctx }) =>
+          simulateExtraTime(game.db, fixture, t1, t2, ctx),
+        ),
+      );
+
+      // Post-ET: determine winner (or penalties) for each drawn fixture
+      for (const { fixture, t1, t2 } of drawnSetups) {
+        console.log(
+          `[${game.roomCode}] 🏆 ET result: ${fixture.finalHomeGoals}-${fixture.finalAwayGoals} | ${fixture.homeTeam?.name ?? fixture.homeTeamId} vs ${fixture.awayTeam?.name ?? fixture.awayTeamId}`,
+        );
         io.to(game.roomCode).emit("extraTimeEnded", {
           homeTeamId: fixture.homeTeamId,
           awayTeamId: fixture.awayTeamId,
@@ -516,13 +529,14 @@ export function createCupFlowHelpers(deps: CupFlowDeps) {
           awayGoals: fixture.finalAwayGoals,
         });
 
-        if (fixture.finalHomeGoals !== fixture.finalAwayGoals) {
-          winnerId =
-            fixture.finalHomeGoals > fixture.finalAwayGoals
-              ? fixture.homeTeamId
-              : fixture.awayTeamId;
+        const etGoalsHome = fixture.finalHomeGoals;
+        const etGoalsAway = fixture.finalAwayGoals;
+
+        if (etGoalsHome !== etGoalsAway) {
+          fixture._winnerId =
+            etGoalsHome > etGoalsAway ? fixture.homeTeamId : fixture.awayTeamId;
           console.log(
-            `[${game.roomCode}] 🏆 Winner decided in ET: teamId=${winnerId}`,
+            `[${game.roomCode}] 🏆 Winner decided in ET: teamId=${fixture._winnerId}`,
           );
         } else {
           console.log(
@@ -542,8 +556,7 @@ export function createCupFlowHelpers(deps: CupFlowDeps) {
           );
           const shootout = simulatePenaltyShootout(homeSquad, awaySquad);
 
-          // Only emit penalty shootout for fixtures involving human players
-          const humanInFixture = (
+          const humanInThisFixture = (
             Object.values(game.playersByName) as PlayerSession[]
           ).some(
             (p) =>
@@ -551,7 +564,7 @@ export function createCupFlowHelpers(deps: CupFlowDeps) {
               (p.teamId === fixture.homeTeamId ||
                 p.teamId === fixture.awayTeamId),
           );
-          if (humanInFixture) {
+          if (humanInThisFixture) {
             io.to(game.roomCode).emit("cupPenaltyShootout", {
               round,
               homeTeamId: fixture.homeTeamId,
@@ -563,16 +576,12 @@ export function createCupFlowHelpers(deps: CupFlowDeps) {
           fixture._penaltyHomeGoals = shootout.homeGoals;
           fixture._penaltyAwayGoals = shootout.awayGoals;
           fixture._decidedByPenalties = true;
-          // Do NOT overwrite finalHomeGoals/finalAwayGoals — they hold the real
-          // match score after regulation + ET (e.g. 1-1). The penalty result is
-          // reported separately via _penaltyHomeGoals/_penaltyAwayGoals.
-
-          winnerId =
+          fixture._winnerId =
             shootout.homeGoals > shootout.awayGoals
               ? fixture.homeTeamId
               : fixture.awayTeamId;
           console.log(
-            `[${game.roomCode}] 🏆 Penalties: ${shootout.homeGoals}-${shootout.awayGoals} → winner teamId=${winnerId}`,
+            `[${game.roomCode}] 🏆 Penalties: ${shootout.homeGoals}-${shootout.awayGoals} → winner teamId=${fixture._winnerId}`,
           );
 
           await new Promise((resolve) => {
@@ -581,7 +590,7 @@ export function createCupFlowHelpers(deps: CupFlowDeps) {
               [
                 shootout.homeGoals,
                 shootout.awayGoals,
-                winnerId,
+                fixture._winnerId,
                 season,
                 round,
                 fixture.homeTeamId,
@@ -607,8 +616,13 @@ export function createCupFlowHelpers(deps: CupFlowDeps) {
           );
         });
       }
+    }
 
-      if (!winnerId) winnerId = fixture.homeTeamId;
+    // ── Phase 3: DB updates, morale, and results for all fixtures ────────────
+    for (const { fixture, goals90Home, goals90Away } of setups) {
+      const winnerId =
+        fixture._winnerId ??
+        (goals90Home > goals90Away ? fixture.homeTeamId : fixture.awayTeamId);
 
       await new Promise((resolve) => {
         game.db.run(

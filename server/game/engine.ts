@@ -1303,8 +1303,8 @@ module.exports = {
 };
 
 // ─── EXTRA TIME ──────────────────────────────────────────────────────────────
-// Simulates one 30-minute extra-time period (91-120).
-// Returns { firstHalfEvents, secondHalfEvents } after updating fixture goals.
+// Simulates a single continuous extra-time period (91–120).
+// No halftime pause at 105 — ET runs straight through.
 async function simulateExtraTime(
   db: Db,
   fixture: MatchFixture,
@@ -1341,49 +1341,8 @@ async function simulateExtraTime(
     });
   };
 
-  // ET first half: minutes 91–105, one minute at a time with real-time delays
-  for (let minute = 91; minute <= 105; minute++) {
-    await simulateMatchSegment(
-      db,
-      fixture,
-      homeTactic,
-      awayTactic,
-      minute,
-      minute,
-      context,
-    );
-    emitMinuteUpdate(minute);
-    if (minute < 105) await new Promise((r) => setTimeout(r, msPerMinute));
-  }
-
-  const et1Events = fixture.events.filter(
-    (e: any) => e.minute >= 91 && e.minute <= 105,
-  );
-
-  if (context.io && context.game) {
-    context.io.to(context.game.roomCode).emit("extraTimeHalfTime", {
-      fixture: {
-        homeTeamId: fixture.homeTeamId,
-        awayTeamId: fixture.awayTeamId,
-        homeGoals: fixture.finalHomeGoals,
-        awayGoals: fixture.finalAwayGoals,
-      },
-      events: et1Events,
-    });
-    // Give the client time to show the ET half-time state (3 s pause)
-    await new Promise((r) => setTimeout(r, 3000));
-    context.io.to(context.game.roomCode).emit("extraTimeSecondHalfStart", {
-      fixture: {
-        homeTeamId: fixture.homeTeamId,
-        awayTeamId: fixture.awayTeamId,
-        homeGoals: fixture.finalHomeGoals,
-        awayGoals: fixture.finalAwayGoals,
-      },
-    });
-  }
-
-  // ET second half: minutes 106–120, one minute at a time with real-time delays
-  for (let minute = 106; minute <= 120; minute++) {
+  // Single ET period: minutes 91–120, no halftime pause
+  for (let minute = 91; minute <= 120; minute++) {
     await simulateMatchSegment(
       db,
       fixture,
@@ -1397,9 +1356,8 @@ async function simulateExtraTime(
     if (minute < 120) await new Promise((r) => setTimeout(r, msPerMinute));
   }
 
-  const et2Events = fixture.events.filter((e: any) => e.minute >= 106);
-
-  return { et1Events, et2Events };
+  const etEvents = fixture.events.filter((e: any) => e.minute >= 91);
+  return { et1Events: etEvents, et2Events: [] };
 }
 
 // ─── PENALTY SHOOTOUT ─────────────────────────────────────────────────────────
