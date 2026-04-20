@@ -1034,13 +1034,17 @@ function App() {
       }
     });
     socket.on("cupExtraTimeStart", (data) => {
-      // Cup match went to extra time — show animation to all connected coaches, including observers
+      // Cup match went to extra time — show animation to all connected coaches, including observers.
+      // Guard against multiple ET fixtures in the same round resetting the clock/display.
+      const alreadyInET = isCupExtraTimeRef.current;
       setShowHalftimePanel(false);
       setIsCupExtraTime(true);
       setCupExtraTimeBadge(true);
-      setLiveMinute(90);
-      setIsPlayingMatch(true);
-      setIsLiveSimulation(true);
+      if (!alreadyInET) {
+        setLiveMinute(90);
+        setIsPlayingMatch(true);
+        setIsLiveSimulation(true);
+      }
       if (data) {
         setMatchResults((prev) => {
           if (!prev) return prev;
@@ -4791,6 +4795,18 @@ function App() {
                             (t) => t.id === myMatch.awayTeamId,
                           );
                           const matchEvents = myMatch.events || [];
+
+                          // If ET is running for other fixtures but my match was decided at 90', hide this block
+                          if (isCupExtraTime) {
+                            const reg90Home = matchEvents.filter(
+                              (e) => e.minute <= 90 && e.type === "goal" && e.team === "home",
+                            ).length;
+                            const reg90Away = matchEvents.filter(
+                              (e) => e.minute <= 90 && e.type === "goal" && e.team === "away",
+                            ).length;
+                            if (reg90Home !== reg90Away) return null;
+                          }
+
                           const homeGoals = matchEvents.filter(
                             (e) =>
                               e.minute <= liveMinute &&

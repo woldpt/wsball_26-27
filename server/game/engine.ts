@@ -1227,12 +1227,16 @@ async function simulateExtraTime(
   awayTactic: Tactic | null,
   context: any,
 ) {
-  // Use real-time speed if any human coach is connected (even as observer),
-  // fast speed (100 ms/min) only when no humans are watching at all.
-  const anyHumanConnected =
+  // Use real-time speed only if a human coach is playing in THIS fixture.
+  // Eliminated coaches who are only observing don't slow down other ET games.
+  const anyHumanInFixture =
     context.game &&
-    Object.values(context.game.playersByName).some((p: any) => !!p.socketId);
-  const msPerMinute = anyHumanConnected ? 1000 : 100;
+    Object.values(context.game.playersByName).some(
+      (p: any) =>
+        !!p.socketId &&
+        (p.teamId === fixture.homeTeamId || p.teamId === fixture.awayTeamId),
+    );
+  const msPerMinute = anyHumanInFixture ? 1000 : 100;
 
   const emitMinuteUpdate = (minute: number) => {
     if (!context.io || !context.game) return;
