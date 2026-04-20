@@ -6,14 +6,38 @@ type MatchFixture = any;
 
 // ── Junior GR (Juniores) ─────────────────────────────────────────────────────
 const JUNIOR_FIRST_NAMES = [
-  "Carlos", "João", "Miguel", "André", "Rui",
-  "Diogo", "Pedro", "Tiago", "Nuno", "Luís",
-  "Filipe", "Gonçalo", "Rodrigo", "Rafael", "Marco",
+  "Carlos",
+  "João",
+  "Miguel",
+  "André",
+  "Rui",
+  "Diogo",
+  "Pedro",
+  "Tiago",
+  "Nuno",
+  "Luís",
+  "Filipe",
+  "Gonçalo",
+  "Rodrigo",
+  "Rafael",
+  "Marco",
 ];
 const JUNIOR_LAST_NAMES = [
-  "Silva", "Santos", "Ferreira", "Pereira", "Oliveira",
-  "Costa", "Rodrigues", "Martins", "Jesus", "Sousa",
-  "Fernandes", "Gonçalves", "Gomes", "Lopes", "Marques",
+  "Silva",
+  "Santos",
+  "Ferreira",
+  "Pereira",
+  "Oliveira",
+  "Costa",
+  "Rodrigues",
+  "Martins",
+  "Jesus",
+  "Sousa",
+  "Fernandes",
+  "Gonçalves",
+  "Gomes",
+  "Lopes",
+  "Marques",
 ];
 
 /**
@@ -22,9 +46,17 @@ const JUNIOR_LAST_NAMES = [
  * The same (teamId, matchweek, slotIndex) always produces the same name and ID.
  * ID scheme: -(teamId * 10 + slotIndex + 1)
  */
-export function generateJuniorGR(teamId: number, matchweek: number, slotIndex: number): PlayerRow {
-  const firstIdx = Math.abs(teamId * 37 + matchweek * 13 + slotIndex * 7) % JUNIOR_FIRST_NAMES.length;
-  const lastIdx  = Math.abs(teamId * 53 + matchweek * 17 + slotIndex * 11) % JUNIOR_LAST_NAMES.length;
+export function generateJuniorGR(
+  teamId: number,
+  matchweek: number,
+  slotIndex: number,
+): PlayerRow {
+  const firstIdx =
+    Math.abs(teamId * 37 + matchweek * 13 + slotIndex * 7) %
+    JUNIOR_FIRST_NAMES.length;
+  const lastIdx =
+    Math.abs(teamId * 53 + matchweek * 17 + slotIndex * 11) %
+    JUNIOR_LAST_NAMES.length;
   return {
     id: -(teamId * 10 + slotIndex + 1),
     name: `${JUNIOR_FIRST_NAMES[firstIdx]} ${JUNIOR_LAST_NAMES[lastIdx]} (Junior)`,
@@ -59,7 +91,11 @@ export function generateJuniorGR(teamId: number, matchweek: number, slotIndex: n
  * in both cases it correctly counts only available GRs before deciding how many juniors to add.
  * The original array is never mutated.
  */
-export function withJuniorGRs(squad: PlayerRow[], teamId: number, matchweek: number): PlayerRow[] {
+export function withJuniorGRs(
+  squad: PlayerRow[],
+  teamId: number,
+  matchweek: number,
+): PlayerRow[] {
   const availableGRCount = squad.filter(
     (p) => p.position === "GR" && isPlayerAvailable(p, matchweek),
   ).length;
@@ -113,7 +149,11 @@ async function getTeamSquad(
       const availableReal = (rows || []).filter((p) =>
         isPlayerAvailable(p, currentMatchweek),
       );
-      const availableRows = withJuniorGRs(availableReal, teamId, currentMatchweek);
+      const availableRows = withJuniorGRs(
+        availableReal,
+        teamId,
+        currentMatchweek,
+      );
 
       // If tactic has explicit position assignments, use them
       if (tactic && tactic.positions) {
@@ -330,16 +370,16 @@ function clampSkill(value: number) {
 // Per-minute goal probability multiplier based on real football time distribution.
 // Weights are normalised so the average across 90 min = 1.0 (total goals unchanged).
 function getGoalTimeMultiplier(minute: number): number {
-  if (minute <= 10) return 0.66;  // 00'–10' ~7-8%
-  if (minute <= 20) return 0.83;  // 11'–20' ~9-10%
-  if (minute <= 30) return 0.94;  // 21'–30' ~11%
-  if (minute <= 40) return 1.02;  // 31'–40' ~12%
-  if (minute <= 45) return 1.11;  // 41'–HT  ~13%
-  if (minute <= 55) return 0.85;  // 46'–55' ~10%
-  if (minute <= 65) return 0.94;  // 56'–65' ~11%
-  if (minute <= 75) return 1.11;  // 66'–75' ~13%
-  if (minute <= 85) return 1.28;  // 76'–85' ~15%
-  return 1.62;                    // 86'–FT  ~18-20%
+  if (minute <= 10) return 0.66; // 00'–10' ~7-8%
+  if (minute <= 20) return 0.83; // 11'–20' ~9-10%
+  if (minute <= 30) return 0.94; // 21'–30' ~11%
+  if (minute <= 40) return 1.02; // 31'–40' ~12%
+  if (minute <= 45) return 1.11; // 41'–HT  ~13%
+  if (minute <= 55) return 0.85; // 46'–55' ~10%
+  if (minute <= 65) return 0.94; // 56'–65' ~11%
+  if (minute <= 75) return 1.11; // 66'–75' ~13%
+  if (minute <= 85) return 1.28; // 76'–85' ~15%
+  return 1.62; // 86'–FT  ~18-20%
 }
 
 function normaliseStyle(style: unknown) {
@@ -558,7 +598,10 @@ async function applyPenaltyEvent({
 
   // Base 75% goal rate, skill (range 5–50) shifts it ±12.5 pp around the mean (30)
   const penaltySkill = taker.skill || 0;
-  const goalChance = Math.max(0.60, Math.min(0.88, 0.75 + (penaltySkill - 30) / 160));
+  const goalChance = Math.max(
+    0.6,
+    Math.min(0.88, 0.75 + (penaltySkill - 30) / 160),
+  );
   const scored = Math.random() < goalChance;
 
   if (scored) {
@@ -583,11 +626,11 @@ async function applyPenaltyEvent({
     // Miss type proportions: 60% save · 20% post/wide · 20% panenka
     const missRoll = Math.random();
     let missType: string;
-    if (missRoll < 0.60) {
+    if (missRoll < 0.6) {
       missType = "DEFENDEU!";
-    } else if (missRoll < 0.70) {
+    } else if (missRoll < 0.7) {
       missType = "AO POSTE!";
-    } else if (missRoll < 0.80) {
+    } else if (missRoll < 0.8) {
       missType = "AO LADO!";
     } else {
       missType = "PANENKA FALHADO!";
@@ -606,7 +649,11 @@ async function applyPenaltyEvent({
   }
 }
 
-function applyFatigue(squad: PlayerRow[], lineupIds: Set<number>, amount: number) {
+function applyFatigue(
+  squad: PlayerRow[],
+  lineupIds: Set<number>,
+  amount: number,
+) {
   for (const p of squad) {
     if (lineupIds.has(p.id)) {
       p.skill = Math.max(1, p.skill - amount);
@@ -771,7 +818,9 @@ async function simulateMatchSegment(
           const available = (rows || []).filter((p) =>
             isPlayerAvailable(p, currentMatchweek),
           );
-          resolve(withJuniorGRs(available, fixture.homeTeamId, currentMatchweek));
+          resolve(
+            withJuniorGRs(available, fixture.homeTeamId, currentMatchweek),
+          );
         },
       );
     });
@@ -784,7 +833,9 @@ async function simulateMatchSegment(
           const available = (rows || []).filter((p) =>
             isPlayerAvailable(p, currentMatchweek),
           );
-          resolve(withJuniorGRs(available, fixture.awayTeamId, currentMatchweek));
+          resolve(
+            withJuniorGRs(available, fixture.awayTeamId, currentMatchweek),
+          );
         },
       );
     });
@@ -917,7 +968,7 @@ async function simulateMatchSegment(
 
       const ratio =
         adjustedAttack / (adjustedAttack + (defending.defense || 1) * 2);
-        let probGoal = ratio * 0.03 * getGoalTimeMultiplier(fixture._minute);
+      let probGoal = ratio * 0.03 * getGoalTimeMultiplier(fixture._minute);
       probGoal *= isHome ? 1.05 : 0.95;
 
       // Ego conflict penalty: 3+ craques no onze titular reduzem probabilidade
@@ -1180,7 +1231,7 @@ async function applyPostMatchQualityEvolution(
           // Convivência: jogadores abaixo da média do plantel evoluem ao
           // conviver com colegas mais talentosos (spec: "evoluem se
           // conviverem com jogadores mais talentosos")
-          if (diff >= 3 && Math.random() < Math.min(0.22, 0.05 + diff / 80)) {
+          if (diff >= 1 && Math.random() < Math.min(0.66, 0.15 + diff / 27)) {
             delta += 1;
           }
 
@@ -1188,7 +1239,7 @@ async function applyPostMatchQualityEvolution(
           if (
             teamResult === "W" &&
             diff >= 0 &&
-            Math.random() < Math.min(0.1, 0.02 + diff / 220)
+            Math.random() < Math.min(0.3, 0.06 + diff / 73)
           ) {
             delta += 1;
           }
@@ -1205,7 +1256,7 @@ async function applyPostMatchQualityEvolution(
           }
 
           // Empate contra equipa mais forte — pequena hipótese de evolução
-          if (teamResult === "D" && diff >= 8 && Math.random() < 0.04) {
+          if (teamResult === "D" && diff >= 5 && Math.random() < 0.12) {
             delta += 1;
           }
 
@@ -1292,7 +1343,15 @@ async function simulateExtraTime(
 
   // ET first half: minutes 91–105, one minute at a time with real-time delays
   for (let minute = 91; minute <= 105; minute++) {
-    await simulateMatchSegment(db, fixture, homeTactic, awayTactic, minute, minute, context);
+    await simulateMatchSegment(
+      db,
+      fixture,
+      homeTactic,
+      awayTactic,
+      minute,
+      minute,
+      context,
+    );
     emitMinuteUpdate(minute);
     if (minute < 105) await new Promise((r) => setTimeout(r, msPerMinute));
   }
@@ -1325,7 +1384,15 @@ async function simulateExtraTime(
 
   // ET second half: minutes 106–120, one minute at a time with real-time delays
   for (let minute = 106; minute <= 120; minute++) {
-    await simulateMatchSegment(db, fixture, homeTactic, awayTactic, minute, minute, context);
+    await simulateMatchSegment(
+      db,
+      fixture,
+      homeTactic,
+      awayTactic,
+      minute,
+      minute,
+      context,
+    );
     emitMinuteUpdate(minute);
     if (minute < 120) await new Promise((r) => setTimeout(r, msPerMinute));
   }
