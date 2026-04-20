@@ -40,6 +40,7 @@ interface SessionHandlerDeps {
   emitCurrentPhaseToSocket: (game: ActiveGame, socket: any) => void;
   ensurePhaseTimeout: (game: ActiveGame) => void;
   emitAwaitingCoaches: (game: ActiveGame) => void;
+  checkAllReady: (game: ActiveGame) => void | Promise<void>;
   runAll: RunAll;
   runGet: RunGet;
   buildNextMatchSummary: (game: ActiveGame, teamId: number) => Promise<any>;
@@ -97,6 +98,7 @@ export function registerSessionSocketHandlers(
     emitCurrentPhaseToSocket,
     ensurePhaseTimeout,
     emitAwaitingCoaches,
+    checkAllReady,
     runAll,
     runGet,
     buildNextMatchSummary,
@@ -205,6 +207,13 @@ export function registerSessionSocketHandlers(
 
     io.to(roomCode).emit("playerListUpdate", getPlayerList(game));
     emitAwaitingCoaches(game);
+
+    // If halftime is already waiting and all coaches are now ready (e.g. safety
+    // timeout fired while this coach was offline), advance without waiting for
+    // another setReady — otherwise the button stays permanently disabled.
+    if (game.gamePhase === "match_halftime") {
+      checkAllReady(game);
+    }
 
     game.db.all(
       "SELECT p.id, p.name, p.position, p.goals, p.team_id, t.name as team_name, t.color_primary, t.color_secondary FROM players p LEFT JOIN teams t ON p.team_id = t.id WHERE p.goals > 0 ORDER BY p.goals DESC, p.skill DESC LIMIT 20",

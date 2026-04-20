@@ -411,6 +411,7 @@ io.on("connection", (socket) => {
     emitCurrentPhaseToSocket,
     ensurePhaseTimeout,
     emitAwaitingCoaches,
+    checkAllReady,
     runAll,
     runGet,
     buildNextMatchSummary,
