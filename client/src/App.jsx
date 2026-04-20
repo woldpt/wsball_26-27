@@ -31,6 +31,7 @@ import { TransferProposalModal } from "./components/modals/TransferProposalModal
 import { AuctionNotification } from "./components/ui/AuctionNotification.jsx";
 import { NewsTicker } from "./components/ui/NewsTicker.jsx";
 import { LeagueStandings } from "./components/ui/LeagueStandings.jsx";
+import { CupBracketPage } from "./components/ui/CupBracketPage.jsx";
 import { ChatWidget } from "./components/chat/ChatWidget.jsx";
 
 const FLAG_TO_COUNTRY = {};
@@ -667,6 +668,7 @@ function App() {
   const [selectedTeamSquad, setSelectedTeamSquad] = useState([]);
   const [selectedTeamLoading, setSelectedTeamLoading] = useState(false);
   const [transferProposalModal, setTransferProposalModal] = useState(null); // { player, suggestedPrice }
+  const [cupBracketData, setCupBracketData] = useState(null);
   const [calendarData, setCalendarData] = useState(null);
   const [calFilter, setCalFilter] = useState("all"); // "all" | "league" | "cup"
   const [tactic, setTactic] = useState(DEFAULT_TACTIC);
@@ -1101,8 +1103,10 @@ function App() {
         });
       }
     });
+    socket.on("cupBracketData", (data) => setCupBracketData(data));
     socket.on("cupRoundResults", (data) => {
       isCupDrawRef.current = false;
+      socket.emit("requestCupBracket");
       for (const r of data.results || []) {
         const homeName =
           r.homeTeam?.name ||
@@ -3601,6 +3605,11 @@ function App() {
                 label: "Classificações",
                 icon: "leaderboard",
               },
+              {
+                key: "bracket",
+                label: "Taça",
+                icon: "emoji_events",
+              },
               { key: "market", label: "Mercado", icon: "swap_horiz" },
             ].map(({ key, label, icon }) => (
               <motion.button
@@ -3616,6 +3625,7 @@ function App() {
                 onClick={() => {
                   if (isMatchInProgress) return;
                   setActiveTab(key);
+                  if (key === "bracket") socket.emit("requestCupBracket");
                   window.scrollTo(0, 0);
                 }}
                 title={sidebarCollapsed ? label : undefined}
@@ -3737,11 +3747,17 @@ function App() {
                         label: "Calendário",
                         icon: "calendar_month",
                       },
+                      {
+                        key: "bracket",
+                        label: "Taça",
+                        icon: "emoji_events",
+                      },
                     ].map(({ key, label, icon }) => (
                       <button
                         key={key}
                         onClick={() => {
                           setActiveTab(key);
+                          if (key === "bracket") socket.emit("requestCupBracket");
                           setMobileSubMenu(null);
                           window.scrollTo(0, 0);
                         }}
@@ -5479,6 +5495,15 @@ function App() {
                       palmares={palmares}
                       onTeamClick={handleOpenTeamSquad}
                       players={players}
+                    />
+                  )}
+
+                  {activeTab === "bracket" && (
+                    <CupBracketPage
+                      bracketData={cupBracketData}
+                      me={me}
+                      players={players}
+                      onRequestRefresh={() => socket.emit("requestCupBracket")}
                     />
                   )}
 

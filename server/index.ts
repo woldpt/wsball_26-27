@@ -430,6 +430,7 @@ io.on("connection", (socket) => {
     getPlayerList,
     saveGameState,
     checkAllReady,
+    runAll,
   });
 
   registerTransferSocketHandlers(socket, {
