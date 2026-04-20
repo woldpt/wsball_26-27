@@ -22,8 +22,8 @@ export function CupDrawPopup({
   return (
     <div className="fixed inset-0 z-140 bg-zinc-950/97 backdrop-blur-sm flex flex-col items-center p-4 overflow-y-auto">
       {/* Header */}
-      <div className="text-center mb-6 shrink-0 pt-4">
-        <p className="text-xs text-amber-400 uppercase font-black tracking-[0.3em] mb-2">
+      <div className="w-full text-center mb-6 shrink-0 pt-4 px-2">
+        <p className="text-xs text-amber-400 uppercase font-black tracking-widest sm:tracking-[0.3em] mb-2">
           Taça de Portugal · Temporada {cupDraw.season}
         </p>
         <h1 className="text-2xl sm:text-3xl font-black text-primary uppercase tracking-tight">
