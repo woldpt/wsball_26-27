@@ -7537,10 +7537,12 @@ function App() {
                           <p className="text-on-surface-variant font-bold text-sm leading-relaxed">
                             Já foste eliminado desta ronda da Taça.
                             <br />
-                            Podes observar as partidas dos outros jogos na aba LIVE.
+                            Avança para observar os jogos e seguir em frente.
                           </p>
                           {(() => {
-                            const isReady = players.find((p) => p.name === me?.name)?.ready;
+                            const isReady = players.find(
+                              (p) => p.name === me?.name,
+                            )?.ready;
                             return (
                               <button
                                 onClick={handleReady}
@@ -7551,7 +7553,9 @@ function App() {
                                     : "bg-primary text-on-primary hover:brightness-110"
                                 }`}
                               >
-                                {isReady ? "⏳ A aguardar..." : "Ver jogos da Taça"}
+                                {isReady
+                                  ? "⏳ A aguardar..."
+                                  : "Ver jogos da Taça"}
                               </button>
                             );
                           })()}
