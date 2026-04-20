@@ -655,6 +655,7 @@ function App() {
 
   const [matchResults, setMatchResults] = useState(null);
   const [matchweekCount, setMatchweekCount] = useState(0);
+  const [seasonYear, setSeasonYear] = useState(2026);
   const [activeTab, setActiveTab] = useState("club");
   const [topScorers, setTopScorers] = useState([]);
   const [marketPairs, setMarketPairs] = useState([]);
@@ -1288,6 +1289,7 @@ function App() {
     socket.on("gameState", (data) => {
       setNewsTickerItems([]);
       if (data.matchweek) setMatchweekCount(data.matchweek - 1);
+      if (data.year) setSeasonYear(data.year);
       if (data.tactic) {
         setTactic((prev) => ({
           ...prev,
@@ -3298,11 +3300,7 @@ function App() {
   const nextMatchReferee = nextMatchSummary?.referee || null;
 
   // ── SEASON / YEAR HELPERS ────────────────────────────────────────────────
-  // matchweekCount is the global (cumulative) matchweek counter.
-  // Each season has 14 matchweeks, starting from year 2026.
-  // Use matchweekCount-1 so the year only advances when the *first* matchweek
-  // of the new season is played (not at matchweek 14, while the cup final is still pending).
-  const seasonYear = 2026 + Math.floor(Math.max(0, matchweekCount - 1) / 14);
+  // seasonYear is set from the server's game.year field (received in gameState).
   // Within-season jornada for the NEXT match to be played (1-14)
   const currentJornada = (matchweekCount % 14) + 1;
   // Within-season jornada for the LAST completed match (0 = none played yet)
