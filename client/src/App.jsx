@@ -7143,7 +7143,7 @@ function App() {
                               </span>
                             </div>
                             <div className="overflow-x-auto">
-                              <table className="w-full min-w-175 text-left border-separate border-spacing-y-0.5 px-2 pb-2">
+                              <table className="w-full min-w-260 text-left border-separate border-spacing-y-0.5 px-2 pb-2">
                                 <thead>
                                   <tr className="text-[10px] uppercase tracking-widest text-on-surface-variant font-black">
                                     <th className="py-3 px-3 text-center w-14">
@@ -7161,6 +7161,21 @@ function App() {
                                     </th>
                                     <th className="py-3 px-3 text-center hidden sm:table-cell">
                                       Valor Estimado
+                                    </th>
+                                    <th className="py-3 px-3 text-center">
+                                      Jog
+                                    </th>
+                                    <th className="py-3 px-3 text-center">
+                                      Gol
+                                    </th>
+                                    <th className="py-3 px-3 text-center">
+                                      Verm
+                                    </th>
+                                    <th className="py-3 px-3 text-center">
+                                      Les
+                                    </th>
+                                    <th className="py-3 px-3 text-center">
+                                      Agr
                                     </th>
                                     <th className="py-3 px-3 text-right">
                                       Ações
@@ -7285,6 +7300,38 @@ function App() {
                                         {/* Valor de Mercado */}
                                         <td className="py-2.5 px-3 text-center font-mono text-emerald-400 text-xs hidden sm:table-cell">
                                           {formatCurrency(player.value || 0)}
+                                        </td>
+                                        {/* Jogos */}
+                                        <td className="py-2.5 px-3 text-center font-black text-zinc-300 text-xs">
+                                          {getPlayerStat(player, ["games_played"])}{" "}
+                                          <span className="text-zinc-600 font-normal">
+                                            ({getPlayerStat(player, ["career_games"])})
+                                          </span>
+                                        </td>
+                                        {/* Golos */}
+                                        <td className="py-2.5 px-3 text-center font-black text-emerald-400 text-xs">
+                                          {getPlayerStat(player, ["goals"])}{" "}
+                                          <span className="text-zinc-600 font-normal">
+                                            ({getPlayerStat(player, ["career_goals"])})
+                                          </span>
+                                        </td>
+                                        {/* Vermelhos */}
+                                        <td className="py-2.5 px-3 text-center font-black text-red-400 text-xs">
+                                          {getPlayerStat(player, ["red_cards"])}{" "}
+                                          <span className="text-zinc-600 font-normal">
+                                            ({getPlayerStat(player, ["career_reds"])})
+                                          </span>
+                                        </td>
+                                        {/* Lesões */}
+                                        <td className="py-2.5 px-3 text-center font-black text-orange-400 text-xs">
+                                          {getPlayerStat(player, ["injuries"])}{" "}
+                                          <span className="text-zinc-600 font-normal">
+                                            ({getPlayerStat(player, ["career_injuries"])})
+                                          </span>
+                                        </td>
+                                        {/* Agressividade */}
+                                        <td className="py-2.5 px-3 text-center">
+                                          <AggBadge value={player.aggressiveness} />
                                         </td>
                                         {/* Ações */}
                                         <td className="py-2.5 px-3 text-right">
@@ -8427,6 +8474,9 @@ function App() {
                                 Agr.
                               </th>
                               <th className="px-4 py-2.5 font-black text-center">
+                                Jogos
+                              </th>
+                              <th className="px-4 py-2.5 font-black text-center">
                                 Golos
                               </th>
                               <th className="px-4 py-2.5 font-black text-center">
@@ -8512,6 +8562,13 @@ function App() {
                                   </td>
                                   <td className="px-4 py-2 text-center">
                                     <AggBadge value={player.aggressiveness} />
+                                  </td>
+                                  <td className="px-4 py-2 text-center font-black text-zinc-300">
+                                    {getPlayerStat(player, ["games_played"])}{" "}
+                                    <span className="text-zinc-500 text-xs font-normal">
+                                      ({getPlayerStat(player, ["career_games"])}
+                                      )
+                                    </span>
                                   </td>
                                   <td className="px-4 py-2 text-center font-black text-emerald-400">
                                     {getPlayerStat(player, ["goals"])}{" "}
