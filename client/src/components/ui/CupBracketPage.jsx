@@ -1,14 +1,21 @@
 import { useState, useMemo, useEffect } from "react";
 
-const ROUND_NAMES = ["", "16 avos de final", "Oitavos de final", "Quartos de final", "Meias-finais", "Final"];
+const ROUND_NAMES = [
+  "",
+  "16 avos de final",
+  "Oitavos de final",
+  "Quartos de final",
+  "Meias-finais",
+  "Final",
+];
 const ROUND_SHORT = ["", "16 avos", "Oitavos", "Quartos", "Meias", "Final"];
 
 // ── Bracket layout constants (px) ──────────────────────────────────────────
 const BK_CARD_H = 60;
 const BK_CARD_W = 176;
 const BK_GAP_W = 48;
-const BK_SLOT_H = 84;    // vertical slot per QF match
-const BK_PAIR_GAP = 32;  // extra gap between the two QF pairs
+const BK_SLOT_H = 84; // vertical slot per QF match
+const BK_PAIR_GAP = 32; // extra gap between the two QF pairs
 
 // Pre-computed vertical positions
 const QF_TOPS = [
@@ -55,12 +62,12 @@ function connOpacity(match) {
 }
 
 // ── Compact bracket team row (internal helper, not a component) ──────────────
-function BracketTeamRow({ team, isHome, isWinner, played, score }) {
+function BracketTeamRow({ team, isWinner, played, score }) {
   return (
     <div
       className={`flex items-center gap-1.5 px-2 transition-opacity ${
         played && !isWinner ? "opacity-30" : ""
-      } ${!isHome ? "flex-row-reverse" : ""}`}
+      }`}
       style={{ height: BK_CARD_H / 2 - 1 }}
     >
       <div
@@ -79,7 +86,9 @@ function BracketTeamRow({ team, isHome, isWinner, played, score }) {
         {team?.name || (played ? "?" : "···")}
       </span>
       {played && (
-        <span className={`text-[11px] font-black tabular-nums shrink-0 ${isWinner ? "text-on-surface" : "text-on-surface-variant/40"}`}>
+        <span
+          className={`text-[11px] font-black tabular-nums shrink-0 ${isWinner ? "text-on-surface" : "text-on-surface-variant/40"}`}
+        >
           {score}
         </span>
       )}
@@ -89,11 +98,22 @@ function BracketTeamRow({ team, isHome, isWinner, played, score }) {
 
 // ── Compact bracket card ─────────────────────────────────────────────────────
 function BracketCard({ match, myTeamId }) {
-  const { homeTeam, awayTeam, homeScore, awayScore, homeEtScore, awayEtScore,
-    homePenalties, awayPenalties, winnerId, played } = match || {};
+  const {
+    homeTeam,
+    awayTeam,
+    homeScore,
+    awayScore,
+    homeEtScore,
+    awayEtScore,
+    homePenalties,
+    awayPenalties,
+    winnerId,
+    played,
+  } = match || {};
   const homeWins = played && winnerId === homeTeam?.id;
   const awayWins = played && winnerId === awayTeam?.id;
-  const isMyMatch = myTeamId && (homeTeam?.id === myTeamId || awayTeam?.id === myTeamId);
+  const isMyMatch =
+    myTeamId && (homeTeam?.id === myTeamId || awayTeam?.id === myTeamId);
   const hasPens = played && (homePenalties > 0 || awayPenalties > 0);
   const finalHome = (homeScore || 0) + (homeEtScore || 0);
   const finalAway = (awayScore || 0) + (awayEtScore || 0);
@@ -107,9 +127,21 @@ function BracketCard({ match, myTeamId }) {
       }`}
       style={{ width: BK_CARD_W, height: BK_CARD_H }}
     >
-      <BracketTeamRow team={homeTeam} isHome isWinner={homeWins} played={played} score={finalHome} />
+      <BracketTeamRow
+        team={homeTeam}
+        isHome
+        isWinner={homeWins}
+        played={played}
+        score={finalHome}
+      />
       <div className="h-px bg-outline-variant/15 mx-2" />
-      <BracketTeamRow team={awayTeam} isHome={false} isWinner={awayWins} played={played} score={finalAway} />
+      <BracketTeamRow
+        team={awayTeam}
+        isHome={false}
+        isWinner={awayWins}
+        played={played}
+        score={finalAway}
+      />
       {hasPens && (
         <div className="absolute top-0.5 right-1.5 text-[7px] text-amber-400/60 font-black uppercase tracking-wide">
           g.p.
@@ -121,28 +153,64 @@ function BracketCard({ match, myTeamId }) {
 
 // ── Desktop bracket tree (rounds 3-5) ────────────────────────────────────────
 function BracketTree({ rounds, myTeamId }) {
-  const qf = useMemo(() => rounds.find((r) => r.round === 3)?.matches || [], [rounds]);
-  const sf = useMemo(() => rounds.find((r) => r.round === 4)?.matches || [], [rounds]);
-  const fn = useMemo(() => rounds.find((r) => r.round === 5)?.matches || [], [rounds]);
+  const qf = useMemo(
+    () => rounds.find((r) => r.round === 3)?.matches || [],
+    [rounds],
+  );
+  const sf = useMemo(
+    () => rounds.find((r) => r.round === 4)?.matches || [],
+    [rounds],
+  );
+  const fn = useMemo(
+    () => rounds.find((r) => r.round === 5)?.matches || [],
+    [rounds],
+  );
 
   if (!qf.length) return null;
 
   const winner = fn[0] ? winnerOf(fn[0]) : null;
 
   const qfsfLines = [
-    { from: [BK_CARD_W, QF_TOPS[0] + BK_CARD_H / 2], to: [SF_X, SF_CENTERS[0]], m: qf[0] },
-    { from: [BK_CARD_W, QF_TOPS[1] + BK_CARD_H / 2], to: [SF_X, SF_CENTERS[0]], m: qf[1] },
-    { from: [BK_CARD_W, QF_TOPS[2] + BK_CARD_H / 2], to: [SF_X, SF_CENTERS[1]], m: qf[2] },
-    { from: [BK_CARD_W, QF_TOPS[3] + BK_CARD_H / 2], to: [SF_X, SF_CENTERS[1]], m: qf[3] },
+    {
+      from: [BK_CARD_W, QF_TOPS[0] + BK_CARD_H / 2],
+      to: [SF_X, SF_CENTERS[0]],
+      m: qf[0],
+    },
+    {
+      from: [BK_CARD_W, QF_TOPS[1] + BK_CARD_H / 2],
+      to: [SF_X, SF_CENTERS[0]],
+      m: qf[1],
+    },
+    {
+      from: [BK_CARD_W, QF_TOPS[2] + BK_CARD_H / 2],
+      to: [SF_X, SF_CENTERS[1]],
+      m: qf[2],
+    },
+    {
+      from: [BK_CARD_W, QF_TOPS[3] + BK_CARD_H / 2],
+      to: [SF_X, SF_CENTERS[1]],
+      m: qf[3],
+    },
   ];
   const sffnLines = [
-    { from: [SF_X + BK_CARD_W, SF_CENTERS[0]], to: [FN_X, FN_CENTER], m: sf[0] },
-    { from: [SF_X + BK_CARD_W, SF_CENTERS[1]], to: [FN_X, FN_CENTER], m: sf[1] },
+    {
+      from: [SF_X + BK_CARD_W, SF_CENTERS[0]],
+      to: [FN_X, FN_CENTER],
+      m: sf[0],
+    },
+    {
+      from: [SF_X + BK_CARD_W, SF_CENTERS[1]],
+      to: [FN_X, FN_CENTER],
+      m: sf[1],
+    },
   ];
 
   return (
     <div className="overflow-x-auto pb-2">
-      <div className="relative" style={{ width: SVG_W, height: BK_TOTAL_H + 20, paddingTop: 20 }}>
+      <div
+        className="relative"
+        style={{ width: SVG_W, height: BK_TOTAL_H + 20, paddingTop: 20 }}
+      >
         {/* Column labels */}
         {[
           { label: "Quartos de final", x: QF_X },
@@ -190,14 +258,22 @@ function BracketTree({ rounds, myTeamId }) {
 
         {/* QF cards */}
         {qf.slice(0, 4).map((m, i) => (
-          <div key={i} className="absolute" style={{ left: QF_X, top: 20 + QF_TOPS[i] }}>
+          <div
+            key={i}
+            className="absolute"
+            style={{ left: QF_X, top: 20 + QF_TOPS[i] }}
+          >
             <BracketCard match={m} myTeamId={myTeamId} />
           </div>
         ))}
 
         {/* SF cards */}
         {sf.slice(0, 2).map((m, i) => (
-          <div key={i} className="absolute" style={{ left: SF_X, top: 20 + SF_TOPS[i] }}>
+          <div
+            key={i}
+            className="absolute"
+            style={{ left: SF_X, top: 20 + SF_TOPS[i] }}
+          >
             <BracketCard match={m} myTeamId={myTeamId} />
           </div>
         ))}
@@ -212,24 +288,38 @@ function BracketTree({ rounds, myTeamId }) {
         {/* Champion display */}
         <div
           className="absolute flex flex-col items-center justify-center gap-2 text-center"
-          style={{ left: WN_X, top: 20 + FN_TOP - 28, width: 140, height: BK_CARD_H + 56 }}
+          style={{
+            left: WN_X,
+            top: 20 + FN_TOP - 28,
+            width: 140,
+            height: BK_CARD_H + 56,
+          }}
         >
           {winner ? (
             <>
               <span
                 className="material-symbols-outlined text-amber-400"
-                style={{ fontSize: 30, filter: "drop-shadow(0 0 8px rgba(245,158,11,0.6))" }}
+                style={{
+                  fontSize: 30,
+                  filter: "drop-shadow(0 0 8px rgba(245,158,11,0.6))",
+                }}
               >
                 emoji_events
               </span>
               <div
                 className="w-9 h-9 rounded-full flex items-center justify-center text-sm font-black border-2 border-amber-500/50 shadow-lg shadow-amber-500/20"
-                style={{ background: winner.color_primary, color: winner.color_secondary }}
+                style={{
+                  background: winner.color_primary,
+                  color: winner.color_secondary,
+                }}
               >
                 {winner.name?.[0]}
               </div>
               <div>
-                <div className="text-[10px] font-black" style={{ color: winner.color_primary }}>
+                <div
+                  className="text-[10px] font-black"
+                  style={{ color: winner.color_primary }}
+                >
                   {winner.name}
                 </div>
                 <div className="text-[8px] text-amber-400/70 font-black uppercase tracking-wider">
@@ -239,7 +329,10 @@ function BracketTree({ rounds, myTeamId }) {
             </>
           ) : fn.length > 0 ? (
             <>
-              <span className="material-symbols-outlined text-amber-400/30 animate-pulse" style={{ fontSize: 30 }}>
+              <span
+                className="material-symbols-outlined text-amber-400/30 animate-pulse"
+                style={{ fontSize: 30 }}
+              >
                 emoji_events
               </span>
               <div className="text-[9px] text-on-surface-variant/30 font-bold uppercase tracking-wider animate-pulse">
@@ -247,7 +340,10 @@ function BracketTree({ rounds, myTeamId }) {
               </div>
             </>
           ) : (
-            <span className="material-symbols-outlined text-amber-400/20" style={{ fontSize: 30 }}>
+            <span
+              className="material-symbols-outlined text-amber-400/20"
+              style={{ fontSize: 30 }}
+            >
               emoji_events
             </span>
           )}
@@ -261,14 +357,23 @@ function BracketTree({ rounds, myTeamId }) {
 function MatchRow({ match, myTeamId, players }) {
   if (!match) return null;
   const {
-    homeTeam, awayTeam, homeScore, awayScore, homeEtScore, awayEtScore,
-    homePenalties, awayPenalties, winnerId, played,
+    homeTeam,
+    awayTeam,
+    homeScore,
+    awayScore,
+    homeEtScore,
+    awayEtScore,
+    homePenalties,
+    awayPenalties,
+    winnerId,
+    played,
   } = match;
   const homeWins = played && winnerId === homeTeam?.id;
   const awayWins = played && winnerId === awayTeam?.id;
-  const isMyMatch = myTeamId && (homeTeam?.id === myTeamId || awayTeam?.id === myTeamId);
+  const isMyMatch =
+    myTeamId && (homeTeam?.id === myTeamId || awayTeam?.id === myTeamId);
   const hasPens = played && (homePenalties > 0 || awayPenalties > 0);
-  const hadET = played && ((homeEtScore || 0) + (awayEtScore || 0)) > 0;
+  const hadET = played && (homeEtScore || 0) + (awayEtScore || 0) > 0;
   const finalHome = (homeScore || 0) + (homeEtScore || 0);
   const finalAway = (awayScore || 0) + (awayEtScore || 0);
   const homeCoach = players?.find((p) => p.teamId === homeTeam?.id)?.name;
@@ -289,7 +394,9 @@ function MatchRow({ match, myTeamId, players }) {
       )}
 
       {/* Home */}
-      <div className={`flex-1 flex items-center justify-end gap-2 min-w-0 ${played && !homeWins ? "opacity-35" : ""}`}>
+      <div
+        className={`flex-1 flex items-center justify-end gap-2 min-w-0 ${played && !homeWins ? "opacity-35" : ""}`}
+      >
         <div className="text-right min-w-0">
           <span
             className="block font-black text-xs truncate"
@@ -298,7 +405,9 @@ function MatchRow({ match, myTeamId, players }) {
             {homeTeam?.name || "?"}
           </span>
           {homeCoach && (
-            <span className="block text-[9px] text-amber-400/70 font-bold truncate">{homeCoach}</span>
+            <span className="block text-[9px] text-amber-400/70 font-bold truncate">
+              {homeCoach}
+            </span>
           )}
         </div>
         <div
@@ -308,8 +417,12 @@ function MatchRow({ match, myTeamId, players }) {
           style={{
             background: homeTeam?.color_primary || "#27272a",
             color: homeTeam?.color_secondary || "#fff",
-            borderColor: played && homeWins ? homeTeam?.color_primary : undefined,
-            boxShadow: played && homeWins ? `0 0 8px ${homeTeam?.color_primary}50` : undefined,
+            borderColor:
+              played && homeWins ? homeTeam?.color_primary : undefined,
+            boxShadow:
+              played && homeWins
+                ? `0 0 8px ${homeTeam?.color_primary}50`
+                : undefined,
           }}
         >
           {homeTeam?.name?.[0] || "?"}
@@ -324,7 +437,9 @@ function MatchRow({ match, myTeamId, players }) {
               {finalHome} – {finalAway}
             </span>
             {hadET && !hasPens && (
-              <span className="text-[8px] text-on-surface-variant/50 font-bold uppercase tracking-wide">p.e.</span>
+              <span className="text-[8px] text-on-surface-variant/50 font-bold uppercase tracking-wide">
+                p.e.
+              </span>
             )}
             {hasPens && (
               <span className="text-[8px] text-amber-400/70 font-bold">
@@ -333,12 +448,16 @@ function MatchRow({ match, myTeamId, players }) {
             )}
           </>
         ) : (
-          <span className="text-xs font-black text-on-surface-variant/30 animate-pulse">vs</span>
+          <span className="text-xs font-black text-on-surface-variant/30 animate-pulse">
+            vs
+          </span>
         )}
       </div>
 
       {/* Away */}
-      <div className={`flex-1 flex items-center gap-2 min-w-0 ${played && !awayWins ? "opacity-35" : ""}`}>
+      <div
+        className={`flex-1 flex items-center gap-2 min-w-0 ${played && !awayWins ? "opacity-35" : ""}`}
+      >
         <div
           className={`w-8 h-8 rounded-full flex items-center justify-center text-xs font-black shrink-0 border ${
             played && awayWins ? "border-[2px] shadow-sm" : "border-white/10"
@@ -346,8 +465,12 @@ function MatchRow({ match, myTeamId, players }) {
           style={{
             background: awayTeam?.color_primary || "#27272a",
             color: awayTeam?.color_secondary || "#fff",
-            borderColor: played && awayWins ? awayTeam?.color_primary : undefined,
-            boxShadow: played && awayWins ? `0 0 8px ${awayTeam?.color_primary}50` : undefined,
+            borderColor:
+              played && awayWins ? awayTeam?.color_primary : undefined,
+            boxShadow:
+              played && awayWins
+                ? `0 0 8px ${awayTeam?.color_primary}50`
+                : undefined,
           }}
         >
           {awayTeam?.name?.[0] || "?"}
@@ -360,7 +483,9 @@ function MatchRow({ match, myTeamId, players }) {
             {awayTeam?.name || "?"}
           </span>
           {awayCoach && (
-            <span className="block text-[9px] text-amber-400/70 font-bold truncate">{awayCoach}</span>
+            <span className="block text-[9px] text-amber-400/70 font-bold truncate">
+              {awayCoach}
+            </span>
           )}
         </div>
       </div>
@@ -399,7 +524,9 @@ export function CupBracketPage({ bracketData, me, players, onRequestRefresh }) {
         >
           emoji_events
         </span>
-        <p className="text-on-surface-variant/40 font-bold text-sm">A carregar…</p>
+        <p className="text-on-surface-variant/40 font-bold text-sm">
+          A carregar…
+        </p>
         <button
           onClick={onRequestRefresh}
           className="text-xs text-primary/50 hover:text-primary transition-colors font-bold"
@@ -429,7 +556,9 @@ export function CupBracketPage({ bracketData, me, players, onRequestRefresh }) {
 
   // Progress stat
   const totalRounds = 5;
-  const completedRounds = rounds.filter((r) => r.matches?.length > 0 && r.matches.every((m) => m.played)).length;
+  const completedRounds = rounds.filter(
+    (r) => r.matches?.length > 0 && r.matches.every((m) => m.played),
+  ).length;
   const champion = (() => {
     const fn = rounds.find((r) => r.round === 5);
     return fn ? winnerOf(fn.matches?.[0]) : null;
@@ -449,7 +578,9 @@ export function CupBracketPage({ bracketData, me, players, onRequestRefresh }) {
               className="material-symbols-outlined text-amber-400"
               style={{
                 fontSize: 32,
-                filter: champion ? "drop-shadow(0 0 10px rgba(245,158,11,0.7))" : undefined,
+                filter: champion
+                  ? "drop-shadow(0 0 10px rgba(245,158,11,0.7))"
+                  : undefined,
               }}
             >
               emoji_events
@@ -468,14 +599,22 @@ export function CupBracketPage({ bracketData, me, players, onRequestRefresh }) {
               <div className="flex items-center gap-1.5">
                 <div
                   className="w-5 h-5 rounded-full flex items-center justify-center text-[9px] font-black"
-                  style={{ background: champion.color_primary, color: champion.color_secondary }}
+                  style={{
+                    background: champion.color_primary,
+                    color: champion.color_secondary,
+                  }}
                 >
                   {champion.name?.[0]}
                 </div>
-                <span className="text-[9px] font-black uppercase tracking-wider" style={{ color: champion.color_primary }}>
+                <span
+                  className="text-[9px] font-black uppercase tracking-wider"
+                  style={{ color: champion.color_primary }}
+                >
                   {champion.name}
                 </span>
-                <span className="text-[8px] text-amber-400/60 font-bold">Campeão</span>
+                <span className="text-[8px] text-amber-400/60 font-bold">
+                  Campeão
+                </span>
               </div>
             ) : (
               <span className="text-[9px] text-on-surface-variant/40 font-bold uppercase tracking-wider">
@@ -551,19 +690,26 @@ export function CupBracketPage({ bracketData, me, players, onRequestRefresh }) {
           <div className="flex-1 h-px bg-outline-variant/15" />
           {currentRoundData && (
             <span className="text-[9px] text-on-surface-variant/35 font-bold shrink-0">
-              {currentRoundData.matches.filter((m) => m.played).length} / {currentRoundData.matches.length}{" "}
-              jogados
+              {currentRoundData.matches.filter((m) => m.played).length} /{" "}
+              {currentRoundData.matches.length} jogados
             </span>
           )}
         </div>
 
         {(currentRoundData?.matches || []).map((match, i) => (
-          <MatchRow key={match.id ?? i} match={match} myTeamId={me?.teamId} players={players} />
+          <MatchRow
+            key={match.id ?? i}
+            match={match}
+            myTeamId={me?.teamId}
+            players={players}
+          />
         ))}
 
         {!currentRoundData?.matches?.length && (
           <div className="bg-surface-container rounded-lg px-4 py-8 text-center">
-            <p className="text-on-surface-variant/40 text-sm font-bold">Sem jogos nesta ronda.</p>
+            <p className="text-on-surface-variant/40 text-sm font-bold">
+              Sem jogos nesta ronda.
+            </p>
           </div>
         )}
       </div>

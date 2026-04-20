@@ -168,38 +168,43 @@ db.serialize(() => {
 
     const division = teamData.division || 4;
 
-    providedPlayers.forEach((p) => {
-      if (!p || !p.name) return; // skip entries without a name
+    // Build full player list before inserting so we can guarantee ≥1 craque per team
+    const playersToInsert = providedPlayers
+      .filter((p) => p && p.name)
+      .map((p) => {
+        const pos = POSITION_MAP[p.position] || p.position || "MED";
+        const skill =
+          p.skill ||
+          randomSkill(
+            (skillRanges[division] || [5, 20])[0],
+            (skillRanges[division] || [5, 20])[1],
+          );
+        const age = p.age || Math.floor(Math.random() * 16) + 18;
+        const form = p.form || Math.floor(Math.random() * 20) + 80;
+        const agg = randomAggressiveness();
+        const nat = p.nationality || p.country || "🇵🇹";
+        const value = skill * 20000;
+        const wage = skill * 200;
+        const isStar =
+          (pos === "MED" || pos === "ATA") && Math.random() < 0.1 ? 1 : 0;
+        return { name: p.name, pos, skill, age, form, agg, nat, value, wage, isStar };
+      });
 
-      const pos = POSITION_MAP[p.position] || p.position || "MED";
-      const skill =
-        p.skill ||
-        randomSkill(
-          (skillRanges[division] || [5, 20])[0],
-          (skillRanges[division] || [5, 20])[1],
-        );
-      const age = p.age || Math.floor(Math.random() * 16) + 18;
-      const form = p.form || Math.floor(Math.random() * 20) + 80;
-      const agg = randomAggressiveness();
-      const nat = p.nationality || p.country || "🇵🇹";
-      const value = skill * 20000;
-      const wage = skill * 200;
-      const isStar =
-        (pos === "MED" || pos === "ATA") && Math.random() < 0.1 ? 1 : 0;
-
-      insertPlayer.run(
-        p.name,
-        pos,
-        skill,
-        age,
-        form,
-        agg,
-        nat,
-        value,
-        wage,
-        isStar,
-        teamId,
+    // Garantir pelo menos um craque por equipa: se nenhum foi escolhido
+    // aleatoriamente, promover o melhor MED ou ATA
+    const hasStar = playersToInsert.some((p) => p.isStar === 1);
+    if (!hasStar) {
+      const eligibles = playersToInsert.filter(
+        (p) => p.pos === "MED" || p.pos === "ATA",
       );
+      if (eligibles.length > 0) {
+        const best = eligibles.reduce((a, b) => (b.skill > a.skill ? b : a));
+        best.isStar = 1;
+      }
+    }
+
+    playersToInsert.forEach(({ name, pos, skill, age, form, agg, nat, value, wage, isStar }) => {
+      insertPlayer.run(name, pos, skill, age, form, agg, nat, value, wage, isStar, teamId);
     });
 
     teamId++;
