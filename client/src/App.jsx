@@ -1672,7 +1672,7 @@ function App() {
       // Re-join on reconnect using the meRef to avoid stale closure
       const currentMe = meRef.current;
       if (
-        currentMe &&
+        currentMe?.teamId &&
         currentMe.roomCode &&
         currentMe.name &&
         currentMe.password
