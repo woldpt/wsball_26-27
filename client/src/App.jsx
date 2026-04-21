@@ -7096,8 +7096,7 @@ function App() {
                             </div>
                             {/* Saldo previsto */}
                             {(() => {
-                              const remainingJornadas =
-                                14 - completedJornada;
+                              const remainingJornadas = 14 - completedJornada;
                               const projectedEndBudget =
                                 completedJornada > 0
                                   ? Math.round(
@@ -7126,9 +7125,8 @@ function App() {
                                   </div>
                                   <div className="mt-6">
                                     <p className="text-[10px] text-on-surface-variant uppercase mb-1">
-                                      Projeção linear ·{" "}
-                                      {remainingJornadas} jornadas
-                                      restantes
+                                      Projeção linear · {remainingJornadas}{" "}
+                                      jornadas restantes
                                     </p>
                                   </div>
                                 </div>
@@ -7640,7 +7638,7 @@ function App() {
                                     return (
                                       <tr
                                         key={player.id}
-                                        className={`bg-surface-container-low hover:bg-primary-container/15 transition-all ${player.isUnavailable ? "opacity-60" : ""}`}
+                                        className={`transition-all ${player.isUnavailable ? "bg-red-950/40 hover:bg-red-900/30 opacity-70" : "bg-surface-container-low hover:bg-primary-container/15"}`}
                                       >
                                         {/* Pos */}
                                         <td className="py-2.5 px-3 text-center">
@@ -8321,7 +8319,9 @@ function App() {
                                 <span className="text-amber-400">
                                   {
                                     annotatedSquad.filter(
-                                      (p) => p.status === "Suplente",
+                                      (p) =>
+                                        p.status === "Suplente" &&
+                                        !p.isUnavailable,
                                     ).length
                                   }
                                 </span>
@@ -8332,7 +8332,10 @@ function App() {
                             </div>
                             <div className="divide-y divide-outline-variant/10">
                               {annotatedSquad
-                                .filter((p) => p.status === "Suplente")
+                                .filter(
+                                  (p) =>
+                                    p.status === "Suplente" && !p.isUnavailable,
+                                )
                                 .map((player) => (
                                   <div
                                     key={player.id}
@@ -8487,9 +8490,10 @@ function App() {
                             </div>
                             {annotatedSquad.filter(
                               (p) =>
-                                p.status !== "Titular" &&
-                                p.status !== "Suplente" &&
-                                !p.isJunior,
+                                !p.isJunior &&
+                                (p.isUnavailable ||
+                                  (p.status !== "Titular" &&
+                                    p.status !== "Suplente")),
                             ).length > 0 && (
                               <>
                                 <div className="px-4 py-1.5 bg-surface-container-lowest/80 text-[8px] font-black uppercase tracking-[0.2em] text-on-surface-variant/40 border-t border-outline-variant/10">
@@ -8498,9 +8502,10 @@ function App() {
                                 {annotatedSquad
                                   .filter(
                                     (p) =>
-                                      p.status !== "Titular" &&
-                                      p.status !== "Suplente" &&
-                                      !p.isJunior,
+                                      !p.isJunior &&
+                                      (p.isUnavailable ||
+                                        (p.status !== "Titular" &&
+                                          p.status !== "Suplente")),
                                   )
                                   .map((player) => (
                                     <div
@@ -8537,7 +8542,7 @@ function App() {
                                         setDragOverPlayerId(null);
                                         dragPlayerIdRef.current = null;
                                       }}
-                                      className={`relative flex items-center gap-3 px-4 py-2 select-none transition-all cursor-grab active:cursor-grabbing ${dragOverPlayerId === player.id && dragPlayerIdRef.current !== player.id ? "opacity-100 bg-zinc-700/40 ring-1 ring-zinc-500/40" : "opacity-40 hover:opacity-70"}`}
+                                      className={`relative flex items-center gap-3 px-4 py-2 select-none transition-all cursor-grab active:cursor-grabbing ${dragOverPlayerId === player.id && dragPlayerIdRef.current !== player.id ? "opacity-100 bg-zinc-700/40 ring-1 ring-zinc-500/40" : player.isUnavailable ? "bg-red-950/50 hover:bg-red-900/40 opacity-80" : "opacity-40 hover:opacity-70"}`}
                                     >
                                       <span
                                         className={`shrink-0 w-5.5 text-center text-[10px] font-black ${
