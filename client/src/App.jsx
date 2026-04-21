@@ -603,6 +603,7 @@ function App() {
   const [authError, setAuthError] = useState("");
   const [joining, setJoining] = useState(Boolean(savedSession));
   const [disconnected, setDisconnected] = useState(false);
+  const [sessionDisplaced, setSessionDisplaced] = useState(false);
   const [joinError, setJoinError] = useState("");
   const [toasts, setToasts] = useState([]);
   const [_lockedCoaches, setLockedCoaches] = useState([]);
@@ -1749,6 +1750,7 @@ function App() {
 
     socket.on("connect", onConnect);
     socket.on("disconnect", onDisconnect);
+    socket.on("sessionDisplaced", () => setSessionDisplaced(true));
 
     return () => {
       socket.off("teamsData");
@@ -1792,6 +1794,7 @@ function App() {
       socket.off("chatHistory");
       socket.off("connect", onConnect);
       socket.off("disconnect", onDisconnect);
+      socket.off("sessionDisplaced");
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []); // empty deps — register once only
@@ -3317,6 +3320,26 @@ function App() {
 
   return (
     <div className="min-h-dvh bg-surface text-on-surface font-body tracking-tight">
+      {sessionDisplaced && (
+        <div
+          style={{ position: "fixed", inset: 0, zIndex: 9999 }}
+          className="flex flex-col items-center justify-center bg-black/90 gap-6 p-8"
+        >
+          <p className="text-5xl">📱</p>
+          <h2 className="text-xl font-bold text-white text-center">
+            Sessão aberta noutro dispositivo
+          </h2>
+          <p className="text-gray-400 text-sm text-center max-w-xs leading-relaxed">
+            A tua sessão foi assumida por outro dispositivo ou janela.
+          </p>
+          <button
+            onClick={() => window.location.reload()}
+            className="mt-2 px-6 py-2 rounded-lg bg-yellow-500 text-black font-bold text-sm"
+          >
+            Retomar aqui
+          </button>
+        </div>
+      )}
       {/* Toast notifications */}
       <div className="fixed top-16 right-4 z-100 flex flex-col gap-2 pointer-events-none">
         {toasts.map((t) => (

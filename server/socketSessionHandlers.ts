@@ -34,7 +34,7 @@ interface SessionHandlerDeps {
     game: ActiveGame,
     socketId: string,
   ) => PlayerSession | null;
-  bindSocket: (game: ActiveGame, name: string, socketId: string) => void;
+  bindSocket: (game: ActiveGame, name: string, socketId: string) => string | null;
   getPlayerList: (game: ActiveGame) => PlayerSession[];
   saveGameState: (game: ActiveGame) => void;
   emitCurrentPhaseToSocket: (game: ActiveGame, socket: any) => void;
@@ -126,7 +126,12 @@ export function registerSessionSocketHandlers(
         socketId: socket.id,
       };
     }
-    bindSocket(game, name, socket.id);
+    const displacedSocketId = bindSocket(game, name, socket.id);
+    if (displacedSocketId) {
+      io.to(displacedSocketId).emit("sessionDisplaced", {
+        reason: "another_device",
+      });
+    }
 
     game.lockedCoaches.add(name);
     if (game.lockedCoaches.size >= 2) {

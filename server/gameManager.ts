@@ -713,15 +713,24 @@ function getPlayerBySocket(
   return name ? game.playersByName[name] : null;
 }
 
-function bindSocket(game: ActiveGame, name: string, socketId: string): void {
+function bindSocket(
+  game: ActiveGame,
+  name: string,
+  socketId: string,
+): string | null {
   const existing = game.playersByName[name];
-  if (existing && existing.socketId && existing.socketId !== socketId) {
-    delete game.socketToName[existing.socketId];
+  const oldSocketId =
+    existing && existing.socketId && existing.socketId !== socketId
+      ? existing.socketId
+      : null;
+  if (oldSocketId) {
+    delete game.socketToName[oldSocketId];
   }
   if (game.playersByName[name]) {
     game.playersByName[name].socketId = socketId;
   }
   game.socketToName[socketId] = name;
+  return oldSocketId;
 }
 
 function unbindSocket(game: ActiveGame, socketId: string): void {

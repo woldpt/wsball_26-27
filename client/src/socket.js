@@ -30,3 +30,9 @@ socket.on('reconnect_attempt', (attempt) => {
 socket.on('reconnect_failed', () => {
   console.error('[socket] reconnection failed');
 });
+
+socket.on('sessionDisplaced', () => {
+  // Desactivar reconexão automática antes de desligar para evitar ciclos
+  socket.io.opts.reconnection = false;
+  socket.disconnect();
+});
