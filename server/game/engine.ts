@@ -1002,6 +1002,7 @@ async function simulateMatchSegment(
           playerId: scorer ? scorer.id : null,
           playerName: scorer ? scorer.name : "Jogador",
           text: `[${minute}'] 🚩 VAR — Golo anulado! ${scorer ? scorer.name : "Jogador"}`,
+          wasGoal: true,
         });
         return;
       }

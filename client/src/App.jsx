@@ -1504,15 +1504,22 @@ function App() {
             myFixtureWithSuspense != null &&
             r.homeTeamId === myFixtureWithSuspense.homeTeamId &&
             r.awayTeamId === myFixtureWithSuspense.awayTeamId;
-          const newEvents = (update.minuteEvents || []).filter(
-            (ne) =>
-              !existingEvents.some(
-                (ee) =>
-                  ee.minute === ne.minute &&
-                  ee.type === ne.type &&
-                  ee.playerId === ne.playerId,
-              ) && !(hasSuspense && ne.penaltySuspense),
-          );
+          const newEvents = (update.minuteEvents || [])
+            .filter(
+              (ne) =>
+                !existingEvents.some(
+                  (ee) =>
+                    ee.minute === ne.minute &&
+                    ee.type === ne.type &&
+                    ee.playerId === ne.playerId,
+                ) && !(hasSuspense && ne.penaltySuspense),
+            )
+            .map((ne) => {
+              if (ne.type === "var_disallowed" && ne.wasGoal) {
+                return { ...ne, type: "var_goal_pending" };
+              }
+              return ne;
+            });
           return {
             ...r,
             finalHomeGoals: hasSuspense ? r.finalHomeGoals : update.homeGoals,
@@ -1527,6 +1534,42 @@ function App() {
           };
         });
         return { ...prev, results: updatedResults };
+      });
+      // Revelar VAR após 1 s: substituir var_goal_pending por var_disallowed
+      (data.fixtures || []).forEach((f) => {
+        const varPending = (f.minuteEvents || []).filter(
+          (ne) => ne.type === "var_disallowed" && ne.wasGoal,
+        );
+        if (!varPending.length) return;
+        const hasHuman = players.some(
+          (p) => p.teamId === f.homeTeamId || p.teamId === f.awayTeamId,
+        );
+        setTimeout(() => {
+          setMatchResults((prev) => {
+            if (!prev) return prev;
+            const updated = (prev.results || []).map((r) => {
+              if (
+                r.homeTeamId !== f.homeTeamId ||
+                r.awayTeamId !== f.awayTeamId
+              )
+                return r;
+              return {
+                ...r,
+                events: (r.events || []).map((e) =>
+                  e.type === "var_goal_pending" &&
+                  varPending.some(
+                    (vp) =>
+                      vp.minute === e.minute && vp.playerId === e.playerId,
+                  )
+                    ? { ...e, type: "var_disallowed" }
+                    : e,
+                ),
+              };
+            });
+            return { ...prev, results: updated };
+          });
+          if (hasHuman) playVarSound();
+        }, 1000);
       });
     });
 
@@ -1996,7 +2039,7 @@ function App() {
       if (!events.length) return;
       // Track goal flashes (all matches)
       events.forEach((e) => {
-        if (e.type === "goal" || e.type === "penalty_goal") {
+        if (["goal", "penalty_goal", "var_goal_pending"].includes(e.type)) {
           const key = `${match.homeTeamId}_${match.awayTeamId}_${e.team}`;
           goalFlashRef.current[key] = Date.now();
           didFlashGoal = true;
@@ -2008,7 +2051,7 @@ function App() {
       );
       if (hasHuman) {
         const hasGoal = events.some((e) =>
-          ["goal", "penalty_goal"].includes(e.type),
+          ["goal", "penalty_goal", "var_goal_pending"].includes(e.type),
         );
         const hasVar = events.some((e) => e.type === "var_disallowed");
         const hasOtherEvent = events.some((e) =>
@@ -4980,6 +5023,7 @@ function App() {
                                               "penalty_goal",
                                               "own_goal",
                                               "var_disallowed",
+                                              "var_goal_pending",
                                               "yellow",
                                               "red",
                                               "injury",
@@ -4989,7 +5033,8 @@ function App() {
                                         .map((e, i) => {
                                           const icon =
                                             e.type === "goal" ||
-                                            e.type === "penalty_goal"
+                                            e.type === "penalty_goal" ||
+                                            e.type === "var_goal_pending"
                                               ? "⚽"
                                               : e.type === "own_goal"
                                                 ? "⚽🔙"
@@ -5019,7 +5064,7 @@ function App() {
                                                 {icon}
                                               </span>
                                               <span
-                                                className={`font-bold truncate min-w-0 ${e.type === "goal" || e.type === "penalty_goal" ? "text-primary" : e.type === "own_goal" ? "text-orange-400" : e.type === "var_disallowed" ? "text-amber-400/60 line-through" : e.type === "red" ? "text-red-400" : "text-on-surface-variant/70"}`}
+                                                className={`font-bold truncate min-w-0 ${e.type === "goal" || e.type === "penalty_goal" || e.type === "var_goal_pending" ? "text-primary" : e.type === "own_goal" ? "text-orange-400" : e.type === "var_disallowed" ? "text-amber-400/60 line-through" : e.type === "red" ? "text-red-400" : "text-on-surface-variant/70"}`}
                                               >
                                                 <PlayerLink
                                                   playerId={e.playerId}
@@ -5126,6 +5171,7 @@ function App() {
                                               "penalty_goal",
                                               "own_goal",
                                               "var_disallowed",
+                                              "var_goal_pending",
                                               "yellow",
                                               "red",
                                               "injury",
@@ -5135,7 +5181,8 @@ function App() {
                                         .map((e, i) => {
                                           const icon =
                                             e.type === "goal" ||
-                                            e.type === "penalty_goal"
+                                            e.type === "penalty_goal" ||
+                                            e.type === "var_goal_pending"
                                               ? "⚽"
                                               : e.type === "own_goal"
                                                 ? "⚽🔙"
@@ -5159,7 +5206,7 @@ function App() {
                                               className="flex items-center gap-1 text-[9px] leading-tight w-full justify-end"
                                             >
                                               <span
-                                                className={`font-bold truncate min-w-0 ${e.type === "goal" || e.type === "penalty_goal" ? "text-primary" : e.type === "own_goal" ? "text-orange-400" : e.type === "var_disallowed" ? "text-amber-400/60 line-through" : e.type === "red" ? "text-red-400" : "text-on-surface-variant/70"}`}
+                                                className={`font-bold truncate min-w-0 ${e.type === "goal" || e.type === "penalty_goal" || e.type === "var_goal_pending" ? "text-primary" : e.type === "own_goal" ? "text-orange-400" : e.type === "var_disallowed" ? "text-amber-400/60 line-through" : e.type === "red" ? "text-red-400" : "text-on-surface-variant/70"}`}
                                               >
                                                 <PlayerLink
                                                   playerId={e.playerId}
