@@ -241,6 +241,9 @@ export function createCupFlowHelpers(deps: CupFlowDeps) {
         resolve,
       );
     });
+    await new Promise((resolve) => {
+      game.db.run("UPDATE players SET signed_season = 0", resolve);
+    });
 
     // Reset to new season
     game.season += 1;
