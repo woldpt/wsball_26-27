@@ -604,6 +604,7 @@ function App() {
   const [joining, setJoining] = useState(Boolean(savedSession));
   const [disconnected, setDisconnected] = useState(false);
   const [sessionDisplaced, setSessionDisplaced] = useState(false);
+  const [dismissedInfo, setDismissedInfo] = useState(null);
   const [joinError, setJoinError] = useState("");
   const [toasts, setToasts] = useState([]);
   const [_lockedCoaches, setLockedCoaches] = useState([]);
@@ -1259,6 +1260,7 @@ function App() {
     socket.on("teamAssigned", (data) => {
       const currentMe = meRef.current;
       if (!currentMe?.name || !currentMe?.roomCode) return;
+      setDismissedInfo(null);
       if (data.isNew) {
         if (!hasSeenWelcome(currentMe.name, currentMe.roomCode)) {
           setWelcomeModal(data);
@@ -1711,6 +1713,7 @@ function App() {
           : `Foste despedido de ${teamName} após má série de resultados.`;
       addToast(msg);
       setJobOfferModal(null);
+      setDismissedInfo({ reason, teamName });
     });
 
     socket.on("jobOffer", (data) => setJobOfferModal(data));
@@ -3349,6 +3352,42 @@ function App() {
           >
             Retomar aqui
           </button>
+        </div>
+      )}
+      {dismissedInfo && !jobOfferModal && (
+        <div
+          style={{ position: "fixed", inset: 0, zIndex: 9998 }}
+          className="flex flex-col items-center justify-center bg-black/90 gap-6 p-8"
+        >
+          <span className="material-symbols-outlined text-red-500" style={{ fontSize: "3.5rem" }}>
+            person_off
+          </span>
+          <h2 className="text-xl font-bold text-white text-center">
+            Despedido de {dismissedInfo.teamName}
+          </h2>
+          <p className="text-gray-400 text-sm text-center max-w-xs leading-relaxed">
+            {dismissedInfo.reason === "budget"
+              ? "Insolvência financeira."
+              : "Má série de resultados."}
+            {" "}O sistema está à procura de um novo clube para ti. As jornadas continuam enquanto aguardas.
+          </p>
+          {matchResults?.results?.length > 0 && (
+            <div className="w-full max-w-sm bg-[#18181f] rounded-lg p-4 space-y-2">
+              <p className="text-xs text-gray-500 uppercase tracking-widest mb-2">A decorrer</p>
+              {matchResults.results.map((f, i) => (
+                <div key={i} className="flex items-center justify-between text-sm text-white gap-2">
+                  <span className="truncate flex-1 text-right">{f.homeTeam}</span>
+                  <span className="font-bold text-yellow-400 shrink-0">
+                    {f.finalHomeGoals ?? 0} – {f.finalAwayGoals ?? 0}
+                  </span>
+                  <span className="truncate flex-1">{f.awayTeam}</span>
+                </div>
+              ))}
+            </div>
+          )}
+          <p className="text-gray-600 text-xs text-center">
+            Receberás uma notificação assim que houver uma proposta.
+          </p>
         </div>
       )}
       {/* Toast notifications */}

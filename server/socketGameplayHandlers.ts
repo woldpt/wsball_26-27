@@ -45,6 +45,7 @@ export function registerGameplaySocketHandlers(
     if (!game) return;
     const playerState = getPlayerBySocket(game, socket.id);
     if (!playerState) return;
+    if (!playerState.teamId) return;
     playerState.ready = ready;
     console.log(
       `[${game.roomCode}] 👤 ${playerState.name} setReady=${ready} | phase=${game.gamePhase}`,

@@ -685,7 +685,9 @@ export function createWeeklyFlowHelpers(deps: WeeklyFlowDeps) {
         `[${game.roomCode}] ✅ All locked coaches ready: ${readyStatus.map((s) => `${s.name}(${s.ready ? "R" : "-"})`).join(", ")}`,
       );
     } else {
-      const connectedPlayers = getPlayerList(game);
+      const connectedPlayers = getPlayerList(game).filter(
+        (p) => p.teamId !== null,
+      );
       if (connectedPlayers.length === 0) return;
       if (!connectedPlayers.every((player) => player.ready)) return;
       console.log(
