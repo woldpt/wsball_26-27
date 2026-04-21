@@ -1,4 +1,5 @@
 import type { ActiveGame } from "./types";
+import { MAX_ATTENDANCE_BY_DIVISION } from "./gameConstants";
 
 type Db = any;
 type AnyRow = Record<string, any>;
@@ -164,12 +165,14 @@ export function pickRefereeSummary(
 }
 
 export async function calculateMatchAttendance(db: Db, homeTeamId: number) {
-  const team = await runGet<{ stadium_capacity?: number }>(
+  const team = await runGet<{ stadium_capacity?: number; division?: number }>(
     db,
-    "SELECT stadium_capacity FROM teams WHERE id = ?",
+    "SELECT stadium_capacity, division FROM teams WHERE id = ?",
     [homeTeamId],
   );
-  const capacity = team ? team.stadium_capacity || 10000 : 10000;
+  const rawCapacity = team ? team.stadium_capacity || 10000 : 10000;
+  const divLimit = MAX_ATTENDANCE_BY_DIVISION[team?.division ?? 1] ?? Infinity;
+  const capacity = Math.min(rawCapacity, divLimit);
 
   const recentMatches = await runAll<{
     home_team_id: number;

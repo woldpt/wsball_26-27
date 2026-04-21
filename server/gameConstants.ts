@@ -6,6 +6,14 @@ export const DIVISION_NAMES: Record<number, string> = {
   5: "Distritais",
 };
 
+export const MAX_ATTENDANCE_BY_DIVISION: Record<number, number> = {
+  1: Infinity,
+  2: 48500,
+  3: 23800,
+  4: 9200,
+  5: 4800,
+};
+
 export const CUP_ROUND_NAMES = [
   "",
   "16 avos de final",
