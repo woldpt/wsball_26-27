@@ -950,7 +950,10 @@ async function simulateMatchSegment(
     const currentHome = getPower(home.squad, homeTactic, homeMorale);
     const currentAway = getPower(away.squad, awayTactic, awayMorale);
 
+    let goalScoredThisMinute = false;
+
     const maybeOpenPlayGoal = (attackingSide) => {
+      if (goalScoredThisMinute) return;
       const attacking = attackingSide === "home" ? currentHome : currentAway;
       const defending = attackingSide === "home" ? currentAway : currentHome;
       const isHome = attackingSide === "home";
@@ -1005,6 +1008,7 @@ async function simulateMatchSegment(
 
       if (isHome) fixture.finalHomeGoals++;
       else fixture.finalAwayGoals++;
+      goalScoredThisMinute = true;
 
       const decisiveChance = Math.min(0.6, craquesInXI * 0.2);
       const isDecisive = Math.random() < decisiveChance;
@@ -1032,6 +1036,7 @@ async function simulateMatchSegment(
     if (Math.random() < penaltyChance) {
       const attackingSide = Math.random() < 0.5 ? "home" : "away";
       const attackingSquad = attackingSide === "home" ? home.squad : away.squad;
+      const totalGoalsBefore = fixture.finalHomeGoals + fixture.finalAwayGoals;
       await applyPenaltyEvent({
         db,
         fixture,
@@ -1041,6 +1046,9 @@ async function simulateMatchSegment(
         io,
         game,
       });
+      if (fixture.finalHomeGoals + fixture.finalAwayGoals > totalGoalsBefore) {
+        goalScoredThisMinute = true;
+      }
     }
 
     maybeOpenPlayGoal("home");
