@@ -998,10 +998,10 @@ async function simulateMatchSegment(
           minute,
           type: "var_disallowed",
           team: attackingSide,
-          emoji: "📺",
+          emoji: "🚩",
           playerId: scorer ? scorer.id : null,
           playerName: scorer ? scorer.name : "Jogador",
-          text: `[${minute}'] 📺 VAR — Golo anulado! ${scorer ? scorer.name : "Jogador"}`,
+          text: `[${minute}'] 🚩 VAR — Golo anulado! ${scorer ? scorer.name : "Jogador"}`,
         });
         return;
       }
