@@ -735,6 +735,7 @@ function App() {
   const [activeChatTab, setActiveChatTab] = useState("room");
   const [roomMessages, setRoomMessages] = useState([]);
   const [globalMessages, setGlobalMessages] = useState([]);
+  const [globalPlayers, setGlobalPlayers] = useState([]);
   const [unreadRoom, setUnreadRoom] = useState(0);
   const [unreadGlobal, setUnreadGlobal] = useState(0);
   const [chatInput, setChatInput] = useState("");
@@ -1734,6 +1735,10 @@ function App() {
       else if (channel === "global") setGlobalMessages(messages || []);
     });
 
+    socket.on("globalPlayersUpdate", (players) => {
+      setGlobalPlayers(players || []);
+    });
+
     // BUG-15 FIX: Track socket connection state
     const onConnect = () => {
       setDisconnected(false);
@@ -1799,6 +1804,7 @@ function App() {
       socket.off("jobOffer");
       socket.off("chatMessage");
       socket.off("chatHistory");
+      socket.off("globalPlayersUpdate");
       socket.off("connect", onConnect);
       socket.off("disconnect", onDisconnect);
       socket.off("sessionDisplaced");
@@ -9212,6 +9218,7 @@ function App() {
         setActiveChatTab={setActiveChatTab}
         roomMessages={roomMessages}
         globalMessages={globalMessages}
+        globalPlayers={globalPlayers}
         unreadRoom={unreadRoom}
         unreadGlobal={unreadGlobal}
         chatInput={chatInput}

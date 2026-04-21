@@ -25,6 +25,7 @@ const {
   doesGameExist,
   generateUniqueRoomCode,
   closeAllDatabases,
+  activeGames,
 } = require("./gameManager") as typeof import("./gameManager");
 const {
   generateFixturesForDivision,
@@ -402,6 +403,18 @@ const weeklyFlowHelpers = createWeeklyFlowHelpers({
 
 const checkAllReady = weeklyFlowHelpers.checkAllReady;
 
+function emitGlobalPlayerUpdate() {
+  const players: { name: string; roomCode: string }[] = [];
+  for (const game of Object.values(activeGames) as any[]) {
+    for (const p of Object.values(game.playersByName) as any[]) {
+      if (p.socketId) {
+        players.push({ name: p.name, roomCode: game.roomCode });
+      }
+    }
+  }
+  io.to("__global__").emit("globalPlayersUpdate", players);
+}
+
 // ── SOCKET HANDLERS ───────────────────────────────────────────────────────────
 
 io.on("connection", (socket) => {
@@ -426,6 +439,7 @@ io.on("connection", (socket) => {
     buildNextMatchSummary,
     doesGameExist,
     generateUniqueRoomCode,
+    emitGlobalPlayerUpdate,
   });
 
   registerCupSocketHandlers(socket, {
@@ -467,6 +481,7 @@ io.on("connection", (socket) => {
     emitAwaitingCoaches,
     handleAcceptJobOffer,
     handleDeclineJobOffer,
+    emitGlobalPlayerUpdate,
   });
 
   registerChatHandlers(socket, {

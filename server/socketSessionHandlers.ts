@@ -51,6 +51,7 @@ interface SessionHandlerDeps {
   doesGameExist: (roomCode: string) => boolean;
   generateUniqueRoomCode: () => string;
   globalDb?: any;
+  emitGlobalPlayerUpdate?: () => void;
 }
 
 // ─── LEGACY COMPAT HELPERS ───────────────────────────────────────────────────
@@ -108,6 +109,7 @@ export function registerSessionSocketHandlers(
     buildNextMatchSummary,
     doesGameExist,
     generateUniqueRoomCode,
+    emitGlobalPlayerUpdate,
   } = deps;
 
   function assignPlayer(
@@ -220,6 +222,7 @@ export function registerSessionSocketHandlers(
 
     io.to(roomCode).emit("playerListUpdate", getPlayerList(game));
     emitAwaitingCoaches(game);
+    emitGlobalPlayerUpdate?.();
 
     // If halftime is already waiting and all coaches are now ready (e.g. safety
     // timeout fired while this coach was offline), advance without waiting for
@@ -483,6 +486,7 @@ export function registerSessionSocketHandlers(
                     "playerListUpdate",
                     getPlayerList(game),
                   );
+                  emitGlobalPlayerUpdate?.();
 
                   game.db.all(
                     "SELECT id, coach_name AS coachName, message, timestamp FROM chat_messages ORDER BY id DESC LIMIT 50",

@@ -14,6 +14,7 @@ interface GameplayHandlerDeps {
   emitAwaitingCoaches: (game: ActiveGame) => void;
   handleAcceptJobOffer: (game: ActiveGame, coachName: string) => Promise<void>;
   handleDeclineJobOffer: (game: ActiveGame, coachName: string) => void;
+  emitGlobalPlayerUpdate?: () => void;
 }
 
 export function registerGameplaySocketHandlers(
@@ -30,6 +31,7 @@ export function registerGameplaySocketHandlers(
     emitAwaitingCoaches,
     handleAcceptJobOffer,
     handleDeclineJobOffer,
+    emitGlobalPlayerUpdate,
   } = deps;
 
   socket.on("setTactic", (tactic) => {
@@ -99,19 +101,29 @@ export function registerGameplaySocketHandlers(
 
     // If the disconnected socket owned the pending match action, auto-resolve it
     const pendingAction: any = game.pendingMatchAction;
-    if (playerState && pendingAction && pendingAction.teamId === playerState.teamId) {
+    if (
+      playerState &&
+      pendingAction &&
+      pendingAction.teamId === playerState.teamId
+    ) {
       clearTimeout(pendingAction.timer);
       game.pendingMatchAction = null;
-      const fallbackValue = pendingAction.fallback ? pendingAction.fallback() : null;
+      const fallbackValue = pendingAction.fallback
+        ? pendingAction.fallback()
+        : null;
       try {
         pendingAction.finalize(fallbackValue, "auto");
       } catch (err) {
-        console.error("[disconnect] Error finalizing pending match action:", err);
+        console.error(
+          "[disconnect] Error finalizing pending match action:",
+          err,
+        );
       }
     }
 
     unbindSocket(game, socket.id);
     io.to(game.roomCode).emit("playerListUpdate", getPlayerList(game));
+    emitGlobalPlayerUpdate?.();
     emitAwaitingCoaches(game);
   });
 

@@ -9,6 +9,7 @@ import { socket } from "../../socket.js";
  *   setActiveChatTab: function,
  *   roomMessages: Array,
  *   globalMessages: Array,
+ *   globalPlayers: Array,
  *   unreadRoom: number,
  *   unreadGlobal: number,
  *   chatInput: string,
@@ -24,6 +25,7 @@ export function ChatWidget({
   setActiveChatTab,
   roomMessages,
   globalMessages,
+  globalPlayers = [],
   unreadRoom,
   unreadGlobal,
   chatInput,
@@ -110,6 +112,39 @@ export function ChatWidget({
               </button>
             ))}
           </div>
+
+          {/* Online players — only shown on Global tab */}
+          {activeChatTab === "global" && (
+            <div
+              className="shrink-0 border-b border-outline-variant/20"
+              style={{ background: "#111" }}
+            >
+              <div className="flex items-center gap-1.5 px-3 py-1.5">
+                <span className="inline-block w-2 h-2 rounded-full bg-emerald-500 shrink-0" />
+                <span className="text-[10px] font-black uppercase tracking-widest text-on-surface-variant">
+                  {globalPlayers.length} online
+                </span>
+              </div>
+              {globalPlayers.length > 0 && (
+                <div
+                  className="flex flex-wrap gap-1.5 px-3 pb-2 overflow-y-auto"
+                  style={{ maxHeight: 72 }}
+                >
+                  {globalPlayers.map((p) => (
+                    <span
+                      key={p.name}
+                      className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-semibold bg-surface-container text-on-surface border border-outline-variant/30"
+                    >
+                      {p.name}
+                      <span className="text-on-surface-variant font-normal">
+                        {p.roomCode}
+                      </span>
+                    </span>
+                  ))}
+                </div>
+              )}
+            </div>
+          )}
 
           {/* Messages */}
           <div
