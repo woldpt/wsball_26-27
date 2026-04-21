@@ -84,6 +84,8 @@ export function createCoachDismissalHelpers(deps: CoachDismissalDeps) {
         ? `${coachName} foi despedido de ${teamName} por insolvência financeira.`
         : `${coachName} foi despedido de ${teamName} após má série de resultados.`;
     io.to(game.roomCode).emit("systemMessage", msg);
+
+    await autoAssignDismissedCoach(game, coachName);
   }
 
   async function dismissNpcManager(
@@ -374,16 +376,7 @@ export function createCoachDismissalHelpers(deps: CoachDismissalDeps) {
       await offerJobToCoach(game, coachName, teamId, toTeam, team);
     }
 
-    // 7. Loop coaches despedidos — fallback de auto-atribuição após 2 jornadas
-    for (const [coachName, dismissalInfo] of Object.entries(
-      game.dismissedCoachSince,
-    )) {
-      if (game.matchweek - dismissalInfo.matchweek >= 2) {
-        await autoAssignDismissedCoach(game, coachName);
-      }
-    }
-
-    // 8. Persistir estado
+    // 7. Persistir estado
     saveGameState(game);
   };
 
