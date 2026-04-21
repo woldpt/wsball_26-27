@@ -136,9 +136,6 @@ export function ChatWidget({
                       className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-semibold bg-surface-container text-on-surface border border-outline-variant/30"
                     >
                       {p.name}
-                      <span className="text-on-surface-variant font-normal">
-                        {p.roomCode}
-                      </span>
                     </span>
                   ))}
                 </div>
