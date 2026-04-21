@@ -1320,16 +1320,16 @@ async function simulateExtraTime(
   awayTactic: Tactic | null,
   context: any,
 ) {
-  // Use real-time speed only if a human coach is playing in THIS fixture.
-  // Eliminated coaches who are only observing don't slow down other ET games.
-  const anyHumanInFixture =
+  // Use real-time speed if ANY human coach is connected to the room.
+  // When multiple ET fixtures run in parallel (Promise.all), NPC-only fixtures
+  // must use the same delay as the human fixture — otherwise they race from
+  // 91→120 in ~3s and their matchMinuteUpdate events advance liveMinute to 120
+  // before the human fixture's minute-91 update arrives, causing the clock to
+  // visibly jump forward and then snap back.
+  const anyHumanConnected =
     context.game &&
-    Object.values(context.game.playersByName).some(
-      (p: any) =>
-        !!p.socketId &&
-        (p.teamId === fixture.homeTeamId || p.teamId === fixture.awayTeamId),
-    );
-  const msPerMinute = anyHumanInFixture ? 1000 : 100;
+    Object.values(context.game.playersByName).some((p: any) => !!p.socketId);
+  const msPerMinute = anyHumanConnected ? 1000 : 100;
 
   const emitMinuteUpdate = (minute: number) => {
     if (!context.io || !context.game) return;
