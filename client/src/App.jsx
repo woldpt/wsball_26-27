@@ -5145,6 +5145,22 @@ function App() {
                                   )}
                                 </div>
 
+                                {/* Stadium + attendance — above teams/score */}
+                                {myMatch.attendance && (
+                                  <div className="flex items-center justify-center gap-1 text-[10px] text-on-surface-variant/50 mb-3">
+                                    <span className="text-zinc-400 text-[11px] font-bold">
+                                      {hInfo?.stadium_name
+                                        ? `${hInfo.stadium_name} `
+                                        : ""}
+                                      🏟{" "}
+                                      {myMatch.attendance.toLocaleString(
+                                        "pt-PT",
+                                      )}{" "}
+                                      adeptos
+                                    </span>
+                                  </div>
+                                )}
+
                                 {/* Teams + Score row */}
                                 <div className="flex justify-center items-start gap-4 sm:gap-10 w-full max-w-xl">
                                   {/* Home team */}
@@ -5188,10 +5204,15 @@ function App() {
                                               "yellow",
                                               "red",
                                               "injury",
+                                              "substitution",
+                                              "halftime_sub",
                                             ].includes(e.type),
                                         )
                                         .sort((a, b) => a.minute - b.minute)
                                         .map((e, i) => {
+                                          const isSub =
+                                            e.type === "substitution" ||
+                                            e.type === "halftime_sub";
                                           const icon =
                                             e.type === "goal" ||
                                             e.type === "penalty_goal" ||
@@ -5207,26 +5228,41 @@ function App() {
                                                       ? "🟥"
                                                       : e.type === "injury"
                                                         ? "🚑"
-                                                        : "";
+                                                        : isSub
+                                                          ? "🔁"
+                                                          : "";
+                                          const subOutName =
+                                            e.type === "halftime_sub"
+                                              ? e.outPlayerName
+                                              : null;
                                           const name =
                                             e.playerName ||
                                             e.player_name ||
                                             e.player ||
                                             "?";
+                                          const minuteLabel =
+                                            e.type === "halftime_sub"
+                                              ? "HT"
+                                              : `${e.minute}'`;
                                           return (
                                             <div
                                               key={`${e.minute}-${e.type}-${e.playerId || name}-${i}`}
                                               className="flex items-center gap-1 text-[9px] leading-tight w-full"
                                             >
                                               <span className="text-on-surface-variant/40 tabular-nums shrink-0">
-                                                {e.minute}'
+                                                {minuteLabel}
                                               </span>
                                               <span className="shrink-0">
                                                 {icon}
                                               </span>
                                               <span
-                                                className={`font-bold truncate min-w-0 ${e.type === "goal" || e.type === "penalty_goal" || e.type === "var_goal_pending" ? "text-primary" : e.type === "own_goal" ? "text-orange-400" : e.type === "var_disallowed" ? "text-amber-400/60 line-through" : e.type === "red" ? "text-red-400" : "text-on-surface-variant/70"}`}
+                                                className={`font-bold truncate min-w-0 ${e.type === "goal" || e.type === "penalty_goal" || e.type === "var_goal_pending" ? "text-primary" : e.type === "own_goal" ? "text-orange-400" : e.type === "var_disallowed" ? "text-amber-400/60 line-through" : e.type === "red" ? "text-red-400" : isSub ? "text-emerald-400/80" : "text-on-surface-variant/70"}`}
                                               >
+                                                {isSub && subOutName ? (
+                                                  <span className="opacity-60 line-through mr-0.5">
+                                                    {subOutName}
+                                                  </span>
+                                                ) : null}
                                                 <PlayerLink
                                                   playerId={e.playerId}
                                                 >
@@ -5336,10 +5372,15 @@ function App() {
                                               "yellow",
                                               "red",
                                               "injury",
+                                              "substitution",
+                                              "halftime_sub",
                                             ].includes(e.type),
                                         )
                                         .sort((a, b) => a.minute - b.minute)
                                         .map((e, i) => {
+                                          const isSub =
+                                            e.type === "substitution" ||
+                                            e.type === "halftime_sub";
                                           const icon =
                                             e.type === "goal" ||
                                             e.type === "penalty_goal" ||
@@ -5355,20 +5396,35 @@ function App() {
                                                       ? "🟥"
                                                       : e.type === "injury"
                                                         ? "🚑"
-                                                        : "";
+                                                        : isSub
+                                                          ? "🔁"
+                                                          : "";
+                                          const subOutName =
+                                            e.type === "halftime_sub"
+                                              ? e.outPlayerName
+                                              : null;
                                           const name =
                                             e.playerName ||
                                             e.player_name ||
                                             e.player ||
                                             "?";
+                                          const minuteLabel =
+                                            e.type === "halftime_sub"
+                                              ? "HT"
+                                              : `${e.minute}'`;
                                           return (
                                             <div
                                               key={`${e.minute}-${e.type}-${e.playerId || name}-${i}`}
                                               className="flex items-center gap-1 text-[9px] leading-tight w-full justify-end"
                                             >
                                               <span
-                                                className={`font-bold truncate min-w-0 ${e.type === "goal" || e.type === "penalty_goal" || e.type === "var_goal_pending" ? "text-primary" : e.type === "own_goal" ? "text-orange-400" : e.type === "var_disallowed" ? "text-amber-400/60 line-through" : e.type === "red" ? "text-red-400" : "text-on-surface-variant/70"}`}
+                                                className={`font-bold truncate min-w-0 ${e.type === "goal" || e.type === "penalty_goal" || e.type === "var_goal_pending" ? "text-primary" : e.type === "own_goal" ? "text-orange-400" : e.type === "var_disallowed" ? "text-amber-400/60 line-through" : e.type === "red" ? "text-red-400" : isSub ? "text-emerald-400/80" : "text-on-surface-variant/70"}`}
                                               >
+                                                {isSub && subOutName ? (
+                                                  <span className="opacity-60 line-through mr-0.5">
+                                                    {subOutName}
+                                                  </span>
+                                                ) : null}
                                                 <PlayerLink
                                                   playerId={e.playerId}
                                                 >
@@ -5379,7 +5435,7 @@ function App() {
                                                 {icon}
                                               </span>
                                               <span className="text-on-surface-variant/40 tabular-nums shrink-0">
-                                                {e.minute}'
+                                                {minuteLabel}
                                               </span>
                                             </div>
                                           );
@@ -5446,20 +5502,6 @@ function App() {
                                       {isCupExtraTime ? "120'" : "90'"}
                                     </span>
                                   </div>
-                                  {myMatch.attendance && (
-                                    <div className="flex items-center justify-center gap-1 text-[10px] text-on-surface-variant/50 pt-0.5">
-                                      <span className="text-zinc-400 text-[11px] font-bold">
-                                        {hInfo?.stadium_name
-                                          ? `${hInfo.stadium_name} `
-                                          : ""}
-                                        🏟{" "}
-                                        {myMatch.attendance.toLocaleString(
-                                          "pt-PT",
-                                        )}{" "}
-                                        adeptos
-                                      </span>
-                                    </div>
-                                  )}
                                   {/* ── Commentary phrase ── */}
                                   {(() => {
                                     const latestWithText = [...matchEvents]
@@ -5468,13 +5510,11 @@ function App() {
                                       )
                                       .sort((a, b) => b.minute - a.minute)[0];
                                     if (!latestWithText) return null;
-                                    // Strip the leading "[NN'] emoji " prefix — keep only the phrase
+                                    // Strip leading "[NN']" or "[HT]" prefix plus optional emoji
                                     const phrase = latestWithText.text
-                                      .replace(
-                                        /^\[\d+'\]\s*[\u{1F000}-\u{1FFFF}\u{2600}-\u{27FF}\u{FE00}-\u{FEFF}\uD800-\uDFFF][\uDC00-\uDFFF]?\s*/u,
-                                        "",
-                                      )
+                                      .replace(/^\[(?:\d+'|HT)\]\s*\S*\s*/, "")
                                       .trim();
+                                    if (!phrase) return null;
                                     const isGoal =
                                       latestWithText.type === "goal" ||
                                       latestWithText.type === "penalty_goal";

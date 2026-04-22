@@ -347,6 +347,26 @@ function weatherPhrase(condition: string): string {
     pools[condition] || [`Condições variáveis no estádio hoje.`],
   );
 }
+
+function secondHalfStartPhrase(): string {
+  return pickPhrase([
+    `Recomeça a partida! Arranca a segunda parte.`,
+    `As equipas regressam do balneário. Bola a rolar na segunda parte.`,
+    `Tudo pronto para os últimos 45 minutos. Segunda parte em andamento.`,
+    `Apita o árbitro: começa a segunda parte, com tudo em aberto.`,
+    `Volta o futebol. A segunda parte promete emoção até ao fim.`,
+  ]);
+}
+
+function extraTimeStartPhrase(): string {
+  return pickPhrase([
+    `Começa o prolongamento. Mais 30 minutos para decidir tudo.`,
+    `Sem vencedor no tempo regulamentar: arranca o prolongamento.`,
+    `As pernas pesam, mas a decisão continua adiada. Prolongamento em jogo.`,
+    `Recomeça a batalha no minuto 91. Está aberto o prolongamento.`,
+    `Ninguém cedeu nos 90 minutos. Agora decide-se no prolongamento.`,
+  ]);
+}
 // ── End commentary helpers ───────────────────────────────────────────────────
 
 function pickBestPlayer(players: PlayerRow[] = []) {
@@ -1206,6 +1226,28 @@ async function simulateMatchSegment(
 
   for (let minute = startMin; minute <= endMin; minute++) {
     fixture._minute = minute;
+
+    if (minute === 46 && !fixture._secondHalfStartComment) {
+      fixture.events.push({
+        minute,
+        type: "phase_start",
+        team: null,
+        emoji: "🔔",
+        text: `[46'] 🔔 ${secondHalfStartPhrase()}`,
+      });
+      fixture._secondHalfStartComment = true;
+    }
+
+    if (minute === 91 && !fixture._extraTimeStartComment) {
+      fixture.events.push({
+        minute,
+        type: "phase_start",
+        team: null,
+        emoji: "⏱️",
+        text: `[91'] ⏱️ ${extraTimeStartPhrase()}`,
+      });
+      fixture._extraTimeStartComment = true;
+    }
 
     // Cansaço: -1 a partir do minuto 46, -2 total a partir do minuto 70
     if (minute === 46 && !fixture._fatigue1Applied) {

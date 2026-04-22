@@ -220,8 +220,26 @@ export function createWeeklyFlowHelpers(deps: WeeklyFlowDeps) {
             }
 
             // Emit halftime_sub events so the client lineup display reflects the changes
+            const htSubPhrases = [
+              (o: string, i: string) =>
+                `${o} ficou no balneário. ${i} começa a segunda parte.`,
+              (o: string, i: string) =>
+                `Mudança ao intervalo: ${i} entra para o lugar de ${o}. Recado recebido.`,
+              (o: string, i: string) =>
+                `${o} não convenceu. ${i} tem a segunda parte para provar o seu valor.`,
+              (o: string, i: string) =>
+                `O treinador não esperou: ${o} sai, ${i} entra. Mensagem clara.`,
+              (o: string, i: string) =>
+                `Substituição ao intervalo. ${i} substitui ${o} — hora de fazer a diferença.`,
+              (o: string, i: string) =>
+                `${o} foi substituído no intervalo. ${i} vai tentar mudar o rumo da partida.`,
+            ];
             const pairs = Math.min(outPlayers.length, inPlayers.length);
             for (let i = 0; i < pairs; i++) {
+              const phrasePool = htSubPhrases;
+              const phrase = phrasePool[
+                Math.floor(Math.random() * phrasePool.length)
+              ](outPlayers[i].name, inPlayers[i].name);
               fixture.events = fixture.events || [];
               fixture.events.push({
                 minute: 45,
@@ -233,7 +251,7 @@ export function createWeeklyFlowHelpers(deps: WeeklyFlowDeps) {
                 playerId: inPlayers[i].id,
                 playerName: inPlayers[i].name,
                 position: inPlayers[i].position,
-                text: `[HT] 🔁 ${outPlayers[i].name} → ${inPlayers[i].name}`,
+                text: `[HT] 🔁 ${phrase}`,
               });
             }
           };
