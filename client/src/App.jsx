@@ -6696,11 +6696,13 @@ function App() {
                                                 : "text-red-400"
                                           }`}
                                         >
-                                          {myScore} – {opScore}
+                                          {imHome ? myScore : opScore} –{" "}
+                                          {imHome ? opScore : myScore}
                                         </span>
                                         {hasPen && (
                                           <span className="text-[9px] text-amber-400 font-bold">
-                                            {myPen}–{opPen} gp
+                                            {imHome ? myPen : opPen}–
+                                            {imHome ? opPen : myPen} gp
                                           </span>
                                         )}
                                         <span
