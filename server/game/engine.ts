@@ -121,6 +121,15 @@ function goalPhrase(name: string): string {
     `${name} marca e faz das suas. Impossível de parar.`,
     `Golo! O guarda-redes ainda estava a processar o que aconteceu.`,
     `${name} coloca a bola no fundo das redes. Que momento!`,
+    `De cabeça! ${name} não deu hipótese. Pura classe.`,
+    `Que golaço de ${name}! De fora da área e sem aviso. Silêncio total na bancada adversária.`,
+    `${name} rouba a bola, arranca, remata — GOLO! Foi tudo tão rápido.`,
+    `Golo de calcanhar! ${name} vai ser notícia amanhã de manhã.`,
+    `Pé esquerdo, ângulo fechado, redes a abanar. ${name} é mesmo assim.`,
+    `${name} recebe, controla, vira… e manda para o fundo. Simples quando se sabe.`,
+    `GOOOLO! A bancada levantou-se toda de uma vez. ${name} festeja como se fosse o último.`,
+    `Que assistência, que finalização. ${name} estava no sítio certo à hora certa.`,
+    `Nem o guarda-redes acreditou. ${name} marcou de enfiada, no canto oposto.`,
   ]);
 }
 
@@ -131,6 +140,11 @@ function penaltyGoalPhrase(name: string): string {
     `GOLO de penálti! ${name} não tremeu. Nervos de aço.`,
     `${name} — canto inferior, sem hipóteses. Impecável.`,
     `Da marca dos onze metros, ${name} não falha. Nunca.`,
+    `Canto superior direito, velocidade de bala. ${name} é cruel.`,
+    `O guarda-redes foi ao lado errado. ${name} sabia exactamente onde ia colocar.`,
+    `Passada longa, balanço, remate seco. ${name} converteu como se fosse treino.`,
+    `${name} encarou o guarda-redes, fez uma pausa… e atirou para o fundo. Teatro puro.`,
+    `Penálti com categoria. ${name} enviou para o canto e não olhou para trás.`,
   ]);
 }
 
@@ -140,21 +154,34 @@ function penaltyMissPhrase(name: string, missType: string): string {
       `${name} rematou e o guarda-redes voltou a ser herói. Hoje não, amigo.`,
       `Defendeu! ${name} vai querer esquecer este momento depressa.`,
       `O guarda-redes adivinhou! ${name} fica com a cabeça nas mãos.`,
+      `Inacreditável! O guarda-redes atirou-se para o canto certo e negou o golo a ${name}.`,
+      `Que defesa! O guarda-redes leu o remate de ${name} e mandou para canto. Herói.`,
+      `${name} rematou forte mas o guarda-redes estava lá. Hoje não era o dia.`,
+      `Defendeu com a ponta dos dedos! ${name} não pode acreditar no que está a ver.`,
     ],
     "AO POSTE!": [
       `Ó ferro! ${name} acertou no poste. O metal também tem sentimentos.`,
       `Ao poste! ${name} vai ouvir esse som nos sonhos esta noite.`,
       `O poste salva a equipa adversária. ${name} não acredita.`,
+      `Toc! O ferro. ${name} atirou para o lado errado da trave. Por centímetros.`,
+      `${name} mandou ao poste. A bola saiu. O desespero ficou.`,
+      `Que azar de ${name}! A bola bateu na trave e saiu. O universo disse não.`,
     ],
     "AO LADO!": [
       `Ao lado! ${name} mandou para os bancais. Os adeptos nem queriam ver.`,
       `Fora! ${name} deu uma aula de como não bater um penálti.`,
       `${name} rematou para a assistência. Literalmente.`,
+      `A bola passou ao lado da baliza. ${name} vira as costas e não quer saber de nada.`,
+      `Completamente ao lado! ${name} esqueceu-se de mirar. Acontece aos melhores… raramente.`,
+      `${name} perdeu a noção do espaço. O remate foi mais para a rua do que para a baliza.`,
     ],
     "PANENKA FALHADO!": [
       `${name} tentou a Panenka… e falhou. A coragem foi, o golo não.`,
       `Panenka falhado! Haverá maneira mais espectacular de falhar? Provavelmente não.`,
       `${name} quis ser elegante. Ficou apenas por querer.`,
+      `A Panenka de ${name} foi apanhada pelo guarda-redes. Isso vai doer durante semanas.`,
+      `${name} tentou a bola ao centro com classe. O guarda-redes ficou e apanhou. Que cena.`,
+      `Tentar uma Panenka com este resultado? ${name} é corajoso. E agora também está envergonhado.`,
     ],
   };
   return pickPhrase(pools[missType] || [`${name} falhou o penálti. Acontece.`]);
@@ -167,6 +194,11 @@ function varPhrase(name: string): string {
     `${name} festejou cedo demais. O VAR diz que não.`,
     `Golo anulado por VAR. Ninguém na bancada percebeu porquê, mas aceitaram.`,
     `O árbitro de vídeo interveio. ${name} desce do céu ao relvado.`,
+    `VAR! O golo de ${name} foi ao microscópio e não sobreviveu. Meio dedão em fora de jogo.`,
+    `Reviravolta tecnológica: o VAR anulou o golo. ${name} ainda está à espera de perceber.`,
+    `A sala do VAR falou. O golo de ${name} foi cancelado. A multidão vaiu a modernidade.`,
+    `${name} marcou, festejou, tirou a camisola e vai ser multado… por nada. Golo anulado.`,
+    `Fora de jogo milimétrico. O VAR traçou linhas durante dois minutos e ${name} ficou sem golo.`,
   ]);
 }
 
@@ -177,6 +209,12 @@ function yellowPhrase(name: string): string {
     `Falta de ${name} resulta em amarelo. A agressividade tem custos.`,
     `${name} vai para o caderno do árbitro. Talvez a mãe não ficasse orgulhosa.`,
     `Amarelo! ${name} precisa de gerir melhor os nervos no resto do jogo.`,
+    `${name} protestar deu resultado: saiu um amarelo, não a decisão. Lição aprendida?`,
+    `Falta desnecessária de ${name}. O árbitro não hesitou. Cartão no bolso, régua na mão.`,
+    `${name} recebeu o amarelo com cara de espanto, como se fosse a primeira vez. Não é.`,
+    `Toque de mais em ${name}. O árbitro assinalou falta e exibiu o cartão amarelo. Óbvio.`,
+    `${name} jogou duro demais. O árbitro aproximou-se e produziu o cartão da camisa.`,
+    `Simulação ou falta real? O árbitro não teve dúvidas. Amarelo para ${name}.`,
   ]);
 }
 
@@ -187,6 +225,13 @@ function redPhrase(name: string): string {
     `Red card! ${name} não vai assistir ao resto. Talvez seja melhor assim.`,
     `${name} despede-se do relvado hoje. O árbitro não estava para brincadeiras.`,
     `Expulso! ${name} fez a mala mental e foi para os balneários.`,
+    `Falta brutal de ${name}. Vermelho directo, sem hesitação. O banco vai ferver.`,
+    `${name} perde a cabeça e o árbitro não perdoa. Dez jogadores em campo.`,
+    `Segundo amarelo para ${name}. A experiência devia ter ensinado mais. Expulso.`,
+    `${name} vai para o balneário e os colegas ficam a olhar uns para os outros. Que momento.`,
+    `O treinador adversário já estava a protestar. O árbitro fez justiça. Vermelho, ${name}.`,
+    `${name} saiu de campo com uma cara que diz tudo. Expulso, e com razão.`,
+    `Tão desnecessário quanto espectacular: vermelho para ${name}. O banco vai estar quente.`,
   ]);
 }
 
@@ -197,6 +242,10 @@ function injuryPhrase(name: string, severity: string): string {
       `Lesão grave para ${name}. O clube vai precisar de paciência (e suplentes).`,
       `${name} vai aos cuidados da equipa médica. Semanas fora, infelizmente.`,
       `${name} cai. O médico entra em campo com cara séria. Mau sinal.`,
+      `${name} saiu a apoiar-se no médico. O estádio ficou em silêncio. Meses fora, talvez.`,
+      `Lesão no joelho de ${name}? O médico chamou a maca. Ninguém sorri.`,
+      `${name} ficou estendido. Demorou tempo. A maca entrou. Má notícia para o plantel.`,
+      `${name} agarrou o tornozelo e não se levantou. Equipa médica a correr. Semanas fora.`,
     ]);
   }
   return pickPhrase([
@@ -204,6 +253,10 @@ function injuryPhrase(name: string, severity: string): string {
     `${name} leva um golpe do destino e precisa de ser substituído.`,
     `Lesão ligeira para ${name}. Vai a exames, mas parece que não é nada de sério.`,
     `${name} pede substituição. O corpo disse basta por hoje.`,
+    `${name} ficou a coxear depois do choque. O treinador não arriscou e pediu substituição.`,
+    `Cãibra? Distensão? Não se sabe ainda. ${name} saiu por precaução, com cara de frustração.`,
+    `${name} caiu, levantou-se, voltou a cair. O médico acenou para o banco. Substituição.`,
+    `Bateu com força no chão. ${name} pediu para sair. Leve, mas não joga mais hoje.`,
   ]);
 }
 
@@ -214,7 +267,85 @@ function subPhrase(outName: string, inName: string): string {
     `Troca táctica: ${inName} vai mostrar o que vale. Sem pressão, claro.`,
     `${outName} dá lugar a ${inName}. O banco estava gelado, agora vai aquecer.`,
     `${inName} entra em campo. ${outName} agradece e desaparece do relvado.`,
+    `O treinador apostou em ${inName}. ${outName} sai com aplausos — merecia mais minutos.`,
+    `Mudança táctica: ${outName} foi sacrificado. ${inName} entra com fome de bola.`,
+    `${outName} saiu exausto. ${inName} entra fresco. Energia nova para os minutos finais.`,
+    `Substituição forçada: ${outName} não conseguia mais. ${inName} aceita o desafio.`,
+    `${inName} aqueceu durante vinte minutos. Chegou a sua hora. ${outName} agradece e sai.`,
   ]);
+}
+
+function nearMissPhrase(name: string): string {
+  return pickPhrase([
+    `Que remate de ${name}! A bola passou a centímetros do poste. Quase.`,
+    `${name} atirou com tudo… e foi por cima da trave. A baliza ficou intacta mas tremia.`,
+    `Boa oportunidade desperdiçada por ${name}. Estava mesmo ali.`,
+    `${name} disparou de primeira — o guarda-redes espalmou para canto com os punhos. Que reflexos!`,
+    `Cabeceamento de ${name} foi rasteiro mas o guarda-redes mergulhou e defendeu no chão.`,
+    `${name} ficou cara a cara com o guarda-redes e… rematou para as mãos dele. Que pena.`,
+    `A bola de ${name} bateu na trave e voltou para o campo. O ferro hoje está do outro lado.`,
+    `${name} arriscou de fora da área. A bola passou ao lado por muito pouco. Suspirou a bancada.`,
+    `Cruzamento tenso, ${name} apareceu ao segundo poste… e falhou o alvo por centímetros.`,
+    `${name} recebeu em posição de golo e atirou por cima. Tinha tempo. Faltou frieza.`,
+    `Remate em força de ${name} — o guarda-redes viu tarde e desviou para canto com a ponta dos dedos.`,
+    `Chapéu de ${name} pareceu golo mas a bola picou mesmo na linha e o guarda-redes atirou para longe.`,
+  ]);
+}
+
+function bigSavePhrase(grName: string): string {
+  return pickPhrase([
+    `Que defesa de ${grName}! Atirou-se para o canto e tirou a bola quase da linha.`,
+    `${grName} voou! Defesa impossível que valeu o ponto. Herói da tarde.`,
+    `Um a um, ${grName} saiu bem e fechou o ângulo. O avançado não teve para onde atirar.`,
+    `${grName} adivinhou o canto e defendeu com a mão esquerda. Instinto puro.`,
+    `Defesa de classe mundial de ${grName}. A bola parecia certeira — ele disse que não.`,
+    `${grName} atirou-se aos pés do adversário e bloqueou o remate. Corajoso e eficaz.`,
+    `Canto superior esquerdo, remate cruzado — ${grName} esticou-se todo e tocou para fora. Incrível.`,
+    `${grName} saiu a tempo do cruzamento e agarrou a bola com firmeza. Sem chances para o avançado.`,
+  ]);
+}
+
+function weatherPhrase(condition: string): string {
+  const pools: Record<string, string[]> = {
+    sol: [
+      `Tarde soalheira para o jogo de hoje. Relvado perfeito, público à espera.`,
+      `Sol de rachar no estádio. As equipas precisam de água — o jogo está quente antes de começar.`,
+      `Dia de bom tempo. Condições ideais para um bom espectáculo.`,
+    ],
+    chuva: [
+      `Está a chover no estádio. O relvado vai escorregar, a bola vai rolar mais rápido. Cuidado.`,
+      `Chuva miúda no arranque da partida. Os jogadores já trouxeram as chuteiras de barro.`,
+      `Tempo húmido e relvado pesado. Quem jogar mais directo tem vantagem hoje.`,
+    ],
+    chuva_forte: [
+      `Aguaceiro forte antes do apito inicial. Visibilidade reduzida, relvado encharcado. Isto vai ser difícil.`,
+      `Chuva torrencial no estádio! O árbitro avaliou as condições… e decidiu jogar na mesma.`,
+      `Mau tempo de fazer ficar em casa. Quem está cá, está mesmo comprometido.`,
+    ],
+    vento: [
+      `Vento forte hoje. As bolas paradas vão ser uma lotaria — para ambos os lados.`,
+      `Ventania no estádio. Os guarda-redes vão ter dificuldades com as bolas altas.`,
+      `Tarde ventosa. Os cruzamentos vão ser imprevisíveis e os remates de longe, perigosos.`,
+    ],
+    frio: [
+      `Faz frio. Os jogadores aqueceram muito antes do jogo — e vão continuar a tentar aquecer no relvado.`,
+      `Temperatura baixa no estádio. Dedos gelados nos bancos, pés pesados em campo.`,
+      `Noite fria. Aqui precisa-se de movimento constante para não solidificar.`,
+    ],
+    nevoeiro: [
+      `Nevoeiro no estádio. Mal se vê a baliza do lado oposto — e os adeptos das bancadas ainda menos.`,
+      `Visibilidade reduzida pela neblina. Vai ser difícil acompanhar o jogo em tempo real.`,
+      `Nevoeiro cerrado. O árbitro certificou-se que conseguia ver os dois postes antes de apitar.`,
+    ],
+    neve: [
+      `Está a nevar! Relvado branco, bola laranja, condições de sonho para quem não tem que jogar.`,
+      `Neve fina cobre o relvado. Vão ser noventa minutos de patinagem artística involuntária.`,
+      `Que cenário! Neve a cair durante o aquecimento. O jogo vai ter um ambiente único.`,
+    ],
+  };
+  return pickPhrase(
+    pools[condition] || [`Condições variáveis no estádio hoje.`],
+  );
 }
 // ── End commentary helpers ───────────────────────────────────────────────────
 
@@ -885,6 +1016,37 @@ async function simulateMatchSegment(
         participantIds,
       );
     }
+
+    // Weather event — emitted once at the start of each match
+    if (!fixture._weather) {
+      const weatherRoll = Math.random();
+      let weatherCondition: string;
+      if (weatherRoll < 0.35) weatherCondition = "sol";
+      else if (weatherRoll < 0.65) weatherCondition = "chuva";
+      else if (weatherRoll < 0.8) weatherCondition = "vento";
+      else if (weatherRoll < 0.88) weatherCondition = "chuva_forte";
+      else if (weatherRoll < 0.95) weatherCondition = "frio";
+      else if (weatherRoll < 0.98) weatherCondition = "nevoeiro";
+      else weatherCondition = "neve";
+
+      const weatherEmojis: Record<string, string> = {
+        sol: "☀️",
+        chuva: "🌧️",
+        chuva_forte: "⛈️",
+        vento: "💨",
+        frio: "🥶",
+        nevoeiro: "🌫️",
+        neve: "❄️",
+      };
+      fixture._weather = weatherCondition;
+      fixture.events.push({
+        minute: 1,
+        type: "weather",
+        team: null,
+        emoji: weatherEmojis[weatherCondition] || "🌤️",
+        text: `[1'] ${weatherEmojis[weatherCondition] || "🌤️"} ${weatherPhrase(weatherCondition)}`,
+      });
+    }
   }
 
   // Load team morale values (cached on fixture for minute-by-minute mode)
@@ -1164,6 +1326,42 @@ async function simulateMatchSegment(
 
     maybeOpenPlayGoal("home");
     maybeOpenPlayGoal("away");
+
+    // Near-miss / big save events — roughly 1–2 per match, commentary-only
+    if (!goalScoredThisMinute && Math.random() < 0.018) {
+      const nearMissSide =
+        currentHome.attack > currentAway.attack
+          ? Math.random() < 0.55
+            ? "home"
+            : "away"
+          : Math.random() < 0.55
+            ? "away"
+            : "home";
+      const nearMissSquad = nearMissSide === "home" ? home.squad : away.squad;
+      const oppSquad = nearMissSide === "home" ? away.squad : home.squad;
+      const attackers = nearMissSquad.filter(
+        (p) => p.position === "ATA" || p.position === "MED",
+      );
+      const attacker =
+        attackers.length > 0 ? weightedPickScorer(attackers) : nearMissSquad[0];
+      if (attacker) {
+        const isBigSave = Math.random() < 0.45;
+        const grPlayer = oppSquad.find((p) => p.position === "GR");
+        const phrase =
+          isBigSave && grPlayer
+            ? bigSavePhrase(grPlayer.name)
+            : nearMissPhrase(attacker.name);
+        fixture.events.push({
+          minute,
+          type: "near_miss",
+          team: nearMissSide,
+          emoji: "🥅",
+          playerId: isBigSave && grPlayer ? grPlayer.id : attacker.id,
+          playerName: isBigSave && grPlayer ? grPlayer.name : attacker.name,
+          text: `[${minute}'] 🥅 ${phrase}`,
+        });
+      }
+    }
 
     const homeAggAvg = average(
       home.squad.map((p) => getAggressivenessValue(p)),
