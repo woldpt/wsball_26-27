@@ -890,6 +890,8 @@ function App() {
     socket.on("seasonEnd", (data) => {
       // Show the season-end awards modal
       setSeasonEndModal(data);
+      if (data.year) setSeasonYear(data.year);
+      setMatchweekCount(0);
       // Also push ticker items for context
       if (data.champion) {
         pushTickerItem(
