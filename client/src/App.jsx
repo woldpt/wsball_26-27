@@ -7099,14 +7099,16 @@ function App() {
                             {/* Saldo previsto */}
                             {(() => {
                               const remainingJornadas = 14 - completedJornada;
-                              const projectedEndBudget =
-                                completedJornada > 0
-                                  ? Math.round(
-                                      currentBudget +
-                                        (seasonResult / completedJornada) *
-                                          remainingJornadas,
-                                    )
-                                  : currentBudget;
+                              const remainingHomeMatches = Math.max(0, 7 - (financeData?.homeMatchesPlayed || 0));
+                              const avgTicketRevenue = (financeData?.homeMatchesPlayed || 0) > 0
+                                ? (financeData?.totalTicketRevenue || 0) / financeData.homeMatchesPlayed
+                                : capacityRevPerGame * 0.8;
+                              const projectedTicketRevenue = avgTicketRevenue * remainingHomeMatches;
+                              const projectedSalaries = totalWeeklyWage * remainingJornadas;
+                              
+                              const projectedEndBudget = Math.round(
+                                currentBudget + projectedTicketRevenue - projectedSalaries
+                              );
                               return (
                                 <div className="bg-surface-container p-6 flex flex-col justify-between relative overflow-hidden">
                                   <div className="absolute top-0 right-0 p-4 opacity-5 pointer-events-none select-none">
@@ -7127,8 +7129,8 @@ function App() {
                                   </div>
                                   <div className="mt-6">
                                     <p className="text-[10px] text-on-surface-variant uppercase mb-1">
-                                      Projeção linear · {remainingJornadas}{" "}
-                                      jornadas restantes
+                                      Bilheteiras previstas - salários ({remainingJornadas}{" "}
+                                      jornadas)
                                     </p>
                                   </div>
                                 </div>
