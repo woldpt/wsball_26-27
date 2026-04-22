@@ -112,9 +112,9 @@ export function registerGameplaySocketHandlers(
     const pending: any = pendingAction;
     clearTimeout(pending.timer);
     game.pendingMatchAction = null;
-    
+
     const finalChoice = choice !== undefined ? choice : playerId;
-    
+
     if (finalChoice === null || finalChoice === undefined) {
       pending.finalize(pending.fallback ? pending.fallback() : null, "auto");
     } else {
@@ -132,12 +132,20 @@ export function registerGameplaySocketHandlers(
     );
 
     if (playerState) {
+      // In lobby: reset ready state so a refreshing coach must re-confirm their tactic.
+      // This prevents a disconnect from triggering an auto-advance into the match.
+      if (game.gamePhase === "lobby") {
+        playerState.ready = false;
+      }
+
       // Remove from lockedCoaches so checkAllReady doesn't block on offline coach
       game.lockedCoaches.delete(playerState.name);
 
       // Cancel any pending contract counter-offer timer for this coach's team
       if (game.pendingRenewalCounterOffers) {
-        for (const [pid, offer] of Object.entries(game.pendingRenewalCounterOffers as Record<string, any>)) {
+        for (const [pid, offer] of Object.entries(
+          game.pendingRenewalCounterOffers as Record<string, any>,
+        )) {
           if (offer.teamId === playerState.teamId) {
             clearTimeout(offer.timer);
             delete (game.pendingRenewalCounterOffers as any)[pid];
@@ -168,8 +176,11 @@ export function registerGameplaySocketHandlers(
     io.to(game.roomCode).emit("playerListUpdate", getPlayerList(game));
     emitGlobalPlayerUpdate?.();
     emitAwaitingCoaches(game);
-    // Let remaining ready coaches proceed if all are now ready
-    checkAllReady(game);
+    // Let remaining ready coaches proceed if all are now ready.
+    // Skip in lobby: a disconnect must never auto-start the match.
+    if (game.gamePhase !== "lobby") {
+      checkAllReady(game);
+    }
   });
 
   socket.on("acceptJobOffer", async () => {
