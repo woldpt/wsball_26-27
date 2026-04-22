@@ -2077,7 +2077,7 @@ function App() {
     if (didFlashGoal) {
       forceGoalFlashRender((value) => value + 1);
     }
-  }, [liveMinute]); // eslint-disable-line react-hooks/exhaustive-deps
+  }, [liveMinute, matchResults]); // eslint-disable-line react-hooks/exhaustive-deps
 
   useEffect(() => {
     if (!mySquad.length) return;
