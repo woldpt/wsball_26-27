@@ -2368,6 +2368,22 @@ function App() {
     socket.emit("resolveMatchAction", payload);
     setMatchAction(null);
     setIsMatchActionPending(false);
+
+    if (
+      matchAction.type === "user_substitution" &&
+      typeof playerIdOrChoice === "object" &&
+      playerIdOrChoice !== null
+    ) {
+      const { playerOut, playerIn } = playerIdOrChoice;
+      setTactic((prev) => {
+        const newPositions = { ...prev.positions };
+        newPositions[playerOut] = "Suplente";
+        newPositions[playerIn] = "Titular";
+        const next = { ...prev, positions: newPositions };
+        socket.emit("setTactic", next);
+        return next;
+      });
+    }
   };
 
   // ── TACTIC ────────────────────────────────────────────────────────────────
@@ -4325,36 +4341,50 @@ function App() {
                                 </p>
                               )}
                               <div className="flex-1 overflow-hidden bg-surface-container/40 border border-outline-variant/20 rounded p-4 mb-5 flex gap-4">
-                                <div className="flex-1 flex flex-col gap-2 overflow-hidden">
-                                  <h3 className="text-zinc-300 font-bold text-center text-sm uppercase tracking-wider">Em campo (sai)</h3>
-                                  <div className="space-y-2 overflow-y-auto pr-2 pb-2">
-                                    {(matchAction.onPitch || []).map(player => (
-                                      <button
-                                        key={`out-${player.id}`}
-                                        onClick={() => setSwapSource(player)}
-                                        className={`w-full flex items-center justify-between gap-2 px-3 py-3 rounded border transition-colors text-left ${swapSource?.id === player.id ? 'border-primary bg-primary/20' : 'border-outline-variant/20 bg-surface hover:bg-surface-bright'}`}
-                                      >
-                                        <span className="font-bold text-white truncate text-sm">{player.name}</span>
-                                        <span className="text-[10px] font-black uppercase tracking-widest text-zinc-400">{player.position}</span>
-                                      </button>
-                                    ))}
-                                  </div>
-                                </div>
-                                <div className="flex-1 flex flex-col gap-2 overflow-hidden">
-                                  <h3 className="text-zinc-300 font-bold text-center text-sm uppercase tracking-wider">No banco (entra)</h3>
-                                  <div className="space-y-2 overflow-y-auto pr-2 pb-2">
-                                    {(matchAction.benchPlayers || []).map(player => (
-                                      <button
-                                        key={`in-${player.id}`}
-                                        onClick={() => setSwapTarget(player)}
-                                        className={`w-full flex items-center justify-between gap-2 px-3 py-3 rounded border transition-colors text-left ${swapTarget?.id === player.id ? 'border-primary bg-primary/20' : 'border-outline-variant/20 bg-surface hover:bg-surface-bright'}`}
-                                      >
-                                        <span className="font-bold text-white truncate text-sm">{player.name}</span>
-                                        <span className="text-[10px] font-black uppercase tracking-widest text-zinc-400">{player.position}</span>
-                                      </button>
-                                    ))}
-                                  </div>
-                                </div>
+                                {(() => {
+                                  const posOrder = { GR: 0, DEF: 1, MED: 2, ATA: 3 };
+                                  const sortPlayers = (arr) =>
+                                    [...arr].sort((a, b) =>
+                                      (posOrder[a.position] ?? 9) - (posOrder[b.position] ?? 9) ||
+                                      (b.skill ?? 0) - (a.skill ?? 0)
+                                    );
+                                  const onPitchSorted = sortPlayers(matchAction.onPitch || []);
+                                  const benchSorted = sortPlayers(matchAction.benchPlayers || []);
+                                  return (
+                                    <>
+                                      <div className="flex-1 flex flex-col gap-2 overflow-hidden">
+                                        <h3 className="text-zinc-300 font-bold text-center text-sm uppercase tracking-wider">Em campo (sai)</h3>
+                                        <div className="space-y-2 overflow-y-auto pr-2 pb-2">
+                                          {onPitchSorted.map(player => (
+                                            <button
+                                              key={`out-${player.id}`}
+                                              onClick={() => setSwapSource(player)}
+                                              className={`w-full flex items-center justify-between gap-2 px-3 py-3 rounded border transition-colors text-left ${swapSource?.id === player.id ? 'border-primary bg-primary/20' : 'border-outline-variant/20 bg-surface hover:bg-surface-bright'}`}
+                                            >
+                                              <span className="font-bold text-white truncate text-sm">{player.name}</span>
+                                              <span className="text-[10px] font-black uppercase tracking-widest text-zinc-400">{player.position} · {player.skill}</span>
+                                            </button>
+                                          ))}
+                                        </div>
+                                      </div>
+                                      <div className="flex-1 flex flex-col gap-2 overflow-hidden">
+                                        <h3 className="text-zinc-300 font-bold text-center text-sm uppercase tracking-wider">No banco (entra)</h3>
+                                        <div className="space-y-2 overflow-y-auto pr-2 pb-2">
+                                          {benchSorted.map(player => (
+                                            <button
+                                              key={`in-${player.id}`}
+                                              onClick={() => setSwapTarget(player)}
+                                              className={`w-full flex items-center justify-between gap-2 px-3 py-3 rounded border transition-colors text-left ${swapTarget?.id === player.id ? 'border-primary bg-primary/20' : 'border-outline-variant/20 bg-surface hover:bg-surface-bright'}`}
+                                            >
+                                              <span className="font-bold text-white truncate text-sm">{player.name}</span>
+                                              <span className="text-[10px] font-black uppercase tracking-widest text-zinc-400">{player.position} · {player.skill}</span>
+                                            </button>
+                                          ))}
+                                        </div>
+                                      </div>
+                                    </>
+                                  );
+                                })()}
                               </div>
                               <div className="flex gap-4">
                                 <button

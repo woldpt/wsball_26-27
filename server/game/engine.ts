@@ -1213,6 +1213,16 @@ async function simulateMatchSegment(
               lineupIds.delete(playerOutId);
               lineupIds.add(playerInId);
 
+              // Keep tactic positions in sync so applyHalftimeSubs/applyETSubs
+              // don't undo this substitution when the next phase starts.
+              const coachState = Object.values(game.playersByName).find(
+                (p: any) => (p as any).teamId === teamId,
+              ) as any;
+              if (coachState?.tactic?.positions) {
+                coachState.tactic.positions[playerOutId] = "Suplente";
+                coachState.tactic.positions[playerInId] = "Titular";
+              }
+
               fixture.events.push({
                 minute: fixture._minute,
                 type: "substitution",
