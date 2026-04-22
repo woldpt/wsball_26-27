@@ -5423,6 +5423,41 @@ function App() {
                                       </span>
                                     </div>
                                   )}
+                                  {/* ── Commentary phrase ── */}
+                                  {(() => {
+                                    const latestWithText = [...matchEvents]
+                                      .filter(
+                                        (e) =>
+                                          e.minute <= liveMinute && e.text,
+                                      )
+                                      .sort((a, b) => b.minute - a.minute)[0];
+                                    if (!latestWithText) return null;
+                                    // Strip the leading "[NN'] emoji " prefix — keep only the phrase
+                                    const phrase = latestWithText.text
+                                      .replace(/^\[\d+'\]\s*[\u{1F000}-\u{1FFFF}\u{2600}-\u{27FF}\u{FE00}-\u{FEFF}\uD800-\uDFFF][\uDC00-\uDFFF]?\s*/u, "")
+                                      .trim();
+                                    const isGoal =
+                                      latestWithText.type === "goal" ||
+                                      latestWithText.type === "penalty_goal";
+                                    return (
+                                      <div
+                                        key={`${latestWithText.minute}-${latestWithText.type}`}
+                                        className="w-full text-center pt-3 pb-0.5 px-2"
+                                        style={{ animation: "commentaryFadeIn 0.6s ease" }}
+                                      >
+                                        <p
+                                          className={`text-[11px] sm:text-[12px] leading-snug italic font-medium tracking-wide ${
+                                            isGoal
+                                              ? "text-primary/90"
+                                              : "text-on-surface-variant/55"
+                                          }`}
+                                          style={{ fontFamily: "Georgia, 'Times New Roman', serif" }}
+                                        >
+                                          "{phrase}"
+                                        </p>
+                                      </div>
+                                    );
+                                  })()}
                                 </div>
                               </div>
                             </div>

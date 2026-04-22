@@ -108,6 +108,116 @@ export function withJuniorGRs(
   return [...squad, ...juniors];
 }
 
+// ── Commentary helpers ──────────────────────────────────────────────────────
+function pickPhrase(phrases: string[]): string {
+  return phrases[Math.floor(Math.random() * phrases.length)];
+}
+
+function goalPhrase(name: string): string {
+  return pickPhrase([
+    `GOLOOO! ${name} não perdoa!`,
+    `${name} assina o golo. A baliza ficou sem palavras.`,
+    `Ó ${name}! De onde veio isso?! É golooo!`,
+    `${name} marca e faz das suas. Impossível de parar.`,
+    `Golo! O guarda-redes ainda estava a processar o que aconteceu.`,
+    `${name} coloca a bola no fundo das redes. Que momento!`,
+  ]);
+}
+
+function penaltyGoalPhrase(name: string): string {
+  return pickPhrase([
+    `Penálti convertido por ${name}. Frio como uma cerveja no ártico.`,
+    `${name} bate e marca! O guarda-redes adivinhou o lado mas não chegou.`,
+    `GOLO de penálti! ${name} não tremeu. Nervos de aço.`,
+    `${name} — canto inferior, sem hipóteses. Impecável.`,
+    `Da marca dos onze metros, ${name} não falha. Nunca.`,
+  ]);
+}
+
+function penaltyMissPhrase(name: string, missType: string): string {
+  const pools: Record<string, string[]> = {
+    "DEFENDEU!": [
+      `${name} rematou e o guarda-redes voltou a ser herói. Hoje não, amigo.`,
+      `Defendeu! ${name} vai querer esquecer este momento depressa.`,
+      `O guarda-redes adivinhou! ${name} fica com a cabeça nas mãos.`,
+    ],
+    "AO POSTE!": [
+      `Ó ferro! ${name} acertou no poste. O metal também tem sentimentos.`,
+      `Ao poste! ${name} vai ouvir esse som nos sonhos esta noite.`,
+      `O poste salva a equipa adversária. ${name} não acredita.`,
+    ],
+    "AO LADO!": [
+      `Ao lado! ${name} mandou para os bancais. Os adeptos nem queriam ver.`,
+      `Fora! ${name} deu uma aula de como não bater um penálti.`,
+      `${name} rematou para a assistência. Literalmente.`,
+    ],
+    "PANENKA FALHADO!": [
+      `${name} tentou a Panenka… e falhou. A coragem foi, o golo não.`,
+      `Panenka falhado! Haverá maneira mais espectacular de falhar? Provavelmente não.`,
+      `${name} quis ser elegante. Ficou apenas por querer.`,
+    ],
+  };
+  return pickPhrase(pools[missType] || [`${name} falhou o penálti. Acontece.`]);
+}
+
+function varPhrase(name: string): string {
+  return pickPhrase([
+    `VAR consulta. Golo de ${name} anulado. A tecnologia: 1, alegria: 0.`,
+    `Anulado! O VAR viu o que os outros não viram. Fora de jogo por meio nariz.`,
+    `${name} festejou cedo demais. O VAR diz que não.`,
+    `Golo anulado por VAR. Ninguém na bancada percebeu porquê, mas aceitaram.`,
+    `O árbitro de vídeo interveio. ${name} desce do céu ao relvado.`,
+  ]);
+}
+
+function yellowPhrase(name: string): string {
+  return pickPhrase([
+    `Amarelo para ${name}. Atenção, que o próximo pode ser perigoso.`,
+    `${name} vê cartão amarelo. O árbitro avisa: calm down.`,
+    `Falta de ${name} resulta em amarelo. A agressividade tem custos.`,
+    `${name} vai para o caderno do árbitro. Talvez a mãe não ficasse orgulhosa.`,
+    `Amarelo! ${name} precisa de gerir melhor os nervos no resto do jogo.`,
+  ]);
+}
+
+function redPhrase(name: string): string {
+  return pickPhrase([
+    `Vermelho! ${name} vai para o balneário mais cedo. Muito mais cedo.`,
+    `${name} expulso! A equipa passa a jogar com dez. Matemática cruel.`,
+    `Red card! ${name} não vai assistir ao resto. Talvez seja melhor assim.`,
+    `${name} despede-se do relvado hoje. O árbitro não estava para brincadeiras.`,
+    `Expulso! ${name} fez a mala mental e foi para os balneários.`,
+  ]);
+}
+
+function injuryPhrase(name: string, severity: string): string {
+  if (severity === "grave") {
+    return pickPhrase([
+      `${name} saiu de maca. As notícias não são boas, aparentemente.`,
+      `Lesão grave para ${name}. O clube vai precisar de paciência (e suplentes).`,
+      `${name} vai aos cuidados da equipa médica. Semanas fora, infelizmente.`,
+      `${name} cai. O médico entra em campo com cara séria. Mau sinal.`,
+    ]);
+  }
+  return pickPhrase([
+    `${name} sentiu uma pancada. Nada de grave, mas saiu por precaução.`,
+    `${name} leva um golpe do destino e precisa de ser substituído.`,
+    `Lesão ligeira para ${name}. Vai a exames, mas parece que não é nada de sério.`,
+    `${name} pede substituição. O corpo disse basta por hoje.`,
+  ]);
+}
+
+function subPhrase(outName: string, inName: string): string {
+  return pickPhrase([
+    `Substituição: ${outName} cede o lugar a ${inName}. Rotatividade ao poder.`,
+    `${outName} sai, ${inName} entra. Alguém precisa de descanso.`,
+    `Troca táctica: ${inName} vai mostrar o que vale. Sem pressão, claro.`,
+    `${outName} dá lugar a ${inName}. O banco estava gelado, agora vai aquecer.`,
+    `${inName} entra em campo. ${outName} agradece e desaparece do relvado.`,
+  ]);
+}
+// ── End commentary helpers ───────────────────────────────────────────────────
+
 function pickBestPlayer(players: PlayerRow[] = []) {
   if (!players.length) return null;
   return [...players].sort((a, b) => b.skill - a.skill)[0];
@@ -464,7 +574,7 @@ async function applyInjuryEvent({
     emoji: "🚑",
     playerId: injuredPlayer.id,
     playerName: injuredPlayer.name,
-    text: `[${fixture._minute}'] 🚑 Lesão! ${injuredPlayer.name}`,
+    text: `[${fixture._minute}'] 🚑 ${injuryPhrase(injuredPlayer.name, injuryLabel)}`,
     severity: injuryLabel,
   });
 
@@ -534,7 +644,7 @@ async function applyInjuryEvent({
       emoji: "🔁",
       playerId: replacement.id,
       playerName: replacement.name,
-      text: `[${fixture._minute}'] 🔁 Substituição: ${injuredPlayer.name} -> ${replacement.name}`,
+      text: `[${fixture._minute}'] 🔁 ${subPhrase(injuredPlayer.name, replacement.name)}`,
     });
     return { replaced: true, injuredPlayer, replacement };
   }
@@ -618,7 +728,7 @@ async function applyPenaltyEvent({
       emoji: "⚽",
       playerId: taker.id,
       playerName: taker.name,
-      text: `[${fixture._minute}'] ⚽ PENÁLTI — GOLO!!! ${taker.name}`,
+      text: `[${fixture._minute}'] ⚽ ${penaltyGoalPhrase(taker.name)}`,
       penaltySuspense: true,
       penaltyResult: "GOLO!!!",
     });
@@ -642,7 +752,7 @@ async function applyPenaltyEvent({
       emoji: "❌",
       playerId: taker.id,
       playerName: taker.name,
-      text: `[${fixture._minute}'] ❌ PENÁLTI — ${missType} ${taker.name}`,
+      text: `[${fixture._minute}'] ❌ ${penaltyMissPhrase(taker.name, missType)}`,
       penaltySuspense: true,
       penaltyResult: missType,
     });
@@ -1001,7 +1111,7 @@ async function simulateMatchSegment(
           emoji: "🚩",
           playerId: scorer ? scorer.id : null,
           playerName: scorer ? scorer.name : "Jogador",
-          text: `[${minute}'] 🚩 VAR — Golo anulado! ${scorer ? scorer.name : "Jogador"}`,
+          text: `[${minute}'] 🚩 ${varPhrase(scorer ? scorer.name : "Jogador")}`,
           wasGoal: true,
         });
         return;
@@ -1021,7 +1131,7 @@ async function simulateMatchSegment(
         emoji: "⚽",
         playerId: scorer ? scorer.id : null,
         playerName: scorer ? scorer.name : "Jogador",
-        text: `[${minute}'] ⚽ GOLO! ${scorer ? scorer.name : "Jogador"}`,
+        text: `[${minute}'] ⚽ ${goalPhrase(scorer ? scorer.name : "Jogador")}`,
         isDecisive,
       });
 
@@ -1082,7 +1192,7 @@ async function simulateMatchSegment(
             emoji: "🟥",
             playerId: offender.id,
             playerName: offender.name,
-            text: `[${minute}'] 🟥 Vermelho! ${offender.name}`,
+            text: `[${minute}'] 🟥 ${redPhrase(offender.name)}`,
           });
           const idx = squad.findIndex((p: any) => p.id === offender.id);
           if (idx > -1) squad.splice(idx, 1);
@@ -1108,7 +1218,7 @@ async function simulateMatchSegment(
             emoji: "🟨",
             playerId: offender.id,
             playerName: offender.name,
-            text: `[${minute}'] 🟨 Amarelo! ${offender.name}`,
+            text: `[${minute}'] 🟨 ${yellowPhrase(offender.name)}`,
           });
         }
       }
@@ -1230,7 +1340,7 @@ async function simulateMatchSegment(
                 emoji: "🔁",
                 playerId: playerInId,
                 playerName: playerIn.name,
-                text: `[${fixture._minute}'] 🔁 Substituição: ${playerOut.name} -> ${playerIn.name}`,
+                text: `[${fixture._minute}'] 🔁 ${subPhrase(playerOut.name, playerIn.name)}`,
               });
 
               if (isHome) home.squad = squad;
