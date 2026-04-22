@@ -62,6 +62,9 @@ export function SeasonEndModal({ data, teams, me, onClose }) {
     (p) => p.toDiv !== 5,
   );
 
+  const displayYear = data?.year ?? 0;
+  const handleContinue = onClose;
+
   return (
     <AnimatePresence>
       {data && (
@@ -100,7 +103,7 @@ export function SeasonEndModal({ data, teams, me, onClose }) {
                 animate={{ opacity: 1 }}
                 transition={{ delay: 0.25 }}
               >
-                Temporada {data.year}
+                Temporada {displayYear}
               </motion.p>
               <motion.h1
                 className="text-3xl font-headline font-black text-on-surface"
@@ -352,13 +355,13 @@ export function SeasonEndModal({ data, teams, me, onClose }) {
 
             {/* ── Continue button ─────────────────────────────────────────── */}
             <motion.button
-              onClick={onClose}
+              onClick={handleContinue}
               className="mt-4 w-full bg-amber-500 hover:bg-amber-400 active:bg-amber-600 text-black font-black text-sm py-4 rounded-xl transition-colors shadow-lg shadow-amber-500/25 uppercase tracking-widest"
               initial={{ opacity: 0, y: 16 }}
               animate={{ opacity: revealed ? 1 : 0, y: revealed ? 0 : 16 }}
               transition={{ delay: 0.85 }}
             >
-              Continuar para a Época {data.year + 1}
+              Continuar para a Época {(data?.year ?? 0) + 1}
             </motion.button>
           </motion.div>
         </motion.div>
