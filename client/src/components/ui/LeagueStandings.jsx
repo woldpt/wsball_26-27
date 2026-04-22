@@ -76,9 +76,9 @@ function DivisionTable({
 
       {/* Table */}
       <div className="overflow-x-auto">
-        <table className="w-full text-xs text-left border-separate border-spacing-y-px">
+        <table className="w-full text-[10px] sm:text-xs md:text-sm text-left border-separate border-spacing-y-px">
           <thead>
-            <tr className="text-[9px] uppercase text-on-surface-variant/50 font-bold bg-surface-container-low/60">
+            <tr className="text-[8px] sm:text-[9px] uppercase text-on-surface-variant/50 font-bold bg-surface-container-low/60">
               <th className="pl-4 pr-2 py-1.5 w-8">Pos</th>
               <th className="px-2 py-1.5">Clube</th>
               <th className="px-1 py-1.5 text-center w-6">J</th>
@@ -129,7 +129,7 @@ function DivisionTable({
                 >
                   {/* Position */}
                   <td
-                    className={`pl-4 pr-2 py-2 font-black text-[11px] ${
+                    className={`pl-4 pr-2 py-2 font-black text-[10px] sm:text-[11px] ${
                       isPromo
                         ? "text-emerald-400"
                         : isRelegate
@@ -152,7 +152,7 @@ function DivisionTable({
                         style={{ backgroundColor: t.color_primary || "#666" }}
                       />
                       <span
-                        className={`font-bold truncate max-w-25 ${isRelegate && !isPromo ? "opacity-60" : ""} ${isMe ? "text-primary" : isHuman ? "text-amber-300" : "text-on-surface"}`}
+                        className={`font-bold truncate max-w-22 sm:max-w-32 md:max-w-none ${isRelegate && !isPromo ? "opacity-60" : ""} ${isMe ? "text-primary" : isHuman ? "text-amber-300" : "text-on-surface"}`}
                       >
                         {t.name}
                       </span>
@@ -255,8 +255,8 @@ function GoldenBootSidebar({ topScorers, myTeamId }) {
                   i === 0
                     ? "bg-tertiary text-on-tertiary"
                     : isMe
-                    ? "bg-primary text-on-primary"
-                    : "bg-surface-bright text-on-surface"
+                      ? "bg-primary text-on-primary"
+                      : "bg-surface-bright text-on-surface"
                 }`}
               >
                 {i + 1}
@@ -270,10 +270,14 @@ function GoldenBootSidebar({ topScorers, myTeamId }) {
 
               {/* Name + team */}
               <div className="flex-1 min-w-0">
-                <div className={`text-[10px] font-bold uppercase truncate ${isMe ? "text-primary/70" : "text-on-surface-variant/50"}`}>
+                <div
+                  className={`text-[10px] font-bold uppercase truncate ${isMe ? "text-primary/70" : "text-on-surface-variant/50"}`}
+                >
                   {s.team_name}
                 </div>
-                <div className={`text-[11px] font-bold truncate ${isMe ? "text-primary" : "text-on-surface"}`}>
+                <div
+                  className={`text-[11px] font-bold truncate ${isMe ? "text-primary" : "text-on-surface"}`}
+                >
                   <PlayerLink playerId={s.id}>{s.name}</PlayerLink>
                 </div>
               </div>
@@ -282,7 +286,11 @@ function GoldenBootSidebar({ topScorers, myTeamId }) {
               <div className="text-right shrink-0">
                 <div
                   className={`text-lg font-black font-headline leading-none ${
-                    i === 0 ? "text-tertiary" : isMe ? "text-primary" : "text-on-surface"
+                    i === 0
+                      ? "text-tertiary"
+                      : isMe
+                        ? "text-primary"
+                        : "text-on-surface"
                   }`}
                 >
                   {s.goals}

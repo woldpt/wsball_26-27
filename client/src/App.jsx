@@ -226,9 +226,7 @@ function buildAutoPositions(
   );
   if (!availablePlayers.length) return {};
 
-  const sortedPlayers = [...availablePlayers].sort(
-    (a, b) => b.skill - a.skill,
-  );
+  const sortedPlayers = [...availablePlayers].sort((a, b) => b.skill - a.skill);
 
   const formationParts = String(formation || "4-4-2").split("-");
   const requiredByPosition = {
@@ -1672,7 +1670,10 @@ function App() {
       injuryCountdownRef.current = null;
       setInjuryCountdown(null);
 
-      if (normalizedAction.type === "injury" || normalizedAction.type === "user_substitution") {
+      if (
+        normalizedAction.type === "injury" ||
+        normalizedAction.type === "user_substitution"
+      ) {
         setInjuryCountdown(60);
         injuryCountdownRef.current = setInterval(() => {
           setInjuryCountdown((prev) => {
@@ -2360,7 +2361,7 @@ function App() {
       actionId: matchAction.actionId,
       teamId: matchAction.teamId,
     };
-    if (typeof playerIdOrChoice === 'object' && playerIdOrChoice !== null) {
+    if (typeof playerIdOrChoice === "object" && playerIdOrChoice !== null) {
       payload.choice = playerIdOrChoice;
     } else {
       payload.playerId = playerIdOrChoice;
@@ -4318,7 +4319,7 @@ function App() {
                 >
                   {activeTab === "live" && (matchResults || matchAction) && (
                     <div
-                      className={`bg-surface-container text-on-surface font-body p-6 border border-outline-variant/20 shadow-sm relative overflow-hidden${isMatchInProgress ? " rounded-lg" : " min-h-150 rounded-lg"}`}
+                      className={`bg-surface-container text-on-surface font-body p-3 sm:p-6 border border-outline-variant/20 shadow-sm relative overflow-hidden${isMatchInProgress ? " rounded-lg" : " min-h-150 rounded-lg"}`}
                     >
                       {matchAction && (
                         <div className="fixed inset-0 top-14 z-150 bg-surface/95 backdrop-blur-sm p-6 flex flex-col justify-center">
@@ -4329,7 +4330,7 @@ function App() {
                                 ? "SUBSTITUIÇÃO"
                                 : "PENÁLTI"}
                           </h2>
-                          
+
                           {matchAction.type === "user_substitution" ? (
                             <>
                               <p className="text-center text-zinc-400 font-bold mb-2 text-sm">
@@ -4342,42 +4343,71 @@ function App() {
                               )}
                               <div className="flex-1 overflow-hidden bg-surface-container/40 border border-outline-variant/20 rounded p-4 mb-5 flex gap-4">
                                 {(() => {
-                                  const posOrder = { GR: 0, DEF: 1, MED: 2, ATA: 3 };
+                                  const posOrder = {
+                                    GR: 0,
+                                    DEF: 1,
+                                    MED: 2,
+                                    ATA: 3,
+                                  };
                                   const sortPlayers = (arr) =>
-                                    [...arr].sort((a, b) =>
-                                      (posOrder[a.position] ?? 9) - (posOrder[b.position] ?? 9) ||
-                                      (b.skill ?? 0) - (a.skill ?? 0)
+                                    [...arr].sort(
+                                      (a, b) =>
+                                        (posOrder[a.position] ?? 9) -
+                                          (posOrder[b.position] ?? 9) ||
+                                        (b.skill ?? 0) - (a.skill ?? 0),
                                     );
-                                  const onPitchSorted = sortPlayers(matchAction.onPitch || []);
-                                  const benchSorted = sortPlayers(matchAction.benchPlayers || []);
+                                  const onPitchSorted = sortPlayers(
+                                    matchAction.onPitch || [],
+                                  );
+                                  const benchSorted = sortPlayers(
+                                    matchAction.benchPlayers || [],
+                                  );
                                   return (
                                     <>
                                       <div className="flex-1 flex flex-col gap-2 overflow-hidden">
-                                        <h3 className="text-zinc-300 font-bold text-center text-sm uppercase tracking-wider">Em campo (sai)</h3>
+                                        <h3 className="text-zinc-300 font-bold text-center text-sm uppercase tracking-wider">
+                                          Em campo (sai)
+                                        </h3>
                                         <div className="space-y-2 overflow-y-auto pr-2 pb-2">
-                                          {onPitchSorted.map(player => (
+                                          {onPitchSorted.map((player) => (
                                             <button
                                               key={`out-${player.id}`}
-                                              onClick={() => setSwapSource(player)}
-                                              className={`w-full flex items-center justify-between gap-2 px-3 py-3 rounded border transition-colors text-left ${swapSource?.id === player.id ? 'border-primary bg-primary/20' : 'border-outline-variant/20 bg-surface hover:bg-surface-bright'}`}
+                                              onClick={() =>
+                                                setSwapSource(player)
+                                              }
+                                              className={`w-full flex items-center justify-between gap-2 px-3 py-3 rounded border transition-colors text-left ${swapSource?.id === player.id ? "border-primary bg-primary/20" : "border-outline-variant/20 bg-surface hover:bg-surface-bright"}`}
                                             >
-                                              <span className="font-bold text-white truncate text-sm">{player.name}</span>
-                                              <span className="text-[10px] font-black uppercase tracking-widest text-zinc-400">{player.position} · {player.skill}</span>
+                                              <span className="font-bold text-white truncate text-sm">
+                                                {player.name}
+                                              </span>
+                                              <span className="text-[10px] font-black uppercase tracking-widest text-zinc-400">
+                                                {player.position} ·{" "}
+                                                {player.skill}
+                                              </span>
                                             </button>
                                           ))}
                                         </div>
                                       </div>
                                       <div className="flex-1 flex flex-col gap-2 overflow-hidden">
-                                        <h3 className="text-zinc-300 font-bold text-center text-sm uppercase tracking-wider">No banco (entra)</h3>
+                                        <h3 className="text-zinc-300 font-bold text-center text-sm uppercase tracking-wider">
+                                          No banco (entra)
+                                        </h3>
                                         <div className="space-y-2 overflow-y-auto pr-2 pb-2">
-                                          {benchSorted.map(player => (
+                                          {benchSorted.map((player) => (
                                             <button
                                               key={`in-${player.id}`}
-                                              onClick={() => setSwapTarget(player)}
-                                              className={`w-full flex items-center justify-between gap-2 px-3 py-3 rounded border transition-colors text-left ${swapTarget?.id === player.id ? 'border-primary bg-primary/20' : 'border-outline-variant/20 bg-surface hover:bg-surface-bright'}`}
+                                              onClick={() =>
+                                                setSwapTarget(player)
+                                              }
+                                              className={`w-full flex items-center justify-between gap-2 px-3 py-3 rounded border transition-colors text-left ${swapTarget?.id === player.id ? "border-primary bg-primary/20" : "border-outline-variant/20 bg-surface hover:bg-surface-bright"}`}
                                             >
-                                              <span className="font-bold text-white truncate text-sm">{player.name}</span>
-                                              <span className="text-[10px] font-black uppercase tracking-widest text-zinc-400">{player.position} · {player.skill}</span>
+                                              <span className="font-bold text-white truncate text-sm">
+                                                {player.name}
+                                              </span>
+                                              <span className="text-[10px] font-black uppercase tracking-widest text-zinc-400">
+                                                {player.position} ·{" "}
+                                                {player.skill}
+                                              </span>
                                             </button>
                                           ))}
                                         </div>
@@ -4396,7 +4426,10 @@ function App() {
                                 <button
                                   disabled={!swapSource || !swapTarget}
                                   onClick={() => {
-                                    handleResolveMatchAction({ playerOut: swapSource.id, playerIn: swapTarget.id });
+                                    handleResolveMatchAction({
+                                      playerOut: swapSource.id,
+                                      playerIn: swapTarget.id,
+                                    });
                                   }}
                                   className="flex-1 py-4 rounded-sm text-lg font-black uppercase tracking-widest transition-all bg-primary hover:brightness-110 text-on-primary disabled:opacity-50 disabled:cursor-not-allowed"
                                 >
@@ -4453,8 +4486,8 @@ function App() {
                                         matchAction.takerCandidates.length ===
                                           0))) && (
                                     <p className="text-center text-zinc-500 font-bold text-sm py-8">
-                                      Sem opções disponíveis. O sistema escolherá
-                                      automaticamente.
+                                      Sem opções disponíveis. O sistema
+                                      escolherá automaticamente.
                                     </p>
                                   )}
                                 </div>
@@ -5098,11 +5131,15 @@ function App() {
                                     </span>
                                   </div>
                                   {isPlayingMatch && !isMatchActionPending && (
-                                    <button 
-                                      onClick={() => socket.emit("request_substitution")}
+                                    <button
+                                      onClick={() =>
+                                        socket.emit("request_substitution")
+                                      }
                                       className="text-[10px] font-black uppercase tracking-widest bg-surface-container-high hover:bg-surface-bright text-zinc-300 px-3 py-1.5 rounded-sm border border-outline-variant/20 transition-colors flex items-center gap-1.5"
                                     >
-                                      <span className="material-symbols-outlined text-[14px]">pause</span>
+                                      <span className="material-symbols-outlined text-[14px]">
+                                        pause
+                                      </span>
                                       Pausa / Sub
                                     </button>
                                   )}
@@ -5427,14 +5464,16 @@ function App() {
                                   {(() => {
                                     const latestWithText = [...matchEvents]
                                       .filter(
-                                        (e) =>
-                                          e.minute <= liveMinute && e.text,
+                                        (e) => e.minute <= liveMinute && e.text,
                                       )
                                       .sort((a, b) => b.minute - a.minute)[0];
                                     if (!latestWithText) return null;
                                     // Strip the leading "[NN'] emoji " prefix — keep only the phrase
                                     const phrase = latestWithText.text
-                                      .replace(/^\[\d+'\]\s*[\u{1F000}-\u{1FFFF}\u{2600}-\u{27FF}\u{FE00}-\u{FEFF}\uD800-\uDFFF][\uDC00-\uDFFF]?\s*/u, "")
+                                      .replace(
+                                        /^\[\d+'\]\s*[\u{1F000}-\u{1FFFF}\u{2600}-\u{27FF}\u{FE00}-\u{FEFF}\uD800-\uDFFF][\uDC00-\uDFFF]?\s*/u,
+                                        "",
+                                      )
                                       .trim();
                                     const isGoal =
                                       latestWithText.type === "goal" ||
@@ -5443,15 +5482,21 @@ function App() {
                                       <div
                                         key={`${latestWithText.minute}-${latestWithText.type}`}
                                         className="w-full text-center pt-3 pb-0.5 px-2"
-                                        style={{ animation: "commentaryFadeIn 0.6s ease" }}
+                                        style={{
+                                          animation:
+                                            "commentaryFadeIn 0.6s ease",
+                                        }}
                                       >
                                         <p
-                                          className={`text-[11px] sm:text-[12px] leading-snug italic font-medium tracking-wide ${
+                                          className={`text-[11px] sm:text-[16px] leading-snug italic font-medium tracking-wide ${
                                             isGoal
                                               ? "text-primary/90"
                                               : "text-on-surface-variant/55"
                                           }`}
-                                          style={{ fontFamily: "Georgia, 'Times New Roman', serif" }}
+                                          style={{
+                                            fontFamily:
+                                              "Georgia, 'Times New Roman', serif",
+                                          }}
                                         >
                                           "{phrase}"
                                         </p>
@@ -5466,205 +5511,209 @@ function App() {
 
                       {/* ── MULTIVIEW GRID ─────────────────────── */}
                       {!isCupMatch && (
-                        <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 gap-4 mt-2">
-                          {[1, 2, 3, 4].map((div) => {
-                            const myDiv = teams.find(
-                              (t) => t.id === me.teamId,
-                            )?.division;
-                            const isMyDiv = myDiv === div;
-                            const divMatches = matchResults.results
-                              .filter(
-                                (m) =>
-                                  teams.find((t) => t.id === m.homeTeamId)
-                                    ?.division === div,
-                              )
-                              .filter(
-                                (m) =>
-                                  m.homeTeamId !== me.teamId &&
-                                  m.awayTeamId !== me.teamId,
-                              );
-                            return (
-                              <div key={div} className="flex flex-col gap-2">
-                                {/* Division header */}
-                                <div
-                                  className={`px-3 py-2 rounded-t-md border-b-2 bg-surface-container-high ${isMyDiv ? "border-primary" : "border-outline-variant/20"}`}
-                                >
-                                  <h3
-                                    className={`font-headline font-extrabold text-[11px] tracking-tighter uppercase ${isMyDiv ? "text-primary" : "text-on-surface/50"}`}
+                        <div className="overflow-x-auto mt-2">
+                          <div className="grid grid-cols-2 sm:grid-cols-2 xl:grid-cols-4 gap-2 sm:gap-4 min-w-[360px]">
+                            {[1, 2, 3, 4].map((div) => {
+                              const myDiv = teams.find(
+                                (t) => t.id === me.teamId,
+                              )?.division;
+                              const isMyDiv = myDiv === div;
+                              const divMatches = matchResults.results
+                                .filter(
+                                  (m) =>
+                                    teams.find((t) => t.id === m.homeTeamId)
+                                      ?.division === div,
+                                )
+                                .filter(
+                                  (m) =>
+                                    m.homeTeamId !== me.teamId &&
+                                    m.awayTeamId !== me.teamId,
+                                );
+                              return (
+                                <div key={div} className="flex flex-col gap-2">
+                                  {/* Division header */}
+                                  <div
+                                    className={`px-3 py-2 rounded-t-md border-b-2 bg-surface-container-high ${isMyDiv ? "border-primary" : "border-outline-variant/20"}`}
                                   >
-                                    {DIVISION_NAMES[div] || `Div ${div}`}
-                                  </h3>
-                                </div>
-                                {/* Match cards */}
-                                <div className="flex flex-col gap-1.5">
-                                  {divMatches.length === 0 && (
-                                    <div className="text-[10px] text-on-surface-variant/30 px-3 py-2 text-center italic">
-                                      Sem jogos
-                                    </div>
-                                  )}
-                                  {divMatches.map((match, idx) => {
-                                    const hInfo = teams.find(
-                                      (t) => t.id === match.homeTeamId,
-                                    );
-                                    const aInfo = teams.find(
-                                      (t) => t.id === match.awayTeamId,
-                                    );
-                                    const matchEvents = match.events || [];
-                                    const currentHome = matchEvents.filter(
-                                      (e) =>
-                                        e.minute <= liveMinute &&
-                                        e.type === "goal" &&
-                                        e.team === "home",
-                                    );
-                                    const currentAway = matchEvents.filter(
-                                      (e) =>
-                                        e.minute <= liveMinute &&
-                                        e.type === "goal" &&
-                                        e.team === "away",
-                                    );
-                                    const isHumanMatch = players.some(
-                                      (p) =>
-                                        p.teamId === match.homeTeamId ||
-                                        p.teamId === match.awayTeamId,
-                                    );
-                                    const flashHome =
-                                      goalFlashRef.current[
-                                        `${match.homeTeamId}_${match.awayTeamId}_home`
-                                      ];
-                                    const flashAway =
-                                      goalFlashRef.current[
-                                        `${match.homeTeamId}_${match.awayTeamId}_away`
-                                      ];
-                                    const now = Date.now();
-                                    const homeFlashing =
-                                      flashHome && now - flashHome < 1500;
-                                    const awayFlashing =
-                                      flashAway && now - flashAway < 1500;
-                                    const lastHomeEvent = getMatchLastEventText(
-                                      matchEvents,
-                                      liveMinute,
-                                      "home",
-                                    );
-                                    const lastAwayEvent = getMatchLastEventText(
-                                      matchEvents,
-                                      liveMinute,
-                                      "away",
-                                    );
-                                    return (
-                                      <button
-                                        key={idx}
-                                        onClick={() => {
-                                          setMatchDetailFixture(match);
-                                          setShowMatchDetail(true);
-                                        }}
-                                        className={`w-full text-left rounded-md overflow-hidden transition-colors ${isHumanMatch ? "bg-primary-container/10 border-l-2 border-primary/60" : "bg-surface-container hover:bg-surface-bright"}`}
-                                      >
-                                        <div className="flex justify-between items-center px-3 py-2">
-                                          <span className="flex items-center gap-1.5 flex-1 min-w-0 pr-1">
-                                            <span
-                                              className="w-2 h-2 rounded-sm shrink-0"
-                                              style={{
-                                                background:
-                                                  hInfo?.color_primary ||
-                                                  "#555",
-                                              }}
-                                            />
-                                            <span className="flex flex-col min-w-0">
+                                    <h3
+                                      className={`font-headline font-extrabold text-[9px] sm:text-[10px] lg:text-[11px] tracking-tighter uppercase ${isMyDiv ? "text-primary" : "text-on-surface/50"}`}
+                                    >
+                                      {DIVISION_NAMES[div] || `Div ${div}`}
+                                    </h3>
+                                  </div>
+                                  {/* Match cards */}
+                                  <div className="flex flex-col gap-1.5">
+                                    {divMatches.length === 0 && (
+                                      <div className="text-[10px] text-on-surface-variant/30 px-3 py-2 text-center italic">
+                                        Sem jogos
+                                      </div>
+                                    )}
+                                    {divMatches.map((match, idx) => {
+                                      const hInfo = teams.find(
+                                        (t) => t.id === match.homeTeamId,
+                                      );
+                                      const aInfo = teams.find(
+                                        (t) => t.id === match.awayTeamId,
+                                      );
+                                      const matchEvents = match.events || [];
+                                      const currentHome = matchEvents.filter(
+                                        (e) =>
+                                          e.minute <= liveMinute &&
+                                          e.type === "goal" &&
+                                          e.team === "home",
+                                      );
+                                      const currentAway = matchEvents.filter(
+                                        (e) =>
+                                          e.minute <= liveMinute &&
+                                          e.type === "goal" &&
+                                          e.team === "away",
+                                      );
+                                      const isHumanMatch = players.some(
+                                        (p) =>
+                                          p.teamId === match.homeTeamId ||
+                                          p.teamId === match.awayTeamId,
+                                      );
+                                      const flashHome =
+                                        goalFlashRef.current[
+                                          `${match.homeTeamId}_${match.awayTeamId}_home`
+                                        ];
+                                      const flashAway =
+                                        goalFlashRef.current[
+                                          `${match.homeTeamId}_${match.awayTeamId}_away`
+                                        ];
+                                      const now = Date.now();
+                                      const homeFlashing =
+                                        flashHome && now - flashHome < 1500;
+                                      const awayFlashing =
+                                        flashAway && now - flashAway < 1500;
+                                      const lastHomeEvent =
+                                        getMatchLastEventText(
+                                          matchEvents,
+                                          liveMinute,
+                                          "home",
+                                        );
+                                      const lastAwayEvent =
+                                        getMatchLastEventText(
+                                          matchEvents,
+                                          liveMinute,
+                                          "away",
+                                        );
+                                      return (
+                                        <button
+                                          key={idx}
+                                          onClick={() => {
+                                            setMatchDetailFixture(match);
+                                            setShowMatchDetail(true);
+                                          }}
+                                          className={`w-full text-left rounded-md overflow-hidden transition-colors ${isHumanMatch ? "bg-primary-container/10 border-l-2 border-primary/60" : "bg-surface-container hover:bg-surface-bright"}`}
+                                        >
+                                          <div className="flex justify-between items-center px-3 py-2">
+                                            <span className="flex items-center gap-1.5 flex-1 min-w-0 pr-1">
                                               <span
-                                                className={`text-[11px] font-bold truncate ${isHumanMatch && players.some((p) => p.teamId === match.homeTeamId) ? "text-primary" : "text-on-surface/80"}`}
-                                              >
-                                                {hInfo?.name}
+                                                className="w-2 h-2 rounded-sm shrink-0"
+                                                style={{
+                                                  background:
+                                                    hInfo?.color_primary ||
+                                                    "#555",
+                                                }}
+                                              />
+                                              <span className="flex flex-col min-w-0">
+                                                <span
+                                                  className={`text-[9px] sm:text-[10px] lg:text-[11px] font-bold truncate ${isHumanMatch && players.some((p) => p.teamId === match.homeTeamId) ? "text-primary" : "text-on-surface/80"}`}
+                                                >
+                                                  {hInfo?.name}
+                                                </span>
+                                                {(() => {
+                                                  const c = players.find(
+                                                    (p) =>
+                                                      p.teamId ===
+                                                      match.homeTeamId,
+                                                  );
+                                                  return c ? (
+                                                    <span className="text-[8px] sm:text-[9px] text-amber-400 font-bold truncate leading-none">
+                                                      {c.name}
+                                                    </span>
+                                                  ) : null;
+                                                })()}
                                               </span>
-                                              {(() => {
-                                                const c = players.find(
-                                                  (p) =>
-                                                    p.teamId ===
-                                                    match.homeTeamId,
-                                                );
-                                                return c ? (
-                                                  <span className="text-[9px] text-amber-400 font-bold truncate leading-none">
-                                                    {c.name}
-                                                  </span>
-                                                ) : null;
-                                              })()}
                                             </span>
-                                          </span>
-                                          <span className="font-headline font-black text-sm shrink-0 flex items-center gap-1 px-1">
-                                            <span
-                                              style={{
-                                                color: homeFlashing
-                                                  ? "#ff4444"
-                                                  : undefined,
-                                                transition: homeFlashing
-                                                  ? "none"
-                                                  : "color 1.25s ease",
-                                              }}
-                                            >
-                                              {currentHome.length}
-                                            </span>
-                                            <span className="text-on-surface/20 text-xs">
-                                              -
-                                            </span>
-                                            <span
-                                              style={{
-                                                color: awayFlashing
-                                                  ? "#ff4444"
-                                                  : undefined,
-                                                transition: awayFlashing
-                                                  ? "none"
-                                                  : "color 1.25s ease",
-                                              }}
-                                            >
-                                              {currentAway.length}
-                                            </span>
-                                          </span>
-                                          <span className="flex items-center gap-1.5 flex-1 min-w-0 pl-1 justify-end">
-                                            <span className="flex flex-col min-w-0 items-end">
+                                            <span className="font-headline font-black text-xs sm:text-sm shrink-0 flex items-center gap-1 px-1">
                                               <span
-                                                className={`text-[11px] font-bold truncate ${isHumanMatch && players.some((p) => p.teamId === match.awayTeamId) ? "text-primary" : "text-on-surface/80"}`}
+                                                style={{
+                                                  color: homeFlashing
+                                                    ? "#ff4444"
+                                                    : undefined,
+                                                  transition: homeFlashing
+                                                    ? "none"
+                                                    : "color 1.25s ease",
+                                                }}
                                               >
-                                                {aInfo?.name}
+                                                {currentHome.length}
                                               </span>
-                                              {(() => {
-                                                const c = players.find(
-                                                  (p) =>
-                                                    p.teamId ===
-                                                    match.awayTeamId,
-                                                );
-                                                return c ? (
-                                                  <span className="text-[9px] text-amber-400 font-bold truncate leading-none">
-                                                    {c.name}
-                                                  </span>
-                                                ) : null;
-                                              })()}
+                                              <span className="text-on-surface/20 text-xs">
+                                                -
+                                              </span>
+                                              <span
+                                                style={{
+                                                  color: awayFlashing
+                                                    ? "#ff4444"
+                                                    : undefined,
+                                                  transition: awayFlashing
+                                                    ? "none"
+                                                    : "color 1.25s ease",
+                                                }}
+                                              >
+                                                {currentAway.length}
+                                              </span>
                                             </span>
-                                            <span
-                                              className="w-2 h-2 rounded-sm shrink-0"
-                                              style={{
-                                                background:
-                                                  aInfo?.color_primary ||
-                                                  "#555",
-                                              }}
-                                            />
-                                          </span>
-                                        </div>
-                                        {(lastHomeEvent || lastAwayEvent) && (
-                                          <div className="flex px-3 pb-1.5 gap-1">
-                                            <span className="flex-1 text-[9px] text-on-surface-variant/40 truncate">
-                                              {lastHomeEvent}
-                                            </span>
-                                            <span className="flex-1 text-[9px] text-on-surface-variant/40 truncate text-right">
-                                              {lastAwayEvent}
+                                            <span className="flex items-center gap-1.5 flex-1 min-w-0 pl-1 justify-end">
+                                              <span className="flex flex-col min-w-0 items-end">
+                                                <span
+                                                  className={`text-[9px] sm:text-[10px] lg:text-[11px] font-bold truncate ${isHumanMatch && players.some((p) => p.teamId === match.awayTeamId) ? "text-primary" : "text-on-surface/80"}`}
+                                                >
+                                                  {aInfo?.name}
+                                                </span>
+                                                {(() => {
+                                                  const c = players.find(
+                                                    (p) =>
+                                                      p.teamId ===
+                                                      match.awayTeamId,
+                                                  );
+                                                  return c ? (
+                                                    <span className="text-[8px] sm:text-[9px] text-amber-400 font-bold truncate leading-none">
+                                                      {c.name}
+                                                    </span>
+                                                  ) : null;
+                                                })()}
+                                              </span>
+                                              <span
+                                                className="w-2 h-2 rounded-sm shrink-0"
+                                                style={{
+                                                  background:
+                                                    aInfo?.color_primary ||
+                                                    "#555",
+                                                }}
+                                              />
                                             </span>
                                           </div>
-                                        )}
-                                      </button>
-                                    );
-                                  })}
+                                          {(lastHomeEvent || lastAwayEvent) && (
+                                            <div className="flex px-3 pb-1.5 gap-1">
+                                              <span className="flex-1 text-[8px] sm:text-[9px] text-on-surface-variant/40 truncate">
+                                                {lastHomeEvent}
+                                              </span>
+                                              <span className="flex-1 text-[8px] sm:text-[9px] text-on-surface-variant/40 truncate text-right">
+                                                {lastAwayEvent}
+                                              </span>
+                                            </div>
+                                          )}
+                                        </button>
+                                      );
+                                    })}
+                                  </div>
                                 </div>
-                              </div>
-                            );
-                          })}
+                              );
+                            })}
+                          </div>
                         </div>
                       )}
 
@@ -7256,15 +7305,24 @@ function App() {
                             {/* Saldo previsto */}
                             {(() => {
                               const remainingJornadas = 14 - completedJornada;
-                              const remainingHomeMatches = Math.max(0, 7 - (financeData?.homeMatchesPlayed || 0));
-                              const avgTicketRevenue = (financeData?.homeMatchesPlayed || 0) > 0
-                                ? (financeData?.totalTicketRevenue || 0) / financeData.homeMatchesPlayed
-                                : capacityRevPerGame * 0.8;
-                              const projectedTicketRevenue = avgTicketRevenue * remainingHomeMatches;
-                              const projectedSalaries = totalWeeklyWage * remainingJornadas;
-                              
+                              const remainingHomeMatches = Math.max(
+                                0,
+                                7 - (financeData?.homeMatchesPlayed || 0),
+                              );
+                              const avgTicketRevenue =
+                                (financeData?.homeMatchesPlayed || 0) > 0
+                                  ? (financeData?.totalTicketRevenue || 0) /
+                                    financeData.homeMatchesPlayed
+                                  : capacityRevPerGame * 0.8;
+                              const projectedTicketRevenue =
+                                avgTicketRevenue * remainingHomeMatches;
+                              const projectedSalaries =
+                                totalWeeklyWage * remainingJornadas;
+
                               const projectedEndBudget = Math.round(
-                                currentBudget + projectedTicketRevenue - projectedSalaries
+                                currentBudget +
+                                  projectedTicketRevenue -
+                                  projectedSalaries,
                               );
                               return (
                                 <div className="bg-surface-container p-6 flex flex-col justify-between relative overflow-hidden">
@@ -7286,8 +7344,8 @@ function App() {
                                   </div>
                                   <div className="mt-6">
                                     <p className="text-[10px] text-on-surface-variant uppercase mb-1">
-                                      Bilheteiras previstas - salários ({remainingJornadas}{" "}
-                                      jornadas)
+                                      Bilheteiras previstas - salários (
+                                      {remainingJornadas} jornadas)
                                     </p>
                                   </div>
                                 </div>
