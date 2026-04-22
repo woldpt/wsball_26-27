@@ -7934,11 +7934,28 @@ function App() {
                                               )}
                                             {player.transfer_status &&
                                               player.transfer_status !==
-                                                "none" && (
-                                                <span className="text-[9px] font-black uppercase px-1.5 py-0.5 rounded bg-emerald-500/20 text-emerald-400 border border-emerald-500/30">
-                                                  À venda
-                                                </span>
-                                              )}
+                                                "none" &&
+                                              (() => {
+                                                const seasonEnd =
+                                                  Math.ceil(
+                                                    Math.max(
+                                                      1,
+                                                      matchweekCount,
+                                                    ) / 14,
+                                                  ) * 14;
+                                                const isContractRenewed =
+                                                  player.contract_until_matchweek ===
+                                                  seasonEnd;
+                                                return isContractRenewed ? (
+                                                  <span className="text-[9px] font-black uppercase px-1.5 py-0.5 rounded bg-blue-500/20 text-blue-400 border border-blue-500/30">
+                                                    Contrato renovado
+                                                  </span>
+                                                ) : (
+                                                  <span className="text-[9px] font-black uppercase px-1.5 py-0.5 rounded bg-emerald-500/20 text-emerald-400 border border-emerald-500/30">
+                                                    À venda
+                                                  </span>
+                                                );
+                                              })()}
                                             {player.isUnavailable &&
                                               (() => {
                                                 const susp =
