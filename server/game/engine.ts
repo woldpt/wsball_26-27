@@ -828,7 +828,11 @@ async function applyInjuryEvent({
           name: replacement.name,
           position: replacement.position,
           is_star: replacement.is_star || 0,
+<<<<<<< HEAD
           skill: Math.round(getOverall(replacement)),
+=======
+          skill: replacement.skill,
+>>>>>>> d8a30d5 (more errors on substitutions in half time)
         };
       }
     }
@@ -1656,9 +1660,13 @@ async function simulateMatchSegment(
               lineupIds.add(playerInId);
 
               // Actualizar snapshot de lineup para que o ecrã de intervalo reflicta a substituição
+<<<<<<< HEAD
               const lineupRef = isHome
                 ? fixture.homeLineup
                 : fixture.awayLineup;
+=======
+              const lineupRef = isHome ? fixture.homeLineup : fixture.awayLineup;
+>>>>>>> d8a30d5 (more errors on substitutions in half time)
               if (lineupRef) {
                 const li = lineupRef.findIndex(
                   (p: any) => p.id === playerOutId,
@@ -1669,7 +1677,11 @@ async function simulateMatchSegment(
                     name: playerIn.name,
                     position: playerIn.position,
                     is_star: playerIn.is_star || 0,
+<<<<<<< HEAD
                     skill: Math.round(getOverall(playerIn)),
+=======
+                    skill: playerIn.skill,
+>>>>>>> d8a30d5 (more errors on substitutions in half time)
                   };
                 }
               }
