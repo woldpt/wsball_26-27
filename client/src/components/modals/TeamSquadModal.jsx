@@ -40,6 +40,13 @@ export function TeamSquadModal({
   setTransferProposalModal,
   myBudget = 0,
 }) {
+  const getPrimaryAttr = (player) => {
+    if (!player) return 0;
+    if (player.position === "GR") return player.gk ?? player.skill ?? 0;
+    if (player.position === "DEF") return player.defesa ?? player.skill ?? 0;
+    if (player.position === "MED") return player.passe ?? player.skill ?? 0;
+    return player.finalizacao ?? player.skill ?? 0;
+  };
   const isOwnTeam = isSameTeamId(selectedTeam?.id, me?.teamId);
   const isNpcTeam =
     !isOwnTeam &&
@@ -137,7 +144,9 @@ export function TeamSquadModal({
                       <th className="px-4 py-3 font-black">Pos</th>
                       <th className="px-4 py-3 font-black">Nome</th>
                       <th className="px-4 py-3 font-black text-center">Nac.</th>
-                      <th className="px-4 py-3 font-black text-center">Qual</th>
+                      <th className="px-4 py-3 font-black text-center">
+                        Atributo
+                      </th>
                       <th className="px-4 py-3 font-black text-center">Agr.</th>
                       <th className="px-4 py-3 font-black text-center">
                         Golos
@@ -214,15 +223,15 @@ export function TeamSquadModal({
                           </td>
                           <td className="px-4 py-2.5 text-center">
                             <span className="bg-zinc-950 text-white font-black px-2 py-1.5 rounded text-sm border border-zinc-800">
-                              {player.skill}
+                              {getPrimaryAttr(player)}
                             </span>
                             {player.prev_skill !== null &&
                               player.prev_skill !== undefined &&
-                              player.prev_skill !== player.skill && (
+                              player.prev_skill !== getPrimaryAttr(player) && (
                                 <span
-                                  className={`ml-1 text-xs font-black ${player.skill > player.prev_skill ? "text-emerald-400" : "text-red-400"}`}
+                                  className={`ml-1 text-xs font-black ${getPrimaryAttr(player) > player.prev_skill ? "text-emerald-400" : "text-red-400"}`}
                                 >
-                                  {player.skill > player.prev_skill ? "▲" : "▼"}
+                                  {getPrimaryAttr(player) > player.prev_skill ? "▲" : "▼"}
                                 </span>
                               )}
                           </td>

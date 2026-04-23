@@ -95,6 +95,11 @@ function ensurePlayerSchema(
       ["aggressiveness", "INTEGER DEFAULT 3"],
       ["prev_skill", "INTEGER DEFAULT NULL"],
       ["last_auctioned_matchweek", "INTEGER DEFAULT 0"],
+      ["gk", "INTEGER DEFAULT 1"],
+      ["defesa", "INTEGER DEFAULT 1"],
+      ["passe", "INTEGER DEFAULT 1"],
+      ["finalizacao", "INTEGER DEFAULT 1"],
+      ["resistencia", "INTEGER DEFAULT 50"],
     ];
 
     const missing = required.filter(([name]) => !existing.has(name));
@@ -409,6 +414,16 @@ function getGame(roomCode: string, onReady?: OnReady): ActiveGame | null {
             coach_name TEXT NOT NULL,
             message TEXT NOT NULL,
             timestamp INTEGER NOT NULL
+          )`);
+          db.run(`CREATE TABLE IF NOT EXISTS team_training_plan (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            team_id INTEGER NOT NULL,
+            season INTEGER NOT NULL,
+            matchweek INTEGER NOT NULL,
+            focus TEXT NOT NULL,
+            intensity INTEGER NOT NULL DEFAULT 50,
+            updated_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+            UNIQUE(team_id, season, matchweek)
           )`);
 
           // ── Read persisted state (flat: one query for all keys) ──────────────

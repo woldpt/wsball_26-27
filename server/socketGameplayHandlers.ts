@@ -49,6 +49,56 @@ export function registerGameplaySocketHandlers(
     }
   });
 
+  socket.on("setTrainingPlan", ({ focus, intensity }) => {
+    const game = getGameBySocket(socket.id);
+    const playerState = getPlayerBySocket(game, socket.id);
+    if (!game || !playerState?.teamId) return;
+    if (game.gamePhase !== "lobby") return;
+    if (playerState.ready) return;
+
+    const normalizedFocus = String(focus || "").toUpperCase();
+    const allowedFocus = new Set([
+      "FORMA",
+      "RESISTENCIA",
+      "GR",
+      "DEFESA",
+      "ATAQUE",
+      "PASSE",
+    ]);
+    if (!allowedFocus.has(normalizedFocus)) return;
+    const safeIntensity = Math.max(1, Math.min(100, Number(intensity) || 50));
+
+    game.db.run(
+      `INSERT INTO team_training_plan (team_id, season, matchweek, focus, intensity, updated_at)
+       VALUES (?, ?, ?, ?, ?, CURRENT_TIMESTAMP)
+       ON CONFLICT(team_id, season, matchweek)
+       DO UPDATE SET focus = excluded.focus, intensity = excluded.intensity, updated_at = CURRENT_TIMESTAMP`,
+      [playerState.teamId, game.season, game.matchweek, normalizedFocus, safeIntensity],
+      () => {
+        socket.emit("trainingPlanUpdated", {
+          teamId: playerState.teamId,
+          season: game.season,
+          matchweek: game.matchweek,
+          focus: normalizedFocus,
+          intensity: safeIntensity,
+        });
+      },
+    );
+  });
+
+  socket.on("requestTrainingPlan", () => {
+    const game = getGameBySocket(socket.id);
+    const playerState = getPlayerBySocket(game, socket.id);
+    if (!game || !playerState?.teamId) return;
+    game.db.get(
+      "SELECT focus, intensity FROM team_training_plan WHERE team_id = ? AND season = ? AND matchweek = ?",
+      [playerState.teamId, game.season, game.matchweek],
+      (_err: any, row: any) => {
+        socket.emit("trainingPlanData", row || { focus: "FORMA", intensity: 50 });
+      },
+    );
+  });
+
   socket.on("setReady", (ready) => {
     const game = getGameBySocket(socket.id);
     if (!game) return;
@@ -68,7 +118,7 @@ export function registerGameplaySocketHandlers(
     if (!game) return;
 
     game.db.all(
-      "SELECT * FROM players WHERE team_id = ? ORDER BY CASE position WHEN 'GR' THEN 1 WHEN 'DEF' THEN 2 WHEN 'MED' THEN 3 WHEN 'ATA' THEN 4 ELSE 5 END, skill DESC, name",
+      "SELECT * FROM players WHERE team_id = ? ORDER BY CASE position WHEN 'GR' THEN 1 WHEN 'DEF' THEN 2 WHEN 'MED' THEN 3 WHEN 'ATA' THEN 4 ELSE 5 END, ((COALESCE(gk, skill, 1) + COALESCE(defesa, skill, 1) + COALESCE(passe, skill, 1) + COALESCE(finalizacao, skill, 1)) / 4.0) DESC, name",
       [teamId],
       (err, squad) => {
         const base = err ? [] : squad || [];

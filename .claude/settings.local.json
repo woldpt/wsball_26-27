@@ -42,7 +42,8 @@
       "Bash(python3 -c ' *)",
       "Bash(grep -E \"\\\\.ts$\")",
       "Bash(xargs ls *)",
-      "Bash(grep -v \"-- \")"
+      "Bash(grep -v \"-- \")",
+      "Bash(sqlite3 *)"
     ]
   },
   "outputStyle": "default"

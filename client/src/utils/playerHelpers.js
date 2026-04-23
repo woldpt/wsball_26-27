@@ -24,8 +24,16 @@ export function buildAutoPositions(
   );
   if (!availablePlayers.length) return {};
 
+  const getOverall = (p) => {
+    const gk = Number(p?.gk ?? p?.skill ?? 1);
+    const defesa = Number(p?.defesa ?? p?.skill ?? 1);
+    const passe = Number(p?.passe ?? p?.skill ?? 1);
+    const finalizacao = Number(p?.finalizacao ?? p?.skill ?? 1);
+    const form = Number(p?.form ?? 50);
+    return ((gk + defesa + passe + finalizacao) / 4) * (0.8 + form / 500);
+  };
   const sortedPlayers = [...availablePlayers].sort(
-    (a, b) => b.skill - a.skill,
+    (a, b) => getOverall(b) - getOverall(a),
   );
 
   const formationParts = String(formation || "4-4-2").split("-");

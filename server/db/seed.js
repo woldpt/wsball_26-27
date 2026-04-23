@@ -93,7 +93,7 @@ db.serialize(() => {
     "INSERT INTO teams (name, manager_id, division, stadium_capacity, stadium_name, budget, color_primary, color_secondary) VALUES (?, ?, ?, ?, ?, ?, ?, ?)",
   );
   const insertPlayer = db.prepare(
-    "INSERT INTO players (name, position, skill, age, form, aggressiveness, nationality, value, wage, goals, is_star, team_id) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, 0, ?, ?)",
+    "INSERT INTO players (name, position, skill, gk, defesa, passe, finalizacao, resistencia, age, form, aggressiveness, nationality, value, wage, goals, is_star, team_id) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 0, ?, ?)",
   );
 
   let teamId = 1;
@@ -188,10 +188,34 @@ db.serialize(() => {
         const wage = skill * 200;
         const isStar =
           (pos === "MED" || pos === "ATA") && Math.random() < 0.1 ? 1 : 0;
+        const roleBoosts = {
+          GR: { gk: 10, defesa: 2, passe: 1, finalizacao: 0 },
+          DEF: { gk: 0, defesa: 10, passe: 2, finalizacao: 1 },
+          MED: { gk: 0, defesa: 3, passe: 10, finalizacao: 3 },
+          ATA: { gk: 0, defesa: 1, passe: 3, finalizacao: 10 },
+        };
+        const boosts = roleBoosts[pos] || roleBoosts.MED;
+        const clampAttr = (v) => Math.max(1, Math.min(50, Math.round(v)));
+        const gk = clampAttr(skill - 8 + boosts.gk + Math.floor(Math.random() * 5));
+        const defesa = clampAttr(
+          skill - 8 + boosts.defesa + Math.floor(Math.random() * 5),
+        );
+        const passe = clampAttr(
+          skill - 8 + boosts.passe + Math.floor(Math.random() * 5),
+        );
+        const finalizacao = clampAttr(
+          skill - 8 + boosts.finalizacao + Math.floor(Math.random() * 5),
+        );
+        const resistencia = Math.max(30, Math.min(100, form + Math.floor(Math.random() * 11) - 5));
         return {
           name: p.name,
           pos,
           skill,
+          gk,
+          defesa,
+          passe,
+          finalizacao,
+          resistencia,
           age,
           form,
           agg,
@@ -216,11 +240,32 @@ db.serialize(() => {
     }
 
     playersToInsert.forEach(
-      ({ name, pos, skill, age, form, agg, nat, value, wage, isStar }) => {
+      ({
+        name,
+        pos,
+        skill,
+        gk,
+        defesa,
+        passe,
+        finalizacao,
+        resistencia,
+        age,
+        form,
+        agg,
+        nat,
+        value,
+        wage,
+        isStar,
+      }) => {
         insertPlayer.run(
           name,
           pos,
           skill,
+          gk,
+          defesa,
+          passe,
+          finalizacao,
+          resistencia,
           age,
           form,
           agg,

@@ -8,6 +8,7 @@ import {
   makePhaseToken,
 } from "./matchFlowHelpers";
 import { withJuniorGRs } from "./game/engine";
+import { applyWeeklyTraining } from "./trainingHelpers";
 
 interface WeeklyFlowDeps {
   io: any;
@@ -557,6 +558,18 @@ export function createWeeklyFlowHelpers(deps: WeeklyFlowDeps) {
           persistMatchResults(game, fixtures, completedMatchweek, () => {
             applyPostMatchQualityEvolution(game.db, fixtures, game.matchweek)
               .then(async () => {
+                try {
+                  await applyWeeklyTraining(
+                    game.db,
+                    game.season,
+                    completedMatchweek,
+                  );
+                } catch (trainingErr) {
+                  console.error(
+                    `[${game.roomCode}] Training application error:`,
+                    trainingErr,
+                  );
+                }
                 if (seasonDone) {
                   try {
                     await applySeasonEnd(game);
@@ -638,7 +651,7 @@ export function createWeeklyFlowHelpers(deps: WeeklyFlowDeps) {
                       .catch(() => {});
 
                     game.db.all(
-                      "SELECT p.id, p.name, p.position, p.goals, p.team_id, t.name as team_name, t.color_primary, t.color_secondary FROM players p LEFT JOIN teams t ON p.team_id = t.id WHERE p.goals > 0 ORDER BY p.goals DESC, p.skill DESC LIMIT 20",
+                      "SELECT p.id, p.name, p.position, p.goals, p.team_id, t.name as team_name, t.color_primary, t.color_secondary FROM players p LEFT JOIN teams t ON p.team_id = t.id WHERE p.goals > 0 ORDER BY p.goals DESC, ((COALESCE(p.gk, p.skill, 1) + COALESCE(p.defesa, p.skill, 1) + COALESCE(p.passe, p.skill, 1) + COALESCE(p.finalizacao, p.skill, 1)) / 4.0) DESC LIMIT 20",
                       (err3: any, scorers: any[]) => {
                         io.to(game.roomCode).emit("topScorers", scorers || []);
 

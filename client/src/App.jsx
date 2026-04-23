@@ -705,6 +705,10 @@ function App() {
   const [calendarData, setCalendarData] = useState(null);
   const [calFilter, setCalFilter] = useState("all"); // "all" | "league" | "cup"
   const [tactic, setTactic] = useState(DEFAULT_TACTIC);
+  const [trainingPlan, setTrainingPlan] = useState({
+    focus: "FORMA",
+    intensity: 50,
+  });
   const [liveMinute, setLiveMinute] = useState(90);
   const [isPlayingMatch, setIsPlayingMatch] = useState(false);
   const [isLiveSimulation, setIsLiveSimulation] = useState(false);
@@ -828,6 +832,22 @@ function App() {
       setPlayers(data);
     });
     socket.on("mySquad", (data) => setMySquad(data));
+    socket.on("trainingPlanData", (data) => {
+      if (data?.focus) {
+        setTrainingPlan({
+          focus: data.focus,
+          intensity: Number(data.intensity) || 50,
+        });
+      }
+    });
+    socket.on("trainingPlanUpdated", (data) => {
+      if (data?.focus) {
+        setTrainingPlan({
+          focus: data.focus,
+          intensity: Number(data.intensity) || 50,
+        });
+      }
+    });
     socket.on("marketUpdate", (data) => setMarketPairs(data));
     socket.on("auctionStarted", (auctionData) => {
       // Never open auction notification during an active match or cup draw
@@ -1829,6 +1849,8 @@ function App() {
       socket.off("teamForms");
       socket.off("playerListUpdate");
       socket.off("mySquad");
+      socket.off("trainingPlanData");
+      socket.off("trainingPlanUpdated");
       socket.off("marketUpdate");
       socket.off("auctionUpdate");
       socket.off("auctionClosed");
@@ -1898,6 +1920,11 @@ function App() {
   useEffect(() => {
     tacticRef.current = tactic;
   }, [tactic]);
+
+  useEffect(() => {
+    if (!me?.teamId) return;
+    socket.emit("requestTrainingPlan");
+  }, [me?.teamId, matchweekCount]);
 
   useEffect(() => {
     selectedTeamRef.current = selectedTeam;
@@ -8378,6 +8405,57 @@ function App() {
                                     </span>
                                   </button>
                                 ))}
+                              </div>
+                            </div>
+
+                            <div className="px-4 py-3 border-b border-outline-variant/15 bg-surface-container-high/10">
+                              <span className="block text-[9px] uppercase tracking-[0.2em] font-black text-on-surface-variant mb-2">
+                                Treino Semanal
+                              </span>
+                              <div className="grid grid-cols-2 gap-2">
+                                <select
+                                  value={trainingPlan.focus}
+                                  disabled={players.find((p) => p.name === me?.name)?.ready}
+                                  onChange={(e) => {
+                                    const next = {
+                                      ...trainingPlan,
+                                      focus: e.target.value,
+                                    };
+                                    setTrainingPlan(next);
+                                    socket.emit("setTrainingPlan", next);
+                                  }}
+                                  className="px-2 py-2 rounded bg-surface-bright text-xs font-bold border border-outline-variant/20"
+                                >
+                                  <option value="FORMA">Forma</option>
+                                  <option value="RESISTENCIA">Resistência</option>
+                                  <option value="GR">GR</option>
+                                  <option value="DEFESA">Defesa</option>
+                                  <option value="PASSE">Passe</option>
+                                  <option value="ATAQUE">Ataque</option>
+                                </select>
+                                <div className="flex items-center gap-2">
+                                  <input
+                                    type="range"
+                                    min="1"
+                                    max="100"
+                                    value={trainingPlan.intensity}
+                                    disabled={players.find((p) => p.name === me?.name)?.ready}
+                                    onChange={(e) => {
+                                      const next = {
+                                        ...trainingPlan,
+                                        intensity: Number(e.target.value) || 50,
+                                      };
+                                      setTrainingPlan(next);
+                                    }}
+                                    onMouseUp={() =>
+                                      socket.emit("setTrainingPlan", trainingPlan)
+                                    }
+                                    className="w-full accent-primary"
+                                  />
+                                  <span className="text-[10px] font-black tabular-nums w-7 text-right">
+                                    {trainingPlan.intensity}
+                                  </span>
+                                </div>
                               </div>
                             </div>
                           </div>

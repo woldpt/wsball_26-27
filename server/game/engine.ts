@@ -62,6 +62,11 @@ export function generateJuniorGR(
     name: `${JUNIOR_FIRST_NAMES[firstIdx]} ${JUNIOR_LAST_NAMES[lastIdx]} (Junior)`,
     position: "GR",
     skill: 1,
+    gk: 8,
+    defesa: 2,
+    passe: 2,
+    finalizacao: 1,
+    resistencia: 60,
     aggressiveness: 3,
     isJunior: true,
     team_id: teamId,
@@ -371,7 +376,7 @@ function extraTimeStartPhrase(): string {
 
 function pickBestPlayer(players: PlayerRow[] = []) {
   if (!players.length) return null;
-  return [...players].sort((a, b) => b.skill - a.skill)[0];
+  return [...players].sort((a, b) => getOverall(b) - getOverall(a))[0];
 }
 
 /**
@@ -425,7 +430,9 @@ async function getTeamSquad(
       }
 
       // Auto-pick best 11 based on formation
-      const sorted = [...availableRows].sort((a, b) => b.skill - a.skill);
+      const sorted = [...availableRows].sort(
+        (a, b) => getOverall(b) - getOverall(a),
+      );
       const lineup = [];
       const formationStr =
         tactic && tactic.formation ? tactic.formation : "4-4-2";
@@ -628,6 +635,10 @@ function clampSkill(value: number) {
   return Math.max(0, Math.min(50, Math.round(value)));
 }
 
+function clampPercent(value: number) {
+  return Math.max(0, Math.min(100, Math.round(value)));
+}
+
 // Per-minute goal probability multiplier based on real football time distribution.
 // Weights are normalised so the average across 90 min = 1.0 (total goals unchanged).
 function getGoalTimeMultiplier(minute: number): number {
@@ -673,6 +684,23 @@ function average(values: number[] = []) {
   return values.reduce((sum, value) => sum + value, 0) / values.length;
 }
 
+function getAttr(player: PlayerRow, key: string, fallback = 1) {
+  const value = player?.[key];
+  if (typeof value === "number") return value;
+  if (typeof player?.skill === "number") return player.skill;
+  return fallback;
+}
+
+function getOverall(player: PlayerRow) {
+  const gk = getAttr(player, "gk", 1);
+  const defesa = getAttr(player, "defesa", 1);
+  const passe = getAttr(player, "passe", 1);
+  const finalizacao = getAttr(player, "finalizacao", 1);
+  const forma = Math.max(0, Math.min(100, player?.form ?? 50));
+  const base = (gk + defesa + passe + finalizacao) / 4;
+  return base * (0.8 + forma / 500);
+}
+
 async function applyInjuryEvent({
   db,
   fixture,
@@ -711,11 +739,10 @@ async function applyInjuryEvent({
   }
 
   const injuryUntil = currentMatchweek + injuryWeeks;
-  const qualityLoss =
-    injuryLabel === "grave" ? 2 + Math.floor(Math.random() * 4) : 0;
+  const qualityLoss = injuryLabel === "grave" ? 2 + Math.floor(Math.random() * 4) : 0;
   db.run(
-    "UPDATE players SET injuries = injuries + 1, career_injuries = career_injuries + 1, prev_skill = skill, skill = MAX(0, skill - ?), injury_until_matchweek = CASE WHEN injury_until_matchweek > ? THEN injury_until_matchweek ELSE ? END WHERE id = ?",
-    [qualityLoss, injuryUntil, injuryUntil, injuredPlayer.id],
+    "UPDATE players SET injuries = injuries + 1, career_injuries = career_injuries + 1, form = MAX(0, form - ?), injury_until_matchweek = CASE WHEN injury_until_matchweek > ? THEN injury_until_matchweek ELSE ? END WHERE id = ?",
+    [qualityLoss * 6, injuryUntil, injuryUntil, injuredPlayer.id],
   );
 
   fixture.events.push({
@@ -770,7 +797,7 @@ async function applyInjuryEvent({
         id: p.id,
         name: p.name,
         position: p.position,
-        skill: p.skill,
+        skill: Math.round(getOverall(p)),
       })),
       currentScore: {
         home: fixture.finalHomeGoals,
@@ -800,7 +827,7 @@ async function applyInjuryEvent({
           name: replacement.name,
           position: replacement.position,
           is_star: replacement.is_star || 0,
-          skill: replacement.skill,
+          skill: Math.round(getOverall(replacement)),
         };
       }
     }
@@ -866,7 +893,7 @@ async function applyPenaltyEvent({
         id: p.id,
         name: p.name,
         position: p.position,
-        skill: p.skill,
+        skill: Math.round(getOverall(p)),
       })),
       currentScore: {
         home: fixture.finalHomeGoals,
@@ -884,7 +911,8 @@ async function applyPenaltyEvent({
   if (!taker) return;
 
   // Base 82% goal rate, skill (range 5–50) shifts it ±6 pp around the mean (30)
-  const penaltySkill = taker.skill || 0;
+  const penaltySkill =
+    getAttr(taker, "finalizacao", 1) * 0.75 + getAttr(taker, "passe", 1) * 0.25;
   const goalChance = Math.max(
     0.74,
     Math.min(0.92, 0.82 + (penaltySkill - 30) / 250),
@@ -943,7 +971,11 @@ function applyFatigue(
 ) {
   for (const p of squad) {
     if (lineupIds.has(p.id)) {
-      p.skill = Math.max(1, p.skill - amount);
+      const formDrop = amount * 4;
+      p.form = Math.max(0, (p.form ?? 50) - formDrop);
+      if (typeof p.resistencia === "number") {
+        p.resistencia = Math.max(0, p.resistencia - amount * 2);
+      }
     }
   }
 }
@@ -1168,7 +1200,12 @@ async function simulateMatchSegment(
       name: p.name,
       position: p.position,
       is_star: p.is_star || 0,
-      skill: p.skill,
+      skill: Math.round(getOverall(p)),
+      gk: getAttr(p, "gk", 1),
+      defesa: getAttr(p, "defesa", 1),
+      passe: getAttr(p, "passe", 1),
+      finalizacao: getAttr(p, "finalizacao", 1),
+      form: p.form ?? 50,
     }));
   if (!fixture.homeLineup || fixture.homeLineup.length === 0) {
     fixture.homeLineup = lineupSnapshot(homeSquad);
@@ -1188,10 +1225,16 @@ async function simulateMatchSegment(
     const defenders = squad.filter((p) => p.position === "DEF");
     const keepers = squad.filter((p) => p.position === "GR");
 
-    const avgMidfielderQuality = average(midfielders.map((p) => p.skill || 0));
-    const avgForwardQuality = average(forwards.map((p) => p.skill || 0));
-    const avgDefenderQuality = average(defenders.map((p) => p.skill || 0));
-    const avgKeeperQuality = average(keepers.map((p) => p.skill || 0));
+    const avgMidfielderPass = average(midfielders.map((p) => getAttr(p, "passe", 1)));
+    const avgMidfielderForm = average(midfielders.map((p) => p.form || 50));
+    const avgForwardFin = average(forwards.map((p) => getAttr(p, "finalizacao", 1)));
+    const avgForwardPass = average(forwards.map((p) => getAttr(p, "passe", 1)));
+    const avgForwardForm = average(forwards.map((p) => p.form || 50));
+    const avgDefenderDef = average(defenders.map((p) => getAttr(p, "defesa", 1)));
+    const avgKeeperGk = average(keepers.map((p) => getAttr(p, "gk", 1)));
+    const avgBacklineForm = average(
+      [...defenders, ...keepers].map((p) => p.form || 50),
+    );
 
     const formationOffensiveFactors = {
       "4-2-4": 1.15,
@@ -1221,25 +1264,23 @@ async function simulateMatchSegment(
       OFENSIVO: 1.15,
     };
 
-    const styleDefensiveFactor = {
-      DEFENSIVO: 1.15,
-      EQUILIBRADO: 1.0,
-      OFENSIVO: 0.85,
-    };
-
     const formationAttack = formationOffensiveFactors[formation] ?? 1.0;
     const formationDefense = formationDefensiveFactors[formation] ?? 1.0;
 
     const moraleFactor = 1 + (morale - 50) * 0.005;
-
-    const attackBase = avgMidfielderQuality * 0.4 + avgForwardQuality * 0.6;
-    const defenseBase = avgDefenderQuality * 0.6 + avgKeeperQuality * 0.4;
+    const moraleAdjusted = Math.max(0.5, Math.min(1.5, moraleFactor));
+    const midfieldBase = avgMidfielderPass * 0.75 + avgMidfielderForm * 0.25;
+    const attackBase =
+      avgForwardFin * 0.7 + avgForwardPass * 0.15 + avgForwardForm * 0.15;
+    const defenseBase =
+      avgDefenderDef * 0.68 + avgKeeperGk * 0.32 + avgBacklineForm * 0.1;
 
     return {
+      midfield: midfieldBase * moraleAdjusted,
       attack:
         attackBase *
         formationAttack *
-        Math.max(0.5, Math.min(1.5, moraleFactor)) *
+        moraleAdjusted *
         styleOffensiveFactor[style],
       defense: defenseBase * formationDefense,
       style,
@@ -1291,31 +1332,21 @@ async function simulateMatchSegment(
     const currentAway = getPower(away.squad, awayTactic, awayMorale);
 
     let goalScoredThisMinute = false;
+    let chanceTriggered = false;
 
-    const maybeOpenPlayGoal = (attackingSide) => {
-      if (goalScoredThisMinute) return;
+    const processChance = (attackingSide: "home" | "away") => {
       const attacking = attackingSide === "home" ? currentHome : currentAway;
       const defending = attackingSide === "home" ? currentAway : currentHome;
       const isHome = attackingSide === "home";
+      const scoringSquad = isHome ? home.squad : away.squad;
 
-      // Apply opponent style factor to attack per README spec:
-      // força_ofensiva *= (1 / estilo_factor[adversário_instrução])
-      const STYLE_FACTORS = {
-        DEFENSIVO: 0.85,
-        EQUILIBRADO: 1.0,
-        OFENSIVO: 1.15,
-      };
+      const STYLE_FACTORS = { DEFENSIVO: 0.85, EQUILIBRADO: 1.0, OFENSIVO: 1.15 };
       const opponentStyleFactor = STYLE_FACTORS[defending.style] || 1.0;
-      const adjustedAttack =
-        (attacking.attack || 1) * (1.0 / opponentStyleFactor);
-
-      const ratio =
-        adjustedAttack / (adjustedAttack + (defending.defense || 1) * 2);
-      let probGoal = ratio * 0.03 * getGoalTimeMultiplier(fixture._minute);
+      const adjustedAttack = (attacking.attack || 1) * (1.0 / opponentStyleFactor);
+      const ratio = adjustedAttack / (adjustedAttack + (defending.defense || 1));
+      let probGoal = ratio * 0.17 * getGoalTimeMultiplier(fixture._minute);
       probGoal *= isHome ? 1.05 : 0.95;
 
-      // Ego conflict penalty: 3+ craques no onze titular reduzem probabilidade
-      const scoringSquad = isHome ? home.squad : away.squad;
       const craquesInXI = scoringSquad.filter(
         (p) => p.is_star && (p.position === "MED" || p.position === "ATA"),
       ).length;
@@ -1324,52 +1355,66 @@ async function simulateMatchSegment(
         probGoal *= 1.0 - egoPenalty;
       }
 
-      if (Math.random() >= probGoal) return;
-
       const scorers = scoringSquad.filter(
         (p) => p.position === "ATA" || p.position === "MED",
       );
       const scorer =
         scorers.length > 0 ? weightedPickScorer(scorers) : scoringSquad[0];
 
-      // VAR: 5% de hipótese de golo ser anulado
-      if (Math.random() < 0.05) {
+      if (Math.random() < probGoal) {
+        if (Math.random() < 0.05) {
+          fixture.events.push({
+            minute,
+            type: "var_disallowed",
+            team: attackingSide,
+            emoji: "🚩",
+            playerId: scorer ? scorer.id : null,
+            playerName: scorer ? scorer.name : "Jogador",
+            text: `[${minute}'] 🚩 ${varPhrase(scorer ? scorer.name : "Jogador")}`,
+            wasGoal: true,
+          });
+          return;
+        }
+
+        if (isHome) fixture.finalHomeGoals++;
+        else fixture.finalAwayGoals++;
+        goalScoredThisMinute = true;
+        const decisiveChance = Math.min(0.6, craquesInXI * 0.2);
         fixture.events.push({
           minute,
-          type: "var_disallowed",
+          type: "goal",
           team: attackingSide,
-          emoji: "🚩",
+          emoji: "⚽",
           playerId: scorer ? scorer.id : null,
           playerName: scorer ? scorer.name : "Jogador",
-          text: `[${minute}'] 🚩 ${varPhrase(scorer ? scorer.name : "Jogador")}`,
-          wasGoal: true,
+          text: `[${minute}'] ⚽ ${goalPhrase(scorer ? scorer.name : "Jogador")}`,
+          isDecisive: Math.random() < decisiveChance,
         });
+        if (scorer) {
+          db.run(
+            "UPDATE players SET goals = goals + 1, career_goals = career_goals + 1 WHERE id = ?",
+            [scorer.id],
+          );
+        }
         return;
       }
 
-      if (isHome) fixture.finalHomeGoals++;
-      else fixture.finalAwayGoals++;
-      goalScoredThisMinute = true;
-
-      const decisiveChance = Math.min(0.6, craquesInXI * 0.2);
-      const isDecisive = Math.random() < decisiveChance;
-
-      fixture.events.push({
-        minute,
-        type: "goal",
-        team: attackingSide,
-        emoji: "⚽",
-        playerId: scorer ? scorer.id : null,
-        playerName: scorer ? scorer.name : "Jogador",
-        text: `[${minute}'] ⚽ ${goalPhrase(scorer ? scorer.name : "Jogador")}`,
-        isDecisive,
-      });
-
       if (scorer) {
-        db.run(
-          "UPDATE players SET goals = goals + 1, career_goals = career_goals + 1 WHERE id = ?",
-          [scorer.id],
-        );
+        const defendingSquad = isHome ? away.squad : home.squad;
+        const grPlayer = defendingSquad.find((p) => p.position === "GR");
+        const phrase =
+          Math.random() < 0.45 && grPlayer
+            ? bigSavePhrase(grPlayer.name)
+            : nearMissPhrase(scorer.name);
+        fixture.events.push({
+          minute,
+          type: "near_miss",
+          team: attackingSide,
+          emoji: "🥅",
+          playerId: scorer.id,
+          playerName: scorer.name,
+          text: `[${minute}'] 🥅 ${phrase}`,
+        });
       }
     };
 
@@ -1392,11 +1437,18 @@ async function simulateMatchSegment(
       }
     }
 
-    maybeOpenPlayGoal("home");
-    maybeOpenPlayGoal("away");
+    const homeMid = currentHome.midfield || 1;
+    const awayMid = currentAway.midfield || 1;
+    const homePossessionChance = homeMid / (homeMid + awayMid);
+    const teamInControl = Math.random() < homePossessionChance ? "home" : "away";
+    const chanceOfAction = 0.14;
+    if (Math.random() < chanceOfAction) {
+      chanceTriggered = true;
+      processChance(teamInControl);
+    }
 
     // Near-miss / big save events — roughly 1–2 per match, commentary-only
-    if (!goalScoredThisMinute && Math.random() < 0.018) {
+    if (!goalScoredThisMinute && !chanceTriggered && Math.random() < 0.012) {
       const nearMissSide =
         currentHome.attack > currentAway.attack
           ? Math.random() < 0.55
@@ -1559,13 +1611,13 @@ async function simulateMatchSegment(
                 id: p.id,
                 name: p.name,
                 position: p.position,
-                skill: p.skill,
+                skill: Math.round(getOverall(p)),
               })),
               benchPlayers: availableBench.map((p: any) => ({
                 id: p.id,
                 name: p.name,
                 position: p.position,
-                skill: p.skill,
+                skill: Math.round(getOverall(p)),
               })),
             },
             timeoutMs: 60000,
@@ -1601,7 +1653,7 @@ async function simulateMatchSegment(
                     name: playerIn.name,
                     position: playerIn.position,
                     is_star: playerIn.is_star || 0,
-                    skill: playerIn.skill,
+                    skill: Math.round(getOverall(playerIn)),
                   };
                 }
               }
@@ -1696,9 +1748,9 @@ async function applyPostMatchQualityEvolution(
       );
     }
 
-    // ── Player skill evolution ─────────────────────────────────────────────
+    // ── Player attribute evolution ─────────────────────────────────────────
     db.all(
-      "SELECT id, team_id, skill, injury_until_matchweek, suspension_until_matchweek FROM players WHERE team_id IS NOT NULL ORDER BY team_id, id",
+      "SELECT id, team_id, position, gk, defesa, passe, finalizacao, form, resistencia, injury_until_matchweek, suspension_until_matchweek FROM players WHERE team_id IS NOT NULL ORDER BY team_id, id",
       (err, players) => {
         if (err || !players || players.length === 0) {
           resolve();
@@ -1720,19 +1772,29 @@ async function applyPostMatchQualityEvolution(
             continue;
 
           const group = teamGroups.get(player.team_id) || [];
-          const avgSkill =
-            group.reduce((sum, p) => sum + (p.skill || 0), 0) /
+          const playerOverall = getOverall(player);
+          const avgOverall =
+            group.reduce((sum, p) => sum + getOverall(p), 0) /
             Math.max(1, group.length);
-          const diff = avgSkill - (player.skill || 0);
+          const diff = avgOverall - playerOverall;
           const teamResult = teamResults.get(player.team_id) || "D";
 
-          let delta = 0;
+          let deltaForm = 0;
+          let deltaRes = 0;
+          const deltas = { gk: 0, defesa: 0, passe: 0, finalizacao: 0 };
+          const primaryAttrByPosition = {
+            GR: "gk",
+            DEF: "defesa",
+            MED: "passe",
+            ATA: "finalizacao",
+          };
+          const primaryAttr = primaryAttrByPosition[player.position] || "passe";
 
           // Convivência: jogadores abaixo da média do plantel evoluem ao
           // conviver com colegas mais talentosos (spec: "evoluem se
           // conviverem com jogadores mais talentosos")
           if (diff >= 1 && Math.random() < Math.min(0.66, 0.15 + diff / 27)) {
-            delta += 1;
+            deltas[primaryAttr] += 1;
           }
 
           // Vitória reforça evolução para jogadores abaixo da média
@@ -1741,7 +1803,8 @@ async function applyPostMatchQualityEvolution(
             diff >= 0 &&
             Math.random() < Math.min(0.3, 0.06 + diff / 73)
           ) {
-            delta += 1;
+            deltas[primaryAttr] += 1;
+            deltaForm += 2;
           }
 
           // Maus resultados: jogadores perdem qualidade se houver derrotas
@@ -1752,28 +1815,44 @@ async function applyPostMatchQualityEvolution(
               0.12,
               0.02 + Math.max(0, -diff) / 250,
             );
-            if (Math.random() < lossPressure) delta -= 1;
+            if (Math.random() < lossPressure) {
+              deltas[primaryAttr] -= 1;
+              deltaForm -= 4;
+            }
           }
 
           // Empate contra equipa mais forte — pequena hipótese de evolução
           if (teamResult === "D" && diff >= 5 && Math.random() < 0.12) {
-            delta += 1;
+            deltas[primaryAttr] += 1;
+            deltaForm += 1;
           }
 
-          if (delta !== 0) {
+          if (teamResult === "W" && Math.random() < 0.35) deltaRes += 1;
+          if (teamResult === "L" && Math.random() < 0.25) deltaRes -= 1;
+
+          if (
+            deltas.gk !== 0 ||
+            deltas.defesa !== 0 ||
+            deltas.passe !== 0 ||
+            deltas.finalizacao !== 0 ||
+            deltaForm !== 0 ||
+            deltaRes !== 0
+          ) {
             updates.push({
               id: player.id,
-              skill: clampSkill((player.skill || 0) + delta),
+              gk: clampSkill((player.gk || 1) + deltas.gk),
+              defesa: clampSkill((player.defesa || 1) + deltas.defesa),
+              passe: clampSkill((player.passe || 1) + deltas.passe),
+              finalizacao: clampSkill((player.finalizacao || 1) + deltas.finalizacao),
+              form: clampPercent((player.form || 50) + deltaForm),
+              resistencia: clampPercent((player.resistencia || 50) + deltaRes),
+              overall: Math.round(playerOverall),
             });
           }
         }
 
         if (updates.length === 0) {
-          // Mesmo sem evoluções, limpar prev_skill de semanas anteriores
-          db.run(
-            "UPDATE players SET prev_skill = NULL WHERE team_id IS NOT NULL",
-            () => resolve(),
-          );
+          db.run("UPDATE players SET prev_skill = NULL WHERE team_id IS NOT NULL", () => resolve());
           return;
         }
 
@@ -1785,8 +1864,17 @@ async function applyPostMatchQualityEvolution(
           );
           updates.forEach((update) => {
             db.run(
-              "UPDATE players SET prev_skill = skill, skill = ? WHERE id = ?",
-              [update.skill, update.id],
+              "UPDATE players SET prev_skill = ?, gk = ?, defesa = ?, passe = ?, finalizacao = ?, form = ?, resistencia = ? WHERE id = ?",
+              [
+                update.overall,
+                update.gk,
+                update.defesa,
+                update.passe,
+                update.finalizacao,
+                update.form,
+                update.resistencia,
+                update.id,
+              ],
               () => {
                 remaining -= 1;
                 if (remaining === 0) resolve();
@@ -1892,8 +1980,8 @@ function simulatePenaltyShootout(
       usedIds.clear();
       return squad[0] || null;
     }
-    // Pick by skill
-    available.sort((a, b) => b.skill - a.skill);
+    // Pick by overall quality
+    available.sort((a, b) => getOverall(b) - getOverall(a));
     return available[0];
   };
 
@@ -1903,8 +1991,10 @@ function simulatePenaltyShootout(
   const awayGK = awaySquad.find((p) => p.position === "GR") || awaySquad[0];
 
   const calcScoredChance = (taker, gk) => {
-    const takerSkill = taker ? taker.skill || 10 : 10;
-    const gkSkill = gk ? gk.skill || 10 : 10;
+    const takerSkill = taker
+      ? getAttr(taker, "finalizacao", 10) * 0.7 + getAttr(taker, "passe", 10) * 0.3
+      : 10;
+    const gkSkill = gk ? getAttr(gk, "gk", 10) : 10;
     return Math.max(0.55, Math.min(0.88, 0.72 + (takerSkill - gkSkill) / 200));
   };
 

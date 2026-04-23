@@ -105,7 +105,17 @@ Cada jogador tem os seguintes atributos:
 └── MED - Médio
 └── ATA - Avançado
 
-`qualidade` - Qualidade geral (Valor de 1 a 50);
+`gk` - Competência de guarda-redes (1 a 50, principal em GR);
+
+`defesa` - Capacidade defensiva (1 a 50, principal em DEF);
+
+`passe` - Qualidade de construção e meio-campo (1 a 50, principal em MED);
+
+`finalizacao` - Capacidade ofensiva de remate/decisão (1 a 50, principal em ATA);
+
+`forma` - Estado atual do jogador (0 a 100, afeta rendimento em jogo);
+
+`resistencia` - Capacidade física de manter rendimento ao longo da partida (0 a 100);
 
 `salario` - Custo semanal para o clube (€);
 
@@ -123,7 +133,7 @@ Cada jogador tem os seguintes atributos:
 Aproximadamente **10% dos jogadores das posições Médios e Avançados** são considerados craques. São jogadores que se destacam claramente dos demais e têm impacto desproporcional na simulação de jogos. Todas as equipas devem começar com pelo menos 1 craque.
 
 - A flag `craque` é visível no plantel e no mercado — é informação pública, e é definida por um \* sempre após o nome;
-- Craques têm `qualidade` significativamente acima da média da sua posição;
+- Craques têm o atributo principal da posição significativamente acima da média;
 - São mais caros (salário e valor de mercado mais elevados);
 - Guarda-redes e Defesas **não têm flag de craque** — a distinção aplica-se apenas a Médios e Avançados;
 - **Craques não afectam directamente a probabilidade de vitória**, mas têm **+20% de chance de marcar um golo decisivo** durante a simulação de um jogo;

@@ -99,7 +99,14 @@ export function PlayerHistoryModal({
   const pos = player.position;
   const barColor = POS_BAR[pos] || "#95d4b3";
   const isStar = player.is_star === 1;
-  const skill = player.skill ?? 0;
+  const primaryAttr =
+    pos === "GR"
+      ? (player.gk ?? player.skill ?? 0)
+      : pos === "DEF"
+        ? (player.defesa ?? player.skill ?? 0)
+        : pos === "MED"
+          ? (player.passe ?? player.skill ?? 0)
+          : (player.finalizacao ?? player.skill ?? 0);
 
   // Aggressiveness
   const aggKey = aggLabel(player.aggressiveness);
@@ -240,7 +247,11 @@ export function PlayerHistoryModal({
                     </p>
                   </div>
                 </div>
-                <SkillBar label="Skill" value={skill} color={barColor} />
+                <SkillBar
+                  label={`Atributo Principal (${POS_LABEL[pos] || pos})`}
+                  value={primaryAttr}
+                  color={barColor}
+                />
               </div>
 
               {/* Contract management */}

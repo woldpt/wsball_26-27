@@ -30,6 +30,11 @@ CREATE TABLE IF NOT EXISTS players (
   name TEXT NOT NULL,
   position TEXT,
   skill INTEGER,
+  gk INTEGER DEFAULT 1,
+  defesa INTEGER DEFAULT 1,
+  passe INTEGER DEFAULT 1,
+  finalizacao INTEGER DEFAULT 1,
+  resistencia INTEGER DEFAULT 50,
   age INTEGER,
   form INTEGER DEFAULT 100,
   aggressiveness INTEGER DEFAULT 3,
@@ -80,6 +85,18 @@ CREATE TABLE IF NOT EXISTS matches (
 CREATE TABLE IF NOT EXISTS game_state (
   key TEXT PRIMARY KEY,
   value TEXT
+);
+
+CREATE TABLE IF NOT EXISTS team_training_plan (
+  id INTEGER PRIMARY KEY AUTOINCREMENT,
+  team_id INTEGER NOT NULL,
+  season INTEGER NOT NULL,
+  matchweek INTEGER NOT NULL,
+  focus TEXT NOT NULL,
+  intensity INTEGER NOT NULL DEFAULT 50,
+  updated_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+  UNIQUE(team_id, season, matchweek),
+  FOREIGN KEY(team_id) REFERENCES teams(id)
 );
 
 CREATE TABLE IF NOT EXISTS cup_matches (
@@ -138,3 +155,4 @@ CREATE INDEX IF NOT EXISTS idx_palmares_team_id ON palmares(team_id);
 CREATE INDEX IF NOT EXISTS idx_club_news_team_id ON club_news(team_id);
 CREATE INDEX IF NOT EXISTS idx_club_news_player_id ON club_news(player_id);
 CREATE INDEX IF NOT EXISTS idx_club_news_created_at ON club_news(created_at);
+CREATE INDEX IF NOT EXISTS idx_training_plan_team_week ON team_training_plan(team_id, season, matchweek);
