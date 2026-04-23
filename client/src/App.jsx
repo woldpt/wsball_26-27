@@ -241,8 +241,6 @@ function AttrTooltip({ player, children }) {
   const defesa = Number(player?.defesa ?? player?.skill ?? 1);
   const passe = Number(player?.passe ?? player?.skill ?? 1);
   const finalizacao = Number(player?.finalizacao ?? player?.skill ?? 1);
-  const form = Number(player?.form ?? 50);
-  const resistencia = Number(player?.resistencia ?? 50);
   const attrs = [
     { key: "gk", label: "GR", value: gk, color: "#eab308", hi: pos === "GR" },
     {
@@ -265,14 +263,6 @@ function AttrTooltip({ player, children }) {
       value: finalizacao,
       color: "#f43f5e",
       hi: pos === "ATA",
-    },
-    { key: "frm", label: "Frm", value: form, color: "#a1a1aa", hi: false },
-    {
-      key: "res",
-      label: "Res",
-      value: resistencia,
-      color: "#a1a1aa",
-      hi: false,
     },
   ];
   return (
@@ -8007,6 +7997,12 @@ function App() {
                                     <th className="py-3 px-3 text-center w-16">
                                       Qual
                                     </th>
+                                    <th className="py-3 px-3 text-center w-12">
+                                      Frm
+                                    </th>
+                                    <th className="py-3 px-3 text-center w-12">
+                                      Res
+                                    </th>
                                     <th className="py-3 px-3 text-center">
                                       Ordenado/sem
                                     </th>
@@ -8159,6 +8155,18 @@ function App() {
                                                   : "▼"}
                                               </span>
                                             )}
+                                        </td>
+                                        {/* Forma */}
+                                        <td className="py-2.5 px-3 text-center">
+                                          <span className="text-xs font-black tabular-nums text-zinc-300">
+                                            {Number(player.form ?? 50)}
+                                          </span>
+                                        </td>
+                                        {/* Resistência */}
+                                        <td className="py-2.5 px-3 text-center">
+                                          <span className="text-xs font-black tabular-nums text-zinc-300">
+                                            {Number(player.resistencia ?? 50)}
+                                          </span>
                                         </td>
                                         {/* Ordenado */}
                                         <td className="py-2.5 px-3 text-center font-mono text-on-surface-variant text-xs">
