@@ -73,7 +73,13 @@ export function registerGameplaySocketHandlers(
        VALUES (?, ?, ?, ?, ?, CURRENT_TIMESTAMP)
        ON CONFLICT(team_id, season, matchweek)
        DO UPDATE SET focus = excluded.focus, intensity = excluded.intensity, updated_at = CURRENT_TIMESTAMP`,
-      [playerState.teamId, game.season, game.matchweek, normalizedFocus, safeIntensity],
+      [
+        playerState.teamId,
+        game.season,
+        game.matchweek,
+        normalizedFocus,
+        safeIntensity,
+      ],
       () => {
         socket.emit("trainingPlanUpdated", {
           teamId: playerState.teamId,
@@ -94,7 +100,10 @@ export function registerGameplaySocketHandlers(
       "SELECT focus, intensity FROM team_training_plan WHERE team_id = ? AND season = ? AND matchweek = ?",
       [playerState.teamId, game.season, game.matchweek],
       (_err: any, row: any) => {
-        socket.emit("trainingPlanData", row || { focus: "FORMA", intensity: 50 });
+        socket.emit(
+          "trainingPlanData",
+          row || { focus: "FORMA", intensity: 50 },
+        );
       },
     );
   });

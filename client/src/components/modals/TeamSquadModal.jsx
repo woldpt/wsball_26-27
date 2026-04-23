@@ -50,12 +50,48 @@ export function TeamSquadModal({
   const getAttrTooltipContent = (player) => {
     const pos = player?.position;
     const attrs = [
-      { key: "gk",  label: "GR",  value: Number(player?.gk ?? player?.skill ?? 1),         color: "#eab308", hi: pos === "GR" },
-      { key: "def", label: "DEF", value: Number(player?.defesa ?? player?.skill ?? 1),      color: "#3b82f6", hi: pos === "DEF" },
-      { key: "pas", label: "MED", value: Number(player?.passe ?? player?.skill ?? 1),       color: "#10b981", hi: pos === "MED" },
-      { key: "fin", label: "ATA", value: Number(player?.finalizacao ?? player?.skill ?? 1), color: "#f43f5e", hi: pos === "ATA" },
-      { key: "frm", label: "Frm", value: Number(player?.form ?? 50),                        color: "#a1a1aa", hi: false },
-      { key: "res", label: "Res", value: Number(player?.resistencia ?? 50),                 color: "#a1a1aa", hi: false },
+      {
+        key: "gk",
+        label: "GR",
+        value: Number(player?.gk ?? player?.skill ?? 1),
+        color: "#eab308",
+        hi: pos === "GR",
+      },
+      {
+        key: "def",
+        label: "DEF",
+        value: Number(player?.defesa ?? player?.skill ?? 1),
+        color: "#3b82f6",
+        hi: pos === "DEF",
+      },
+      {
+        key: "pas",
+        label: "MED",
+        value: Number(player?.passe ?? player?.skill ?? 1),
+        color: "#10b981",
+        hi: pos === "MED",
+      },
+      {
+        key: "fin",
+        label: "ATA",
+        value: Number(player?.finalizacao ?? player?.skill ?? 1),
+        color: "#f43f5e",
+        hi: pos === "ATA",
+      },
+      {
+        key: "frm",
+        label: "Frm",
+        value: Number(player?.form ?? 50),
+        color: "#a1a1aa",
+        hi: false,
+      },
+      {
+        key: "res",
+        label: "Res",
+        value: Number(player?.resistencia ?? 50),
+        color: "#a1a1aa",
+        hi: false,
+      },
     ];
     return attrs;
   };
@@ -240,23 +276,50 @@ export function TeamSquadModal({
                               </span>
                               {player.prev_skill !== null &&
                                 player.prev_skill !== undefined &&
-                                player.prev_skill !== getPrimaryAttr(player) && (
+                                player.prev_skill !==
+                                  getPrimaryAttr(player) && (
                                   <span
                                     className={`ml-1 text-xs font-black ${getPrimaryAttr(player) > player.prev_skill ? "text-emerald-400" : "text-red-400"}`}
                                   >
-                                    {getPrimaryAttr(player) > player.prev_skill ? "▲" : "▼"}
+                                    {getPrimaryAttr(player) > player.prev_skill
+                                      ? "▲"
+                                      : "▼"}
                                   </span>
                                 )}
                               <span
                                 className="pointer-events-none absolute bottom-full left-1/2 -translate-x-1/2 mb-1.5 z-60 hidden group-hover/attr:grid grid-cols-2 gap-x-3 gap-y-1 rounded-md px-2.5 py-2 shadow-xl"
-                                style={{ background: "#13131f", border: "1px solid #26263a", minWidth: "7.5rem" }}
+                                style={{
+                                  background: "#13131f",
+                                  border: "1px solid #26263a",
+                                  minWidth: "7.5rem",
+                                }}
                               >
-                                {getAttrTooltipContent(player).map(({ key, label, value, color, hi }) => (
-                                  <div key={key} className="flex items-center justify-between gap-1">
-                                    <span className="text-[9px] font-black uppercase leading-none" style={{ color: hi ? color : "#52525b" }}>{label}</span>
-                                    <span className="text-[11px] tabular-nums leading-none" style={{ color: hi ? color : "#a1a1aa", fontWeight: hi ? 900 : 600 }}>{value}</span>
-                                  </div>
-                                ))}
+                                {getAttrTooltipContent(player).map(
+                                  ({ key, label, value, color, hi }) => (
+                                    <div
+                                      key={key}
+                                      className="flex items-center justify-between gap-1"
+                                    >
+                                      <span
+                                        className="text-[9px] font-black uppercase leading-none"
+                                        style={{
+                                          color: hi ? color : "#52525b",
+                                        }}
+                                      >
+                                        {label}
+                                      </span>
+                                      <span
+                                        className="text-[11px] tabular-nums leading-none"
+                                        style={{
+                                          color: hi ? color : "#a1a1aa",
+                                          fontWeight: hi ? 900 : 600,
+                                        }}
+                                      >
+                                        {value}
+                                      </span>
+                                    </div>
+                                  ),
+                                )}
                               </span>
                             </span>
                           </td>

@@ -364,12 +364,58 @@ export function AuctionNotification({
               style={{ background: "#18181f", border: "1px solid #26263a" }}
             >
               {[
-                { label: "GR",  value: Number(selectedAuctionPlayer.gk ?? selectedAuctionPlayer.skill ?? 1),         color: "#eab308", hi: pos === "GR" },
-                { label: "DEF", value: Number(selectedAuctionPlayer.defesa ?? selectedAuctionPlayer.skill ?? 1),      color: "#3b82f6", hi: pos === "DEF" },
-                { label: "MED", value: Number(selectedAuctionPlayer.passe ?? selectedAuctionPlayer.skill ?? 1),       color: "#10b981", hi: pos === "MED" },
-                { label: "ATA", value: Number(selectedAuctionPlayer.finalizacao ?? selectedAuctionPlayer.skill ?? 1), color: "#f43f5e", hi: pos === "ATA" },
-                { label: "Forma",   value: Number(selectedAuctionPlayer.form ?? 50),         color: "#a1a1aa", hi: false },
-                { label: "Resist.", value: Number(selectedAuctionPlayer.resistencia ?? 50),  color: "#a1a1aa", hi: false },
+                {
+                  label: "GR",
+                  value: Number(
+                    selectedAuctionPlayer.gk ??
+                      selectedAuctionPlayer.skill ??
+                      1,
+                  ),
+                  color: "#eab308",
+                  hi: pos === "GR",
+                },
+                {
+                  label: "DEF",
+                  value: Number(
+                    selectedAuctionPlayer.defesa ??
+                      selectedAuctionPlayer.skill ??
+                      1,
+                  ),
+                  color: "#3b82f6",
+                  hi: pos === "DEF",
+                },
+                {
+                  label: "MED",
+                  value: Number(
+                    selectedAuctionPlayer.passe ??
+                      selectedAuctionPlayer.skill ??
+                      1,
+                  ),
+                  color: "#10b981",
+                  hi: pos === "MED",
+                },
+                {
+                  label: "ATA",
+                  value: Number(
+                    selectedAuctionPlayer.finalizacao ??
+                      selectedAuctionPlayer.skill ??
+                      1,
+                  ),
+                  color: "#f43f5e",
+                  hi: pos === "ATA",
+                },
+                {
+                  label: "Forma",
+                  value: Number(selectedAuctionPlayer.form ?? 50),
+                  color: "#a1a1aa",
+                  hi: false,
+                },
+                {
+                  label: "Resist.",
+                  value: Number(selectedAuctionPlayer.resistencia ?? 50),
+                  color: "#a1a1aa",
+                  hi: false,
+                },
               ].map(({ label, value, color, hi }) => (
                 <div key={label} className="flex flex-col gap-0.5">
                   <span

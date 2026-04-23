@@ -215,7 +215,8 @@ function getPrimaryAttr(player) {
   if (player.position === "GR") return Number(player.gk ?? player.skill ?? 0);
   if (player.position === "DEF")
     return Number(player.defesa ?? player.skill ?? 0);
-  if (player.position === "MED") return Number(player.passe ?? player.skill ?? 0);
+  if (player.position === "MED")
+    return Number(player.passe ?? player.skill ?? 0);
   return Number(player.finalizacao ?? player.skill ?? 0);
 }
 
@@ -243,19 +244,47 @@ function AttrTooltip({ player, children }) {
   const form = Number(player?.form ?? 50);
   const resistencia = Number(player?.resistencia ?? 50);
   const attrs = [
-    { key: "gk",  label: "GR",  value: gk,          color: "#eab308", hi: pos === "GR" },
-    { key: "def", label: "DEF", value: defesa,       color: "#3b82f6", hi: pos === "DEF" },
-    { key: "pas", label: "MED", value: passe,        color: "#10b981", hi: pos === "MED" },
-    { key: "fin", label: "ATA", value: finalizacao,  color: "#f43f5e", hi: pos === "ATA" },
-    { key: "frm", label: "Frm", value: form,         color: "#a1a1aa", hi: false },
-    { key: "res", label: "Res", value: resistencia,  color: "#a1a1aa", hi: false },
+    { key: "gk", label: "GR", value: gk, color: "#eab308", hi: pos === "GR" },
+    {
+      key: "def",
+      label: "DEF",
+      value: defesa,
+      color: "#3b82f6",
+      hi: pos === "DEF",
+    },
+    {
+      key: "pas",
+      label: "MED",
+      value: passe,
+      color: "#10b981",
+      hi: pos === "MED",
+    },
+    {
+      key: "fin",
+      label: "ATA",
+      value: finalizacao,
+      color: "#f43f5e",
+      hi: pos === "ATA",
+    },
+    { key: "frm", label: "Frm", value: form, color: "#a1a1aa", hi: false },
+    {
+      key: "res",
+      label: "Res",
+      value: resistencia,
+      color: "#a1a1aa",
+      hi: false,
+    },
   ];
   return (
     <span className="relative group/attr inline-flex items-center cursor-default">
       {children}
       <span
         className="pointer-events-none absolute bottom-full left-1/2 -translate-x-1/2 mb-1.5 z-60 hidden group-hover/attr:grid grid-cols-2 gap-x-3 gap-y-1 rounded-md px-2.5 py-2 shadow-xl"
-        style={{ background: "#13131f", border: "1px solid #26263a", minWidth: "7.5rem" }}
+        style={{
+          background: "#13131f",
+          border: "1px solid #26263a",
+          minWidth: "7.5rem",
+        }}
       >
         {attrs.map(({ key, label, value, color, hi }) => (
           <div key={key} className="flex items-center justify-between gap-1">
@@ -267,7 +296,10 @@ function AttrTooltip({ player, children }) {
             </span>
             <span
               className="text-[11px] tabular-nums leading-none"
-              style={{ color: hi ? color : "#a1a1aa", fontWeight: hi ? 900 : 600 }}
+              style={{
+                color: hi ? color : "#a1a1aa",
+                fontWeight: hi ? 900 : 600,
+              }}
             >
               {value}
             </span>
@@ -4009,7 +4041,11 @@ function App() {
                     {[
                       { key: "finances", label: "Finanças", icon: "payments" },
                       { key: "players", label: "Plantel", icon: "group" },
-                      { key: "training", label: "Treino", icon: "fitness_center" },
+                      {
+                        key: "training",
+                        label: "Treino",
+                        icon: "fitness_center",
+                      },
                     ].map(({ key, label, icon }) => (
                       <button
                         key={key}
@@ -4120,7 +4156,11 @@ function App() {
 
             {/* Gestão (Finanças + Plantel) */}
             {(() => {
-              const isChildActive = ["finances", "players", "training"].includes(activeTab);
+              const isChildActive = [
+                "finances",
+                "players",
+                "training",
+              ].includes(activeTab);
               const isOpen = mobileSubMenu === "gestao";
               return (
                 <motion.button
@@ -4578,7 +4618,8 @@ function App() {
                                         {player.name}
                                       </span>
                                       <span className="text-xs font-black uppercase tracking-widest text-zinc-400">
-                                        {player.position} · {getPrimaryAttr(player)}
+                                        {player.position} ·{" "}
+                                        {getPrimaryAttr(player)}
                                       </span>
                                     </button>
                                   ))}
@@ -8500,7 +8541,8 @@ function App() {
                                     Treino Semanal
                                   </span>
                                   <span className="text-xs font-black text-primary">
-                                    {trainingPlan.focus} · {trainingPlan.intensity}%
+                                    {trainingPlan.focus} ·{" "}
+                                    {trainingPlan.intensity}%
                                   </span>
                                 </div>
                                 <span className="material-symbols-outlined text-base text-on-surface-variant group-hover:text-primary transition-colors">
@@ -8626,10 +8668,16 @@ function App() {
                                         )}
                                     </span>
                                     <span className="text-[9px] font-bold text-zinc-500 shrink-0 leading-none">
-                                      Frm <span className="text-zinc-400">{player.form ?? 50}</span>
+                                      Frm{" "}
+                                      <span className="text-zinc-400">
+                                        {player.form ?? 50}
+                                      </span>
                                     </span>
                                     <span className="text-[9px] font-bold text-zinc-500 shrink-0 leading-none">
-                                      Res <span className="text-zinc-400">{player.resistencia ?? 50}</span>
+                                      Res{" "}
+                                      <span className="text-zinc-400">
+                                        {player.resistencia ?? 50}
+                                      </span>
                                     </span>
                                     {!player.isJunior && (
                                       <span
@@ -8825,10 +8873,16 @@ function App() {
                                       {getPrimaryAttr(player)}
                                     </span>
                                     <span className="text-[9px] font-bold text-zinc-500 shrink-0 leading-none">
-                                      Frm <span className="text-zinc-400">{player.form ?? 50}</span>
+                                      Frm{" "}
+                                      <span className="text-zinc-400">
+                                        {player.form ?? 50}
+                                      </span>
                                     </span>
                                     <span className="text-[9px] font-bold text-zinc-500 shrink-0 leading-none">
-                                      Res <span className="text-zinc-400">{player.resistencia ?? 50}</span>
+                                      Res{" "}
+                                      <span className="text-zinc-400">
+                                        {player.resistencia ?? 50}
+                                      </span>
                                     </span>
                                     {!player.isJunior && (
                                       <span
@@ -8998,10 +9052,16 @@ function App() {
                                         {getPrimaryAttr(player)}
                                       </span>
                                       <span className="text-[9px] font-bold text-zinc-500 shrink-0 leading-none">
-                                        Frm <span className="text-zinc-400">{player.form ?? 50}</span>
+                                        Frm{" "}
+                                        <span className="text-zinc-400">
+                                          {player.form ?? 50}
+                                        </span>
                                       </span>
                                       <span className="text-[9px] font-bold text-zinc-500 shrink-0 leading-none">
-                                        Res <span className="text-zinc-400">{player.resistencia ?? 50}</span>
+                                        Res{" "}
+                                        <span className="text-zinc-400">
+                                          {player.resistencia ?? 50}
+                                        </span>
                                       </span>
                                       <span
                                         className="shrink-0 w-6 h-6 rounded-full bg-zinc-800 flex items-center justify-center text-sm cursor-pointer"
@@ -9601,150 +9661,322 @@ function App() {
                       </div>
                     </div>
                   )}
-                  {activeTab === "training" && (() => {
-                    const isReady = !!players.find((p) => p.name === me?.name)?.ready;
-                    const focus = trainingPlan.focus;
-                    const posFilter = { GR: "GR", DEFESA: "DEF", PASSE: "MED", ATAQUE: "ATA" }[focus];
-                    const attrKey = { GR: "gk", DEFESA: "defesa", PASSE: "passe", ATAQUE: "finalizacao", FORMA: "form", RESISTENCIA: "resistencia" }[focus];
-                    const isSkill = !["FORMA", "RESISTENCIA"].includes(focus);
-                    const affectedPlayers = posFilter ? mySquad.filter((p) => p.position === posFilter) : mySquad;
-                    const i = trainingPlan.intensity;
-                    return (
-                      <div className="p-4 md:p-6 space-y-6">
-                        {/* Header */}
-                        <div className="flex items-center gap-3">
-                          <span className="material-symbols-outlined text-3xl text-primary">fitness_center</span>
-                          <div>
-                            <h2 className="text-2xl font-black text-on-surface">Treino Semanal</h2>
-                            <p className="text-sm text-on-surface-variant">Configura o plano de treino para a próxima jornada</p>
+                  {activeTab === "training" &&
+                    (() => {
+                      const isReady = !!players.find((p) => p.name === me?.name)
+                        ?.ready;
+                      const focus = trainingPlan.focus;
+                      const posFilter = {
+                        GR: "GR",
+                        DEFESA: "DEF",
+                        PASSE: "MED",
+                        ATAQUE: "ATA",
+                      }[focus];
+                      const attrKey = {
+                        GR: "gk",
+                        DEFESA: "defesa",
+                        PASSE: "passe",
+                        ATAQUE: "finalizacao",
+                        FORMA: "form",
+                        RESISTENCIA: "resistencia",
+                      }[focus];
+                      const isSkill = !["FORMA", "RESISTENCIA"].includes(focus);
+                      const affectedPlayers = posFilter
+                        ? mySquad.filter((p) => p.position === posFilter)
+                        : mySquad;
+                      const i = trainingPlan.intensity;
+                      return (
+                        <div className="p-4 md:p-6 space-y-6">
+                          {/* Header */}
+                          <div className="flex items-center gap-3">
+                            <span className="material-symbols-outlined text-3xl text-primary">
+                              fitness_center
+                            </span>
+                            <div>
+                              <h2 className="text-2xl font-black text-on-surface">
+                                Treino Semanal
+                              </h2>
+                              <p className="text-sm text-on-surface-variant">
+                                Configura o plano de treino para a próxima
+                                jornada
+                              </p>
+                            </div>
                           </div>
-                        </div>
 
-                        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-                          {/* Card Plano Actual */}
-                          <div className="lg:col-span-1 bg-surface-container rounded-lg p-5 border border-outline-variant/20 space-y-4">
-                            <h3 className="text-xs uppercase tracking-widest font-black text-on-surface-variant">Plano Actual</h3>
-                            {isReady && (
-                              <div className="text-xs text-amber-400 font-bold bg-amber-500/10 px-3 py-2 rounded border border-amber-500/20">
-                                Bloqueado — já confirmaste a tua táctica.
-                              </div>
-                            )}
-                            <div className="space-y-3">
-                              <div>
-                                <label className="block text-[10px] uppercase tracking-widest text-zinc-500 font-black mb-1.5">Foco</label>
-                                <select
-                                  value={trainingPlan.focus}
-                                  disabled={isReady}
-                                  onChange={(e) => {
-                                    const next = { ...trainingPlan, focus: e.target.value };
-                                    setTrainingPlan(next);
-                                    socket.emit("setTrainingPlan", next);
-                                  }}
-                                  className="w-full px-3 py-2.5 rounded-sm bg-surface border border-outline-variant/30 text-sm font-bold text-on-surface focus:ring-2 focus:ring-primary disabled:opacity-50"
-                                >
-                                  <option value="FORMA">Forma (Todos)</option>
-                                  <option value="RESISTENCIA">Resistência (Todos)</option>
-                                  <option value="GR">Guarda-Redes</option>
-                                  <option value="DEFESA">Defesa</option>
-                                  <option value="PASSE">Médios</option>
-                                  <option value="ATAQUE">Avançados</option>
-                                </select>
-                              </div>
-                              <div>
-                                <label className="block text-[10px] uppercase tracking-widest text-zinc-500 font-black mb-1.5">
-                                  Intensidade — {trainingPlan.intensity}%
-                                </label>
-                                <input
-                                  type="range"
-                                  min="1"
-                                  max="100"
-                                  value={trainingPlan.intensity}
-                                  disabled={isReady}
-                                  onChange={(e) => {
-                                    setTrainingPlan((prev) => ({ ...prev, intensity: Number(e.target.value) || 50 }));
-                                  }}
-                                  onMouseUp={(e) => {
-                                    const next = { focus: trainingPlan.focus, intensity: Number(e.target.value) || 50 };
-                                    socket.emit("setTrainingPlan", next);
-                                  }}
-                                  onTouchEnd={(e) => {
-                                    const next = { focus: trainingPlan.focus, intensity: Number(e.target.value) || 50 };
-                                    socket.emit("setTrainingPlan", next);
-                                  }}
-                                  className="w-full accent-primary disabled:opacity-50"
-                                />
-                                <div className="flex justify-between text-[9px] text-zinc-600 font-bold mt-0.5">
-                                  <span>Leve</span>
-                                  <span>Moderado</span>
-                                  <span>Intenso</span>
+                          <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+                            {/* Card Plano Actual */}
+                            <div className="lg:col-span-1 bg-surface-container rounded-lg p-5 border border-outline-variant/20 space-y-4">
+                              <h3 className="text-xs uppercase tracking-widest font-black text-on-surface-variant">
+                                Plano Actual
+                              </h3>
+                              {isReady && (
+                                <div className="text-xs text-amber-400 font-bold bg-amber-500/10 px-3 py-2 rounded border border-amber-500/20">
+                                  Bloqueado — já confirmaste a tua táctica.
+                                </div>
+                              )}
+                              <div className="space-y-3">
+                                <div>
+                                  <label className="block text-[10px] uppercase tracking-widest text-zinc-500 font-black mb-1.5">
+                                    Foco
+                                  </label>
+                                  <select
+                                    value={trainingPlan.focus}
+                                    disabled={isReady}
+                                    onChange={(e) => {
+                                      const next = {
+                                        ...trainingPlan,
+                                        focus: e.target.value,
+                                      };
+                                      setTrainingPlan(next);
+                                      socket.emit("setTrainingPlan", next);
+                                    }}
+                                    className="w-full px-3 py-2.5 rounded-sm bg-surface border border-outline-variant/30 text-sm font-bold text-on-surface focus:ring-2 focus:ring-primary disabled:opacity-50"
+                                  >
+                                    <option value="FORMA">Forma (Todos)</option>
+                                    <option value="RESISTENCIA">
+                                      Resistência (Todos)
+                                    </option>
+                                    <option value="GR">Guarda-Redes</option>
+                                    <option value="DEFESA">Defesa</option>
+                                    <option value="PASSE">Médios</option>
+                                    <option value="ATAQUE">Avançados</option>
+                                  </select>
+                                </div>
+                                <div>
+                                  <label className="block text-[10px] uppercase tracking-widest text-zinc-500 font-black mb-1.5">
+                                    Intensidade — {trainingPlan.intensity}%
+                                  </label>
+                                  <input
+                                    type="range"
+                                    min="1"
+                                    max="100"
+                                    value={trainingPlan.intensity}
+                                    disabled={isReady}
+                                    onChange={(e) => {
+                                      setTrainingPlan((prev) => ({
+                                        ...prev,
+                                        intensity: Number(e.target.value) || 50,
+                                      }));
+                                    }}
+                                    onMouseUp={(e) => {
+                                      const next = {
+                                        focus: trainingPlan.focus,
+                                        intensity: Number(e.target.value) || 50,
+                                      };
+                                      socket.emit("setTrainingPlan", next);
+                                    }}
+                                    onTouchEnd={(e) => {
+                                      const next = {
+                                        focus: trainingPlan.focus,
+                                        intensity: Number(e.target.value) || 50,
+                                      };
+                                      socket.emit("setTrainingPlan", next);
+                                    }}
+                                    className="w-full accent-primary disabled:opacity-50"
+                                  />
+                                  <div className="flex justify-between text-[9px] text-zinc-600 font-bold mt-0.5">
+                                    <span>Leve</span>
+                                    <span>Moderado</span>
+                                    <span>Intenso</span>
+                                  </div>
                                 </div>
                               </div>
+                              {/* Expected gain info */}
+                              <div className="text-xs text-zinc-400 bg-zinc-900/60 px-3 py-2.5 rounded border border-zinc-800 leading-relaxed">
+                                {focus === "FORMA" && (
+                                  <>
+                                    Ganho esperado:{" "}
+                                    <span className="font-black text-emerald-400">
+                                      +{Math.round(i / 20)} Forma
+                                    </span>{" "}
+                                    para todos os jogadores.
+                                  </>
+                                )}
+                                {focus === "RESISTENCIA" && (
+                                  <>
+                                    Ganho esperado:{" "}
+                                    <span className="font-black text-emerald-400">
+                                      +{Math.round(i / 25)} Resistência
+                                    </span>{" "}
+                                    para todos os jogadores.
+                                  </>
+                                )}
+                                {isSkill &&
+                                  (() => {
+                                    const chance = Math.round(
+                                      (0.15 + i / 200) * 100,
+                                    );
+                                    const posLbl = {
+                                      GR: "Guarda-Redes",
+                                      DEFESA: "Defesas",
+                                      PASSE: "Médios",
+                                      ATAQUE: "Avançados",
+                                    }[focus];
+                                    const attrLbl = {
+                                      GR: "GR",
+                                      DEFESA: "Defesa",
+                                      PASSE: "Passe",
+                                      ATAQUE: "Finalização",
+                                    }[focus];
+                                    return (
+                                      <>
+                                        {posLbl}:{" "}
+                                        <span className="font-black text-emerald-400">
+                                          {chance}% de probabilidade
+                                        </span>{" "}
+                                        de +1 {attrLbl}.
+                                      </>
+                                    );
+                                  })()}
+                              </div>
                             </div>
-                            {/* Expected gain info */}
-                            <div className="text-xs text-zinc-400 bg-zinc-900/60 px-3 py-2.5 rounded border border-zinc-800 leading-relaxed">
-                              {focus === "FORMA" && (
-                                <>Ganho esperado: <span className="font-black text-emerald-400">+{Math.round(i / 20)} Forma</span> para todos os jogadores.</>
+
+                            {/* Card Jogadores Afectados */}
+                            <div className="lg:col-span-2 bg-surface-container rounded-lg p-5 border border-outline-variant/20">
+                              <h3 className="text-xs uppercase tracking-widest font-black text-on-surface-variant mb-4">
+                                Jogadores Afectados
+                              </h3>
+                              {affectedPlayers.length === 0 ? (
+                                <p className="text-zinc-500 text-sm font-bold text-center py-8">
+                                  Sem jogadores na posição.
+                                </p>
+                              ) : (
+                                <div className="overflow-x-auto">
+                                  <table className="w-full text-left text-xs">
+                                    <thead>
+                                      <tr className="text-on-surface-variant uppercase text-[10px] tracking-widest border-b border-outline-variant/20">
+                                        <th className="pb-2 font-black">
+                                          Jogador
+                                        </th>
+                                        <th className="pb-2 font-black text-center">
+                                          Pos
+                                        </th>
+                                        <th className="pb-2 font-black text-center">
+                                          Actual
+                                        </th>
+                                        <th className="pb-2 font-black text-center">
+                                          Ganho
+                                        </th>
+                                        <th className="pb-2 font-black text-center">
+                                          Máx
+                                        </th>
+                                      </tr>
+                                    </thead>
+                                    <tbody className="divide-y divide-outline-variant/10">
+                                      {affectedPlayers.map((p) => {
+                                        const current = Number(
+                                          p[attrKey] ?? (isSkill ? 1 : 50),
+                                        );
+                                        const max = isSkill ? 50 : 100;
+                                        const isMaxed = current >= max;
+                                        const posColor = {
+                                          GR: "#eab308",
+                                          DEF: "#3b82f6",
+                                          MED: "#10b981",
+                                          ATA: "#f43f5e",
+                                        };
+                                        const atColor =
+                                          posColor[p.position] || "#a1a1aa";
+                                        const gain = isSkill
+                                          ? `${Math.round((0.15 + i / 200) * 100)}% chance`
+                                          : `+${Math.round(focus === "FORMA" ? i / 20 : i / 25)}`;
+                                        return (
+                                          <tr
+                                            key={p.id}
+                                            className="hover:bg-surface-bright/10"
+                                          >
+                                            <td className="py-2 font-bold text-on-surface truncate max-w-48">
+                                              {p.name}
+                                            </td>
+                                            <td className="py-2 text-center">
+                                              <span
+                                                className={`px-1.5 py-0.5 rounded-sm text-[9px] font-black border-l-2 bg-surface-bright ${POSITION_BORDER_CLASS[p.position] || "border-zinc-500"} ${POSITION_TEXT_CLASS[p.position] || "text-zinc-300"}`}
+                                              >
+                                                {p.position}
+                                              </span>
+                                            </td>
+                                            <td
+                                              className="py-2 text-center font-black tabular-nums"
+                                              style={{ color: atColor }}
+                                            >
+                                              {current}
+                                            </td>
+                                            <td className="py-2 text-center font-black tabular-nums">
+                                              {isMaxed ? (
+                                                <span className="text-zinc-500">
+                                                  MAX
+                                                </span>
+                                              ) : (
+                                                <span className="text-emerald-400">
+                                                  {gain}
+                                                </span>
+                                              )}
+                                            </td>
+                                            <td className="py-2 text-center text-zinc-500 tabular-nums">
+                                              {max}
+                                            </td>
+                                          </tr>
+                                        );
+                                      })}
+                                    </tbody>
+                                  </table>
+                                </div>
                               )}
-                              {focus === "RESISTENCIA" && (
-                                <>Ganho esperado: <span className="font-black text-emerald-400">+{Math.round(i / 25)} Resistência</span> para todos os jogadores.</>
-                              )}
-                              {isSkill && (() => {
-                                const chance = Math.round((0.15 + i / 200) * 100);
-                                const posLbl = { GR: "Guarda-Redes", DEFESA: "Defesas", PASSE: "Médios", ATAQUE: "Avançados" }[focus];
-                                const attrLbl = { GR: "GR", DEFESA: "Defesa", PASSE: "Passe", ATAQUE: "Finalização" }[focus];
-                                return <>{posLbl}: <span className="font-black text-emerald-400">{chance}% de probabilidade</span> de +1 {attrLbl}.</>;
-                              })()}
                             </div>
                           </div>
 
-                          {/* Card Jogadores Afectados */}
-                          <div className="lg:col-span-2 bg-surface-container rounded-lg p-5 border border-outline-variant/20">
-                            <h3 className="text-xs uppercase tracking-widest font-black text-on-surface-variant mb-4">Jogadores Afectados</h3>
-                            {affectedPlayers.length === 0 ? (
-                              <p className="text-zinc-500 text-sm font-bold text-center py-8">Sem jogadores na posição.</p>
+                          {/* Histórico */}
+                          <div className="bg-surface-container rounded-lg p-5 border border-outline-variant/20">
+                            <h3 className="text-xs uppercase tracking-widest font-black text-on-surface-variant mb-4">
+                              Histórico de Treinos
+                            </h3>
+                            {trainingHistory.length === 0 ? (
+                              <p className="text-zinc-500 text-sm font-bold text-center py-4">
+                                Sem registos de treino anteriores.
+                              </p>
                             ) : (
                               <div className="overflow-x-auto">
-                                <table className="w-full text-left text-xs">
+                                <table className="w-full text-left text-sm">
                                   <thead>
                                     <tr className="text-on-surface-variant uppercase text-[10px] tracking-widest border-b border-outline-variant/20">
-                                      <th className="pb-2 font-black">Jogador</th>
-                                      <th className="pb-2 font-black text-center">Pos</th>
-                                      <th className="pb-2 font-black text-center">Actual</th>
-                                      <th className="pb-2 font-black text-center">Ganho</th>
-                                      <th className="pb-2 font-black text-center">Máx</th>
+                                      <th className="pb-2 font-black">Época</th>
+                                      <th className="pb-2 font-black text-center">
+                                        Jornada
+                                      </th>
+                                      <th className="pb-2 font-black">Foco</th>
+                                      <th className="pb-2 font-black text-center">
+                                        Intensidade
+                                      </th>
                                     </tr>
                                   </thead>
                                   <tbody className="divide-y divide-outline-variant/10">
-                                    {affectedPlayers.map((p) => {
-                                      const current = Number(p[attrKey] ?? (isSkill ? 1 : 50));
-                                      const max = isSkill ? 50 : 100;
-                                      const isMaxed = current >= max;
-                                      const posColor = { GR: "#eab308", DEF: "#3b82f6", MED: "#10b981", ATA: "#f43f5e" };
-                                      const atColor = posColor[p.position] || "#a1a1aa";
-                                      const gain = isSkill
-                                        ? `${Math.round((0.15 + i / 200) * 100)}% chance`
-                                        : `+${Math.round(focus === "FORMA" ? i / 20 : i / 25)}`;
+                                    {trainingHistory.map((row, idx) => {
+                                      const focusLabel =
+                                        {
+                                          FORMA: "Forma",
+                                          RESISTENCIA: "Resistência",
+                                          GR: "Guarda-Redes",
+                                          DEFESA: "Defesa",
+                                          PASSE: "Passe",
+                                          ATAQUE: "Ataque",
+                                        }[row.focus] || row.focus;
                                       return (
-                                        <tr key={p.id} className="hover:bg-surface-bright/10">
-                                          <td className="py-2 font-bold text-on-surface truncate max-w-48">{p.name}</td>
-                                          <td className="py-2 text-center">
-                                            <span
-                                              className={`px-1.5 py-0.5 rounded-sm text-[9px] font-black border-l-2 bg-surface-bright ${POSITION_BORDER_CLASS[p.position] || "border-zinc-500"} ${POSITION_TEXT_CLASS[p.position] || "text-zinc-300"}`}
-                                            >
-                                              {p.position}
-                                            </span>
+                                        <tr
+                                          key={idx}
+                                          className="hover:bg-surface-bright/10"
+                                        >
+                                          <td className="py-2 font-bold text-on-surface-variant">
+                                            {row.season}
                                           </td>
-                                          <td className="py-2 text-center font-black tabular-nums" style={{ color: atColor }}>
-                                            {current}
+                                          <td className="py-2 text-center font-black text-on-surface">
+                                            {row.matchweek}
                                           </td>
-                                          <td className="py-2 text-center font-black tabular-nums">
-                                            {isMaxed ? (
-                                              <span className="text-zinc-500">MAX</span>
-                                            ) : (
-                                              <span className="text-emerald-400">{gain}</span>
-                                            )}
+                                          <td className="py-2 font-bold text-primary">
+                                            {focusLabel}
                                           </td>
-                                          <td className="py-2 text-center text-zinc-500 tabular-nums">{max}</td>
+                                          <td className="py-2 text-center font-black tabular-nums text-emerald-400">
+                                            {row.intensity}%
+                                          </td>
                                         </tr>
                                       );
                                     })}
@@ -9754,43 +9986,8 @@ function App() {
                             )}
                           </div>
                         </div>
-
-                        {/* Histórico */}
-                        <div className="bg-surface-container rounded-lg p-5 border border-outline-variant/20">
-                          <h3 className="text-xs uppercase tracking-widest font-black text-on-surface-variant mb-4">Histórico de Treinos</h3>
-                          {trainingHistory.length === 0 ? (
-                            <p className="text-zinc-500 text-sm font-bold text-center py-4">Sem registos de treino anteriores.</p>
-                          ) : (
-                            <div className="overflow-x-auto">
-                              <table className="w-full text-left text-sm">
-                                <thead>
-                                  <tr className="text-on-surface-variant uppercase text-[10px] tracking-widest border-b border-outline-variant/20">
-                                    <th className="pb-2 font-black">Época</th>
-                                    <th className="pb-2 font-black text-center">Jornada</th>
-                                    <th className="pb-2 font-black">Foco</th>
-                                    <th className="pb-2 font-black text-center">Intensidade</th>
-                                  </tr>
-                                </thead>
-                                <tbody className="divide-y divide-outline-variant/10">
-                                  {trainingHistory.map((row, idx) => {
-                                    const focusLabel = { FORMA: "Forma", RESISTENCIA: "Resistência", GR: "Guarda-Redes", DEFESA: "Defesa", PASSE: "Passe", ATAQUE: "Ataque" }[row.focus] || row.focus;
-                                    return (
-                                      <tr key={idx} className="hover:bg-surface-bright/10">
-                                        <td className="py-2 font-bold text-on-surface-variant">{row.season}</td>
-                                        <td className="py-2 text-center font-black text-on-surface">{row.matchweek}</td>
-                                        <td className="py-2 font-bold text-primary">{focusLabel}</td>
-                                        <td className="py-2 text-center font-black tabular-nums text-emerald-400">{row.intensity}%</td>
-                                      </tr>
-                                    );
-                                  })}
-                                </tbody>
-                              </table>
-                            </div>
-                          )}
-                        </div>
-                      </div>
-                    );
-                  })()}
+                      );
+                    })()}
                 </motion.div>
               </AnimatePresence>
             </div>
