@@ -187,6 +187,15 @@ function formatCurrency(value) {
   }).format(value);
 }
 
+/** Returns an interpolated red→green hex color for a 0-100 condition value */
+function conditionColor(value) {
+  const v = Math.max(0, Math.min(100, Number(value ?? 50))) / 100;
+  const r = Math.round(239 - v * (239 - 34)); // 239→34
+  const g = Math.round(68 + v * (197 - 68)); // 68→197
+  const b = Math.round(68 - v * (68 - 94)); // 68→94
+  return `rgb(${r},${g},${b})`;
+}
+
 function normalizeTeamId(teamId) {
   if (teamId === null || teamId === undefined) return null;
   const raw = String(teamId).trim();
@@ -8158,13 +8167,27 @@ function App() {
                                         </td>
                                         {/* Forma */}
                                         <td className="py-2.5 px-3 text-center">
-                                          <span className="text-xs font-black tabular-nums text-zinc-300">
+                                          <span
+                                            className="text-xs font-black tabular-nums"
+                                            style={{
+                                              color: conditionColor(
+                                                player.form ?? 50,
+                                              ),
+                                            }}
+                                          >
                                             {Number(player.form ?? 50)}
                                           </span>
                                         </td>
                                         {/* Resistência */}
                                         <td className="py-2.5 px-3 text-center">
-                                          <span className="text-xs font-black tabular-nums text-zinc-300">
+                                          <span
+                                            className="text-xs font-black tabular-nums"
+                                            style={{
+                                              color: conditionColor(
+                                                player.resistencia ?? 50,
+                                              ),
+                                            }}
+                                          >
                                             {Number(player.resistencia ?? 50)}
                                           </span>
                                         </td>
