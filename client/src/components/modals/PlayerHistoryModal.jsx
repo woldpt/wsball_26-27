@@ -2,6 +2,15 @@ import { formatCurrency } from "../../utils/formatters.js";
 import { AggBadge } from "../shared/AggBadge.jsx";
 import { aggLabel } from "../../utils/playerHelpers.js";
 
+/** Interpolates red→green for a 0-100 condition value */
+function conditionColor(value) {
+  const v = Math.max(0, Math.min(100, Number(value ?? 50))) / 100;
+  const r = Math.round(239 - v * (239 - 34));
+  const g = Math.round(68 + v * (197 - 68));
+  const b = Math.round(68 - v * (68 - 94));
+  return `rgb(${r},${g},${b})`;
+}
+
 // Position config
 const POS_LABEL = { GR: "GR", DEF: "DEF", MED: "MED", ATA: "ATA" };
 const POS_FULL = {
@@ -99,14 +108,40 @@ export function PlayerHistoryModal({
   const pos = player.position;
   const barColor = POS_BAR[pos] || "#95d4b3";
   const isStar = player.is_star === 1;
-  const primaryAttr =
-    pos === "GR"
-      ? (player.gk ?? player.skill ?? 0)
-      : pos === "DEF"
-        ? (player.defesa ?? player.skill ?? 0)
-        : pos === "MED"
-          ? (player.passe ?? player.skill ?? 0)
-          : (player.finalizacao ?? player.skill ?? 0);
+
+  const skills = [
+    {
+      key: "gk",
+      label: "Guarda-Redes",
+      value: Number(player.gk ?? player.skill ?? 0),
+      pos: "GR",
+      color: POS_BAR.GR,
+    },
+    {
+      key: "defesa",
+      label: "Defesa",
+      value: Number(player.defesa ?? player.skill ?? 0),
+      pos: "DEF",
+      color: POS_BAR.DEF,
+    },
+    {
+      key: "passe",
+      label: "Passe",
+      value: Number(player.passe ?? player.skill ?? 0),
+      pos: "MED",
+      color: POS_BAR.MED,
+    },
+    {
+      key: "finalizacao",
+      label: "Finalização",
+      value: Number(player.finalizacao ?? player.skill ?? 0),
+      pos: "ATA",
+      color: POS_BAR.ATA,
+    },
+  ];
+  const form = Number(player.form ?? 50);
+  const resistencia = Number(player.resistencia ?? 50);
+  const DIM = "#3f3f46";
 
   // Aggressiveness
   const aggKey = aggLabel(player.aggressiveness);
@@ -229,7 +264,7 @@ export function PlayerHistoryModal({
                 <p className="text-[10px] font-black uppercase tracking-widest text-primary mb-4">
                   Financeiro
                 </p>
-                <div className="grid grid-cols-2 gap-4 mb-4">
+                <div className="grid grid-cols-2 gap-4">
                   <div className="min-w-0">
                     <p className="text-[10px] font-black uppercase tracking-widest text-on-surface-variant">
                       Valor de mercado
@@ -247,11 +282,37 @@ export function PlayerHistoryModal({
                     </p>
                   </div>
                 </div>
-                <SkillBar
-                  label={`Atributo Principal (${POS_LABEL[pos] || pos})`}
-                  value={primaryAttr}
-                  color={barColor}
-                />
+              </div>
+
+              {/* Attributes */}
+              <div className="px-6 py-5 border-b border-outline-variant/10">
+                <p className="text-[10px] font-black uppercase tracking-widest text-primary mb-4">
+                  Atributos
+                </p>
+                <div className="flex flex-col gap-3">
+                  {skills.map(({ key, label, value, pos: sPos, color }) => (
+                    <SkillBar
+                      key={key}
+                      label={label}
+                      value={value}
+                      color={sPos === pos ? color : DIM}
+                    />
+                  ))}
+                  <div className="mt-1 pt-3 border-t border-outline-variant/10 flex flex-col gap-3">
+                    <SkillBar
+                      label="Forma"
+                      value={form}
+                      maxValue={100}
+                      color={conditionColor(form)}
+                    />
+                    <SkillBar
+                      label="Resistência"
+                      value={resistencia}
+                      maxValue={100}
+                      color={conditionColor(resistencia)}
+                    />
+                  </div>
+                </div>
               </div>
 
               {/* Contract management */}

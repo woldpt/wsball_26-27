@@ -8033,9 +8033,6 @@ function App() {
                                     <th className="py-3 px-3 text-center">
                                       Agr
                                     </th>
-                                    <th className="py-3 px-3 text-right">
-                                      Ações
-                                    </th>
                                   </tr>
                                 </thead>
                                 <tbody className="text-sm font-medium">
