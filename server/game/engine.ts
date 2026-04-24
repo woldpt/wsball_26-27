@@ -63,6 +63,7 @@ export function generateJuniorGR(
     position: "GR",
     skill: 1,
     aggressiveness: 3,
+    resistance: 3,
     isJunior: true,
     team_id: teamId,
     age: 17,
@@ -956,7 +957,11 @@ function applyFatigue(
 ) {
   for (const p of squad) {
     if (lineupIds.has(p.id)) {
-      p.skill = Math.max(1, p.skill - amount);
+      const resistance = p.resistance || 3;
+      const skipChance = (resistance - 1) * 0.1;
+      if (Math.random() >= skipChance) {
+        p.skill = Math.max(1, p.skill - amount);
+      }
     }
   }
 }
@@ -1245,6 +1250,9 @@ async function simulateMatchSegment(
 
     const moraleFactor = 1 + (morale - 50) * 0.005;
 
+    const avgForm = average(squad.map((p) => p.form || 100));
+    const formFactor = Math.max(0.85, Math.min(1.15, avgForm / 100));
+
     const attackBase = avgMidfielderQuality * 0.4 + avgForwardQuality * 0.6;
     const defenseBase = avgDefenderQuality * 0.6 + avgKeeperQuality * 0.4;
 
@@ -1253,8 +1261,9 @@ async function simulateMatchSegment(
         attackBase *
         formationAttack *
         Math.max(0.5, Math.min(1.5, moraleFactor)) *
-        styleOffensiveFactor[style],
-      defense: defenseBase * formationDefense,
+        styleOffensiveFactor[style] *
+        formFactor,
+      defense: defenseBase * formationDefense * formFactor,
       style,
       squad,
     };
@@ -1519,26 +1528,38 @@ async function simulateMatchSegment(
     if (Math.random() < awayCardProb) emitCard(false);
 
     const injuryChance = Math.random();
-    if (injuryChance < 0.003) {
+    const weatherInjuryMult =
+      fixture._weather === "neve"        ? 1.6 :
+      fixture._weather === "chuva_forte" ? 1.4 :
+      fixture._weather === "vento"       ? 1.3 :
+      fixture._weather === "chuva"       ? 1.2 :
+      1.0;
+    if (injuryChance < 0.003 * weatherInjuryMult) {
       const isHomeInjury = Math.random() > 0.5;
       const squad = isHomeInjury ? home.squad : away.squad;
       const side = isHomeInjury ? "home" : "away";
       const lineupIds = isHomeInjury ? homeLineupIds : awayLineupIds;
       const fullRoster = isHomeInjury ? homeFullRoster : awayFullRoster;
       if (squad.length > 0) {
-        const injuryResult = await applyInjuryEvent({
-          db,
-          fixture,
-          teamSide: side,
-          squad,
-          fullRoster,
-          lineupIds,
-          currentMatchweek,
-          io,
-          game,
-        });
-        if (injuryResult.replaced && side === "home") home.squad = squad;
-        if (injuryResult.replaced && side === "away") away.squad = squad;
+        const injuredPlayer = squad[Math.floor(Math.random() * squad.length)];
+        const resistanceSkip = ((injuredPlayer?.resistance || 3) - 1) * 0.08;
+        if (Math.random() < resistanceSkip) {
+          // jogador resistiu — ignorar lesão
+        } else {
+          const injuryResult = await applyInjuryEvent({
+            db,
+            fixture,
+            teamSide: side,
+            squad,
+            fullRoster,
+            lineupIds,
+            currentMatchweek,
+            io,
+            game,
+          });
+          if (injuryResult.replaced && side === "home") home.squad = squad;
+          if (injuryResult.replaced && side === "away") away.squad = squad;
+        }
       }
     }
 

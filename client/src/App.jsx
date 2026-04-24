@@ -8121,6 +8121,32 @@ function App() {
                                             value={player.aggressiveness}
                                           />
                                         </td>
+                                        {/* Resistência */}
+                                        <td className="py-2.5 px-3 text-center">
+                                          {player.resistance != null && (
+                                            <span className="text-[10px] text-cyan-400/70">
+                                              🛡️ {player.resistance}
+                                            </span>
+                                          )}
+                                        </td>
+                                        {/* Forma */}
+                                        <td className="py-2.5 px-3 text-center">
+                                          {(() => {
+                                            const form = player.form || 100;
+                                            const formColor =
+                                              form >= 115 ? "text-emerald-400" :
+                                              form <= 85  ? "text-rose-400" :
+                                              "text-on-surface-variant/30";
+                                            const formArrow =
+                                              form >= 115 ? "▲" :
+                                              form <= 85  ? "▼" : "—";
+                                            return (
+                                              <span className={`text-[10px] font-bold ${formColor}`}>
+                                                {formArrow}
+                                              </span>
+                                            );
+                                          })()}
+                                        </td>
                                         {/* Ações */}
                                         <td className="py-2.5 px-3 text-right">
                                           {canAct ? (
@@ -9408,6 +9434,30 @@ function App() {
                                   </td>
                                   <td className="px-4 py-2 text-center">
                                     <AggBadge value={player.aggressiveness} />
+                                  </td>
+                                  <td className="px-4 py-2 text-center">
+                                    {player.resistance != null && (
+                                      <span className="text-[10px] text-cyan-400/70">
+                                        🛡️ {player.resistance}
+                                      </span>
+                                    )}
+                                  </td>
+                                  <td className="px-4 py-2 text-center">
+                                    {(() => {
+                                      const form = player.form || 100;
+                                      const formColor =
+                                        form >= 115 ? "text-emerald-400" :
+                                        form <= 85  ? "text-rose-400" :
+                                        "text-on-surface-variant/30";
+                                      const formArrow =
+                                        form >= 115 ? "▲" :
+                                        form <= 85  ? "▼" : "—";
+                                      return (
+                                        <span className={`text-[10px] font-bold ${formColor}`}>
+                                          {formArrow}
+                                        </span>
+                                      );
+                                    })()}
                                   </td>
                                   <td className="px-4 py-2 text-center font-black text-zinc-300">
                                     {getPlayerStat(player, ["games_played"])}{" "}

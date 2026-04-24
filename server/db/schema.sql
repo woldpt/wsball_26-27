@@ -32,6 +32,7 @@ CREATE TABLE IF NOT EXISTS players (
   skill INTEGER,
   age INTEGER,
   form INTEGER DEFAULT 100,
+  resistance INTEGER DEFAULT 3,
   aggressiveness INTEGER DEFAULT 3,
   nationality TEXT,
   value INTEGER,

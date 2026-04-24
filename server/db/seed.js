@@ -93,7 +93,7 @@ db.serialize(() => {
     "INSERT INTO teams (name, manager_id, division, stadium_capacity, stadium_name, budget, color_primary, color_secondary) VALUES (?, ?, ?, ?, ?, ?, ?, ?)",
   );
   const insertPlayer = db.prepare(
-    "INSERT INTO players (name, position, skill, age, form, aggressiveness, nationality, value, wage, goals, is_star, team_id) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, 0, ?, ?)",
+    "INSERT INTO players (name, position, skill, age, form, resistance, aggressiveness, nationality, value, wage, goals, is_star, team_id) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, 0, ?, ?)",
   );
 
   let teamId = 1;
@@ -182,6 +182,7 @@ db.serialize(() => {
           );
         const age = p.age || Math.floor(Math.random() * 16) + 18;
         const form = p.form || Math.floor(Math.random() * 20) + 80;
+        const res = Math.floor(Math.random() * 5) + 1;
         const agg = randomAggressiveness();
         const nat = p.nationality || p.country || "🇵🇹";
         const value = skill * 20000;
@@ -194,6 +195,7 @@ db.serialize(() => {
           skill,
           age,
           form,
+          res,
           agg,
           nat,
           value,
@@ -216,13 +218,14 @@ db.serialize(() => {
     }
 
     playersToInsert.forEach(
-      ({ name, pos, skill, age, form, agg, nat, value, wage, isStar }) => {
+      ({ name, pos, skill, age, form, res, agg, nat, value, wage, isStar }) => {
         insertPlayer.run(
           name,
           pos,
           skill,
           age,
           form,
+          res,
           agg,
           nat,
           value,

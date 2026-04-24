@@ -231,6 +231,30 @@ export function createMatchSummaryHelpers(deps: MatchSummaryDeps) {
                 JSON.stringify(match.awayLineup || []),
               ],
               () => {
+                // Update player form after match
+                const homeLineupIds = (match.homeLineup || []).map((p: any) => p.id).filter((id: number) => id > 0);
+                const awayLineupIds = (match.awayLineup || []).map((p: any) => p.id).filter((id: number) => id > 0);
+                const homeWon = match.finalHomeGoals > match.finalAwayGoals;
+                const awayWon = match.finalAwayGoals > match.finalHomeGoals;
+                const drew = !homeWon && !awayWon;
+
+                const applyFormDelta = (ids: number[], won: boolean) => {
+                  if (ids.length === 0) return;
+                  const delta = drew
+                    ? Math.floor(Math.random() * 5) - 2        // -2 a +2
+                    : won
+                    ? 5 + Math.floor(Math.random() * 6)         // +5 a +10
+                    : -(5 + Math.floor(Math.random() * 6));      // -5 a -10
+                  const ph = ids.map(() => '?').join(',');
+                  game.db.run(
+                    `UPDATE players SET form = MIN(130, MAX(70, form + ?)) WHERE id IN (${ph})`,
+                    [delta, ...ids],
+                  );
+                };
+
+                applyFormDelta(homeLineupIds, homeWon);
+                applyFormDelta(awayLineupIds, awayWon);
+
                 remaining -= 1;
                 if (remaining === 0 && onDone) onDone();
               },

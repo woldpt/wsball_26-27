@@ -511,6 +511,21 @@ function validateEnvVars() {
 }
 validateEnvVars();
 
+// Migration: ensure resistance column exists for all players
+const db = require("./db/database.js");
+db.run(
+  `ALTER TABLE players ADD COLUMN resistance INTEGER DEFAULT 3`,
+  (err: any) => {
+    if (
+      err &&
+      err.message &&
+      !err.message.includes("duplicate column name")
+    ) {
+      console.warn("[migration] resistance column:", err.message);
+    }
+  },
+);
+
 const PORT = 3000;
 server.listen(PORT, () => {
   const portMsg = `Listening on port ${PORT}`;
