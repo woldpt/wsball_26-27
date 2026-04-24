@@ -7921,10 +7921,10 @@ function App() {
                                       Agr
                                     </th>
                                     <th className="py-3 px-3 text-center">
-                                      Res
+                                      Resist
                                     </th>
                                     <th className="py-3 px-3 text-center">
-                                      For
+                                      Forma
                                     </th>
                                     <th className="py-3 px-3 text-center">
                                       Ordenado/sem
