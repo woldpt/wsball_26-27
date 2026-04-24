@@ -9743,8 +9743,18 @@ function App() {
                                     <div className="mt-2 flex items-start gap-1.5 text-[10px] text-amber-400 bg-amber-400/8 border border-amber-400/20 rounded px-2.5 py-1.5 leading-snug">
                                       <span className="shrink-0 mt-px">⚠️</span>
                                       <span>
-                                        <span className="font-black">Overtraining</span> — intensidade acima de 60% causa fadiga:{" "}
-                                        <span className="font-black">-{Math.floor((trainingPlan.intensity - 60) / 20)} Forma</span> a todos os jogadores.
+                                        <span className="font-black">
+                                          Overtraining
+                                        </span>{" "}
+                                        — intensidade acima de 60% causa fadiga:{" "}
+                                        <span className="font-black">
+                                          -
+                                          {Math.floor(
+                                            (trainingPlan.intensity - 60) / 20,
+                                          )}{" "}
+                                          Forma
+                                        </span>{" "}
+                                        a todos os jogadores.
                                       </span>
                                     </div>
                                   )}
