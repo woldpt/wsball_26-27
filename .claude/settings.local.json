@@ -43,7 +43,9 @@
       "Bash(grep -E \"\\\\.ts$\")",
       "Bash(xargs ls *)",
       "Bash(grep -v \"-- \")",
-      "Bash(grep -n \"fixture\\\\|match\\\\|\\\\`match\\\\|status\\\\|state\" /home/woldpt/git/wsball_26-27/client/src/App.jsx)"
+      "Bash(grep -n \"fixture\\\\|match\\\\|\\\\`match\\\\|status\\\\|state\" /home/woldpt/git/wsball_26-27/client/src/App.jsx)",
+      "Bash(git add *)",
+      "Bash(git commit -m 'feat: adicionar previsão meteorológica para o próximo jogo na página de Tática *)"
     ]
   },
   "outputStyle": "default"

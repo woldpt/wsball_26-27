@@ -4285,8 +4285,30 @@ function App() {
                         ))}
                     </div>
                   </div>
+                  {/* Weather Forecast */}
+                  {nextMatchSummary?.weatherForecast && (
+                    <div className="shrink-0">
+                      <p className="text-[10px] uppercase tracking-widest text-on-surface-variant font-black mb-1">
+                        Previsão Meteo
+                      </p>
+                      <div className="flex items-center gap-1.5 px-3 py-2 rounded-md border border-outline-variant/30 bg-surface/60">
+                        <span className="text-lg">
+                          {nextMatchSummary.weatherForecast.emoji}
+                        </span>
+                        <span className="text-[10px] font-black uppercase tracking-widest text-on-surface-variant">
+                          {nextMatchSummary.weatherForecast.condition === "sol" ? "Sol" :
+                           nextMatchSummary.weatherForecast.condition === "chuva" ? "Chuva" :
+                           nextMatchSummary.weatherForecast.condition === "chuva_forte" ? "Chuva forte" :
+                           nextMatchSummary.weatherForecast.condition === "vento" ? "Vento" :
+                           nextMatchSummary.weatherForecast.condition === "frio" ? "Frio" :
+                           nextMatchSummary.weatherForecast.condition === "nevoeiro" ? "Nevoeiro" :
+                           nextMatchSummary.weatherForecast.condition === "neve" ? "Neve" : "—"}
+                        </span>
+                      </div>
+                    </div>
+                  )}
                   {/* Referee */}
-                  <div className="ml-auto shrink-0">
+                  <div className="shrink-0">
                     <p className="text-[10px] uppercase tracking-widest text-on-surface-variant font-black mb-1">
                       Árbitro
                     </p>

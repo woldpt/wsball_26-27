@@ -36,6 +36,35 @@ export function createMatchSummaryHelpers(deps: MatchSummaryDeps) {
     pickRefereeSummary,
   } = deps;
 
+  function generateWeatherForecast() {
+    const weatherRoll = Math.random();
+    let condition: string;
+    let emoji: string;
+    if (weatherRoll < 0.35) {
+      condition = "sol";
+      emoji = "☀️";
+    } else if (weatherRoll < 0.65) {
+      condition = "chuva";
+      emoji = "🌧️";
+    } else if (weatherRoll < 0.8) {
+      condition = "vento";
+      emoji = "💨";
+    } else if (weatherRoll < 0.88) {
+      condition = "chuva_forte";
+      emoji = "⛈️";
+    } else if (weatherRoll < 0.95) {
+      condition = "frio";
+      emoji = "🥶";
+    } else if (weatherRoll < 0.98) {
+      condition = "nevoeiro";
+      emoji = "🌫️";
+    } else {
+      condition = "neve";
+      emoji = "❄️";
+    }
+    return { condition, emoji };
+  }
+
   async function getTeamRecentResults(
     game: ActiveGame,
     teamId: number,
@@ -108,6 +137,8 @@ export function createMatchSummaryHelpers(deps: MatchSummaryDeps) {
         game.matchweek,
       );
 
+      const weather = generateWeatherForecast();
+
       return {
         matchweek: game.matchweek,
         isCup: true,
@@ -131,6 +162,7 @@ export function createMatchSummaryHelpers(deps: MatchSummaryDeps) {
           last5: await getTeamRecentResults(game, opponent.id, 5),
         },
         referee,
+        weatherForecast: weather,
       };
     }
 
@@ -172,6 +204,8 @@ export function createMatchSummaryHelpers(deps: MatchSummaryDeps) {
       game.matchweek,
     );
 
+    const weather = generateWeatherForecast();
+
     return {
       matchweek: game.matchweek,
       isCup: false,
@@ -193,6 +227,7 @@ export function createMatchSummaryHelpers(deps: MatchSummaryDeps) {
         last5: await getTeamRecentResults(game, opponent.id, 5),
       },
       referee,
+      weatherForecast: weather,
     };
   }
 
