@@ -159,6 +159,8 @@ export function createMatchSummaryHelpers(deps: MatchSummaryDeps) {
           points: opponent.points || 0,
           goalsFor: opponent.goals_for || 0,
           goalsAgainst: opponent.goals_against || 0,
+          color_primary: opponent.color_primary || null,
+          color_secondary: opponent.color_secondary || null,
           last5: await getTeamRecentResults(game, opponent.id, 5),
         },
         referee,
@@ -224,6 +226,8 @@ export function createMatchSummaryHelpers(deps: MatchSummaryDeps) {
         points: opponent.points || 0,
         goalsFor: opponent.goals_for || 0,
         goalsAgainst: opponent.goals_against || 0,
+        color_primary: opponent.color_primary || null,
+        color_secondary: opponent.color_secondary || null,
         last5: await getTeamRecentResults(game, opponent.id, 5),
       },
       referee,
@@ -267,8 +271,12 @@ export function createMatchSummaryHelpers(deps: MatchSummaryDeps) {
               ],
               () => {
                 // Update player form after match
-                const homeLineupIds = (match.homeLineup || []).map((p: any) => p.id).filter((id: number) => id > 0);
-                const awayLineupIds = (match.awayLineup || []).map((p: any) => p.id).filter((id: number) => id > 0);
+                const homeLineupIds = (match.homeLineup || [])
+                  .map((p: any) => p.id)
+                  .filter((id: number) => id > 0);
+                const awayLineupIds = (match.awayLineup || [])
+                  .map((p: any) => p.id)
+                  .filter((id: number) => id > 0);
                 const homeWon = match.finalHomeGoals > match.finalAwayGoals;
                 const awayWon = match.finalAwayGoals > match.finalHomeGoals;
                 const drew = !homeWon && !awayWon;
@@ -276,11 +284,11 @@ export function createMatchSummaryHelpers(deps: MatchSummaryDeps) {
                 const applyFormDelta = (ids: number[], won: boolean) => {
                   if (ids.length === 0) return;
                   const delta = drew
-                    ? Math.floor(Math.random() * 5) - 2        // -2 a +2
+                    ? Math.floor(Math.random() * 5) - 2 // -2 a +2
                     : won
-                    ? 5 + Math.floor(Math.random() * 6)         // +5 a +10
-                    : -(5 + Math.floor(Math.random() * 6));      // -5 a -10
-                  const ph = ids.map(() => '?').join(',');
+                      ? 5 + Math.floor(Math.random() * 6) // +5 a +10
+                      : -(5 + Math.floor(Math.random() * 6)); // -5 a -10
+                  const ph = ids.map(() => "?").join(",");
                   game.db.run(
                     `UPDATE players SET form = MIN(130, MAX(70, form + ?)) WHERE id IN (${ph})`,
                     [delta, ...ids],
