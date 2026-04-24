@@ -4394,18 +4394,33 @@ function App() {
                                                 {player.skill}
                                                 {player.resistance != null && (
                                                   <>
-                                                    · <span className="text-cyan-400/70">🛡️{player.resistance}</span>
+                                                    ·{" "}
+                                                    <span className="text-cyan-400/70">
+                                                      🛡️{player.resistance}
+                                                    </span>
                                                   </>
                                                 )}
                                                 {player.form != null && (
                                                   <>
-                                                    · <span className={`${
-                                                      (player.form || 100) >= 115 ? "text-emerald-400" :
-                                                      (player.form || 100) <= 85  ? "text-rose-400" :
-                                                      "text-zinc-400"
-                                                    }`}>
-                                                      {(player.form || 100) >= 115 ? "▲" :
-                                                       (player.form || 100) <= 85  ? "▼" : "—"}
+                                                    ·{" "}
+                                                    <span
+                                                      className={`${
+                                                        (player.form || 100) >=
+                                                        115
+                                                          ? "text-emerald-400"
+                                                          : (player.form ||
+                                                                100) <= 85
+                                                            ? "text-rose-400"
+                                                            : "text-zinc-400"
+                                                      }`}
+                                                    >
+                                                      {(player.form || 100) >=
+                                                      115
+                                                        ? "Alta"
+                                                        : (player.form ||
+                                                              100) <= 85
+                                                          ? "Baixa"
+                                                          : "Normal"}
                                                     </span>
                                                   </>
                                                 )}
@@ -4435,18 +4450,33 @@ function App() {
                                                 {player.skill}
                                                 {player.resistance != null && (
                                                   <>
-                                                    · <span className="text-cyan-400/70">🛡️{player.resistance}</span>
+                                                    ·{" "}
+                                                    <span className="text-cyan-400/70">
+                                                      🛡️{player.resistance}
+                                                    </span>
                                                   </>
                                                 )}
                                                 {player.form != null && (
                                                   <>
-                                                    · <span className={`${
-                                                      (player.form || 100) >= 115 ? "text-emerald-400" :
-                                                      (player.form || 100) <= 85  ? "text-rose-400" :
-                                                      "text-zinc-400"
-                                                    }`}>
-                                                      {(player.form || 100) >= 115 ? "▲" :
-                                                       (player.form || 100) <= 85  ? "▼" : "—"}
+                                                    ·{" "}
+                                                    <span
+                                                      className={`${
+                                                        (player.form || 100) >=
+                                                        115
+                                                          ? "text-emerald-400"
+                                                          : (player.form ||
+                                                                100) <= 85
+                                                            ? "text-rose-400"
+                                                            : "text-zinc-400"
+                                                      }`}
+                                                    >
+                                                      {(player.form || 100) >=
+                                                      115
+                                                        ? "Alta"
+                                                        : (player.form ||
+                                                              100) <= 85
+                                                          ? "Baixa"
+                                                          : "Normal"}
                                                     </span>
                                                   </>
                                                 )}
@@ -8134,10 +8164,10 @@ function App() {
                                                   : "text-on-surface-variant/30";
                                             const formArrow =
                                               form >= 115
-                                                ? "▲"
+                                                ? "Alta"
                                                 : form <= 85
-                                                  ? "▼"
-                                                  : "—";
+                                                  ? "Baixa"
+                                                  : "Normal";
                                             return (
                                               <span
                                                 className={`text-[10px] font-bold ${formColor}`}
@@ -8631,13 +8661,20 @@ function App() {
                                       </span>
                                     )}
                                     {player.form != null && (
-                                      <span className={`text-[9px] font-black shrink-0 ${
-                                        (player.form || 100) >= 115 ? "text-emerald-400" :
-                                        (player.form || 100) <= 85  ? "text-rose-400" :
-                                        "text-on-surface-variant/40"
-                                      }`}>
-                                        {(player.form || 100) >= 115 ? "▲" :
-                                         (player.form || 100) <= 85  ? "▼" : "—"}
+                                      <span
+                                        className={`text-[9px] font-black shrink-0 ${
+                                          (player.form || 100) >= 115
+                                            ? "text-emerald-400"
+                                            : (player.form || 100) <= 85
+                                              ? "text-rose-400"
+                                              : "text-on-surface-variant/40"
+                                        }`}
+                                      >
+                                        {(player.form || 100) >= 115
+                                          ? "Alta"
+                                          : (player.form || 100) <= 85
+                                            ? "Baixa"
+                                            : "Normal"}
                                       </span>
                                     )}
                                     {!player.isJunior && (
@@ -8839,13 +8876,20 @@ function App() {
                                       </span>
                                     )}
                                     {player.form != null && (
-                                      <span className={`text-[9px] font-black shrink-0 ${
-                                        (player.form || 100) >= 115 ? "text-emerald-400" :
-                                        (player.form || 100) <= 85  ? "text-rose-400" :
-                                        "text-on-surface-variant/40"
-                                      }`}>
-                                        {(player.form || 100) >= 115 ? "▲" :
-                                         (player.form || 100) <= 85  ? "▼" : "—"}
+                                      <span
+                                        className={`text-[9px] font-black shrink-0 ${
+                                          (player.form || 100) >= 115
+                                            ? "text-emerald-400"
+                                            : (player.form || 100) <= 85
+                                              ? "text-rose-400"
+                                              : "text-on-surface-variant/40"
+                                        }`}
+                                      >
+                                        {(player.form || 100) >= 115
+                                          ? "Alta"
+                                          : (player.form || 100) <= 85
+                                            ? "Baixa"
+                                            : "Normal"}
                                       </span>
                                     )}
                                     {!player.isJunior && (
@@ -9546,10 +9590,10 @@ function App() {
                                             : "text-on-surface-variant/30";
                                       const formArrow =
                                         form >= 115
-                                          ? "▲"
+                                          ? "Alta"
                                           : form <= 85
-                                            ? "▼"
-                                            : "—";
+                                            ? "Baixa"
+                                            : "Normal";
                                       return (
                                         <span
                                           className={`text-[10px] font-bold ${formColor}`}
