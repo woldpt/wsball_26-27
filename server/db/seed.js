@@ -93,7 +93,7 @@ db.serialize(() => {
     "INSERT INTO teams (name, manager_id, division, stadium_capacity, stadium_name, budget, color_primary, color_secondary) VALUES (?, ?, ?, ?, ?, ?, ?, ?)",
   );
   const insertPlayer = db.prepare(
-    "INSERT INTO players (name, position, skill, age, form, resistance, aggressiveness, nationality, value, wage, goals, is_star, team_id) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, 0, ?, ?)",
+    "INSERT INTO players (name, position, skill, age, form, resistance, aggressiveness, nationality, value, wage, goals, is_star, team_id) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 0, ?, ?)",
   );
 
   let teamId = 1;
