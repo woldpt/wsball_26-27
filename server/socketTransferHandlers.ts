@@ -52,7 +52,7 @@ export function registerTransferSocketHandlers(
         Number(player?.passe ?? player?.skill ?? 1) +
         Number(player?.finalizacao ?? player?.skill ?? 1)) /
         4) *
-        (0.8 + Number(player?.form ?? 50) / 500),
+        (0.8 + Number(player?.form ?? 25) / 250),
     );
   const {
     io,

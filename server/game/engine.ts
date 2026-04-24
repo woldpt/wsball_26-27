@@ -696,9 +696,9 @@ function getOverall(player: PlayerRow) {
   const defesa = getAttr(player, "defesa", 1);
   const passe = getAttr(player, "passe", 1);
   const finalizacao = getAttr(player, "finalizacao", 1);
-  const forma = Math.max(0, Math.min(100, player?.form ?? 50));
+  const forma = Math.max(1, Math.min(50, player?.form ?? 25));
   const base = (gk + defesa + passe + finalizacao) / 4;
-  return base * (0.8 + forma / 500);
+  return base * (0.8 + forma / 250);
 }
 
 async function applyInjuryEvent({
@@ -739,10 +739,11 @@ async function applyInjuryEvent({
   }
 
   const injuryUntil = currentMatchweek + injuryWeeks;
-  const qualityLoss = injuryLabel === "grave" ? 2 + Math.floor(Math.random() * 4) : 0;
+  const qualityLoss =
+    injuryLabel === "grave" ? 2 + Math.floor(Math.random() * 4) : 0;
   db.run(
-    "UPDATE players SET injuries = injuries + 1, career_injuries = career_injuries + 1, form = MAX(0, form - ?), injury_until_matchweek = CASE WHEN injury_until_matchweek > ? THEN injury_until_matchweek ELSE ? END WHERE id = ?",
-    [qualityLoss * 6, injuryUntil, injuryUntil, injuredPlayer.id],
+    "UPDATE players SET injuries = injuries + 1, career_injuries = career_injuries + 1, form = MAX(1, form - ?), injury_until_matchweek = CASE WHEN injury_until_matchweek > ? THEN injury_until_matchweek ELSE ? END WHERE id = ?",
+    [qualityLoss * 3, injuryUntil, injuryUntil, injuredPlayer.id],
   );
 
   fixture.events.push({
@@ -971,10 +972,10 @@ function applyFatigue(
 ) {
   for (const p of squad) {
     if (lineupIds.has(p.id)) {
-      const formDrop = amount * 4;
-      p.form = Math.max(0, (p.form ?? 50) - formDrop);
+      const formDrop = amount * 2;
+      p.form = Math.max(1, (p.form ?? 25) - formDrop);
       if (typeof p.resistencia === "number") {
-        p.resistencia = Math.max(0, p.resistencia - amount * 2);
+        p.resistencia = Math.max(1, p.resistencia - amount * 1);
       }
     }
   }
@@ -1205,7 +1206,7 @@ async function simulateMatchSegment(
       defesa: getAttr(p, "defesa", 1),
       passe: getAttr(p, "passe", 1),
       finalizacao: getAttr(p, "finalizacao", 1),
-      form: p.form ?? 50,
+      form: p.form ?? 25,
     }));
   if (!fixture.homeLineup || fixture.homeLineup.length === 0) {
     fixture.homeLineup = lineupSnapshot(homeSquad);
@@ -1225,15 +1226,21 @@ async function simulateMatchSegment(
     const defenders = squad.filter((p) => p.position === "DEF");
     const keepers = squad.filter((p) => p.position === "GR");
 
-    const avgMidfielderPass = average(midfielders.map((p) => getAttr(p, "passe", 1)));
-    const avgMidfielderForm = average(midfielders.map((p) => p.form || 50));
-    const avgForwardFin = average(forwards.map((p) => getAttr(p, "finalizacao", 1)));
+    const avgMidfielderPass = average(
+      midfielders.map((p) => getAttr(p, "passe", 1)),
+    );
+    const avgMidfielderForm = average(midfielders.map((p) => p.form || 25));
+    const avgForwardFin = average(
+      forwards.map((p) => getAttr(p, "finalizacao", 1)),
+    );
     const avgForwardPass = average(forwards.map((p) => getAttr(p, "passe", 1)));
-    const avgForwardForm = average(forwards.map((p) => p.form || 50));
-    const avgDefenderDef = average(defenders.map((p) => getAttr(p, "defesa", 1)));
+    const avgForwardForm = average(forwards.map((p) => p.form || 25));
+    const avgDefenderDef = average(
+      defenders.map((p) => getAttr(p, "defesa", 1)),
+    );
     const avgKeeperGk = average(keepers.map((p) => getAttr(p, "gk", 1)));
     const avgBacklineForm = average(
-      [...defenders, ...keepers].map((p) => p.form || 50),
+      [...defenders, ...keepers].map((p) => p.form || 25),
     );
 
     const formationOffensiveFactors = {
@@ -1340,10 +1347,16 @@ async function simulateMatchSegment(
       const isHome = attackingSide === "home";
       const scoringSquad = isHome ? home.squad : away.squad;
 
-      const STYLE_FACTORS = { DEFENSIVO: 0.85, EQUILIBRADO: 1.0, OFENSIVO: 1.15 };
+      const STYLE_FACTORS = {
+        DEFENSIVO: 0.85,
+        EQUILIBRADO: 1.0,
+        OFENSIVO: 1.15,
+      };
       const opponentStyleFactor = STYLE_FACTORS[defending.style] || 1.0;
-      const adjustedAttack = (attacking.attack || 1) * (1.0 / opponentStyleFactor);
-      const ratio = adjustedAttack / (adjustedAttack + (defending.defense || 1));
+      const adjustedAttack =
+        (attacking.attack || 1) * (1.0 / opponentStyleFactor);
+      const ratio =
+        adjustedAttack / (adjustedAttack + (defending.defense || 1));
       let probGoal = ratio * 0.17 * getGoalTimeMultiplier(fixture._minute);
       probGoal *= isHome ? 1.05 : 0.95;
 
@@ -1440,7 +1453,8 @@ async function simulateMatchSegment(
     const homeMid = currentHome.midfield || 1;
     const awayMid = currentAway.midfield || 1;
     const homePossessionChance = homeMid / (homeMid + awayMid);
-    const teamInControl = Math.random() < homePossessionChance ? "home" : "away";
+    const teamInControl =
+      Math.random() < homePossessionChance ? "home" : "away";
     const chanceOfAction = 0.14;
     if (Math.random() < chanceOfAction) {
       chanceTriggered = true;
@@ -1642,7 +1656,9 @@ async function simulateMatchSegment(
               lineupIds.add(playerInId);
 
               // Actualizar snapshot de lineup para que o ecrã de intervalo reflicta a substituição
-              const lineupRef = isHome ? fixture.homeLineup : fixture.awayLineup;
+              const lineupRef = isHome
+                ? fixture.homeLineup
+                : fixture.awayLineup;
               if (lineupRef) {
                 const li = lineupRef.findIndex(
                   (p: any) => p.id === playerOutId,
@@ -1804,7 +1820,7 @@ async function applyPostMatchQualityEvolution(
             Math.random() < Math.min(0.3, 0.06 + diff / 73)
           ) {
             deltas[primaryAttr] += 1;
-            deltaForm += 2;
+            deltaForm += 1;
           }
 
           // Maus resultados: jogadores perdem qualidade se houver derrotas
@@ -1817,7 +1833,7 @@ async function applyPostMatchQualityEvolution(
             );
             if (Math.random() < lossPressure) {
               deltas[primaryAttr] -= 1;
-              deltaForm -= 4;
+              deltaForm -= 2;
             }
           }
 
@@ -1843,16 +1859,21 @@ async function applyPostMatchQualityEvolution(
               gk: clampSkill((player.gk || 1) + deltas.gk),
               defesa: clampSkill((player.defesa || 1) + deltas.defesa),
               passe: clampSkill((player.passe || 1) + deltas.passe),
-              finalizacao: clampSkill((player.finalizacao || 1) + deltas.finalizacao),
-              form: clampPercent((player.form || 50) + deltaForm),
-              resistencia: clampPercent((player.resistencia || 50) + deltaRes),
+              finalizacao: clampSkill(
+                (player.finalizacao || 1) + deltas.finalizacao,
+              ),
+              form: clampSkill((player.form || 25) + deltaForm),
+              resistencia: clampSkill((player.resistencia || 25) + deltaRes),
               overall: Math.round(playerOverall),
             });
           }
         }
 
         if (updates.length === 0) {
-          db.run("UPDATE players SET prev_skill = NULL WHERE team_id IS NOT NULL", () => resolve());
+          db.run(
+            "UPDATE players SET prev_skill = NULL WHERE team_id IS NOT NULL",
+            () => resolve(),
+          );
           return;
         }
 
@@ -1992,7 +2013,8 @@ function simulatePenaltyShootout(
 
   const calcScoredChance = (taker, gk) => {
     const takerSkill = taker
-      ? getAttr(taker, "finalizacao", 10) * 0.7 + getAttr(taker, "passe", 10) * 0.3
+      ? getAttr(taker, "finalizacao", 10) * 0.7 +
+        getAttr(taker, "passe", 10) * 0.3
       : 10;
     const gkSkill = gk ? getAttr(gk, "gk", 10) : 10;
     return Math.max(0.55, Math.min(0.88, 0.72 + (takerSkill - gkSkill) / 200));

@@ -187,9 +187,9 @@ function formatCurrency(value) {
   }).format(value);
 }
 
-/** Returns an interpolated red→green hex color for a 0-100 condition value */
+/** Returns an interpolated red→green hex color for a 0-50 condition value */
 function conditionColor(value) {
-  const v = Math.max(0, Math.min(100, Number(value ?? 50))) / 100;
+  const v = Math.max(1, Math.min(50, Number(value ?? 25))) / 50;
   const r = Math.round(239 - v * (239 - 34)); // 239→34
   const g = Math.round(68 + v * (197 - 68)); // 68→197
   const b = Math.round(68 - v * (68 - 94)); // 68→94
@@ -235,8 +235,8 @@ function getOverallAttr(player) {
   const defesa = Number(player.defesa ?? player.skill ?? 1);
   const passe = Number(player.passe ?? player.skill ?? 1);
   const finalizacao = Number(player.finalizacao ?? player.skill ?? 1);
-  const form = Number(player.form ?? 50);
-  return ((gk + defesa + passe + finalizacao) / 4) * (0.8 + form / 500);
+  const form = Number(player.form ?? 25);
+  return ((gk + defesa + passe + finalizacao) / 4) * (0.8 + form / 250);
 }
 
 /* ── AttrTooltip ──────────────────────────────────────────────────────────── */
@@ -8168,11 +8168,11 @@ function App() {
                                             className="text-xs font-black tabular-nums"
                                             style={{
                                               color: conditionColor(
-                                                player.form ?? 50,
+                                                player.form ?? 25,
                                               ),
                                             }}
                                           >
-                                            {Number(player.form ?? 50)}
+                                            {Number(player.form ?? 25)}
                                           </span>
                                         </td>
                                         {/* Resistência */}
@@ -8181,11 +8181,11 @@ function App() {
                                             className="text-xs font-black tabular-nums"
                                             style={{
                                               color: conditionColor(
-                                                player.resistencia ?? 50,
+                                                player.resistencia ?? 25,
                                               ),
                                             }}
                                           >
-                                            {Number(player.resistencia ?? 50)}
+                                            {Number(player.resistencia ?? 25)}
                                           </span>
                                         </td>
                                         {/* Ordenado */}
@@ -8630,13 +8630,13 @@ function App() {
                                     <span className="text-[9px] font-bold text-zinc-500 shrink-0 leading-none">
                                       Frm{" "}
                                       <span className="text-zinc-400">
-                                        {player.form ?? 50}
+                                        {player.form ?? 25}
                                       </span>
                                     </span>
                                     <span className="text-[9px] font-bold text-zinc-500 shrink-0 leading-none">
                                       Res{" "}
                                       <span className="text-zinc-400">
-                                        {player.resistencia ?? 50}
+                                        {player.resistencia ?? 25}
                                       </span>
                                     </span>
                                     {!player.isJunior && (
@@ -8835,13 +8835,13 @@ function App() {
                                     <span className="text-[9px] font-bold text-zinc-500 shrink-0 leading-none">
                                       Frm{" "}
                                       <span className="text-zinc-400">
-                                        {player.form ?? 50}
+                                        {player.form ?? 25}
                                       </span>
                                     </span>
                                     <span className="text-[9px] font-bold text-zinc-500 shrink-0 leading-none">
                                       Res{" "}
                                       <span className="text-zinc-400">
-                                        {player.resistencia ?? 50}
+                                        {player.resistencia ?? 25}
                                       </span>
                                     </span>
                                     {!player.isJunior && (
@@ -9014,13 +9014,13 @@ function App() {
                                       <span className="text-[9px] font-bold text-zinc-500 shrink-0 leading-none">
                                         Frm{" "}
                                         <span className="text-zinc-400">
-                                          {player.form ?? 50}
+                                          {player.form ?? 25}
                                         </span>
                                       </span>
                                       <span className="text-[9px] font-bold text-zinc-500 shrink-0 leading-none">
                                         Res{" "}
                                         <span className="text-zinc-400">
-                                          {player.resistencia ?? 50}
+                                          {player.resistencia ?? 25}
                                         </span>
                                       </span>
                                       <span

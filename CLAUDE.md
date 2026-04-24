@@ -107,7 +107,7 @@ docker compose down         # parar containers
 
 ## Atributos dos Jogadores
 
-Cada jogador tem **4 atributos de skill** (escala 1–50) mais **2 atributos de condição** (escala 0–100):
+Cada jogador tem **4 atributos de skill** (escala 1–50) mais **2 atributos de condição** (escala 1–50):
 
 | Atributo     | Coluna DB     | Posição principal | Papel no motor                           |
 | ------------ | ------------- | ----------------- | ---------------------------------------- |
@@ -115,8 +115,8 @@ Cada jogador tem **4 atributos de skill** (escala 1–50) mais **2 atributos de 
 | Defesa       | `defesa`      | DEF               | Contribui para `defense` da equipa       |
 | Passe        | `passe`       | MED               | Contribui para `midfield` (posse)        |
 | Finalização  | `finalizacao` | ATA               | Contribui para `attack` da equipa        |
-| Forma        | `form`        | Todos (0–100)     | Multiplicador transversal de eficácia    |
-| Resistência  | `resistencia` | Todos (0–100)     | Afecta fadiga acumulada ao longo do jogo |
+| Forma        | `form`        | Todos (1–50)      | Multiplicador transversal de eficácia    |
+| Resistência  | `resistencia` | Todos (1–50)      | Afecta fadiga acumulada ao longo do jogo |
 
 - O campo `skill` (legado) ainda existe na DB mas **não é usado no motor** — usar sempre os atributos individuais.
 - `getOverall(player)` = média dos 4 atributos × factor de forma (0.8–1.0).
@@ -181,7 +181,7 @@ O treino semanal é configurado por cada treinador na sidebar do Lobby (tab "Esc
 
 - Estado: `trainingPlan = { focus, intensity }` (useState)
 - Eventos Socket.io: `requestTrainingPlan` → `trainingPlanData`; `setTrainingPlan` → `trainingPlanUpdated`
-- UI: select de foco + slider de intensidade (1–100); bloqueado quando o treinador já está "Pronto"
+- UI: select de foco + slider de intensidade (1-50); bloqueado quando o treinador já está "Pronto"
 
 ### Focos de treino disponíveis
 
@@ -199,7 +199,7 @@ O treino semanal é configurado por cada treinador na sidebar do Lobby (tab "Esc
 - Lido da tabela `team_training_plan` (colunas: `team_id`, `focus`, `intensity`, `season`, `matchweek`)
 - **Forma/Resistência**: incremento fixo proporcional à intensidade (`+intensity/20` e `+intensity/25`)
 - **Skills técnicas**: incremento probabilístico — `chance = 0.15 + intensity/200`; só sobe 1 ponto se o random passar; só afecta a posição correcta
-- Valores clamped: skills entre 1–50, form/resistência entre 0–100
+- Valores clamped: skills entre 1–50, form/resistência entre 1–50
 
 ## Convenções e Decisões Arquitecturais
 

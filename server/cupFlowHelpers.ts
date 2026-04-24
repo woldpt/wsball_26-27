@@ -589,7 +589,7 @@ export function createCupFlowHelpers(deps: CupFlowDeps) {
               Number(p?.passe ?? p?.skill ?? 1) +
               Number(p?.finalizacao ?? p?.skill ?? 1)) /
               4) *
-              (0.8 + Number(p?.form ?? 50) / 500),
+              (0.8 + Number(p?.form ?? 25) / 250),
           );
         const lineupSnapshotET = (squad: any[]) =>
           squad.map((p) => ({

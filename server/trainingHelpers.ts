@@ -38,8 +38,12 @@ export async function applyWeeklyTraining(
             "SELECT id, position, gk, defesa, passe, finalizacao, form, resistencia FROM players WHERE team_id = ?",
             [plan.team_id],
             (_: any, players: any[]) => {
-              const attrs = FOCUS_ATTR_MAP[String(plan.focus || "").toUpperCase()] || [];
-              const intensity = Math.max(1, Math.min(100, Number(plan.intensity) || 50));
+              const attrs =
+                FOCUS_ATTR_MAP[String(plan.focus || "").toUpperCase()] || [];
+              const intensity = Math.max(
+                1,
+                Math.min(100, Number(plan.intensity) || 50),
+              );
               const attrBoostChance = 0.15 + intensity / 200;
               const formBoost = Math.round(intensity / 20);
               const resBoost = Math.round(intensity / 25);
@@ -51,17 +55,46 @@ export async function applyWeeklyTraining(
                 let defesa = p.defesa || 1;
                 let passe = p.passe || 1;
                 let finalizacao = p.finalizacao || 1;
-                let form = p.form || 50;
-                let resistencia = p.resistencia || 50;
+                let form = p.form || 25;
+                let resistencia = p.resistencia || 25;
 
-                if (attrs.includes("form")) form = clampPercent(form + formBoost);
-                if (attrs.includes("resistencia")) resistencia = clampPercent(resistencia + resBoost);
-                if (attrs.includes("gk") && p.position === "GR" && Math.random() < attrBoostChance) gk = clampSkill(gk + 1);
-                if (attrs.includes("defesa") && p.position === "DEF" && Math.random() < attrBoostChance) defesa = clampSkill(defesa + 1);
-                if (attrs.includes("passe") && p.position === "MED" && Math.random() < attrBoostChance) passe = clampSkill(passe + 1);
-                if (attrs.includes("finalizacao") && p.position === "ATA" && Math.random() < attrBoostChance) finalizacao = clampSkill(finalizacao + 1);
+                if (attrs.includes("form")) form = clampSkill(form + formBoost);
+                if (attrs.includes("resistencia"))
+                  resistencia = clampSkill(resistencia + resBoost);
+                if (
+                  attrs.includes("gk") &&
+                  p.position === "GR" &&
+                  Math.random() < attrBoostChance
+                )
+                  gk = clampSkill(gk + 1);
+                if (
+                  attrs.includes("defesa") &&
+                  p.position === "DEF" &&
+                  Math.random() < attrBoostChance
+                )
+                  defesa = clampSkill(defesa + 1);
+                if (
+                  attrs.includes("passe") &&
+                  p.position === "MED" &&
+                  Math.random() < attrBoostChance
+                )
+                  passe = clampSkill(passe + 1);
+                if (
+                  attrs.includes("finalizacao") &&
+                  p.position === "ATA" &&
+                  Math.random() < attrBoostChance
+                )
+                  finalizacao = clampSkill(finalizacao + 1);
 
-                stm.run(gk, defesa, passe, finalizacao, form, resistencia, p.id);
+                stm.run(
+                  gk,
+                  defesa,
+                  passe,
+                  finalizacao,
+                  form,
+                  resistencia,
+                  p.id,
+                );
               });
               stm.finalize(() => resolve());
             },
@@ -70,4 +103,3 @@ export async function applyWeeklyTraining(
     ),
   );
 }
-

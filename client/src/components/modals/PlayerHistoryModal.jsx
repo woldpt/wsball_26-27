@@ -139,8 +139,8 @@ export function PlayerHistoryModal({
       color: POS_BAR.ATA,
     },
   ];
-  const form = Number(player.form ?? 50);
-  const resistencia = Number(player.resistencia ?? 50);
+  const form = Number(player.form ?? 25);
+  const resistencia = Number(player.resistencia ?? 25);
   const DIM = "#3f3f46";
 
   // Aggressiveness
@@ -314,7 +314,59 @@ export function PlayerHistoryModal({
                   </div>
                 </div>
               </div>
+            </div>
 
+            {/* RIGHT COLUMN: Stats */}
+            <div className="flex flex-col">
+              {/* Season stats */}
+              <div className="px-6 py-5 border-b border-outline-variant/10">
+                <p className="text-[10px] font-black uppercase tracking-widest text-primary mb-4">
+                  Época Actual
+                </p>
+                <div className="grid grid-cols-4 gap-2">
+                  <StatCard label="Jogos" value={sGames} />
+                  <StatCard
+                    label="Golos"
+                    value={sGoals}
+                    color="text-tertiary"
+                  />
+                  <StatCard
+                    label="Vermelhos"
+                    value={sReds}
+                    color={sReds > 0 ? "text-error" : "text-on-surface"}
+                  />
+                  <StatCard
+                    label="Lesões"
+                    value={sInjuries}
+                    color={sInjuries > 0 ? "text-amber-400" : "text-on-surface"}
+                  />
+                </div>
+              </div>
+
+              {/* Career stats */}
+              <div className="px-6 py-5">
+                <p className="text-[10px] font-black uppercase tracking-widest text-primary mb-4">
+                  Carreira Total
+                </p>
+                <div className="grid grid-cols-4 gap-2">
+                  <StatCard label="Jogos" value={cGames} />
+                  <StatCard
+                    label="Golos"
+                    value={cGoals}
+                    color="text-tertiary"
+                  />
+                  <StatCard
+                    label="Vermelhos"
+                    value={cReds}
+                    color={cReds > 0 ? "text-error" : "text-on-surface"}
+                  />
+                  <StatCard
+                    label="Lesões"
+                    value={cInjuries}
+                    color={cInjuries > 0 ? "text-amber-400" : "text-on-surface"}
+                  />
+                </div>
+              </div>
               {/* Contract management */}
               {isMyPlayer && (
                 <div className="px-6 py-5 border-b border-outline-variant/10 md:border-b-0 flex-1">
@@ -379,59 +431,6 @@ export function PlayerHistoryModal({
                   )}
                 </div>
               )}
-            </div>
-
-            {/* RIGHT COLUMN: Stats */}
-            <div className="flex flex-col">
-              {/* Season stats */}
-              <div className="px-6 py-5 border-b border-outline-variant/10">
-                <p className="text-[10px] font-black uppercase tracking-widest text-primary mb-4">
-                  Época Actual
-                </p>
-                <div className="grid grid-cols-4 gap-2">
-                  <StatCard label="Jogos" value={sGames} />
-                  <StatCard
-                    label="Golos"
-                    value={sGoals}
-                    color="text-tertiary"
-                  />
-                  <StatCard
-                    label="Vermelhos"
-                    value={sReds}
-                    color={sReds > 0 ? "text-error" : "text-on-surface"}
-                  />
-                  <StatCard
-                    label="Lesões"
-                    value={sInjuries}
-                    color={sInjuries > 0 ? "text-amber-400" : "text-on-surface"}
-                  />
-                </div>
-              </div>
-
-              {/* Career stats */}
-              <div className="px-6 py-5">
-                <p className="text-[10px] font-black uppercase tracking-widest text-primary mb-4">
-                  Carreira Total
-                </p>
-                <div className="grid grid-cols-4 gap-2">
-                  <StatCard label="Jogos" value={cGames} />
-                  <StatCard
-                    label="Golos"
-                    value={cGoals}
-                    color="text-tertiary"
-                  />
-                  <StatCard
-                    label="Vermelhos"
-                    value={cReds}
-                    color={cReds > 0 ? "text-error" : "text-on-surface"}
-                  />
-                  <StatCard
-                    label="Lesões"
-                    value={cInjuries}
-                    color={cInjuries > 0 ? "text-amber-400" : "text-on-surface"}
-                  />
-                </div>
-              </div>
             </div>
           </div>
 

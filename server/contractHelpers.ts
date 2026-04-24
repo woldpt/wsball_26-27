@@ -30,7 +30,7 @@ export function createContractHelpers(deps: ContractDeps) {
         Number(player?.passe ?? player?.skill ?? 1) +
         Number(player?.finalizacao ?? player?.skill ?? 1)) /
         4) *
-        (0.8 + Number(player?.form ?? 50) / 500),
+        (0.8 + Number(player?.form ?? 25) / 250),
     );
 
   const maybeTriggerContractRequest = (game: ActiveGame, player: any) => {
@@ -45,7 +45,9 @@ export function createContractHelpers(deps: ContractDeps) {
     const demandBase = Math.max(fairWage, Math.round(wage * 1.05), wage + 100);
     if (wage >= demandBase * 0.88 && Math.random() > 0.08) return;
 
-    const requestedWage = Math.round(demandBase * (1.05 + Math.random() * 0.15));
+    const requestedWage = Math.round(
+      demandBase * (1.05 + Math.random() * 0.15),
+    );
     game.db.run(
       "UPDATE players SET contract_request_pending = 1, contract_requested_wage = ? WHERE id = ?",
       [requestedWage, player.id],
@@ -177,11 +179,19 @@ export function createContractHelpers(deps: ContractDeps) {
             [],
           );
           const fallbackTeamId = div5Team?.id ?? player.team_id;
-          const newWageFallback = Math.max(Math.round(playerOverall(player) * 40), 500);
+          const newWageFallback = Math.max(
+            Math.round(playerOverall(player) * 40),
+            500,
+          );
           await new Promise((resolve) => {
             game.db.run(
               "UPDATE players SET team_id = ?, wage = ?, contract_until_matchweek = ?, transfer_status = 'none', transfer_price = 0, contract_request_pending = 0 WHERE id = ?",
-              [fallbackTeamId, newWageFallback, getSeasonEndMatchweek(currentMw), player.id],
+              [
+                fallbackTeamId,
+                newWageFallback,
+                getSeasonEndMatchweek(currentMw),
+                player.id,
+              ],
               resolve,
             );
           });

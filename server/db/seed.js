@@ -181,7 +181,7 @@ db.serialize(() => {
             (skillRanges[division] || [5, 20])[1],
           );
         const age = p.age || Math.floor(Math.random() * 16) + 18;
-        const form = p.form || Math.floor(Math.random() * 20) + 80;
+        const form = p.form || Math.floor(Math.random() * 15) + 30;
         const agg = randomAggressiveness();
         const nat = p.nationality || p.country || "🇵🇹";
         const value = skill * 20000;
@@ -196,7 +196,9 @@ db.serialize(() => {
         };
         const boosts = roleBoosts[pos] || roleBoosts.MED;
         const clampAttr = (v) => Math.max(1, Math.min(50, Math.round(v)));
-        const gk = clampAttr(skill - 8 + boosts.gk + Math.floor(Math.random() * 5));
+        const gk = clampAttr(
+          skill - 8 + boosts.gk + Math.floor(Math.random() * 5),
+        );
         const defesa = clampAttr(
           skill - 8 + boosts.defesa + Math.floor(Math.random() * 5),
         );
@@ -206,7 +208,10 @@ db.serialize(() => {
         const finalizacao = clampAttr(
           skill - 8 + boosts.finalizacao + Math.floor(Math.random() * 5),
         );
-        const resistencia = Math.max(30, Math.min(100, form + Math.floor(Math.random() * 11) - 5));
+        const resistencia = Math.max(
+          1,
+          Math.min(50, Math.round(form + Math.floor(Math.random() * 7) - 3)),
+        );
         return {
           name: p.name,
           pos,

@@ -11,8 +11,8 @@ export function getPlayerAttrs(player) {
     defesa: player?.defesa ?? player?.skill ?? 1,
     passe: player?.passe ?? player?.skill ?? 1,
     finalizacao: player?.finalizacao ?? player?.skill ?? 1,
-    form: player?.form ?? 50,
-    resistencia: player?.resistencia ?? 50,
+    form: player?.form ?? 25,
+    resistencia: player?.resistencia ?? 25,
   };
 }
 
@@ -45,8 +45,8 @@ export function buildAutoPositions(
     const defesa = Number(p?.defesa ?? p?.skill ?? 1);
     const passe = Number(p?.passe ?? p?.skill ?? 1);
     const finalizacao = Number(p?.finalizacao ?? p?.skill ?? 1);
-    const form = Number(p?.form ?? 50);
-    return ((gk + defesa + passe + finalizacao) / 4) * (0.8 + form / 500);
+    const form = Number(p?.form ?? 25);
+    return ((gk + defesa + passe + finalizacao) / 4) * (0.8 + form / 250);
   };
   const sortedPlayers = [...availablePlayers].sort(
     (a, b) => getOverall(b) - getOverall(a),

@@ -160,7 +160,7 @@ export function createWeeklyFlowHelpers(deps: WeeklyFlowDeps) {
           Number(p?.passe ?? p?.skill ?? 1) +
           Number(p?.finalizacao ?? p?.skill ?? 1)) /
           4) *
-          (0.8 + Number(p?.form ?? 50) / 500),
+          (0.8 + Number(p?.form ?? 25) / 250),
       );
     const lineupSnapshot = (squad: any[]) =>
       squad.map((p) => ({
@@ -669,26 +669,42 @@ export function createWeeklyFlowHelpers(deps: WeeklyFlowDeps) {
                           .filter((p) => p.socketId && p.teamId != null)
                           .map((p) => p.teamId as number);
 
-                        const emitSquadsAndFinish = (byTeam: Map<number, any[]>) => {
+                        const emitSquadsAndFinish = (
+                          byTeam: Map<number, any[]>,
+                        ) => {
                           connectedPlayers.forEach((player) => {
-                            if (!player.socketId || player.teamId == null) return;
-                            const squad = byTeam.get(player.teamId as number) || [];
+                            if (!player.socketId || player.teamId == null)
+                              return;
+                            const squad =
+                              byTeam.get(player.teamId as number) || [];
                             io.to(player.socketId as string).emit(
                               "mySquad",
-                              withJuniorGRs(squad, player.teamId as number, game.matchweek || 1),
+                              withJuniorGRs(
+                                squad,
+                                player.teamId as number,
+                                game.matchweek || 1,
+                              ),
                             );
                           });
-                          io.to(game.roomCode).emit("playerListUpdate", getPlayerList(game));
+                          io.to(game.roomCode).emit(
+                            "playerListUpdate",
+                            getPlayerList(game),
+                          );
                           resolveOuter();
                         };
 
                         if (activeTeamIds.length === 0) {
-                          io.to(game.roomCode).emit("playerListUpdate", getPlayerList(game));
+                          io.to(game.roomCode).emit(
+                            "playerListUpdate",
+                            getPlayerList(game),
+                          );
                           resolveOuter();
                           return;
                         }
 
-                        const placeholders = activeTeamIds.map(() => "?").join(",");
+                        const placeholders = activeTeamIds
+                          .map(() => "?")
+                          .join(",");
                         game.db.all(
                           `SELECT * FROM players WHERE team_id IN (${placeholders})`,
                           activeTeamIds,

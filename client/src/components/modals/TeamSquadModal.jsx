@@ -81,14 +81,14 @@ export function TeamSquadModal({
       {
         key: "frm",
         label: "Frm",
-        value: Number(player?.form ?? 50),
+        value: Number(player?.form ?? 25),
         color: "#a1a1aa",
         hi: false,
       },
       {
         key: "res",
         label: "Res",
-        value: Number(player?.resistencia ?? 50),
+        value: Number(player?.resistencia ?? 25),
         color: "#a1a1aa",
         hi: false,
       },

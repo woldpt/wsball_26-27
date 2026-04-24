@@ -406,13 +406,13 @@ export function AuctionNotification({
                 },
                 {
                   label: "Forma",
-                  value: Number(selectedAuctionPlayer.form ?? 50),
+                  value: Number(selectedAuctionPlayer.form ?? 25),
                   color: "#a1a1aa",
                   hi: false,
                 },
                 {
                   label: "Resist.",
-                  value: Number(selectedAuctionPlayer.resistencia ?? 50),
+                  value: Number(selectedAuctionPlayer.resistencia ?? 25),
                   color: "#a1a1aa",
                   hi: false,
                 },
