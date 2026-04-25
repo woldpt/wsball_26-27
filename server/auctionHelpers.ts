@@ -156,10 +156,13 @@ export function createAuctionHelpers(deps: AuctionDeps) {
                       "UPDATE players SET team_id = ?, wage = ?, contract_until_matchweek = ?, signed_season = ?, joined_matchweek = ?, transfer_status = 'none', transfer_price = 0, contract_request_pending = 0, contract_requested_wage = 0 WHERE id = ?",
                       [
                         buyerTeamId,
-                        Math.max(
-                          player.wage || 0,
-                          Math.round((player.skill || 0) * 300),
-                        ),
+                        (() => {
+                          const resFactor = 0.9 + ((player.resistance || 3) / 5) * 0.2;
+                          const formFactor = (player.form || 90) / 90;
+                          const starFactor = player.is_star ? 1.2 : 1;
+                          const adjustedSkillWage = Math.round((player.skill || 0) * 300 * resFactor * formFactor * starFactor);
+                          return Math.max(player.wage || 0, adjustedSkillWage);
+                        })(),
                         getSeasonEndMatchweek(game.matchweek),
                         Math.ceil(Math.max(1, game.matchweek) / 14),
                         game.matchweek,

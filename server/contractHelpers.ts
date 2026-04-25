@@ -24,13 +24,21 @@ interface ContractDeps {
 export function createContractHelpers(deps: ContractDeps) {
   const { io, getSeasonEndMatchweek, runAll, runGet } = deps;
 
+  const effectiveValue = (player: any): number => {
+    const base = player.value || (player.skill || 0) * 20000;
+    const resFactor = 0.9 + ((player.resistance || 3) / 5) * 0.2;
+    const formFactor = (player.form || 90) / 90;
+    const starFactor = player.is_star ? 1.2 : 1;
+    return Math.round(base * resFactor * formFactor * starFactor);
+  };
+
   const maybeTriggerContractRequest = (game: ActiveGame, player: any) => {
     if (!player || !player.team_id) return;
     if (player.transfer_status && player.transfer_status !== "none") return;
     if (player.contract_request_pending) return;
 
     const wage = player.wage || 0;
-    const value = player.value || (player.skill || 0) * 20000;
+    const value = effectiveValue(player);
     // Non-linear demand base: mirrors the seeding wage formula with a small premium
     const fairWage = Math.round(Math.pow(value, 0.62) / 2.5);
     const demandBase = Math.max(fairWage, Math.round(wage * 1.05), wage + 100);
@@ -93,7 +101,7 @@ export function createContractHelpers(deps: ContractDeps) {
       if (!coach) continue;
 
       const wage = player.wage || 0;
-      const value = player.value || (player.skill || 0) * 20000;
+      const value = effectiveValue(player);
       // Agente exige mais do que na renovação por expiração: jogador valorizado
       const fairWage = Math.round(Math.pow(value, 0.62) / 2.5);
       const demandBase = Math.max(
