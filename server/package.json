@@ -10,7 +10,9 @@
     "typecheck": "tsc -p tsconfig.json --noEmit",
     "test": "echo \"Error: no test specified\" && exit 1",
     "seed": "node db/seed.js",
-    "seed:real": "node db/seed.js --real"
+    "seed:real": "node db/seed.js --real",
+    "audit:gamestate": "tsx scripts/gameStateAudit.ts",
+    "audit:socketio": "tsx scripts/socketioContractValidator.ts"
   },
   "keywords": [],
   "author": "",

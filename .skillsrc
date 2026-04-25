@@ -1,0 +1,27 @@
+# CashBall Skills — Quick Reference
+# 
+# 3 auditing/validation tools for optimizing the project:
+#
+# 1. 🎮 Game State Audit
+#    Server-side: validates game DB integrity, budgets, squads, contracts
+#    Usage: cd server && npm run audit:gamestate <ROOM_CODE>
+#    Docs: server/scripts/README.md, SKILLS.md
+#
+# 2. 🔌 Socket.io Event Contract Validator
+#    Server-side: validates Socket.io events, detects orphaned handlers/emitters
+#    Usage: cd server && npm run audit:socketio
+#    Output: server/socketEventRegistry.json (event map)
+#    Docs: server/scripts/README.md, SKILLS.md
+#
+# 3. 🎨 Frontend JSDoc Type Checker
+#    Client-side: validates JSDoc types in React components
+#    Usage: cd client && npm run check:types
+#    Docs: client/scripts/README.md, SKILLS.md
+#
+# 📖 Full documentation: SKILLS.md
+#
+# Quick workflow:
+#   1. Touch Socket.io? → npm run audit:socketio
+#   2. Touch React? → npm run check:types
+#   3. After matchday? → npm run audit:gamestate TEST-ROOM
+#
