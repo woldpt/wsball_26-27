@@ -148,13 +148,21 @@ export function TrainingPage({ me, players, matchweek }) {
         {/* ── TRAINING HISTORY ──────────────────────────────────────────── */}
         <div className="space-y-3">
           <h2 className="text-lg font-bold text-white mb-3">
-            Relatório - Jornada {matchweek - 1}
+            Relatório - Jornada {Math.max(1, matchweek - 1)}
           </h2>
 
-          {trainingHistory.length === 0 ? (
+          {matchweek <= 1 ? (
             <div className="bg-surface-container rounded-lg p-6 text-center">
+              <span className="material-symbols-outlined text-[40px] text-zinc-500 block mb-2">schedule</span>
               <p className="text-zinc-400 text-sm">
-                Nenhum treino foi aplicado ainda nesta jornada.
+                Nenhuma jornada anterior para mostrar histórico.
+              </p>
+            </div>
+          ) : trainingHistory.length === 0 ? (
+            <div className="bg-surface-container rounded-lg p-6 text-center">
+              <span className="material-symbols-outlined text-[40px] text-zinc-500 block mb-2">bar_chart</span>
+              <p className="text-zinc-400 text-sm">
+                Nenhum treino foi aplicado na jornada {Math.max(1, matchweek - 1)}.
               </p>
             </div>
           ) : (
