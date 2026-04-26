@@ -51,7 +51,8 @@
       "Bash(node scripts/socketioContractValidator.ts)",
       "Bash(git commit -m ' *)",
       "Bash(awk *)",
-      "Bash(git commit *)"
+      "Bash(git commit *)",
+      "Bash(/usr/bin/which npx *)"
     ]
   },
   "outputStyle": "default"
