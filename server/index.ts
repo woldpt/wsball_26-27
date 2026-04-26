@@ -505,11 +505,15 @@ io.on("connection", (socket) => {
   });
 
   // Training handlers
-  socket.on("setTrainingFocus", (trainingFocus: string) => {
+  socket.on("setTrainingFocus", (trainingFocus: string, callback?: () => void) => {
     const game = getGameBySocket(socket.id);
     const player = getPlayerBySocket(socket.id);
-    if (!game || !player) return;
+    if (!game || !player) {
+      if (callback) callback();
+      return;
+    }
     setTrainingFocus(game, player.name, trainingFocus);
+    if (callback) callback();
   });
 
   socket.on("getTrainingFocus", async (callback: (focus: string | null) => void) => {
