@@ -396,14 +396,7 @@ export function registerSessionSocketHandlers(
         );
       }
 
-      if (joinMode === "new-game" && roomName) {
-        game.db.run(
-          "INSERT OR REPLACE INTO game_state (key, value) VALUES ('roomName', ?)",
-          [roomName],
-        );
-        (game as any).roomName = roomName;
-      }
-
+      const doJoin = () => {
       socket.join(finalRoomCode);
       socket.join("__global__");
 
@@ -552,6 +545,20 @@ export function registerSessionSocketHandlers(
           }
         },
       );
+      }; // end doJoin
+
+      if (joinMode === "new-game" && roomName) {
+        game.db.run(
+          "INSERT OR REPLACE INTO game_state (key, value) VALUES ('roomName', ?)",
+          [roomName],
+          () => {
+            (game as any).roomName = roomName;
+            doJoin();
+          },
+        );
+      } else {
+        doJoin();
+      }
     });
   });
 

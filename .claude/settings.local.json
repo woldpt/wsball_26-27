@@ -53,7 +53,13 @@
       "Bash(awk *)",
       "Bash(git commit *)",
       "Bash(/usr/bin/which npx *)",
-      "Bash(sqlite3 /home/woldpt/git/wsball_26-27/server/db/schema.sql \".schema players\")"
+      "Bash(sqlite3 /home/woldpt/git/wsball_26-27/server/db/schema.sql \".schema players\")",
+      "Bash(/home/woldpt/.nvm/versions/node/v22.16.0/bin/npm run *)",
+      "Bash(docker compose *)",
+      "Bash(/home/woldpt/.nvm/versions/node/v23.11.0/bin/npm run *)",
+      "Read(//home/woldpt/.volta/**)",
+      "Read(//home/woldpt/.local/share/**)",
+      "Read(//home/woldpt/**)"
     ]
   },
   "outputStyle": "default"

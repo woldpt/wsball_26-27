@@ -508,7 +508,7 @@ io.on("connection", (socket) => {
   // Training handlers
   socket.on("setTrainingFocus", (trainingFocus: string, callback?: (ok: boolean) => void) => {
     const game = getGameBySocket(socket.id);
-    const player = getPlayerBySocket(socket.id);
+    const player = game ? getPlayerBySocket(game, socket.id) : null;
     if (!game || !player) {
       if (callback) callback(false);
       return;
@@ -520,7 +520,7 @@ io.on("connection", (socket) => {
 
   socket.on("getTrainingFocus", async (callback: (focus: string | null) => void) => {
     const game = getGameBySocket(socket.id);
-    const player = getPlayerBySocket(socket.id);
+    const player = game ? getPlayerBySocket(game, socket.id) : null;
     if (!game || !player || player.teamId == null) {
       if (callback) callback(null);
       return;
@@ -533,7 +533,7 @@ io.on("connection", (socket) => {
     "getTrainingHistory",
     async (calendarIndex: number | null, callback: (history: any[]) => void) => {
       const game = getGameBySocket(socket.id);
-      const player = getPlayerBySocket(socket.id);
+      const player = game ? getPlayerBySocket(game, socket.id) : null;
       if (!game || !player || player.teamId == null) {
         if (callback) callback([]);
         return;

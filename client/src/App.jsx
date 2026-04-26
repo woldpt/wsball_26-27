@@ -1957,6 +1957,7 @@ function App() {
 
   useEffect(() => {
     if (!savedSession || me?.teamId) return;
+    if (joinTimerRef.current) clearTimeout(joinTimerRef.current);
     socket.emit("joinGame", {
       name: savedSession.name,
       password: savedSession.password,
