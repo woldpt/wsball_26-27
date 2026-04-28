@@ -182,6 +182,16 @@ export function createCupFlowHelpers(deps: CupFlowDeps) {
       fromDiv: number;
       teamName: string;
     }> = [];
+
+    function pickRandomTeamIds(teams: any[], count: number): number[] {
+      const pool = [...teams];
+      for (let i = pool.length - 1; i > 0; i--) {
+        const j = Math.floor(Math.random() * (i + 1));
+        [pool[i], pool[j]] = [pool[j], pool[i]];
+      }
+      return pool.slice(0, Math.min(count, pool.length)).map((team) => team.id);
+    }
+
     for (const [upperDiv, lowerDiv] of [
       [1, 2],
       [2, 3],
@@ -192,7 +202,10 @@ export function createCupFlowHelpers(deps: CupFlowDeps) {
       const lower = byDiv[lowerDiv] || [];
       if (!upper.length || !lower.length) continue;
       const relegated = upper.slice(-2).map((team) => team.id);
-      const promoted = lower.slice(0, 2).map((team) => team.id);
+      const promoted =
+        upperDiv === 4 && lowerDiv === 5
+          ? pickRandomTeamIds(lower, 2)
+          : lower.slice(0, 2).map((team) => team.id);
       relegated.forEach((id) => {
         const team = allTeams.find((t: any) => t.id === id);
         promotions.push({
