@@ -36,6 +36,11 @@ interface CupFlowDeps {
     matchweek: number,
   ) => { name: string; balance: number; favorsTeamA: boolean };
   getPlayerList: (game: ActiveGame) => PlayerSession[];
+  applyTrainingBonuses: (
+    game: ActiveGame,
+    fixtures: any[],
+    completedCalendarIndex: number,
+  ) => Promise<void>;
 }
 
 export function createCupFlowHelpers(deps: CupFlowDeps) {
@@ -53,6 +58,7 @@ export function createCupFlowHelpers(deps: CupFlowDeps) {
     simulatePenaltyShootout,
     pickRefereeSummary,
     getPlayerList,
+    applyTrainingBonuses,
   } = deps;
 
   // ─── SEASON END ────────────────────────────────────────────────────────────
@@ -931,6 +937,14 @@ export function createCupFlowHelpers(deps: CupFlowDeps) {
       season,
       isFinal: round === 5,
     });
+
+    // Apply training bonuses for this completed calendar event (cup round)
+    const completedCalendarIndex = game.calendarIndex;
+    try {
+      await applyTrainingBonuses(game, fixtures, completedCalendarIndex);
+    } catch (trainErr) {
+      console.error(`[${game.roomCode}] training (cup): error applying bonuses:`, trainErr);
+    }
 
     // Advance calendar
     game.calendarIndex += 1;

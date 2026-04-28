@@ -39,6 +39,7 @@ export function TeamSquadModal({
   handleCloseTeamSquad,
   setTransferProposalModal,
   myBudget = 0,
+  currentMatchweek = 1,
 }) {
   const isOwnTeam = isSameTeamId(selectedTeam?.id, me?.teamId);
   const isNpcTeam =
@@ -201,6 +202,14 @@ export function TeamSquadModal({
                                   *
                                 </span>
                               )}
+                            {(player.transfer_cooldown_until_matchweek || 0) >= currentMatchweek && (
+                              <span
+                                className="ml-1"
+                                title="Em viagem — disponível na próxima jornada"
+                              >
+                                ✈️
+                              </span>
+                            )}
                           </td>
                           <td
                             className="px-4 py-2.5 text-center text-lg"

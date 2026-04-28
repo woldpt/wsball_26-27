@@ -529,13 +529,10 @@ function getGame(roomCode: string, onReady?: OnReady): ActiveGame | null {
                 }
               }
 
-              // Locked coaches
-              if (st["lockedCoaches"]) {
-                try {
-                  const names = JSON.parse(st["lockedCoaches"]);
-                  if (Array.isArray(names)) game.lockedCoaches = new Set(names);
-                } catch (_) {}
-              }
+              // lockedCoaches is intentionally NOT restored from DB.
+              // Coaches re-add themselves to the set as they reconnect (via assignPlayer).
+              // Restoring from DB could include coaches who are offline after a restart,
+              // which would permanently block checkAllReady until they reconnect.
 
               // Coach dismissal persistence (transient: pendingJobOffers is never persisted)
               game.pendingJobOffers = {};

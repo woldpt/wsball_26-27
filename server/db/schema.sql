@@ -56,6 +56,7 @@ CREATE TABLE IF NOT EXISTS players (
   is_star INTEGER DEFAULT 0,
   prev_skill INTEGER DEFAULT NULL,
   last_auctioned_matchweek INTEGER DEFAULT 0,
+  transfer_cooldown_until_matchweek INTEGER DEFAULT 0,
   team_id INTEGER,
   FOREIGN KEY(team_id) REFERENCES teams(id)
 );
@@ -139,3 +140,35 @@ CREATE INDEX IF NOT EXISTS idx_palmares_team_id ON palmares(team_id);
 CREATE INDEX IF NOT EXISTS idx_club_news_team_id ON club_news(team_id);
 CREATE INDEX IF NOT EXISTS idx_club_news_player_id ON club_news(player_id);
 CREATE INDEX IF NOT EXISTS idx_club_news_created_at ON club_news(created_at);
+
+-- NOTE: column "matchweek" actually stores game.calendarIndex (not the league matchweek),
+-- so that training also covers cup events. Each calendar entry = one training "week".
+CREATE TABLE IF NOT EXISTS team_training (
+  id INTEGER PRIMARY KEY AUTOINCREMENT,
+  team_id INTEGER NOT NULL,
+  matchweek INTEGER NOT NULL,
+  training_focus TEXT NOT NULL,
+  applied INTEGER DEFAULT 0,
+  created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+  FOREIGN KEY(team_id) REFERENCES teams(id),
+  UNIQUE(team_id, matchweek)
+);
+
+CREATE TABLE IF NOT EXISTS training_player_history (
+  id INTEGER PRIMARY KEY AUTOINCREMENT,
+  player_id INTEGER NOT NULL,
+  team_id INTEGER NOT NULL,
+  matchweek INTEGER NOT NULL,
+  attribute TEXT NOT NULL,
+  old_value REAL NOT NULL,
+  new_value REAL NOT NULL,
+  delta REAL NOT NULL DEFAULT 0,
+  focus TEXT,
+  created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+  FOREIGN KEY(player_id) REFERENCES players(id),
+  FOREIGN KEY(team_id) REFERENCES teams(id)
+);
+
+CREATE INDEX IF NOT EXISTS idx_team_training_team_matchweek ON team_training(team_id, matchweek);
+CREATE INDEX IF NOT EXISTS idx_training_history_player_matchweek ON training_player_history(player_id, matchweek);
+CREATE INDEX IF NOT EXISTS idx_training_history_team_matchweek ON training_player_history(team_id, matchweek);

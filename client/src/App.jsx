@@ -34,6 +34,7 @@ import { AuctionNotification } from "./components/ui/AuctionNotification.jsx";
 import { NewsTicker } from "./components/ui/NewsTicker.jsx";
 import { LeagueStandings } from "./components/ui/LeagueStandings.jsx";
 import { CupBracketPage } from "./components/ui/CupBracketPage.jsx";
+import { TrainingPage } from "./components/ui/TrainingPage.jsx";
 import { ChatWidget } from "./components/chat/ChatWidget.jsx";
 
 const FLAG_TO_COUNTRY = {};
@@ -213,7 +214,8 @@ function getPlayerStat(player, keys, fallback = 0) {
 function isPlayerAvailable(player, currentMatchweek = 1) {
   const suspensionUntil = player?.suspension_until_matchweek || 0;
   const injuryUntil = player?.injury_until_matchweek || 0;
-  return currentMatchweek > suspensionUntil && currentMatchweek > injuryUntil;
+  const cooldownUntil = player?.transfer_cooldown_until_matchweek || 0;
+  return currentMatchweek > Math.max(suspensionUntil, injuryUntil, cooldownUntil);
 }
 
 function buildAutoPositions(
@@ -1955,6 +1957,7 @@ function App() {
 
   useEffect(() => {
     if (!savedSession || me?.teamId) return;
+    if (joinTimerRef.current) clearTimeout(joinTimerRef.current);
     socket.emit("joinGame", {
       name: savedSession.name,
       password: savedSession.password,
@@ -3830,6 +3833,7 @@ function App() {
               { key: "club", label: "Clube", icon: "groups_3" },
               { key: "finances", label: "Finanças", icon: "payments" },
               { key: "players", label: "Plantel", icon: "group" },
+              { key: "training", label: "Treino", icon: "fitness_center" },
               {
                 key: "calendario",
                 label: "Calendário",
@@ -3945,6 +3949,7 @@ function App() {
                     {[
                       { key: "finances", label: "Finanças", icon: "payments" },
                       { key: "players", label: "Plantel", icon: "group" },
+                      { key: "training", label: "Treino", icon: "fitness_center" },
                     ].map(({ key, label, icon }) => (
                       <button
                         key={key}
@@ -8468,6 +8473,14 @@ function App() {
                       );
                     })()}
 
+                  {activeTab === "training" && (
+                    <TrainingPage
+                      me={me}
+                      players={players}
+                      matchweek={matchweekCount}
+                    />
+                  )}
+
                   {activeTab === "tactic" && (
                     <div>
                       {/* Warnings full-width */}
@@ -9851,6 +9864,7 @@ function App() {
         handleCloseTeamSquad={handleCloseTeamSquad}
         setTransferProposalModal={setTransferProposalModal}
         myBudget={teamInfo?.budget ?? 0}
+        currentMatchweek={matchweekCount + 1}
       />
 
       <TransferProposalModal

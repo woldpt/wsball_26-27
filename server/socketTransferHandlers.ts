@@ -110,11 +110,12 @@ export function registerTransferSocketHandlers(
         }
         await runExec(
           game.db,
-          "UPDATE players SET team_id = ?, contract_until_matchweek = ?, signed_season = ?, joined_matchweek = ?, transfer_status = 'none', transfer_price = 0, contract_request_pending = 0, contract_requested_wage = 0 WHERE id = ?",
+          "UPDATE players SET team_id = ?, contract_until_matchweek = ?, signed_season = ?, joined_matchweek = ?, transfer_cooldown_until_matchweek = ?, transfer_status = 'none', transfer_price = 0, contract_request_pending = 0, contract_requested_wage = 0 WHERE id = ?",
           [
             playerState.teamId,
             getSeasonEndMatchweek(game.matchweek),
             Math.ceil(Math.max(1, game.matchweek) / 14),
+            game.matchweek,
             game.matchweek,
             validPlayerId,
           ],
@@ -546,11 +547,12 @@ export function registerTransferSocketHandlers(
                   );
                 }
                 game.db.run(
-                  "UPDATE players SET team_id = ?, contract_until_matchweek = ?, signed_season = ?, joined_matchweek = ?, transfer_status = 'none', transfer_price = 0, contract_request_pending = 0, contract_requested_wage = 0 WHERE id = ?",
+                  "UPDATE players SET team_id = ?, contract_until_matchweek = ?, signed_season = ?, joined_matchweek = ?, transfer_cooldown_until_matchweek = ?, transfer_status = 'none', transfer_price = 0, contract_request_pending = 0, contract_requested_wage = 0 WHERE id = ?",
                   [
                     playerState.teamId,
                     getSeasonEndMatchweek(game.matchweek),
                     Math.ceil(Math.max(1, game.matchweek) / 14),
+                    game.matchweek,
                     game.matchweek,
                     playerId,
                   ],

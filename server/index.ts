@@ -73,6 +73,10 @@ const { registerGameplaySocketHandlers } =
   require("./socketGameplayHandlers") as typeof import("./socketGameplayHandlers");
 const { registerChatHandlers } =
   require("./socketChatHandlers") as typeof import("./socketChatHandlers");
+const { createTrainingHandlers } =
+  require("./socketTrainingHandlers") as typeof import("./socketTrainingHandlers");
+const { createTrainingHelpers } =
+  require("./trainingHelpers") as typeof import("./trainingHelpers");
 const { emitAwaitingCoaches: emitAwaitingCoachesHelper } =
   require("./presenceHelpers") as typeof import("./presenceHelpers");
 const { createWeeklyFlowHelpers } =
@@ -345,6 +349,14 @@ function scheduleNpcAuctionBids(game, playerId) {
 // weeklyFlowHelpers calls startCupRound (from cupFlowHelpers) when preparing
 // the lobby for an upcoming cup week.
 
+const trainingHelpers = createTrainingHelpers({ io });
+const applyTrainingBonuses = trainingHelpers.applyTrainingBonuses;
+
+const trainingHandlers = createTrainingHandlers({ io });
+const setTrainingFocus = trainingHandlers.setTrainingFocus;
+const getTrainingFocus = trainingHandlers.getTrainingFocus;
+const getTrainingHistory = trainingHandlers.getTrainingHistory;
+
 const cupFlowHelpers = createCupFlowHelpers({
   io,
   runAll,
@@ -359,6 +371,7 @@ const cupFlowHelpers = createCupFlowHelpers({
   simulatePenaltyShootout,
   pickRefereeSummary,
   getPlayerList,
+  applyTrainingBonuses,
 });
 
 const applySeasonEnd = cupFlowHelpers.applySeasonEnd;
@@ -390,6 +403,7 @@ const weeklyFlowHelpers = createWeeklyFlowHelpers({
   saveGameState,
   persistMatchResults,
   applyPostMatchQualityEvolution,
+  applyTrainingBonuses,
   startCupRound,
   finalizeCupRound,
   applySeasonEnd,
@@ -490,6 +504,44 @@ io.on("connection", (socket) => {
     getGameBySocket,
     getPlayerBySocket,
   });
+
+  // Training handlers
+  socket.on("setTrainingFocus", (trainingFocus: string, callback?: (ok: boolean) => void) => {
+    const game = getGameBySocket(socket.id);
+    const player = game ? getPlayerBySocket(game, socket.id) : null;
+    if (!game || !player) {
+      if (callback) callback(false);
+      return;
+    }
+    setTrainingFocus(game, player.name, trainingFocus, (err?: Error) => {
+      if (callback) callback(!err);
+    });
+  });
+
+  socket.on("getTrainingFocus", async (callback: (focus: string | null) => void) => {
+    const game = getGameBySocket(socket.id);
+    const player = game ? getPlayerBySocket(game, socket.id) : null;
+    if (!game || !player || player.teamId == null) {
+      if (callback) callback(null);
+      return;
+    }
+    const focus = await getTrainingFocus(game, player.teamId);
+    if (callback) callback(focus);
+  });
+
+  socket.on(
+    "getTrainingHistory",
+    async (calendarIndex: number | null, callback: (history: any[]) => void) => {
+      const game = getGameBySocket(socket.id);
+      const player = game ? getPlayerBySocket(game, socket.id) : null;
+      if (!game || !player || player.teamId == null) {
+        if (callback) callback([]);
+        return;
+      }
+      const history = await getTrainingHistory(game, player.teamId, calendarIndex ?? null);
+      if (callback) callback(history);
+    },
+  );
 });
 
 function validateEnvVars() {
@@ -525,6 +577,24 @@ db.run(
     }
   },
 );
+
+// Migrations for training accumulators (skill/resistance need fractional progress
+// because the underlying columns are INTEGER and +0.5/+0.2 would otherwise truncate)
+const trainingMigrations: Array<{ sql: string; label: string }> = [
+  { sql: `ALTER TABLE players ADD COLUMN training_skill_progress REAL DEFAULT 0`, label: "training_skill_progress" },
+  { sql: `ALTER TABLE players ADD COLUMN training_resistance_progress REAL DEFAULT 0`, label: "training_resistance_progress" },
+  { sql: `ALTER TABLE team_training ADD COLUMN applied INTEGER DEFAULT 0`, label: "team_training.applied" },
+  { sql: `ALTER TABLE training_player_history ADD COLUMN delta REAL NOT NULL DEFAULT 0`, label: "training_player_history.delta" },
+  { sql: `ALTER TABLE training_player_history ADD COLUMN focus TEXT`, label: "training_player_history.focus" },
+  { sql: `ALTER TABLE players ADD COLUMN transfer_cooldown_until_matchweek INTEGER DEFAULT 0`, label: "players.transfer_cooldown_until_matchweek" },
+];
+for (const m of trainingMigrations) {
+  db.run(m.sql, (err: any) => {
+    if (err && err.message && !err.message.includes("duplicate column name") && !err.message.includes("no such table")) {
+      console.warn(`[migration] ${m.label}:`, err.message);
+    }
+  });
+}
 
 const PORT = 3000;
 server.listen(PORT, () => {

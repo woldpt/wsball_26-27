@@ -741,7 +741,8 @@ function weightedPickScorer(players: PlayerRow[] = []) {
 function isPlayerAvailable(player: PlayerRow, currentMatchweek = 1) {
   const suspensionUntil = player.suspension_until_matchweek || 0;
   const injuryUntil = player.injury_until_matchweek || 0;
-  return currentMatchweek > suspensionUntil && currentMatchweek > injuryUntil;
+  const cooldownUntil = player.transfer_cooldown_until_matchweek || 0;
+  return currentMatchweek > Math.max(suspensionUntil, injuryUntil, cooldownUntil);
 }
 
 async function getTeamSquad(
