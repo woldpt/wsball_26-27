@@ -7,42 +7,42 @@ const TRAINING_OPTIONS = [
   {
     key: "GR",
     label: "Guarda-redes",
-    description: "Melhorar skill dos GR (+0.5)",
+    description: "Melhorar skill dos GR",
     icon: "sports_soccer",
     color: "from-yellow-500/20 to-yellow-600/10",
   },
   {
     key: "Defesas",
     label: "Defesas",
-    description: "Melhorar skill dos defensas (+0.5)",
+    description: "Melhorar skill dos defensas",
     icon: "security",
     color: "from-blue-500/20 to-blue-600/10",
   },
   {
     key: "Médios",
     label: "Médios",
-    description: "Melhorar skill dos médios (+0.5)",
+    description: "Melhorar skill dos médios",
     icon: "pivot_table_chart",
     color: "from-emerald-500/20 to-emerald-600/10",
   },
   {
     key: "Avançados",
     label: "Avançados",
-    description: "Melhorar skill dos avançados (+0.5)",
+    description: "Melhorar skill dos avançados",
     icon: "target",
     color: "from-rose-500/20 to-rose-600/10",
   },
   {
     key: "Forma",
     label: "Forma",
-    description: "Melhorar forma geral (+10 pontos)",
+    description: "Melhorar forma geral",
     icon: "favorite",
     color: "from-orange-500/20 to-orange-600/10",
   },
   {
     key: "Resistência",
     label: "Resistência",
-    description: "Melhorar resistência (+0.2)",
+    description: "Melhorar resistência",
     icon: "bolt",
     color: "from-purple-500/20 to-purple-600/10",
   },
@@ -226,20 +226,6 @@ export function TrainingPage({ me, players, matchweek }) {
                   <li className="flex items-start gap-2">
                     <span className="text-blue-400">→</span> Apenas jogadores
                     que jogaram beneficiam
-                  </li>
-                  <li className="flex items-start gap-2">
-                    <span className="text-blue-400">→</span>{" "}
-                    <strong>Posições:</strong> +0.5 progresso (2 semanas → +1
-                    skill)
-                  </li>
-                  <li className="flex items-start gap-2">
-                    <span className="text-blue-400">→</span>{" "}
-                    <strong>Resistência:</strong> +0.2 progresso (5 semanas → +1
-                    res)
-                  </li>
-                  <li className="flex items-start gap-2">
-                    <span className="text-blue-400">→</span>{" "}
-                    <strong>Forma:</strong> +10 directos (máx 100)
                   </li>
                   <li className="flex items-start gap-2">
                     <span className="text-blue-400">→</span> Aplicado
