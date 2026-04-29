@@ -4326,6 +4326,64 @@ function App() {
                         ))}
                     </div>
                   </div>
+                  {/* Último confronto */}
+                  {nextMatchOpponent.lastConfrontation && (() => {
+                    const lc = nextMatchOpponent.lastConfrontation;
+                    const resultClass =
+                      lc.result === "V"
+                        ? "bg-emerald-500/15 text-emerald-400 border-emerald-500/30"
+                        : lc.result === "E"
+                          ? "bg-amber-500/15 text-amber-400 border-amber-500/30"
+                          : "bg-red-500/15 text-red-400 border-red-500/30";
+                    const venueClass =
+                      lc.venue === "Casa"
+                        ? "bg-emerald-500/20 text-emerald-400"
+                        : "bg-sky-500/20 text-sky-400";
+                    const dateLabel =
+                      lc.competition === "league"
+                        ? `Época ${lc.season} · J${lc.matchweek}`
+                        : `Época ${lc.season} · Taça (${lc.cupRoundName ?? `Ronda ${lc.cupRound}`})`;
+                    const tieBreaker = lc.penalties
+                      ? `(p.p. ${lc.penalties.goalsFor}–${lc.penalties.goalsAgainst})`
+                      : lc.extraTime
+                        ? `(a.p. ${lc.goalsFor + lc.extraTime.goalsFor}–${lc.goalsAgainst + lc.extraTime.goalsAgainst})`
+                        : null;
+                    return (
+                      <div className="shrink-0">
+                        <p className="text-[10px] uppercase tracking-widest text-on-surface-variant font-black mb-1">
+                          Último Confronto
+                        </p>
+                        <div className="flex items-center gap-2">
+                          <span
+                            className={`w-6 h-6 rounded-full flex items-center justify-center text-[10px] font-black border ${resultClass}`}
+                          >
+                            {lc.result}
+                          </span>
+                          <div className="flex flex-col leading-tight">
+                            <div className="flex items-center gap-1.5">
+                              <span className="text-on-surface font-black text-sm tabular-nums">
+                                {lc.goalsFor}–{lc.goalsAgainst}
+                              </span>
+                              <span
+                                className={`text-[9px] font-black uppercase px-1.5 py-0.5 rounded ${venueClass}`}
+                              >
+                                {lc.venue}
+                              </span>
+                              {lc.competition === "cup" && (
+                                <span className="text-[9px] font-black uppercase px-1.5 py-0.5 rounded bg-amber-500/20 text-amber-400">
+                                  Taça
+                                </span>
+                              )}
+                            </div>
+                            <span className="text-[10px] text-on-surface-variant font-bold">
+                              {dateLabel}
+                              {tieBreaker ? ` ${tieBreaker}` : ""}
+                            </span>
+                          </div>
+                        </div>
+                      </div>
+                    );
+                  })()}
                   {/* Weather Forecast */}
                   {nextMatchSummary?.weatherForecast && (
                     <div className="shrink-0">

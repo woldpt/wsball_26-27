@@ -65,6 +65,137 @@ export function createMatchSummaryHelpers(deps: MatchSummaryDeps) {
     return { condition, emoji };
   }
 
+  async function getLastConfrontation(
+    game: ActiveGame,
+    teamAId: number,
+    teamBId: number,
+  ) {
+    const leagueRow: any = await runGet(
+      game.db,
+      `SELECT season, matchweek, home_team_id, away_team_id, home_score, away_score
+       FROM matches
+       WHERE played = 1
+         AND ((home_team_id = ? AND away_team_id = ?)
+           OR (home_team_id = ? AND away_team_id = ?))
+       ORDER BY season DESC, matchweek DESC, id DESC
+       LIMIT 1`,
+      [teamAId, teamBId, teamBId, teamAId],
+    );
+
+    const cupRow: any = await runGet(
+      game.db,
+      `SELECT season, round, home_team_id, away_team_id, home_score, away_score,
+              home_et_score, away_et_score, home_penalties, away_penalties
+       FROM cup_matches
+       WHERE played = 1
+         AND ((home_team_id = ? AND away_team_id = ?)
+           OR (home_team_id = ? AND away_team_id = ?))
+       ORDER BY season DESC, round DESC
+       LIMIT 1`,
+      [teamAId, teamBId, teamBId, teamAId],
+    );
+
+    if (!leagueRow && !cupRow) return null;
+
+    // Pick the more recent of the two using calendarIndex within season.
+    const leagueIdx = leagueRow
+      ? SEASON_CALENDAR.find(
+          (e) => e.type === "league" && e.matchweek === leagueRow.matchweek,
+        )?.calendarIndex ?? -1
+      : -1;
+    const cupIdx = cupRow
+      ? SEASON_CALENDAR.find(
+          (e) => e.type === "cup" && e.round === cupRow.round,
+        )?.calendarIndex ?? -1
+      : -1;
+
+    let pick: "league" | "cup";
+    if (!leagueRow) pick = "cup";
+    else if (!cupRow) pick = "league";
+    else if (cupRow.season !== leagueRow.season)
+      pick = cupRow.season > leagueRow.season ? "cup" : "league";
+    else pick = cupIdx > leagueIdx ? "cup" : "league";
+
+    if (pick === "league") {
+      const isHome = leagueRow.home_team_id === teamAId;
+      const goalsFor = isHome ? leagueRow.home_score : leagueRow.away_score;
+      const goalsAgainst = isHome ? leagueRow.away_score : leagueRow.home_score;
+      const result =
+        goalsFor > goalsAgainst ? "V" : goalsFor < goalsAgainst ? "D" : "E";
+      return {
+        season: leagueRow.season,
+        competition: "league" as const,
+        matchweek: leagueRow.matchweek,
+        venue: isHome ? "Casa" : ("Fora" as "Casa" | "Fora"),
+        goalsFor,
+        goalsAgainst,
+        result,
+      };
+    }
+
+    const isHome = cupRow.home_team_id === teamAId;
+    const goalsFor = isHome ? cupRow.home_score : cupRow.away_score;
+    const goalsAgainst = isHome ? cupRow.away_score : cupRow.home_score;
+    const cupEntry = SEASON_CALENDAR.find(
+      (e) => e.type === "cup" && e.round === cupRow.round,
+    ) as Extract<typeof SEASON_CALENDAR[number], { type: "cup" }> | undefined;
+
+    const hasEt =
+      cupRow.home_et_score != null && cupRow.away_et_score != null;
+    const hasPen =
+      cupRow.home_penalties != null && cupRow.away_penalties != null;
+
+    // Determine result including ET/penalties for cup ties.
+    let result: "V" | "E" | "D";
+    if (hasPen) {
+      const myPen = isHome ? cupRow.home_penalties : cupRow.away_penalties;
+      const opPen = isHome ? cupRow.away_penalties : cupRow.home_penalties;
+      result = myPen > opPen ? "V" : "D";
+    } else if (hasEt) {
+      const myEt =
+        (isHome ? cupRow.home_score : cupRow.away_score) +
+        (isHome ? cupRow.home_et_score : cupRow.away_et_score);
+      const opEt =
+        (isHome ? cupRow.away_score : cupRow.home_score) +
+        (isHome ? cupRow.away_et_score : cupRow.home_et_score);
+      result = myEt > opEt ? "V" : myEt < opEt ? "D" : "E";
+    } else {
+      result =
+        goalsFor > goalsAgainst ? "V" : goalsFor < goalsAgainst ? "D" : "E";
+    }
+
+    return {
+      season: cupRow.season,
+      competition: "cup" as const,
+      cupRound: cupRow.round,
+      cupRoundName: cupEntry?.roundName ?? null,
+      venue: isHome ? "Casa" : ("Fora" as "Casa" | "Fora"),
+      goalsFor,
+      goalsAgainst,
+      result,
+      ...(hasEt
+        ? {
+            extraTime: {
+              goalsFor: isHome ? cupRow.home_et_score : cupRow.away_et_score,
+              goalsAgainst: isHome
+                ? cupRow.away_et_score
+                : cupRow.home_et_score,
+            },
+          }
+        : {}),
+      ...(hasPen
+        ? {
+            penalties: {
+              goalsFor: isHome ? cupRow.home_penalties : cupRow.away_penalties,
+              goalsAgainst: isHome
+                ? cupRow.away_penalties
+                : cupRow.home_penalties,
+            },
+          }
+        : {}),
+    };
+  }
+
   async function getTeamRecentResults(
     game: ActiveGame,
     teamId: number,
@@ -162,6 +293,11 @@ export function createMatchSummaryHelpers(deps: MatchSummaryDeps) {
           color_primary: opponent.color_primary || null,
           color_secondary: opponent.color_secondary || null,
           last5: await getTeamRecentResults(game, opponent.id, 5),
+          lastConfrontation: await getLastConfrontation(
+            game,
+            team.id,
+            opponent.id,
+          ),
         },
         referee,
         weatherForecast: weather,
@@ -229,6 +365,11 @@ export function createMatchSummaryHelpers(deps: MatchSummaryDeps) {
         color_primary: opponent.color_primary || null,
         color_secondary: opponent.color_secondary || null,
         last5: await getTeamRecentResults(game, opponent.id, 5),
+        lastConfrontation: await getLastConfrontation(
+          game,
+          team.id,
+          opponent.id,
+        ),
       },
       referee,
       weatherForecast: weather,
