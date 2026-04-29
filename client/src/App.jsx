@@ -5152,10 +5152,10 @@ function App() {
                                                       className={`text-[9px] font-black ${f >= 115 ? "text-emerald-400" : f <= 85 ? "text-rose-400" : "text-zinc-500"}`}
                                                     >
                                                       {f >= 115
-                                                        ? "Alta"
+                                                        ? "💪"
                                                         : f <= 85
-                                                          ? "Baixa"
-                                                          : "Normal"}
+                                                          ? "😩"
+                                                          : "👍"}
                                                     </span>
                                                   );
                                                 })()}
@@ -5276,10 +5276,10 @@ function App() {
                                                         className={`text-[9px] font-black ${f >= 115 ? "text-emerald-400" : f <= 85 ? "text-rose-400" : "text-zinc-600"}`}
                                                       >
                                                         {f >= 115
-                                                          ? "Alta"
+                                                          ? "💪"
                                                           : f <= 85
-                                                            ? "Baixa"
-                                                            : "Normal"}
+                                                            ? "😩"
+                                                            : "👍"}
                                                       </span>
                                                     );
                                                   })()}
@@ -8429,10 +8429,10 @@ function App() {
                                                   : "text-on-surface-variant/30";
                                             const formArrow =
                                               form >= 115
-                                                ? "Alta"
+                                                ? "💪"
                                                 : form <= 85
-                                                  ? "Baixa"
-                                                  : "Normal";
+                                                  ? "😩"
+                                                  : "👍";
                                             return (
                                               <span
                                                 className={`text-[10px] font-bold ${formColor}`}
@@ -9935,10 +9935,10 @@ function App() {
                                             : "text-on-surface-variant/30";
                                       const formArrow =
                                         form >= 115
-                                          ? "Alta"
+                                          ? "💪"
                                           : form <= 85
-                                            ? "Baixa"
-                                            : "Normal";
+                                            ? "😩"
+                                            : "👍";
                                       return (
                                         <span
                                           className={`text-[10px] font-bold ${formColor}`}

@@ -235,10 +235,10 @@ export function PlayerHistoryModal({
                       }`}
                     >
                       {(player.form || 100) >= 115
-                        ? "Alta"
+                        ? "💪"
                         : (player.form || 100) <= 85
-                          ? "Baixa"
-                          : "Normal"}{" "}
+                          ? "😩"
+                          : "👍"}{" "}
                     </span>
                   </>
                 )}
