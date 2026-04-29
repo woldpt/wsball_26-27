@@ -724,14 +724,14 @@ export function registerSessionSocketHandlers(
           0,
         );
 
-        const transferIn = await runAll(
+        const transferInList = await runAll(
           game.db,
-          "SELECT amount FROM club_news WHERE team_id = ? AND type = 'transfer_in' AND amount > 0",
+          "SELECT player_name, amount, related_team_name, matchweek FROM club_news WHERE team_id = ? AND type = 'transfer_in' AND amount > 0 ORDER BY matchweek ASC",
           [teamId],
         );
-        const transferOut = await runAll(
+        const transferOutList = await runAll(
           game.db,
-          "SELECT amount FROM club_news WHERE team_id = ? AND type = 'transfer_out' AND amount > 0",
+          "SELECT player_name, amount, related_team_name, matchweek FROM club_news WHERE team_id = ? AND type = 'transfer_out' AND amount > 0 ORDER BY matchweek ASC",
           [teamId],
         );
         const stadiumBuilds = await runAll(
@@ -739,11 +739,11 @@ export function registerSessionSocketHandlers(
           "SELECT amount FROM club_news WHERE team_id = ? AND type = 'stadium_build' AND amount > 0",
           [teamId],
         );
-        const totalTransferIncome = transferOut.reduce(
+        const totalTransferIncome = transferOutList.reduce(
           (sum, n) => sum + (n.amount || 0),
           0,
         );
-        const totalTransferExpenses = transferIn.reduce(
+        const totalTransferExpenses = transferInList.reduce(
           (sum, n) => sum + (n.amount || 0),
           0,
         );
@@ -768,6 +768,8 @@ export function registerSessionSocketHandlers(
           totalStadiumExpenses,
           sponsorRevenue,
           homeMatchesPlayed: homeMatches.length,
+          transferInList,
+          transferOutList,
         });
       } catch (err) {
         console.error(`[${game.roomCode}] requestFinanceData error:`, err);
@@ -779,6 +781,8 @@ export function registerSessionSocketHandlers(
           totalStadiumExpenses: 0,
           sponsorRevenue: 0,
           homeMatchesPlayed: 0,
+          transferInList: [],
+          transferOutList: [],
         });
       }
     },

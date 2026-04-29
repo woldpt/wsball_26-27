@@ -743,7 +743,9 @@ function App() {
   const [clubNews, setClubNews] = useState([]);
   const [newsTickerItems, setNewsTickerItems] = useState([]);
   const [playerHistoryModal, setPlayerHistoryModal] = useState(null); // { player, transfers }
-  const [financeData, setFinanceData] = useState(null); // { totalTicketRevenue, totalTransferIncome, totalTransferExpenses, sponsorRevenue, homeMatchesPlayed }
+  const [financeData, setFinanceData] = useState(null); // { totalTicketRevenue, totalTransferIncome, totalTransferExpenses, sponsorRevenue, homeMatchesPlayed, transferInList, transferOutList }
+  const [showTransferSales, setShowTransferSales] = useState(false);
+  const [showTransferPurchases, setShowTransferPurchases] = useState(false);
   const [selectedTeam, setSelectedTeam] = useState(null);
   const [selectedTeamSquad, setSelectedTeamSquad] = useState([]);
   const [selectedTeamLoading, setSelectedTeamLoading] = useState(false);
@@ -7811,20 +7813,71 @@ function App() {
                                 </li>
                                 {(financeData?.totalTransferIncome || 0) >
                                   0 && (
-                                  <li className="flex justify-between items-center">
-                                    <div>
-                                      <p className="text-sm text-on-surface-variant">
-                                        Vendas de Jogadores
-                                      </p>
-                                      <p className="text-[10px] opacity-40 uppercase">
-                                        Receitas de transferências
-                                      </p>
+                                  <li className="space-y-1">
+                                    <div
+                                      className="flex justify-between items-center cursor-pointer group"
+                                      onClick={() =>
+                                        setShowTransferSales((v) => !v)
+                                      }
+                                    >
+                                      <div>
+                                        <p className="text-sm text-on-surface-variant group-hover:text-on-surface transition-colors">
+                                          Vendas de Jogadores
+                                        </p>
+                                        <p className="text-[10px] opacity-40 uppercase flex items-center gap-1">
+                                          <span
+                                            className="material-symbols-outlined"
+                                            style={{ fontSize: "10px" }}
+                                          >
+                                            {showTransferSales
+                                              ? "expand_less"
+                                              : "expand_more"}
+                                          </span>
+                                          {financeData.transferOutList
+                                            ?.length || 0}{" "}
+                                          transferência(s)
+                                        </p>
+                                      </div>
+                                      <span className="font-headline text-sm font-bold">
+                                        {formatCurrency(
+                                          financeData.totalTransferIncome,
+                                        )}
+                                      </span>
                                     </div>
-                                    <span className="font-headline text-sm font-bold">
-                                      {formatCurrency(
-                                        financeData.totalTransferIncome,
+                                    {showTransferSales &&
+                                      (financeData.transferOutList?.length ||
+                                        0) > 0 && (
+                                        <ul className="pl-3 space-y-1 border-l-2 border-primary/20 ml-1 mt-1">
+                                          {financeData.transferOutList.map(
+                                            (t, i) => (
+                                              <li
+                                                key={i}
+                                                className="flex justify-between items-center"
+                                              >
+                                                <div>
+                                                  <p className="text-xs text-on-surface-variant/80">
+                                                    {t.player_name ||
+                                                      "Jogador"}
+                                                    <span className="opacity-40 mx-1">
+                                                      →
+                                                    </span>
+                                                    {t.related_team_name ||
+                                                      "—"}
+                                                  </p>
+                                                  {t.matchweek != null && (
+                                                    <p className="text-[10px] opacity-30 uppercase">
+                                                      J{t.matchweek}
+                                                    </p>
+                                                  )}
+                                                </div>
+                                                <span className="text-xs font-bold">
+                                                  {formatCurrency(t.amount)}
+                                                </span>
+                                              </li>
+                                            ),
+                                          )}
+                                        </ul>
                                       )}
-                                    </span>
                                   </li>
                                 )}
                               </ul>
@@ -7879,20 +7932,71 @@ function App() {
                                 )}
                                 {(financeData?.totalTransferExpenses || 0) >
                                   0 && (
-                                  <li className="flex justify-between items-center">
-                                    <div>
-                                      <p className="text-sm text-on-surface-variant">
-                                        Compras de Jogadores
-                                      </p>
-                                      <p className="text-[10px] opacity-40 uppercase">
-                                        Despesas com transferências
-                                      </p>
+                                  <li className="space-y-1">
+                                    <div
+                                      className="flex justify-between items-center cursor-pointer group"
+                                      onClick={() =>
+                                        setShowTransferPurchases((v) => !v)
+                                      }
+                                    >
+                                      <div>
+                                        <p className="text-sm text-on-surface-variant group-hover:text-on-surface transition-colors">
+                                          Compras de Jogadores
+                                        </p>
+                                        <p className="text-[10px] opacity-40 uppercase flex items-center gap-1">
+                                          <span
+                                            className="material-symbols-outlined"
+                                            style={{ fontSize: "10px" }}
+                                          >
+                                            {showTransferPurchases
+                                              ? "expand_less"
+                                              : "expand_more"}
+                                          </span>
+                                          {financeData.transferInList
+                                            ?.length || 0}{" "}
+                                          transferência(s)
+                                        </p>
+                                      </div>
+                                      <span className="font-headline text-sm font-bold">
+                                        {formatCurrency(
+                                          financeData.totalTransferExpenses,
+                                        )}
+                                      </span>
                                     </div>
-                                    <span className="font-headline text-sm font-bold">
-                                      {formatCurrency(
-                                        financeData.totalTransferExpenses,
+                                    {showTransferPurchases &&
+                                      (financeData.transferInList?.length ||
+                                        0) > 0 && (
+                                        <ul className="pl-3 space-y-1 border-l-2 border-error/20 ml-1 mt-1">
+                                          {financeData.transferInList.map(
+                                            (t, i) => (
+                                              <li
+                                                key={i}
+                                                className="flex justify-between items-center"
+                                              >
+                                                <div>
+                                                  <p className="text-xs text-on-surface-variant/80">
+                                                    {t.player_name ||
+                                                      "Jogador"}
+                                                    <span className="opacity-40 mx-1">
+                                                      ←
+                                                    </span>
+                                                    {t.related_team_name ||
+                                                      "—"}
+                                                  </p>
+                                                  {t.matchweek != null && (
+                                                    <p className="text-[10px] opacity-30 uppercase">
+                                                      J{t.matchweek}
+                                                    </p>
+                                                  )}
+                                                </div>
+                                                <span className="text-xs font-bold">
+                                                  {formatCurrency(t.amount)}
+                                                </span>
+                                              </li>
+                                            ),
+                                          )}
+                                        </ul>
                                       )}
-                                    </span>
                                   </li>
                                 )}
                                 {(financeData?.totalStadiumExpenses || 0) >
