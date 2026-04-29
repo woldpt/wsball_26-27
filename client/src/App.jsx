@@ -179,6 +179,16 @@ function generateLeagueFixtures(teamsInDivision, matchweek, myTeamId) {
   return fixtures;
 }
 const DEFAULT_TACTIC = { formation: "4-4-2", style: "Balanced", positions: {} };
+const TACTIC_FORMATIONS = [
+  { value: "4-4-2", label: "4-4-2 Clássico" },
+  { value: "4-3-3", label: "4-3-3 Ofensivo" },
+  { value: "3-5-2", label: "3-5-2 Controlo" },
+  { value: "5-3-2", label: "5-3-2 Autocarro" },
+  { value: "4-5-1", label: "4-5-1 Catenaccio" },
+  { value: "3-4-3", label: "3-4-3 Total" },
+  { value: "4-2-4", label: "4-2-4 Avassalador" },
+  { value: "5-4-1", label: "5-4-1 Ferrolho" },
+];
 
 function formatCurrency(value) {
   return new Intl.NumberFormat("pt-PT", {
@@ -217,6 +227,35 @@ function isPlayerAvailable(player, currentMatchweek = 1) {
   const cooldownUntil = player?.transfer_cooldown_until_matchweek || 0;
   return (
     currentMatchweek > Math.max(suspensionUntil, injuryUntil, cooldownUntil)
+  );
+}
+
+function getFormationRequirements(formation = "4-4-2") {
+  const formationParts = String(formation || "4-4-2").split("-");
+  return {
+    GR: 1,
+    DEF: parseInt(formationParts[0], 10) || 0,
+    MED: parseInt(formationParts[1], 10) || 0,
+    ATA: parseInt(formationParts[2], 10) || 0,
+  };
+}
+
+function getAvailablePositionCounts(squad = [], currentMatchweek = 1) {
+  const counts = { GR: 0, DEF: 0, MED: 0, ATA: 0 };
+  for (const player of squad) {
+    if (!isPlayerAvailable(player, currentMatchweek)) continue;
+    if (counts[player.position] !== undefined) counts[player.position] += 1;
+  }
+  return counts;
+}
+
+function isFormationAvailable(formation, availableCounts) {
+  const requiredByPosition = getFormationRequirements(formation);
+  return (
+    availableCounts.GR >= requiredByPosition.GR &&
+    availableCounts.DEF >= requiredByPosition.DEF &&
+    availableCounts.MED >= requiredByPosition.MED &&
+    availableCounts.ATA >= requiredByPosition.ATA
   );
 }
 
@@ -2118,16 +2157,34 @@ function App() {
     if (!mySquad.length) return;
     if (tactic.positions && Object.keys(tactic.positions).length > 0) return;
 
+    const availableCounts = getAvailablePositionCounts(
+      mySquad,
+      matchweekCount + 1,
+    );
+    const fallbackFormation = isFormationAvailable(
+      tactic.formation,
+      availableCounts,
+    )
+      ? tactic.formation
+      : TACTIC_FORMATIONS.find((f) =>
+          isFormationAvailable(f.value, availableCounts),
+        )?.value;
+    if (!fallbackFormation) return;
+
     const autoPositions = buildAutoPositions(
       mySquad,
-      tactic.formation,
+      fallbackFormation,
       matchweekCount + 1,
     );
     if (Object.keys(autoPositions).length === 0) return;
 
     setTactic((prev) => {
       if (prev.positions && Object.keys(prev.positions).length > 0) return prev;
-      const next = { ...prev, positions: autoPositions };
+      const next = {
+        ...prev,
+        formation: fallbackFormation,
+        positions: autoPositions,
+      };
       socket.emit("setTactic", next);
       return next;
     });
@@ -2442,6 +2499,12 @@ function App() {
 
   const handleAutoPick = useCallback(
     (formation) => {
+      const availableCounts = getAvailablePositionCounts(
+        mySquad,
+        matchweekCount + 1,
+      );
+      if (!isFormationAvailable(formation, availableCounts)) return;
+
       const autoPositions = buildAutoPositions(
         mySquad,
         formation,
@@ -3455,6 +3518,16 @@ function App() {
     });
 
   const titulares = mySquad.filter((p) => tactic.positions[p.id] === "Titular");
+  const availablePositionCounts = getAvailablePositionCounts(
+    mySquad,
+    matchweekCount + 1,
+  );
+  const formationAvailabilityByValue = Object.fromEntries(
+    TACTIC_FORMATIONS.map(({ value }) => [
+      value,
+      isFormationAvailable(value, availablePositionCounts),
+    ]),
+  );
   const isLineupComplete =
     titulares.filter((p) => p.position === "GR").length === 1 &&
     titulares.filter((p) => p.position !== "GR").length === 10;
@@ -4327,63 +4400,64 @@ function App() {
                     </div>
                   </div>
                   {/* Último confronto */}
-                  {nextMatchOpponent.lastConfrontation && (() => {
-                    const lc = nextMatchOpponent.lastConfrontation;
-                    const resultClass =
-                      lc.result === "V"
-                        ? "bg-emerald-500/15 text-emerald-400 border-emerald-500/30"
-                        : lc.result === "E"
-                          ? "bg-amber-500/15 text-amber-400 border-amber-500/30"
-                          : "bg-red-500/15 text-red-400 border-red-500/30";
-                    const venueClass =
-                      lc.venue === "Casa"
-                        ? "bg-emerald-500/20 text-emerald-400"
-                        : "bg-sky-500/20 text-sky-400";
-                    const dateLabel =
-                      lc.competition === "league"
-                        ? `Época ${lc.season} · J${lc.matchweek}`
-                        : `Época ${lc.season} · Taça (${lc.cupRoundName ?? `Ronda ${lc.cupRound}`})`;
-                    const tieBreaker = lc.penalties
-                      ? `(p.p. ${lc.penalties.goalsFor}–${lc.penalties.goalsAgainst})`
-                      : lc.extraTime
-                        ? `(a.p. ${lc.goalsFor + lc.extraTime.goalsFor}–${lc.goalsAgainst + lc.extraTime.goalsAgainst})`
-                        : null;
-                    return (
-                      <div className="shrink-0">
-                        <p className="text-[10px] uppercase tracking-widest text-on-surface-variant font-black mb-1">
-                          Último Confronto
-                        </p>
-                        <div className="flex items-center gap-2">
-                          <span
-                            className={`w-6 h-6 rounded-full flex items-center justify-center text-[10px] font-black border ${resultClass}`}
-                          >
-                            {lc.result}
-                          </span>
-                          <div className="flex flex-col leading-tight">
-                            <div className="flex items-center gap-1.5">
-                              <span className="text-on-surface font-black text-sm tabular-nums">
-                                {lc.goalsFor}–{lc.goalsAgainst}
-                              </span>
-                              <span
-                                className={`text-[9px] font-black uppercase px-1.5 py-0.5 rounded ${venueClass}`}
-                              >
-                                {lc.venue}
-                              </span>
-                              {lc.competition === "cup" && (
-                                <span className="text-[9px] font-black uppercase px-1.5 py-0.5 rounded bg-amber-500/20 text-amber-400">
-                                  Taça
-                                </span>
-                              )}
-                            </div>
-                            <span className="text-[10px] text-on-surface-variant font-bold">
-                              {dateLabel}
-                              {tieBreaker ? ` ${tieBreaker}` : ""}
+                  {nextMatchOpponent.lastConfrontation &&
+                    (() => {
+                      const lc = nextMatchOpponent.lastConfrontation;
+                      const resultClass =
+                        lc.result === "V"
+                          ? "bg-emerald-500/15 text-emerald-400 border-emerald-500/30"
+                          : lc.result === "E"
+                            ? "bg-amber-500/15 text-amber-400 border-amber-500/30"
+                            : "bg-red-500/15 text-red-400 border-red-500/30";
+                      const venueClass =
+                        lc.venue === "Casa"
+                          ? "bg-emerald-500/20 text-emerald-400"
+                          : "bg-sky-500/20 text-sky-400";
+                      const dateLabel =
+                        lc.competition === "league"
+                          ? `Época ${lc.season} · J${lc.matchweek}`
+                          : `Época ${lc.season} · Taça (${lc.cupRoundName ?? `Ronda ${lc.cupRound}`})`;
+                      const tieBreaker = lc.penalties
+                        ? `(p.p. ${lc.penalties.goalsFor}–${lc.penalties.goalsAgainst})`
+                        : lc.extraTime
+                          ? `(a.p. ${lc.goalsFor + lc.extraTime.goalsFor}–${lc.goalsAgainst + lc.extraTime.goalsAgainst})`
+                          : null;
+                      return (
+                        <div className="shrink-0">
+                          <p className="text-[10px] uppercase tracking-widest text-on-surface-variant font-black mb-1">
+                            Último Confronto
+                          </p>
+                          <div className="flex items-center gap-2">
+                            <span
+                              className={`w-6 h-6 rounded-full flex items-center justify-center text-[10px] font-black border ${resultClass}`}
+                            >
+                              {lc.result}
                             </span>
+                            <div className="flex flex-col leading-tight">
+                              <div className="flex items-center gap-1.5">
+                                <span className="text-on-surface font-black text-sm tabular-nums">
+                                  {lc.goalsFor}–{lc.goalsAgainst}
+                                </span>
+                                <span
+                                  className={`text-[9px] font-black uppercase px-1.5 py-0.5 rounded ${venueClass}`}
+                                >
+                                  {lc.venue}
+                                </span>
+                                {lc.competition === "cup" && (
+                                  <span className="text-[9px] font-black uppercase px-1.5 py-0.5 rounded bg-amber-500/20 text-amber-400">
+                                    Taça
+                                  </span>
+                                )}
+                              </div>
+                              <span className="text-[10px] text-on-surface-variant font-bold">
+                                {dateLabel}
+                                {tieBreaker ? ` ${tieBreaker}` : ""}
+                              </span>
+                            </div>
                           </div>
                         </div>
-                      </div>
-                    );
-                  })()}
+                      );
+                    })()}
                   {/* Weather Forecast */}
                   {nextMatchSummary?.weatherForecast && (
                     <div className="shrink-0">
@@ -8668,37 +8742,46 @@ function App() {
 
                             {/* Formation pill buttons */}
                             {(() => {
-                              const formations = [
-                                { value: "4-4-2", label: "4-4-2 Clássico" },
-                                { value: "4-3-3", label: "4-3-3 Ofensivo" },
-                                { value: "3-5-2", label: "3-5-2 Controlo" },
-                                { value: "5-3-2", label: "5-3-2 Autocarro" },
-                                { value: "4-5-1", label: "4-5-1 Catenaccio" },
-                                { value: "3-4-3", label: "3-4-3 Total" },
-                                { value: "4-2-4", label: "4-2-4 Avassalador" },
-                                { value: "5-4-1", label: "5-4-1 Ferrolho" },
-                              ];
                               const hasLineup = titulares.length > 0;
-                              const lastLabel = formations.find(
+                              const lastLabel = TACTIC_FORMATIONS.find(
                                 (f) => f.value === tactic.formation,
                               )?.label;
                               return (
                                 <div className="px-5 py-3 border-b border-outline-variant/15 flex flex-col gap-2">
                                   <div className="flex flex-wrap gap-2">
-                                    {formations.map(({ value, label }) => (
-                                      <button
-                                        key={value}
-                                        onClick={() => handleAutoPick(value)}
-                                        className={`px-3 py-1.5 text-[10px] font-black uppercase tracking-widest transition-all rounded-sm ${
-                                          hasLineup &&
-                                          tactic.formation === value
-                                            ? "bg-primary text-on-primary"
-                                            : "bg-surface-container-high hover:bg-surface-bright text-on-surface-variant hover:text-on-surface border border-outline-variant/20"
-                                        }`}
-                                      >
-                                        {label}
-                                      </button>
-                                    ))}
+                                    {TACTIC_FORMATIONS.map(
+                                      ({ value, label }) => {
+                                        const isAvailable =
+                                          formationAvailabilityByValue[
+                                            value
+                                          ] === true;
+                                        return (
+                                          <button
+                                            key={value}
+                                            disabled={!isAvailable}
+                                            title={
+                                              isAvailable
+                                                ? undefined
+                                                : "Indisponível: faltam jogadores aptos por posição"
+                                            }
+                                            onClick={() =>
+                                              isAvailable &&
+                                              handleAutoPick(value)
+                                            }
+                                            className={`px-3 py-1.5 text-[10px] font-black uppercase tracking-widest transition-all rounded-sm ${
+                                              !isAvailable
+                                                ? "bg-surface-container-high text-on-surface-variant/35 border border-outline-variant/10 cursor-not-allowed"
+                                                : hasLineup &&
+                                                    tactic.formation === value
+                                                  ? "bg-primary text-on-primary"
+                                                  : "bg-surface-container-high hover:bg-surface-bright text-on-surface-variant hover:text-on-surface border border-outline-variant/20"
+                                            }`}
+                                          >
+                                            {label}
+                                          </button>
+                                        );
+                                      },
+                                    )}
                                   </div>
                                   {!hasLineup && lastLabel && (
                                     <p className="text-[9px] text-on-surface-variant/40 font-bold uppercase tracking-widest">
