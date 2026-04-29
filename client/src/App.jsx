@@ -8374,7 +8374,7 @@ function App() {
                                           </span>
                                         </td>
                                         {/* Ações */}
-                                        <td className="py-2.5 px-3 text-right">
+                                        <td className="py-2.5 px-3 text-right hidden md:table-cell">
                                           {canAct ? (
                                             <div className="flex justify-end gap-1.5 flex-wrap">
                                               <button
