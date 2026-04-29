@@ -2628,6 +2628,10 @@ function App() {
   );
 
   // ── MARKET ACTIONS ────────────────────────────────────────────────────────
+  const buyPlayer = useCallback((playerId) => {
+    socket.emit("buyPlayer", playerId);
+  }, []);
+
   const renewPlayerContract = useCallback((player) => {
     const defaultWage = Math.round(
       Math.max(player.wage || 0, (player.skill || 0) * 70) * 1.15,
@@ -2702,6 +2706,15 @@ function App() {
   }, []);
 
   // ── AUCTION BID ───────────────────────────────────────────────────────────
+  const openAuctionBid = useCallback((player) => {
+    if (!player) return;
+    setSelectedAuctionPlayer(player);
+    setIsAuctionExpanded(false);
+    setAuctionBid("");
+    setMyAuctionBid(null);
+    setAuctionResult(null);
+  }, []);
+
   const closeAuctionBid = useCallback(() => {
     setSelectedAuctionPlayer(null);
     setIsAuctionExpanded(false);
@@ -9954,6 +9967,10 @@ function App() {
         listPlayerAuction={listPlayerAuction}
         listPlayerFixed={listPlayerFixed}
         removeFromTransferList={removeFromTransferList}
+        buyPlayer={buyPlayer}
+        openAuctionBid={openAuctionBid}
+        myBudget={teamInfo?.budget ?? 0}
+        setGameDialog={setGameDialog}
       />
 
       <ChatWidget

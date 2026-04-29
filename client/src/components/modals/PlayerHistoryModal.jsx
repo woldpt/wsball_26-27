@@ -76,6 +76,10 @@ function StatCard({ label, value, color = "text-on-surface" }) {
  *   listPlayerAuction?: function,
  *   listPlayerFixed?: function,
  *   removeFromTransferList?: function,
+ *   buyPlayer?: function,
+ *   openAuctionBid?: function,
+ *   myBudget?: number,
+ *   setGameDialog?: function,
  * }} props
  */
 export function PlayerHistoryModal({
@@ -89,6 +93,10 @@ export function PlayerHistoryModal({
   listPlayerAuction,
   listPlayerFixed,
   removeFromTransferList,
+  buyPlayer,
+  openAuctionBid,
+  myBudget = 0,
+  setGameDialog,
 }) {
   if (!playerHistoryModal) return null;
 
@@ -127,6 +135,14 @@ export function PlayerHistoryModal({
   const alreadyAuctionedThisWeek =
     matchweekCount > 0 &&
     (player.last_auctioned_matchweek || 0) > matchweekCount;
+
+  // Market purchase — only when player belongs to *another* team and is listed
+  const isListedInMarket =
+    !isMyPlayer &&
+    (player.transfer_status === "auction" ||
+      player.transfer_status === "fixed");
+  const marketPrice = player.marketPrice ?? player.value ?? 0;
+  const canAfford = myBudget >= marketPrice;
 
   // Availability badge
   let availBadge = null;
@@ -270,6 +286,54 @@ export function PlayerHistoryModal({
                 </div>
                 <SkillBar label="Qualidade" value={skill} color={barColor} />
               </div>
+
+              {/* Market purchase — for players from other teams listed in the market */}
+              {isListedInMarket && (
+                <div className="px-6 py-5 border-b border-outline-variant/10">
+                  <p className="text-[10px] font-black uppercase tracking-widest text-primary mb-3">
+                    Mercado
+                  </p>
+                  <div className="flex justify-between text-xs mb-3">
+                    <span className="text-on-surface-variant font-medium">
+                      Preço
+                    </span>
+                    <span className="font-black text-on-surface font-mono tabular-nums">
+                      {formatCurrency(marketPrice)}
+                    </span>
+                  </div>
+                  {player.transfer_status === "auction" ? (
+                    <button
+                      onClick={() => {
+                        openAuctionBid?.(player);
+                        setPlayerHistoryModal(null);
+                      }}
+                      disabled={!canAfford}
+                      className="w-full px-4 py-2.5 bg-primary text-on-primary hover:brightness-110 disabled:opacity-30 text-[10px] uppercase font-black rounded-sm transition-all"
+                    >
+                      {canAfford ? "Licitar no Leilão" : "Saldo Insuficiente"}
+                    </button>
+                  ) : (
+                    <button
+                      onClick={() => {
+                        if (!canAfford) return;
+                        setGameDialog?.({
+                          mode: "confirm",
+                          title: `Comprar ${player.name}`,
+                          description: `${player.position} · Qualidade ${player.skill} · Preço: ${formatCurrency(marketPrice)}`,
+                          confirmLabel: "Confirmar Compra",
+                          onConfirm: () => buyPlayer?.(player.id),
+                          onCancel: () => {},
+                        });
+                        setPlayerHistoryModal(null);
+                      }}
+                      disabled={!canAfford}
+                      className="w-full px-4 py-2.5 bg-primary text-on-primary hover:brightness-110 disabled:opacity-30 text-[10px] uppercase font-black rounded-sm transition-all"
+                    >
+                      {canAfford ? "Comprar Jogador" : "Saldo Insuficiente"}
+                    </button>
+                  )}
+                </div>
+              )}
 
               {/* Contract management */}
               {isMyPlayer && (
