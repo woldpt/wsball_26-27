@@ -724,11 +724,20 @@ function pickBestPlayer(players: PlayerRow[] = []) {
 
 /**
  * Weighted random pick for goal scorer.
- * Stars (MED/ATA with is_star=1) get a 3× weight so they score more often.
+ * Weight = positionWeight × starMultiplier × individualForm.
+ *   ATA: 2, MED: 1; star ×3; form clamped to 0.7–1.3 of nominal 1.0.
  */
 function weightedPickScorer(players: PlayerRow[] = []) {
   if (!players.length) return null;
-  const weights = players.map((p) => (p.is_star ? 3 : 1));
+  const weights = players.map((p) => {
+    const positionWeight = p.position === "ATA" ? 2 : 1;
+    const starMultiplier = p.is_star ? 3 : 1;
+    const formMultiplier = Math.max(
+      0.7,
+      Math.min(1.3, (p.form || 100) / 100),
+    );
+    return positionWeight * starMultiplier * formMultiplier;
+  });
   const total = weights.reduce((s, w) => s + w, 0);
   let r = Math.random() * total;
   for (let i = 0; i < players.length; i++) {
@@ -1604,7 +1613,8 @@ async function simulateMatchSegment(
     const formationAttack = formationOffensiveFactors[formation] ?? 1.0;
     const formationDefense = formationDefensiveFactors[formation] ?? 1.0;
 
-    const moraleFactor = 1 + (morale - 50) * 0.005;
+    const moraleAttackFactor = 1 + (morale - 50) * 0.005;
+    const moraleDefenseFactor = 1 + (morale - 50) * 0.0025;
 
     const avgForm = average(squad.map((p) => p.form || 100));
     const formFactor = Math.max(0.85, Math.min(1.15, avgForm / 100));
@@ -1616,10 +1626,14 @@ async function simulateMatchSegment(
       attack:
         attackBase *
         formationAttack *
-        Math.max(0.5, Math.min(1.5, moraleFactor)) *
+        Math.max(0.5, Math.min(1.5, moraleAttackFactor)) *
         styleOffensiveFactor[style] *
         formFactor,
-      defense: defenseBase * formationDefense * formFactor,
+      defense:
+        defenseBase *
+        formationDefense *
+        Math.max(0.75, Math.min(1.25, moraleDefenseFactor)) *
+        formFactor,
       style,
       squad,
     };
@@ -1699,7 +1713,7 @@ async function simulateMatchSegment(
       const ratio =
         adjustedAttack / (adjustedAttack + (defending.defense || 1) * 2);
       let probGoal = ratio * 0.03 * getGoalTimeMultiplier(fixture._minute);
-      probGoal *= isHome ? 1.05 : 0.95;
+      probGoal *= isHome ? 1.08 : 0.92;
       probGoal *= getWeatherGoalMultiplier(fixture._weather);
 
       // Ego conflict penalty: 3+ craques no onze titular reduzem probabilidade

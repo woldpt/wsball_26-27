@@ -61,7 +61,8 @@
       "Read(//home/woldpt/.local/share/**)",
       "Read(//home/woldpt/**)",
       "Bash(sqlite3 *)",
-      "Bash(git checkout *)"
+      "Bash(git checkout *)",
+      "Bash(grep -E \"\\\\.\\(ts|js\\)$\")"
     ]
   },
   "outputStyle": "default"
