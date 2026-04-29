@@ -62,11 +62,15 @@ const POSITION_TEXT_CLASS = {
   ATA: "text-rose-500",
 };
 
-export function TrainingPage({ me, players, matchweek }) {
-  const [selectedTraining, setSelectedTraining] = useState(null);
+export function TrainingPage({ me, matchweek }) {
+  const [selectedTraining, setSelectedTraining] = useState(() => {
+    return localStorage.getItem(TRAINING_FOCUS_STORAGE_KEY) || null;
+  });
   const [trainingHistory, setTrainingHistory] = useState([]);
   const [historyCalendarIndex, setHistoryCalendarIndex] = useState(null);
-  const [savedTraining, setSavedTraining] = useState(null);
+  const [savedTraining, setSavedTraining] = useState(() => {
+    return localStorage.getItem(TRAINING_FOCUS_STORAGE_KEY) || null;
+  });
   const [loading, setLoading] = useState(false);
   const [saved, setSaved] = useState(false);
 
@@ -79,32 +83,14 @@ export function TrainingPage({ me, players, matchweek }) {
     }
   }, [selectedTraining]);
 
-  // Load persisted training on mount
-  useEffect(() => {
-    const persisted = localStorage.getItem(TRAINING_FOCUS_STORAGE_KEY);
-    if (persisted) {
-      setSelectedTraining(persisted);
-      setSavedTraining(persisted);
-    }
-  }, []);
-
-  // Fetch current training focus when team changes
+  // Fetch current training and history on component mount
   useEffect(() => {
     if (!me?.teamId) return;
 
     socket.emit("getTrainingFocus", (focus) => {
-      // Keep current selection if backend returns null/undefined
-      // so the user's focus persists week after week.
-      if (focus != null) {
-        setSavedTraining(focus);
-        setSelectedTraining(focus);
-      }
+      setSavedTraining(focus);
+      setSelectedTraining(focus);
     });
-  }, [me?.teamId]);
-
-  // Fetch history when matchweek changes
-  useEffect(() => {
-    if (!me?.teamId) return;
 
     // Pass null → backend returns history for the latest event with rows
     socket.emit("getTrainingHistory", null, (history) => {
@@ -192,8 +178,8 @@ export function TrainingPage({ me, players, matchweek }) {
                   disabled={loading}
                   className={`text-left p-4 rounded-lg border-2 transition-all group ${
                     selectedTraining === key
-                      ? "border-primary bg-gradient-to-br from-primary/25 to-primary/10 text-white shadow-lg"
-                      : "border-outline-variant/20 bg-gradient-to-br " +
+                      ? "border-primary bg-linear-to-br from-primary/25 to-primary/10 text-white shadow-lg"
+                      : "border-outline-variant/20 bg-linear-to-br " +
                         color +
                         " hover:border-outline-variant/40 text-zinc-300"
                   } ${loading ? "opacity-50 cursor-not-allowed" : "cursor-pointer"}`}
@@ -220,7 +206,7 @@ export function TrainingPage({ me, players, matchweek }) {
             )}
           </div>
 
-          <div className="bg-gradient-to-br from-blue-500/10 to-cyan-500/5 rounded-lg p-4 border border-blue-500/20 mt-4">
+          <div className="bg-linear-to-br from-blue-500/10 to-cyan-500/5 rounded-lg p-4 border border-blue-500/20 mt-4">
             <div className="flex items-start gap-3">
               <span className="material-symbols-outlined text-blue-400 shrink-0 mt-0.5">
                 info
@@ -272,7 +258,7 @@ export function TrainingPage({ me, players, matchweek }) {
               {Object.entries(historyByPosition).map(([position, records]) => (
                 <div
                   key={position}
-                  className={`bg-gradient-to-br rounded-lg p-4 border border-outline-variant/20 ${
+                  className={`bg-linear-to-br rounded-lg p-4 border border-outline-variant/20 ${
                     position === "GR"
                       ? "from-yellow-500/5 to-yellow-600/5"
                       : position === "DEF"
