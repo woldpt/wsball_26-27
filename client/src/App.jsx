@@ -2628,10 +2628,6 @@ function App() {
   );
 
   // ── MARKET ACTIONS ────────────────────────────────────────────────────────
-  const buyPlayer = useCallback((playerId) => {
-    socket.emit("buyPlayer", playerId);
-  }, []);
-
   const renewPlayerContract = useCallback((player) => {
     const defaultWage = Math.round(
       Math.max(player.wage || 0, (player.skill || 0) * 70) * 1.15,
@@ -2706,15 +2702,6 @@ function App() {
   }, []);
 
   // ── AUCTION BID ───────────────────────────────────────────────────────────
-  const openAuctionBid = useCallback((player) => {
-    if (!player) return;
-    setSelectedAuctionPlayer(player);
-    setIsAuctionExpanded(false);
-    setAuctionBid("");
-    setMyAuctionBid(null);
-    setAuctionResult(null);
-  }, []);
-
   const closeAuctionBid = useCallback(() => {
     setSelectedAuctionPlayer(null);
     setIsAuctionExpanded(false);
@@ -9695,9 +9682,6 @@ function App() {
                                 Forma
                               </th>
                               <th className="px-4 py-2.5 font-black text-center">
-                                Jogos
-                              </th>
-                              <th className="px-4 py-2.5 font-black text-center">
                                 Golos
                               </th>
                               <th className="px-4 py-2.5 font-black text-center">
@@ -9709,10 +9693,6 @@ function App() {
                               <th className="px-4 py-2.5 font-black text-right">
                                 Preço
                               </th>
-                              <th className="px-4 py-2.5 font-black text-right">
-                                Ordenado
-                              </th>
-                              <th className="px-4 py-2.5"></th>
                             </tr>
                           </thead>
                           <tbody className="divide-y divide-outline-variant/10 font-medium">
@@ -9721,7 +9701,6 @@ function App() {
                                 player.transfer_status &&
                                 player.transfer_status !== "none";
                               const price = player.marketPrice;
-                              const canAfford = teamInfo?.budget >= price;
                               return (
                                 <tr
                                   key={player.id}
@@ -9815,13 +9794,6 @@ function App() {
                                       );
                                     })()}
                                   </td>
-                                  <td className="px-4 py-2 text-center font-black text-zinc-300">
-                                    {getPlayerStat(player, ["games_played"])}{" "}
-                                    <span className="text-zinc-500 text-xs font-normal">
-                                      ({getPlayerStat(player, ["career_games"])}
-                                      )
-                                    </span>
-                                  </td>
                                   <td className="px-4 py-2 text-center font-black text-emerald-400">
                                     {getPlayerStat(player, ["goals"])}{" "}
                                     <span className="text-zinc-500 text-xs font-normal">
@@ -9847,54 +9819,6 @@ function App() {
                                   </td>
                                   <td className="px-4 py-2 text-right font-mono text-zinc-300 text-sm md:text-base">
                                     {formatCurrency(price)}
-                                  </td>
-                                  <td className="px-4 py-2 text-right font-mono text-zinc-300 text-xs md:text-sm">
-                                    {formatCurrency(
-                                      player.contract_requested_wage ||
-                                        player.wage ||
-                                        0,
-                                    )}
-                                  </td>
-                                  <td className="px-4 py-2 text-right">
-                                    {player.transfer_status === "auction" ? (
-                                      isSameTeamId(
-                                        player.auction_seller_team_id,
-                                        me?.teamId,
-                                      ) ? (
-                                        <span className="text-zinc-600 text-[10px] font-bold uppercase">
-                                          Meu leilão
-                                        </span>
-                                      ) : (
-                                        <button
-                                          onClick={() =>
-                                            canAfford && openAuctionBid(player)
-                                          }
-                                          disabled={!canAfford}
-                                          className="bg-primary hover:brightness-110 disabled:opacity-30 disabled:cursor-not-allowed text-on-primary font-black uppercase text-[10px] px-3 py-1.5 rounded-md tracking-wide"
-                                        >
-                                          {canAfford ? "Licitar" : "Sem fundos"}
-                                        </button>
-                                      )
-                                    ) : (
-                                      <button
-                                        onClick={() => {
-                                          if (!canAfford) return;
-                                          setGameDialog({
-                                            mode: "confirm",
-                                            title: `Comprar ${player.name}`,
-                                            description: `${player.position} · Qualidade ${player.skill} · Preço: ${formatCurrency(price)}`,
-                                            confirmLabel: "Confirmar Compra",
-                                            onConfirm: () =>
-                                              buyPlayer(player.id),
-                                            onCancel: () => {},
-                                          });
-                                        }}
-                                        disabled={!canAfford}
-                                        className="bg-primary hover:brightness-110 disabled:opacity-30 disabled:hover:bg-primary text-on-primary font-black uppercase text-[10px] px-3 py-1.5 rounded-md tracking-wide"
-                                      >
-                                        {canAfford ? "Comprar" : "Sem dinheiro"}
-                                      </button>
-                                    )}
                                   </td>
                                 </tr>
                               );

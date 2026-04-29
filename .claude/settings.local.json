@@ -60,7 +60,8 @@
       "Read(//home/woldpt/.volta/**)",
       "Read(//home/woldpt/.local/share/**)",
       "Read(//home/woldpt/**)",
-      "Bash(sqlite3 *)"
+      "Bash(sqlite3 *)",
+      "Bash(git checkout *)"
     ]
   },
   "outputStyle": "default"
