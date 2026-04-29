@@ -44,7 +44,11 @@ export function createContractHelpers(deps: ContractDeps) {
     const demandBase = Math.max(fairWage, Math.round(wage * 1.05), wage + 100);
     if (wage >= demandBase * 0.88 && Math.random() > 0.08) return;
 
-    const requestedWage = Math.round(demandBase * (1.05 + Math.random() * 0.15));
+    // Cap at +25 % over current wage to prevent single-cycle shocks
+    const requestedWage = Math.min(
+      Math.round(demandBase * (1.05 + Math.random() * 0.15)),
+      Math.round(wage * 1.25),
+    );
     game.db.run(
       "UPDATE players SET contract_request_pending = 1, contract_requested_wage = ? WHERE id = ?",
       [requestedWage, player.id],
@@ -106,13 +110,15 @@ export function createContractHelpers(deps: ContractDeps) {
       const fairWage = Math.round(Math.pow(value, 0.62) / 2.5);
       const demandBase = Math.max(
         Math.round(fairWage * 1.15),
-        Math.round(wage * 1.3),
+        Math.round(wage * 1.2),
       );
       // Apenas aciona se diferença significativa (>20% acima do salário actual)
       if (wage >= demandBase * 0.85) continue;
 
-      const requestedWage = Math.round(
-        demandBase * (1.0 + Math.random() * 0.15),
+      // Cap at +20 % per veteran cycle; repeated renegotiations reach fairWage gradually
+      const requestedWage = Math.min(
+        Math.round(demandBase * (1.0 + Math.random() * 0.15)),
+        Math.round(wage * 1.2),
       );
 
       game.db.run(
@@ -157,9 +163,10 @@ export function createContractHelpers(deps: ContractDeps) {
           "SELECT budget FROM teams WHERE id = ?",
           [player.team_id],
         );
+        // Auto-renewal: grow 5 % per epoch so NPC wages track human inflation
         const newWage = Math.max(
           Math.round((player.skill || 0) * 55),
-          player.wage || 0,
+          Math.round((player.wage || 0) * 1.05),
         );
         if (team && team.budget > newWage * 14) {
           await new Promise((resolve) => {
