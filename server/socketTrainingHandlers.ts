@@ -53,7 +53,32 @@ export function createTrainingHandlers(deps: TrainingHandlersDeps) {
             resolve(null);
             return;
           }
-          resolve(row ? row.training_focus : null);
+          // If no focus for current matchweek, copy from the most recent previous one
+          if (!row) {
+            game.db.get(
+              "SELECT training_focus FROM team_training WHERE team_id = ? AND matchweek < ? AND applied = 1 ORDER BY matchweek DESC LIMIT 1",
+              [teamId, game.calendarIndex],
+              (err2: any, prevRow: any) => {
+                if (err2 || !prevRow) {
+                  resolve(null);
+                  return;
+                }
+                // Auto-copy to current matchweek
+                game.db.run(
+                  "INSERT OR REPLACE INTO team_training (team_id, matchweek, training_focus, applied) VALUES (?, ?, ?, 0)",
+                  [teamId, game.calendarIndex, prevRow.training_focus],
+                  (err3: any) => {
+                    if (err3) {
+                      console.error(`[${game.roomCode}] training: failed to copy focus:`, err3);
+                    }
+                    resolve(prevRow.training_focus);
+                  },
+                );
+              },
+            );
+            return;
+          }
+          resolve(row.training_focus);
         },
       );
     });
