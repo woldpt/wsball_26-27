@@ -7633,14 +7633,11 @@ function App() {
                                         </td>
                                         {/* Qual */}
                                         <td className="py-2.5 px-3 text-center">
-                                          <span className="inline-flex items-center justify-center bg-surface text-on-surface px-2 py-0.5 rounded-sm text-sm border border-outline-variant/30 font-headline font-black tabular-nums">
-                                            {player.skill}
-                                          </span>
                                           {player.prev_skill != null &&
                                             player.prev_skill !==
                                               player.skill && (
                                               <span
-                                                className={`ml-1 text-[10px] font-black ${player.skill > player.prev_skill ? "text-emerald-400" : "text-red-400"}`}
+                                                className={`mr-1 text-[10px] font-black ${player.skill > player.prev_skill ? "text-emerald-400" : "text-red-400"}`}
                                               >
                                                 {player.skill >
                                                 player.prev_skill
@@ -7648,6 +7645,9 @@ function App() {
                                                   : "▼"}
                                               </span>
                                             )}
+                                          <span className="inline-flex items-center justify-center bg-surface text-on-surface px-2 py-0.5 rounded-sm text-sm border border-outline-variant/30 font-headline font-black tabular-nums">
+                                            {player.skill}
+                                          </span>
                                         </td>
                                         {/* Agressividade */}
                                         <td className="py-2.5 px-3 text-center">
@@ -8190,18 +8190,18 @@ function App() {
                                     </span>
                                     <div className="shrink-0 grid grid-cols-3 items-center gap-x-2 text-right">
                                       <span className="text-sm font-black text-primary tabular-nums">
-                                        {player.skill}
                                         {player.prev_skill != null &&
                                           player.prev_skill !==
                                             player.skill && (
                                             <span
-                                              className={`ml-0.5 text-[9px] ${player.skill > player.prev_skill ? "text-emerald-400" : "text-red-400"}`}
+                                              className={`mr-0.5 text-[9px] ${player.skill > player.prev_skill ? "text-emerald-400" : "text-red-400"}`}
                                             >
                                               {player.skill > player.prev_skill
                                                 ? "▲"
                                                 : "▼"}
                                             </span>
                                           )}
+                                        {player.skill}
                                       </span>
                                       <span className="text-[12px] text-cyan-400/70 font-black tabular-nums">
                                         🛡️{player.resistance ?? "–"}
@@ -8437,18 +8437,18 @@ function App() {
                                     </span>
                                     <div className="shrink-0 grid grid-cols-3 items-center gap-x-2 text-right">
                                       <span className="text-sm font-black text-primary tabular-nums">
-                                        {player.skill}
                                         {player.prev_skill != null &&
                                           player.prev_skill !==
                                             player.skill && (
                                             <span
-                                              className={`ml-0.5 text-[9px] ${player.skill > player.prev_skill ? "text-emerald-400" : "text-red-400"}`}
+                                              className={`mr-0.5 text-[9px] ${player.skill > player.prev_skill ? "text-emerald-400" : "text-red-400"}`}
                                             >
                                               {player.skill > player.prev_skill
                                                 ? "▲"
                                                 : "▼"}
                                             </span>
                                           )}
+                                        {player.skill}
                                       </span>
                                       <span className="text-[12px] text-cyan-400/70 font-black tabular-nums">
                                         🛡️{player.resistance ?? "–"}
