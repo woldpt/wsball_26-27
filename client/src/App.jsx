@@ -1650,6 +1650,7 @@ function App() {
 
     socket.on("halfTimeResults", (data) => {
       setIsMatchActionPending(false);
+      setMatchAction(null);
       setIsLiveSimulation(false);
       setMatchResults(data);
       setSubsMade(0);
@@ -1774,6 +1775,7 @@ function App() {
     // BUG-11 FIX: matchResults clears showHalftimePanel (2nd half replay)
     socket.on("matchResults", (data) => {
       setIsMatchActionPending(false);
+      setMatchAction(null);
       const myTeamId = meRef.current?.teamId;
       const myDivision = teamsRef.current.find(
         (t) => t.id === myTeamId,
@@ -4906,7 +4908,7 @@ function App() {
                                             e.type === "penalty_goal"
                                               ? "⚽(Pen)"
                                               : e.type === "goal" ||
-                                                e.type === "var_goal_pending"
+                                                  e.type === "var_goal_pending"
                                                 ? "⚽"
                                                 : e.type === "own_goal"
                                                   ? "⚽🔙"
@@ -9333,8 +9335,12 @@ function App() {
         subsMade={subsMade}
         swapSource={swapSource}
         swapTarget={swapTarget}
-        onSelectOut={matchAction ? (player) => setSwapSource(player) : handleSelectOut}
-        onSelectIn={matchAction ? (player) => setSwapTarget(player) : handleSelectIn}
+        onSelectOut={
+          matchAction ? (player) => setSwapSource(player) : handleSelectOut
+        }
+        onSelectIn={
+          matchAction ? (player) => setSwapTarget(player) : handleSelectIn
+        }
         onConfirmSub={handleConfirmSub}
         onResetSub={handleResetSub}
         onResetAllSubs={handleResetAllSubs}

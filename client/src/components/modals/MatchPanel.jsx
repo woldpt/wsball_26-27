@@ -158,8 +158,18 @@ function TabLineup({ fixture, liveMinute, teams }) {
   const hInfo = teams.find((t) => t.id === fixture.homeTeamId);
   const aInfo = teams.find((t) => t.id === fixture.awayTeamId);
   const evts = fixture.events || [];
-  const homeLineup = getEffectiveLineup(fixture.homeLineup, evts, liveMinute, "home");
-  const awayLineup = getEffectiveLineup(fixture.awayLineup, evts, liveMinute, "away");
+  const homeLineup = getEffectiveLineup(
+    fixture.homeLineup,
+    evts,
+    liveMinute,
+    "home",
+  );
+  const awayLineup = getEffectiveLineup(
+    fixture.awayLineup,
+    evts,
+    liveMinute,
+    "away",
+  );
 
   const renderPlayer = (p, opts = {}) => {
     const { isOff = false, offReason = null } = opts;
@@ -231,8 +241,13 @@ function TabLineup({ fixture, liveMinute, teams }) {
               </p>
               <div className="px-2.5 pb-1">
                 {lineup.subPlayers.map((p) => (
-                  <div key={p.id ?? p.name} className="flex items-center gap-1.5 py-0.5">
-                    <span className="w-3.5 text-[10px] font-black text-emerald-500 shrink-0">↑</span>
+                  <div
+                    key={p.id ?? p.name}
+                    className="flex items-center gap-1.5 py-0.5"
+                  >
+                    <span className="w-3.5 text-[10px] font-black text-emerald-500 shrink-0">
+                      ↑
+                    </span>
                     <span className="flex-1 truncate text-xs font-bold text-zinc-300">
                       <PlayerLink playerId={p.id}>{p.name}</PlayerLink>
                     </span>
@@ -284,9 +299,13 @@ function TabSubs({
                 className="flex items-center gap-1 bg-zinc-800 rounded-full pl-2 pr-2.5 py-0.5 text-[10px] font-bold"
               >
                 <span className="text-zinc-600 shrink-0">🔄</span>
-                <span className="text-red-400 truncate max-w-22">{outP?.name ?? "?"}</span>
+                <span className="text-red-400 truncate max-w-22">
+                  {outP?.name ?? "?"}
+                </span>
                 <span className="text-zinc-600 shrink-0 mx-0.5">→</span>
-                <span className="text-emerald-400 truncate max-w-22">{inP?.name ?? "?"}</span>
+                <span className="text-emerald-400 truncate max-w-22">
+                  {inP?.name ?? "?"}
+                </span>
               </div>
             );
           })}
@@ -384,7 +403,9 @@ function TabSubs({
                       {p.name}
                       {!!p.is_star &&
                         (p.position === "MED" || p.position === "ATA") && (
-                          <span className="ml-0.5 text-amber-400 font-black">*</span>
+                          <span className="ml-0.5 text-amber-400 font-black">
+                            *
+                          </span>
                         )}
                     </span>
                     <div className="shrink-0 grid grid-cols-3 items-center gap-x-2 text-right">
@@ -464,7 +485,9 @@ function TabSubs({
                       {!alreadyUsed &&
                         !!p.is_star &&
                         (p.position === "MED" || p.position === "ATA") && (
-                          <span className="ml-0.5 text-amber-400 font-black">*</span>
+                          <span className="ml-0.5 text-amber-400 font-black">
+                            *
+                          </span>
                         )}
                     </span>
                     <div className="shrink-0 flex items-center gap-1">
@@ -559,7 +582,15 @@ function TabSubs({
 
 // ── Tab: Ação urgente ────────────────────────────────────────────────────────
 
-function TabAction({ matchAction, injuryCountdown, swapSource, swapTarget, onSelectOut, onSelectIn, onResolveAction }) {
+function TabAction({
+  matchAction,
+  injuryCountdown,
+  swapSource,
+  swapTarget,
+  onSelectOut,
+  onSelectIn,
+  onResolveAction,
+}) {
   if (!matchAction) return null;
 
   if (matchAction.type === "user_substitution") {
@@ -587,14 +618,25 @@ function TabAction({ matchAction, injuryCountdown, swapSource, swapTarget, onSel
                   onClick={() => onSelectOut(player)}
                   className={`w-full flex items-center justify-between gap-2 px-3 py-2.5 rounded border transition-colors text-left ${swapSource?.id === player.id ? "border-primary bg-primary/20" : "border-outline-variant/20 bg-surface hover:bg-surface-bright"}`}
                 >
-                  <span className="font-bold text-white truncate text-sm">{player.name}</span>
+                  <span className="font-bold text-white truncate text-sm">
+                    {player.name}
+                  </span>
                   <span className="text-[11px] font-black uppercase tracking-widest text-zinc-400 flex items-center gap-1 shrink-0">
                     {player.position} · {player.skill}
                     {player.resistance != null && (
-                      <> · <span className="text-cyan-400/70">🛡️{player.resistance}</span></>
+                      <>
+                        {" "}
+                        ·{" "}
+                        <span className="text-cyan-400/70">
+                          🛡️{player.resistance}
+                        </span>
+                      </>
                     )}
                     {player.form != null && (
-                      <> · <FormBadge form={player.form} /></>
+                      <>
+                        {" "}
+                        · <FormBadge form={player.form} />
+                      </>
                     )}
                   </span>
                 </button>
@@ -612,14 +654,25 @@ function TabAction({ matchAction, injuryCountdown, swapSource, swapTarget, onSel
                   onClick={() => onSelectIn(player)}
                   className={`w-full flex items-center justify-between gap-2 px-3 py-2.5 rounded border transition-colors text-left ${swapTarget?.id === player.id ? "border-primary bg-primary/20" : "border-outline-variant/20 bg-surface hover:bg-surface-bright"}`}
                 >
-                  <span className="font-bold text-white truncate text-sm">{player.name}</span>
+                  <span className="font-bold text-white truncate text-sm">
+                    {player.name}
+                  </span>
                   <span className="text-[11px] font-black uppercase tracking-widest text-zinc-400 flex items-center gap-1 shrink-0">
                     {player.position} · {player.skill}
                     {player.resistance != null && (
-                      <> · <span className="text-cyan-400/70">🛡️{player.resistance}</span></>
+                      <>
+                        {" "}
+                        ·{" "}
+                        <span className="text-cyan-400/70">
+                          🛡️{player.resistance}
+                        </span>
+                      </>
                     )}
                     {player.form != null && (
-                      <> · <FormBadge form={player.form} /></>
+                      <>
+                        {" "}
+                        · <FormBadge form={player.form} />
+                      </>
                     )}
                   </span>
                 </button>
@@ -753,10 +806,12 @@ export function MatchPanel({
   const visibleEvts = evts.filter((e) => e.minute <= liveMinute);
 
   const homeGoals = visibleEvts.filter(
-    (e) => (e.type === "goal" || e.type === "penalty_goal") && e.team === "home",
+    (e) =>
+      (e.type === "goal" || e.type === "penalty_goal") && e.team === "home",
   ).length;
   const awayGoals = visibleEvts.filter(
-    (e) => (e.type === "goal" || e.type === "penalty_goal") && e.team === "away",
+    (e) =>
+      (e.type === "goal" || e.type === "penalty_goal") && e.team === "away",
   ).length;
 
   const displayHomeGoals =
@@ -790,7 +845,9 @@ export function MatchPanel({
 
   // Derived tab: falls back to mode's default if current tab not valid (e.g. mode changed)
   const validTabIds = tabs.map((t) => t.id);
-  const effectiveTab = validTabIds.includes(activeTab) ? activeTab : getDefaultTab(mode);
+  const effectiveTab = validTabIds.includes(activeTab)
+    ? activeTab
+    : getDefaultTab(mode);
 
   const modeBadgeLabel =
     mode === "halftime"
@@ -840,7 +897,7 @@ export function MatchPanel({
                 )}
                 <span className="text-amber-500 font-black text-sm tabular-nums shrink-0">
                   {mode === "action" && matchAction
-                    ? `${matchAction.minute}'`
+                    ? `${matchAction.minute ?? liveMinute}'`
                     : `${liveMinute}'`}
                 </span>
                 {modeBadgeLabel ? (
@@ -938,7 +995,11 @@ export function MatchPanel({
             {/* ── Tab content ── */}
             <div className="flex-1 min-h-0 overflow-hidden flex flex-col">
               {effectiveTab === "jogo" && (
-                <TabJogo fixture={fixture} liveMinute={liveMinute} teams={teams} />
+                <TabJogo
+                  fixture={fixture}
+                  liveMinute={liveMinute}
+                  teams={teams}
+                />
               )}
               {effectiveTab === "subs" && mode === "halftime" && (
                 <TabSubs
@@ -959,7 +1020,11 @@ export function MatchPanel({
                 />
               )}
               {effectiveTab === "lineup" && mode === "detail" && (
-                <TabLineup fixture={fixture} liveMinute={liveMinute} teams={teams} />
+                <TabLineup
+                  fixture={fixture}
+                  liveMinute={liveMinute}
+                  teams={teams}
+                />
               )}
               {effectiveTab === "action" && mode === "action" && (
                 <TabAction
