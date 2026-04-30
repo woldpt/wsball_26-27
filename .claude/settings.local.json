@@ -62,7 +62,8 @@
       "Read(//home/woldpt/**)",
       "Bash(sqlite3 *)",
       "Bash(git checkout *)",
-      "Bash(grep -E \"\\\\.\\(ts|js\\)$\")"
+      "Bash(grep -E \"\\\\.\\(ts|js\\)$\")",
+      "Bash(echo \"---EXIT:$?\")"
     ]
   },
   "outputStyle": "default"

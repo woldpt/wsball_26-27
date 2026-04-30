@@ -238,6 +238,30 @@ export function createCoachDismissalHelpers(deps: CoachDismissalDeps) {
       expiresAtMatchweek,
     };
 
+    // Query squad for toTeam
+    const squad = await runAll<AnyRow>(game.db,
+      "SELECT * FROM players WHERE team_id = ? ORDER BY position, skill DESC, name",
+      [toTeam.id],
+    );
+    const fullSquad = withJuniorGRs(squad, toTeam.id, game.matchweek);
+
+    // Compute division ranking position
+    const divisionTeams = await runAll<AnyRow>(game.db,
+      "SELECT * FROM teams WHERE division = ?",
+      [toTeam.division],
+    );
+    const sorted = divisionTeams.sort((a: AnyRow, b: AnyRow) => {
+      const agd = (a.goals_for || 0) - (a.goals_against || 0);
+      const bgd = (b.goals_for || 0) - (b.goals_against || 0);
+      return (
+        (b.points || 0) - (a.points || 0) ||
+        bgd - agd ||
+        (b.goals_for || 0) - (a.goals_for || 0) ||
+        String(a.name || "").localeCompare(String(b.name || ""))
+      );
+    });
+    const divisionPosition = sorted.findIndex((t: AnyRow) => t.id === toTeam.id) + 1;
+
     io.to(player.socketId).emit("jobOffer", {
       fromTeam: {
         id: fromTeam.id,
@@ -248,7 +272,15 @@ export function createCoachDismissalHelpers(deps: CoachDismissalDeps) {
         id: toTeam.id,
         name: toTeam.name,
         division: toTeam.division,
+        points: toTeam.points,
+        wins: toTeam.wins,
+        draws: toTeam.draws,
+        losses: toTeam.losses,
+        goals_for: toTeam.goals_for,
+        goals_against: toTeam.goals_against,
       },
+      toTeamDivisionPosition: divisionPosition,
+      toTeamSquad: fullSquad,
       expiresAtMatchweek,
     });
   }
