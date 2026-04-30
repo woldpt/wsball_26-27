@@ -1775,7 +1775,7 @@ async function simulateMatchSegment(
       }
     };
 
-    const penaltyChance = 0.002;
+    const penaltyChance = minute < 90 ? 0.002 : 0;
     if (Math.random() < penaltyChance) {
       const attackingSide = Math.random() < 0.5 ? "home" : "away";
       const attackingSquad = attackingSide === "home" ? home.squad : away.squad;
