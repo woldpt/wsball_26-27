@@ -25,21 +25,27 @@ export function createTrainingHelpers(_deps: { io: any }) {
       game.db.all(
         "SELECT team_id, training_focus FROM team_training WHERE matchweek = ? AND applied = 0",
         [completedCalendarIndex],
-        (err: any, trainings: any[]) => {
+        async (err: any, trainings: any[]) => {
           if (err) {
             console.error(`[${game.roomCode}] training: failed to load team_training:`, err);
             resolve();
             return;
           }
-          if (!trainings || trainings.length === 0) {
+
+          const trainingByTeam = new Map<number, string>(
+            (trainings || []).map((t) => [t.team_id, t.training_focus]),
+          );
+
+          // Carry-forward: for teams with prior training history but no row for the
+          // current matchweek, copy their most recent focus. This makes the focus
+          // recurrent without requiring the client to re-open the training UI.
+          await carryForwardMissingFocus(game, completedCalendarIndex, trainingByTeam);
+
+          const teamIds = Array.from(trainingByTeam.keys());
+          if (teamIds.length === 0) {
             resolve();
             return;
           }
-
-          const trainingByTeam = new Map<number, string>(
-            trainings.map((t) => [t.team_id, t.training_focus]),
-          );
-          const teamIds = Array.from(trainingByTeam.keys());
 
           // Collect ids of players that played in any fixture (filter out junior GRs with negative ids)
           const playerIds = new Set<number>();
@@ -228,6 +234,63 @@ export function createTrainingHelpers(_deps: { io: any }) {
               });
             },
           );
+        },
+      );
+    });
+  }
+
+  function carryForwardMissingFocus(
+    game: ActiveGame,
+    completedCalendarIndex: number,
+    trainingByTeam: Map<number, string>,
+  ): Promise<void> {
+    return new Promise<void>((resolve) => {
+      game.db.all(
+        "SELECT DISTINCT team_id FROM team_training WHERE matchweek < ?",
+        [completedCalendarIndex],
+        (err: any, rows: any[]) => {
+          if (err) {
+            console.error(`[${game.roomCode}] training: failed to list teams for carry-forward:`, err);
+            resolve();
+            return;
+          }
+          const missing = (rows || [])
+            .map((r) => r.team_id)
+            .filter((tid: number) => !trainingByTeam.has(tid));
+          if (missing.length === 0) {
+            resolve();
+            return;
+          }
+          let pending = missing.length;
+          const finishOne = () => {
+            pending -= 1;
+            if (pending === 0) resolve();
+          };
+          for (const tid of missing) {
+            game.db.get(
+              "SELECT training_focus FROM team_training WHERE team_id = ? AND matchweek < ? ORDER BY matchweek DESC LIMIT 1",
+              [tid, completedCalendarIndex],
+              (e2: any, prev: any) => {
+                if (e2 || !prev) {
+                  if (e2) console.error(`[${game.roomCode}] training: lookup prev focus team ${tid}:`, e2);
+                  finishOne();
+                  return;
+                }
+                game.db.run(
+                  "INSERT OR IGNORE INTO team_training (team_id, matchweek, training_focus, applied) VALUES (?, ?, ?, 0)",
+                  [tid, completedCalendarIndex, prev.training_focus],
+                  (e3: any) => {
+                    if (e3) {
+                      console.error(`[${game.roomCode}] training: carry-forward insert team ${tid}:`, e3);
+                    } else {
+                      trainingByTeam.set(tid, prev.training_focus);
+                    }
+                    finishOne();
+                  },
+                );
+              },
+            );
+          }
         },
       );
     });
