@@ -880,6 +880,25 @@ export function createWeeklyFlowHelpers(deps: WeeklyFlowDeps) {
           } finally {
             segmentRunning[game.roomCode] = false;
           }
+
+          // Capture first-half lineups from the squads that actually played.
+          // League fixtures don't have homeLineup/awayLineup set before this point.
+          // These are needed so applyTrainingBonuses sees all players who participated.
+          const lineupSnapshot = (squad: any[]) =>
+            squad.map((p) => ({
+              id: p.id,
+              name: p.name,
+              position: p.position,
+              is_star: p.is_star || 0,
+              skill: p.skill,
+            }));
+          for (const fixture of game.currentFixtures) {
+            if (!fixture.homeLineup && fixture._homeSquad)
+              fixture.homeLineup = lineupSnapshot(fixture._homeSquad);
+            if (!fixture.awayLineup && fixture._awaySquad)
+              fixture.awayLineup = lineupSnapshot(fixture._awaySquad);
+          }
+
           // segmentRunning is now false; safe to auto-advance if all coaches were dismissed.
           if (game.gamePhase === "lobby") {
             checkAllReady(game);
