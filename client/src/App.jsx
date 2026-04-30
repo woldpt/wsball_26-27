@@ -4903,23 +4903,24 @@ function App() {
                                             e.type === "substitution" ||
                                             e.type === "halftime_sub";
                                           const icon =
-                                            e.type === "goal" ||
-                                            e.type === "penalty_goal" ||
-                                            e.type === "var_goal_pending"
-                                              ? "⚽"
-                                              : e.type === "own_goal"
-                                                ? "⚽🔙"
-                                                : e.type === "var_disallowed"
-                                                  ? "🚩"
-                                                  : e.type === "yellow"
-                                                    ? "🟨"
-                                                    : e.type === "red"
-                                                      ? "🟥"
-                                                      : e.type === "injury"
-                                                        ? "🚑"
-                                                        : isSub
-                                                          ? "🔁"
-                                                          : "";
+                                            e.type === "penalty_goal"
+                                              ? "⚽(Pen)"
+                                              : e.type === "goal" ||
+                                                e.type === "var_goal_pending"
+                                                ? "⚽"
+                                                : e.type === "own_goal"
+                                                  ? "⚽🔙"
+                                                  : e.type === "var_disallowed"
+                                                    ? "🚩"
+                                                    : e.type === "yellow"
+                                                      ? "🟨"
+                                                      : e.type === "red"
+                                                        ? "🟥"
+                                                        : e.type === "injury"
+                                                          ? "🚑"
+                                                          : isSub
+                                                            ? "🔁"
+                                                            : "";
                                           const subOutName =
                                             e.type === "halftime_sub"
                                               ? e.outPlayerName
