@@ -97,7 +97,10 @@ docker compose down         # parar containers
     ├── gameConstants.ts         # constantes do jogo (divisões, regras, etc.)
     ├── gameManager.ts           # gestão central do estado do jogo
     ├── game/
-    │   └── engine.ts            # motor de simulação de partidas
+    │   ├── engine.ts            # motor de simulação (simulateMatchSegment, ET, penalties, etc.)
+    │   ├── commentary.ts        # 14 funções de narração em português (*Phrase)
+    │   ├── playerUtils.ts       # Junior GRs + seleção de jogadores (withJuniorGRs, etc.)
+    │   └── matchCalculations.ts # cálculos de probabilidade (getGoalTimeMultiplier, etc.)
     ├── socket*Handlers.ts       # handlers Socket.io por domínio:
     │   ├── socketGameplayHandlers.ts
     │   ├── socketSessionHandlers.ts
@@ -148,8 +151,13 @@ docker compose down         # parar containers
 ## Convenções de Frontend
 
 - **Tabs do App** — cada tab é um componente em `views/`; recebe estado como props; não acede ao socket directamente (excepto `BracketTab`). Os tabs `live` e `tactic` ficam inline no `App.jsx` por serem demasiado acoplados ao estado de jogo em tempo real.
-- **Socket listeners** — todos os `socket.on()` vivem em `hooks/useSocketListeners.js`; o hook recebe `(handlers, refs)` onde `handlers` contém os setters de estado e `refs` os refs React.
+- **Socket listeners** — todos os `socket.on()` vivem em `hooks/useSocketListeners.js`; o hook recebe `(handlers, refs)` onde `handlers` contém os setters de estado e `refs` os refs React. **Atenção:** ao adicionar novos listeners que chamem `handlers.setXxx`, verificar que o setter correspondente está incluído no objecto `handlers` passado em `App.jsx` — omissões causam no-ops silenciosos.
 - **Utilitários** — lógica reutilizável em `utils/`; sem duplicação inline no App.
+
+## Convenções de Backend
+
+- **`game/engine.ts`** exporta via `module.exports = {}` (CommonJS) para compatibilidade com o `require()` em `index.ts`; os ficheiros auxiliares do mesmo directório (`commentary.ts`, `playerUtils.ts`, `matchCalculations.ts`) usam ES module exports (`export function`). `engine.ts` re-exporta com `export { ... } from "./playerUtils"` para que os importadores externos possam usar `import { withJuniorGRs } from "./game/engine"`.
+- **Narração** — todas as frases geradas durante a simulação estão em `game/commentary.ts`; não duplicar frases noutros ficheiros.
 
 ## Git
 
