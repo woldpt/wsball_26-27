@@ -1775,7 +1775,9 @@ async function simulateMatchSegment(
       }
     };
 
-    const penaltyChance = minute < 90 ? 0.002 : 0;
+    const isCupExtraTime =
+      minute >= 91 && context.game?.currentEvent?.type === "cup";
+    const penaltyChance = minute < 90 || isCupExtraTime ? 0.002 : 0;
     if (Math.random() < penaltyChance) {
       const attackingSide = Math.random() < 0.5 ? "home" : "away";
       const attackingSquad = attackingSide === "home" ? home.squad : away.squad;
