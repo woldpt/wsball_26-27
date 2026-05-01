@@ -131,6 +131,7 @@ docker compose down         # parar containers
 
 ## Convenções e Decisões Arquitecturais
 
+- **Ficheiros fragmentados** — preferir ficheiros pequenos e coesos a ficheiros monolíticos. Quando um ficheiro ultrapassa ~500 linhas, considerar extracção de módulos por domínio (ex: `commentary.ts`, `playerUtils.ts`). Nunca agrupar funções num ficheiro apenas por conveniência; agrupar por responsabilidade.
 - **Backend em TypeScript, Frontend em JavaScript puro** — não adicionar TypeScript ao frontend
 - **SQLite, não PostgreSQL** — base de dados em ficheiro local, adequada para 32 treinadores
 - **Submissão assíncrona, simulação síncrona** — a jornada avança quando todos submetem; a simulação pausa no intervalo e tempo extra para confirmação
