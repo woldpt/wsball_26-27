@@ -65,7 +65,9 @@
       "Bash(grep -E \"\\\\.\\(ts|js\\)$\")",
       "Bash(echo \"---EXIT:$?\")",
       "Bash(git -C /home/woldpt/git/wsball_26-27 checkout refactor/fragment-app-jsx)",
-      "Bash(python3 *)"
+      "Bash(python3 *)",
+      "Bash(cat)",
+      "Read(//tmp/**)"
     ]
   },
   "outputStyle": "default"
