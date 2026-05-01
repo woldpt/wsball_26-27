@@ -63,7 +63,9 @@
       "Bash(sqlite3 *)",
       "Bash(git checkout *)",
       "Bash(grep -E \"\\\\.\\(ts|js\\)$\")",
-      "Bash(echo \"---EXIT:$?\")"
+      "Bash(echo \"---EXIT:$?\")",
+      "Bash(git -C /home/woldpt/git/wsball_26-27 checkout refactor/fragment-app-jsx)",
+      "Bash(python3 *)"
     ]
   },
   "outputStyle": "default"

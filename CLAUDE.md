@@ -61,11 +61,32 @@ docker compose down         # parar containers
 /
 ├── client/
 │   ├── src/
-│   │   ├── App.jsx              # componente raiz
+│   │   ├── App.jsx              # componente raiz (live + tactic tabs; restantes extraídos)
 │   │   ├── AdminPanel.jsx       # painel de administração
 │   │   ├── socket.js            # configuração Socket.io-client
 │   │   ├── countryFlags.js      # mapeamento de bandeiras
-│   │   └── main.jsx             # ponto de entrada React
+│   │   ├── main.jsx             # ponto de entrada React
+│   │   ├── hooks/
+│   │   │   └── useSocketListeners.js  # 40+ socket.on() extraídos do App
+│   │   ├── views/               # um ficheiro por tab extraído do App
+│   │   │   ├── StandingsTab.jsx
+│   │   │   ├── BracketTab.jsx
+│   │   │   ├── TrainingTab.jsx
+│   │   │   ├── CupTab.jsx
+│   │   │   ├── CalendarioTab.jsx
+│   │   │   ├── ClubTab.jsx
+│   │   │   ├── FinancesTab.jsx
+│   │   │   ├── PlayersTab.jsx
+│   │   │   └── MarketTab.jsx
+│   │   ├── utils/
+│   │   │   ├── audio.js         # playNotification, playGoalSound, playVarSound
+│   │   │   ├── fixtures.js      # generateLeagueFixtures
+│   │   │   ├── formatters.js    # formatCurrency, etc.
+│   │   │   ├── playerHelpers.js # isPlayerAvailable, getFormationRequirements, etc.
+│   │   │   ├── sessionHelpers.js
+│   │   │   └── teamHelpers.js
+│   │   └── constants/
+│   │       └── index.js         # DIVISION_NAMES, TICKER_TEAM_COLORS, etc.
 │   ├── public/
 │   ├── index.html
 │   └── vite.config.js
@@ -124,9 +145,14 @@ docker compose down         # parar containers
 - **Sidebar adaptativa** — `sidebarCollapsed` (estado em `App.jsx`) alterna entre `w-14` e `w-64`; todos os elementos sobrepostos (persianas, overlays) devem acompanhar com `lg:left-14` / `lg:left-64`
 - **Material Symbols Outlined** — biblioteca de ícones usada em todo o projecto (`className="material-symbols-outlined"`)
 
+## Convenções de Frontend
+
+- **Tabs do App** — cada tab é um componente em `views/`; recebe estado como props; não acede ao socket directamente (excepto `BracketTab`). Os tabs `live` e `tactic` ficam inline no `App.jsx` por serem demasiado acoplados ao estado de jogo em tempo real.
+- **Socket listeners** — todos os `socket.on()` vivem em `hooks/useSocketListeners.js`; o hook recebe `(handlers, refs)` onde `handlers` contém os setters de estado e `refs` os refs React.
+- **Utilitários** — lógica reutilizável em `utils/`; sem duplicação inline no App.
+
 ## Git
 
-- Branch de trabalho: `claude/fix-repo-connection-RSwIu`
 - Push: `git push -u origin <branch>`
 - Commits em português ou inglês, descritivos e concisos
 
