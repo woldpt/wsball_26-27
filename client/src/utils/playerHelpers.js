@@ -11,7 +11,28 @@ export function getPlayerStat(player, keys, fallback = 0) {
 export function isPlayerAvailable(player, currentMatchweek = 1) {
   const suspensionUntil = player?.suspension_until_matchweek || 0;
   const injuryUntil = player?.injury_until_matchweek || 0;
-  return currentMatchweek > suspensionUntil && currentMatchweek > injuryUntil;
+  const cooldownUntil = player?.transfer_cooldown_until_matchweek || 0;
+  return currentMatchweek > Math.max(suspensionUntil, injuryUntil, cooldownUntil);
+}
+
+export function getFormationRequirements(formation = "4-4-2") {
+  const formationParts = String(formation || "4-4-2").split("-");
+  return {
+    GR: 1,
+    DEF: parseInt(formationParts[0], 10) || 0,
+    MED: parseInt(formationParts[1], 10) || 0,
+    ATA: parseInt(formationParts[2], 10) || 0,
+  };
+}
+
+export function isFormationAvailable(formation, availableCounts) {
+  const requiredByPosition = getFormationRequirements(formation);
+  return (
+    availableCounts.GR >= requiredByPosition.GR &&
+    availableCounts.DEF >= requiredByPosition.DEF &&
+    availableCounts.MED >= requiredByPosition.MED &&
+    availableCounts.ATA >= requiredByPosition.ATA
+  );
 }
 
 export function buildAutoPositions(
@@ -232,6 +253,15 @@ export function getMatchLastEventText(
   }
 
   return minuteText ? `${minuteText} ${latest.text || ""}` : latest.text || "";
+}
+
+export function getAvailablePositionCounts(squad = [], currentMatchweek = 1) {
+  const counts = { GR: 0, DEF: 0, MED: 0, ATA: 0 };
+  for (const player of squad) {
+    if (!isPlayerAvailable(player, currentMatchweek)) continue;
+    if (counts[player.position] !== undefined) counts[player.position] += 1;
+  }
+  return counts;
 }
 
 export function aggLabel(value) {
