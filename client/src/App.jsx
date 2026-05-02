@@ -746,6 +746,24 @@ function App() {
     setAuctionBid("");
     setMyAuctionBid(null);
     setAuctionResult(null);
+    setCalendarData(null);
+    setCalFilter("all");
+    setCupBracketData(null);
+    setSeasonYear(2026);
+    setClubNews([]);
+    setNewsTickerItems([]);
+    setFinanceData(null);
+    setJobOfferModal(null);
+    setSeasonEndModal(null);
+    setPenaltySuspense(null);
+    setShowMatchDetail(false);
+    setMatchDetailFixture(null);
+    setRoomMessages([]);
+    setGlobalMessages([]);
+    setGlobalPlayers([]);
+    setGameDialog(null);
+    setUnreadRoom(0);
+    setUnreadGlobal(0);
   };
 
   const handleAuthenticate = async (mode) => {
