@@ -1347,7 +1347,7 @@ function App() {
   }, [isMatchInProgress]);
 
   if (!me || !me.teamId) {
-    if (joining && me) {
+    if (me && !me.teamId) {
       return (
         <>
           <div className="min-h-screen bg-surface text-on-surface flex flex-col items-center justify-center p-6 pb-24">
@@ -1357,7 +1357,7 @@ function App() {
             <div className="bg-surface-container p-8 rounded-md w-full max-w-md relative overflow-hidden shadow-2xl text-center">
               <div className="absolute top-0 inset-x-0 h-0.5 bg-linear-to-r from-primary via-primary to-transparent"></div>
               <p className="text-[10px] uppercase tracking-[0.35em] text-on-surface-variant font-bold mb-3">
-                Sessão guardada
+                A entrar na sala
               </p>
               <p className="text-2xl font-headline font-black text-on-surface mb-1">
                 A reconectar...
