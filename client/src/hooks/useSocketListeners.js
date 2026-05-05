@@ -182,6 +182,8 @@ export function useSocketListeners(handlers, refs) {
             finalHomeGoals: fx.homeGoals,
             finalAwayGoals: fx.awayGoals,
             events: fx.events || [],
+            homeLineup: fx.homeLineup || [],
+            awayLineup: fx.awayLineup || [],
             attendance: null,
           })),
         });
