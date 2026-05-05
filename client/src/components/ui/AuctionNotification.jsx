@@ -86,6 +86,7 @@ export function AuctionNotification({
   submitAuctionBid,
   me,
   teamInfo,
+  matchweekCount = 0,
 }) {
   const [secondsLeft, setSecondsLeft] = useState(null);
 
@@ -332,6 +333,16 @@ export function AuctionNotification({
                     ★
                   </span>
                 )}
+              {(selectedAuctionPlayer.suspension_until_matchweek ?? 0) > matchweekCount && (
+                <span className="text-[9px] font-black uppercase px-2 py-0.5 rounded-sm bg-error-container/50 text-error border border-error/20 tracking-widest">
+                  🟥 Suspenso · {selectedAuctionPlayer.suspension_until_matchweek - matchweekCount + 1}J
+                </span>
+              )}
+              {(selectedAuctionPlayer.injury_until_matchweek ?? 0) > matchweekCount && (
+                <span className="text-[9px] font-black uppercase px-2 py-0.5 rounded-sm bg-error-container/30 text-error border border-error/20 tracking-widest">
+                  🩹 Lesionado · {selectedAuctionPlayer.injury_until_matchweek - matchweekCount + 1}J
+                </span>
+              )}
             </div>
           </div>
 

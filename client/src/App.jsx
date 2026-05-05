@@ -5227,6 +5227,7 @@ function App() {
                       setMarketPositionFilter={setMarketPositionFilter}
                       marketSort={marketSort}
                       setMarketSort={setMarketSort}
+                      matchweekCount={matchweekCount}
                     />
                   )}
                 </motion.div>
@@ -5274,6 +5275,7 @@ function App() {
           teams={teams}
           me={me}
           teamInfo={teamInfo}
+          matchweekCount={matchweekCount}
         />
       </div>
       <RefereePopup

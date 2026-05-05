@@ -26,6 +26,7 @@ export function MarketTab({
   setMarketPositionFilter,
   marketSort,
   setMarketSort,
+  matchweekCount = 0,
 }) {
   return (
     <div className="bg-surface-container rounded-lg shadow-sm overflow-hidden">
@@ -144,6 +145,16 @@ export function MarketTab({
                           {player.transfer_status === "auction"
                             ? "Leilão"
                             : "Lista"}
+                        </span>
+                      )}
+                      {(player.suspension_until_matchweek ?? 0) > matchweekCount && (
+                        <span className="text-[9px] font-black uppercase px-1.5 py-0.5 rounded bg-error-container/60 text-error border border-error/20 tracking-widest whitespace-nowrap">
+                          🟥 {player.suspension_until_matchweek - matchweekCount + 1}J
+                        </span>
+                      )}
+                      {(player.injury_until_matchweek ?? 0) > matchweekCount && (
+                        <span className="text-[9px] font-black uppercase px-1.5 py-0.5 rounded bg-amber-900/30 text-amber-400 border border-amber-700/30 tracking-widest whitespace-nowrap">
+                          🩹 {player.injury_until_matchweek - matchweekCount + 1}J
                         </span>
                       )}
                     </div>

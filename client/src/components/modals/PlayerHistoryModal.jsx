@@ -147,15 +147,17 @@ export function PlayerHistoryModal({
   // Availability badge
   let availBadge = null;
   if ((player.suspension_until_matchweek ?? 0) > matchweekCount) {
+    const jLeft = player.suspension_until_matchweek - matchweekCount + 1;
     availBadge = (
       <span className="text-[9px] font-black uppercase px-2 py-0.5 rounded-sm bg-error-container/50 text-error border border-error/20 tracking-widest">
-        🟥 Suspenso
+        🟥 Suspenso · {jLeft}J
       </span>
     );
   } else if ((player.injury_until_matchweek ?? 0) > matchweekCount) {
+    const jLeft = player.injury_until_matchweek - matchweekCount + 1;
     availBadge = (
       <span className="text-[9px] font-black uppercase px-2 py-0.5 rounded-sm bg-error-container/30 text-error border border-error/20 tracking-widest">
-        🩹 Lesionado
+        🩹 Lesionado · {jLeft}J
       </span>
     );
   }
