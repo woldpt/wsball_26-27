@@ -18,7 +18,8 @@ cd client && npm run dev        # Vite dev server
 | Backend dev | `cd server && npm run dev` |
 | Backend build | `cd server && npm run build && npm start` |
 | Backend typecheck | `cd server && npm run typecheck` |
-| Backend seed | `cd server && npm run seed` |
+| Backend seed (mock) | `cd server && npm run seed` |
+| Backend seed (real data) | `cd server && npm run seed:real` |
 | Frontend dev | `cd client && npm run dev` |
 | Frontend lint | `cd client && npm run lint` |
 | Frontend JSDoc check | `cd client && npm run check:types` |
@@ -40,6 +41,8 @@ cd client && npm run dev        # Vite dev server
 - **`game/engine.ts`** uses CommonJS (`module.exports`) for compatibility. Other `game/` files use ES modules. Re-exports via `engine.ts` allow external imports like `import { withJuniorGRs } from "./game/engine"`.
 - **All narration** is in `game/commentary.ts`. Never duplicate phrases elsewhere.
 - **Portuguese (PT)** for all UI text, messages, and code comments.
+- **`auth.js` and `adminRoutes.js`** are intentionally JavaScript — do not convert to TypeScript.
+- **Sidebar overlays** (auction blinds, overlays) must offset with `lg:left-14` / `lg:left-64` to track `sidebarCollapsed` state in `App.jsx`.
 
 ## Game Flow Gotchas
 

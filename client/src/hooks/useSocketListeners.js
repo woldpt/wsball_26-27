@@ -938,6 +938,19 @@ export function useSocketListeners(handlers, refs) {
       handlers.setMatchAction(null);
     });
 
+    socket.on("substitutionPauseStarted", ({ teamId, coachName }) => {
+      // Não mostrar o banner ao próprio treinador que pediu a pausa
+      const myTeamId = refs.meRef.current?.teamId;
+      if (myTeamId && myTeamId === teamId) return;
+      handlers.setSubstitutionPause({ teamId, coachName });
+    });
+
+    socket.on("substitutionPauseEnded", ({ teamId }) => {
+      handlers.setSubstitutionPause((prev) =>
+        prev && prev.teamId === teamId ? null : prev
+      );
+    });
+
     // BUG-11 FIX: matchResults clears showHalftimePanel (2nd half replay)
     socket.on("matchResults", (data) => {
       handlers.setIsMatchActionPending(false);
@@ -1102,6 +1115,8 @@ export function useSocketListeners(handlers, refs) {
       socket.off("halfTimeResults");
       socket.off("matchActionRequired");
       socket.off("matchActionResolved");
+      socket.off("substitutionPauseStarted");
+      socket.off("substitutionPauseEnded");
       socket.off("gameState");
       socket.off("coachDismissed");
       socket.off("jobOffer");

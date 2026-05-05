@@ -93,6 +93,11 @@ export function registerGameplaySocketHandlers(
     console.log(
       `[${game.roomCode}] 🔁 ${playerState.name} requested substitution for team ${playerState.teamId}`,
     );
+    // Notificar todos os jogadores humanos que este treinador está a fazer substituições
+    io.to(game.roomCode).emit("substitutionPauseStarted", {
+      teamId: playerState.teamId,
+      coachName: playerState.name,
+    });
   });
 
   socket.on("resolveMatchAction", ({ actionId, teamId, playerId, choice }) => {

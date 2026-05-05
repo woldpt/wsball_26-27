@@ -233,6 +233,10 @@ function waitForMatchAction({
         teamId,
         source,
       });
+      // Quando a pausa de substituição termina, notificar todos os jogadores
+      if (type === "user_substitution") {
+        io.to(game.roomCode).emit("substitutionPauseEnded", { teamId });
+      }
       resolve({ choice, source });
     };
 

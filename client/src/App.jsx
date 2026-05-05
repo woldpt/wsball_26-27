@@ -215,6 +215,7 @@ function App() {
   const injuryCountdownRef = React.useRef(null);
   const [subsMade, setSubsMade] = useState(0);
   const [, forceGoalFlashRender] = useState(0);
+  const [substitutionPause, setSubstitutionPause] = useState(null);
   const [swapSource, setSwapSource] = useState(null);
   const [swapTarget, setSwapTarget] = useState(null); // player coming IN (Suplente)
   const [subbedOut, setSubbedOut] = useState([]); // Track players who left the pitch
@@ -405,6 +406,7 @@ function App() {
       setUnreadGlobal,
       addToast,
       pushTickerItem,
+      setSubstitutionPause,
     },
     {
       isPlayingMatchRef,
@@ -3151,10 +3153,22 @@ function App() {
                                       <span className="material-symbols-outlined text-[14px]">
                                         pause
                                       </span>
-                                      Pausa / Sub
+                                       Pausa / Sub
                                     </button>
                                   )}
                                 </div>
+
+                                {/* Banner de pausa de substituição — visível aos outros treinadores */}
+                                {substitutionPause && (
+                                  <div className="w-full mb-3 flex items-center gap-2 px-3 py-2 rounded-lg bg-amber-500/10 border border-amber-500/30 text-amber-300 text-[11px] font-semibold">
+                                    <span className="material-symbols-outlined text-[16px] shrink-0">
+                                      pause_circle
+                                    </span>
+                                    <span>
+                                      {substitutionPause.coachName} está a fazer substituições...
+                                    </span>
+                                  </div>
+                                )}
 
                                 {/* Stadium + attendance — above teams/score */}
                                 {myMatch.attendance && (
@@ -3200,11 +3214,16 @@ function App() {
                                           .substring(0, 3)
                                           .toUpperCase()}
                                       </span>
-                                      {myMatch.homeTeamId === me.teamId && (
-                                        <div className="absolute -bottom-2.5 left-1/2 -translate-x-1/2 bg-primary text-on-primary px-2 py-0.5 rounded-sm font-black text-[8px] tracking-widest uppercase whitespace-nowrap shadow-lg">
-                                          {me.name}
-                                        </div>
-                                      )}
+                                      {(() => {
+                                        const homeCoach = players.find((p) => p.teamId === myMatch.homeTeamId);
+                                        if (!homeCoach) return null;
+                                        const isMe = myMatch.homeTeamId === me.teamId;
+                                        return (
+                                          <div className={`absolute -bottom-2.5 left-1/2 -translate-x-1/2 px-2 py-0.5 rounded-sm font-black text-[8px] tracking-widest uppercase whitespace-nowrap shadow-lg ${isMe ? "bg-primary text-on-primary" : "bg-amber-500 text-zinc-950"}`}>
+                                            {homeCoach.name}
+                                          </div>
+                                        );
+                                      })()}
                                     </div>
                                     <h2 className="text-sm sm:text-base font-headline font-black tracking-tighter uppercase leading-none text-center mt-2 truncate w-full px-1">
                                       {hInfo?.name}
@@ -3368,11 +3387,16 @@ function App() {
                                           .substring(0, 3)
                                           .toUpperCase()}
                                       </span>
-                                      {myMatch.awayTeamId === me.teamId && (
-                                        <div className="absolute -bottom-2.5 left-1/2 -translate-x-1/2 bg-primary text-on-primary px-2 py-0.5 rounded-sm font-black text-[8px] tracking-widest uppercase whitespace-nowrap shadow-lg">
-                                          {me.name}
-                                        </div>
-                                      )}
+                                      {(() => {
+                                        const awayCoach = players.find((p) => p.teamId === myMatch.awayTeamId);
+                                        if (!awayCoach) return null;
+                                        const isMe = myMatch.awayTeamId === me.teamId;
+                                        return (
+                                          <div className={`absolute -bottom-2.5 left-1/2 -translate-x-1/2 px-2 py-0.5 rounded-sm font-black text-[8px] tracking-widest uppercase whitespace-nowrap shadow-lg ${isMe ? "bg-primary text-on-primary" : "bg-amber-500 text-zinc-950"}`}>
+                                            {awayCoach.name}
+                                          </div>
+                                        );
+                                      })()}
                                     </div>
                                     <h2 className="text-sm sm:text-base font-headline font-black tracking-tighter uppercase leading-none text-center mt-2 truncate w-full px-1">
                                       {aInfo?.name}

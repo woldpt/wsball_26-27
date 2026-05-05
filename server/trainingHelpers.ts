@@ -107,7 +107,7 @@ export function createTrainingHelpers(_deps: { io: any }) {
 
                 if (focus === "Forma") {
                   const oldForm = player.form ?? 100;
-                  const newForm = Math.min(100, oldForm + 10);
+                  const newForm = Math.min(130, oldForm + 10);
                   if (newForm !== oldForm) {
                     upd.fields.form = newForm;
                     upd.history.push({
