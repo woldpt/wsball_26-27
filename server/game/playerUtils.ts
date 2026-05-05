@@ -54,11 +54,17 @@ export function generateJuniorGR(
   const lastIdx =
     Math.abs(teamId * 53 + matchweek * 17 + slotIndex * 11) %
     JUNIOR_LAST_NAMES.length;
+  const juniorSkill =
+    1 +
+    Math.abs(
+      teamId * 37 + matchweek * 13 + slotIndex * 7 + firstIdx * 3 + lastIdx * 5,
+    ) %
+      5;
   return {
     id: -(teamId * 10 + slotIndex + 1),
     name: `${JUNIOR_FIRST_NAMES[firstIdx]} ${JUNIOR_LAST_NAMES[lastIdx]} (Junior)`,
     position: "GR",
-    skill: 1,
+    skill: juniorSkill,
     aggressiveness: 3,
     resistance: 3,
     isJunior: true,
