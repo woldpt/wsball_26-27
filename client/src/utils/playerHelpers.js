@@ -49,13 +49,7 @@ export function buildAutoPositions(
     (a, b) => b.skill - a.skill,
   );
 
-  const formationParts = String(formation || "4-4-2").split("-");
-  const requiredByPosition = {
-    GR: 1,
-    DEF: parseInt(formationParts[0], 10) || 0,
-    MED: parseInt(formationParts[1], 10) || 0,
-    ATA: parseInt(formationParts[2], 10) || 0,
-  };
+  const requiredByPosition = getFormationRequirements(formation);
   const usedByPosition = { GR: 0, DEF: 0, MED: 0, ATA: 0 };
   const lineup = [];
 

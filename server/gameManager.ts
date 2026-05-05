@@ -344,6 +344,7 @@ function getGame(roomCode: string, onReady?: OnReady): ActiveGame | null {
     auctions: {} as Record<string, unknown>,
     auctionTimers: {} as Record<string, unknown>,
     pendingAuctionQueue: [],
+    pendingAuctionQueueTimers: [],
     initialized: false,
     roomName: "",
 

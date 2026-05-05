@@ -70,6 +70,7 @@ export interface ActiveGame {
   auctions: Record<string, unknown>;
   auctionTimers: Record<string, unknown>;
   pendingAuctionQueue: unknown[];
+  pendingAuctionQueueTimers: ReturnType<typeof setTimeout>[];
   initialized: boolean;
   lastHalftimePayload?: any;
   pendingMatchAction?: any;

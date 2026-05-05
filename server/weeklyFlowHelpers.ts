@@ -586,9 +586,13 @@ export function createWeeklyFlowHelpers(deps: WeeklyFlowDeps) {
                   game.currentEvent?.type !== "cup"
                 ) {
                   const queue = game.pendingAuctionQueue.splice(0) as any[];
+                  if (!game.pendingAuctionQueueTimers)
+                    game.pendingAuctionQueueTimers = [];
                   let qDelay = 500;
                   for (const qEntry of queue) {
-                    setTimeout(() => {
+                    const tid = setTimeout(() => {
+                      game.pendingAuctionQueueTimers =
+                        game.pendingAuctionQueueTimers.filter((t) => t !== tid);
                       listPlayerOnMarket(
                         game,
                         qEntry.playerId,
@@ -597,6 +601,7 @@ export function createWeeklyFlowHelpers(deps: WeeklyFlowDeps) {
                         qEntry.callback,
                       );
                     }, qDelay);
+                    game.pendingAuctionQueueTimers.push(tid);
                     qDelay += 18000;
                   }
                 }
@@ -767,6 +772,10 @@ export function createWeeklyFlowHelpers(deps: WeeklyFlowDeps) {
         return;
       }
 
+      if (game.pendingAuctionQueueTimers?.length) {
+        for (const tid of game.pendingAuctionQueueTimers) clearTimeout(tid);
+        game.pendingAuctionQueueTimers = [];
+      }
       finalizeAllRunningAuctions(game, finalizeAuction);
 
       segmentRunning[game.roomCode] = true;

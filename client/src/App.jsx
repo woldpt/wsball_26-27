@@ -80,6 +80,16 @@ import { FinancesTab } from "./views/FinancesTab.jsx";
 import { PlayersTab } from "./views/PlayersTab.jsx";
 import { MarketTab } from "./views/MarketTab.jsx";
 // ── App-level constants ────────────────────────────────────────────────────
+const WEATHER_LABELS = {
+  "☀️": "Sol",
+  "🌧️": "Chuva",
+  "⛈️": "Chuva forte",
+  "💨": "Vento",
+  "🥶": "Frio",
+  "🌫️": "Nevoeiro",
+  "❄️": "Neve",
+};
+
 const TACTIC_FORMATIONS = [
   { value: "4-4-2", label: "4-4-2 Clássico" },
   { value: "4-3-3", label: "4-3-3 Ofensivo" },
@@ -3073,15 +3083,6 @@ function App() {
                           const weatherEvent = matchEvents.find(
                             (e) => e.type === "weather",
                           );
-                          const WEATHER_LABELS = {
-                            "☀️": "Sol",
-                            "🌧️": "Chuva",
-                            "⛈️": "Chuva forte",
-                            "💨": "Vento",
-                            "🥶": "Frio",
-                            "🌫️": "Nevoeiro",
-                            "❄️": "Neve",
-                          };
 
                           // If ET is running for other fixtures but my match was decided at 90', hide this block
                           if (isCupExtraTime) {

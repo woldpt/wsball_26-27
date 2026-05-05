@@ -135,12 +135,13 @@ export async function getAllTeamForms(
     season != null
       ? `SELECT m.home_team_id, m.away_team_id, m.home_score, m.away_score
          FROM matches m
-         WHERE m.played = 1 AND m.season = ${season}
+         WHERE m.played = 1 AND m.season = ?
          ORDER BY m.id DESC`
       : `SELECT m.home_team_id, m.away_team_id, m.home_score, m.away_score
          FROM matches m
          WHERE m.played = 1
          ORDER BY m.id DESC`,
+    season != null ? [season] : [],
   );
   const formMap: Record<number, string[]> = {};
   for (const row of rows) {

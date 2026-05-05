@@ -1079,7 +1079,10 @@ async function simulateMatchSegment(
             text: `[${minute}'] 🟥 ${redPhrase(offender.name)}`,
           });
           const idx = squad.findIndex((p: any) => p.id === offender.id);
-          if (idx > -1) squad.splice(idx, 1);
+          if (idx > -1) {
+            squad.splice(idx, 1);
+            (isHomeCard ? homeLineupIds : awayLineupIds).delete(offender.id);
+          }
         };
 
         if (fixture._yellowCards[offenderId] >= 1) {

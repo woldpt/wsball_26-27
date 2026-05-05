@@ -232,22 +232,27 @@ export function createCupFlowHelpers(deps: CupFlowDeps) {
       });
     }
 
-    for (const promotion of promotions) {
-      await new Promise((resolve) => {
-        game.db.run(
-          "UPDATE teams SET division = ? WHERE id = ?",
-          [promotion.toDiv, promotion.teamId],
-          resolve,
-        );
-      });
-    }
-
-    await new Promise((resolve) => {
-      game.db.run(
-        "UPDATE teams SET points=0, wins=0, draws=0, losses=0, goals_for=0, goals_against=0",
-        resolve,
+    const dbRun = (sql: string, params: any[] = []) =>
+      new Promise<void>((resolve, reject) =>
+        game.db.run(sql, params, (err: any) => (err ? reject(err) : resolve())),
       );
-    });
+
+    await dbRun("BEGIN");
+    try {
+      for (const promotion of promotions) {
+        await dbRun("UPDATE teams SET division = ? WHERE id = ?", [
+          promotion.toDiv,
+          promotion.teamId,
+        ]);
+      }
+      await dbRun(
+        "UPDATE teams SET points=0, wins=0, draws=0, losses=0, goals_for=0, goals_against=0",
+      );
+      await dbRun("COMMIT");
+    } catch (txErr) {
+      await dbRun("ROLLBACK").catch(() => {});
+      throw txErr;
+    }
 
     // Persist avg_attendance per team (rolling average: blend previous + this season)
     for (const team of allTeams) {
@@ -273,21 +278,20 @@ export function createCupFlowHelpers(deps: CupFlowDeps) {
         });
       }
     }
-    await new Promise((resolve) => {
-      game.db.run(
+    await dbRun("BEGIN");
+    try {
+      await dbRun(
         "UPDATE players SET career_goals = career_goals + goals, career_reds = career_reds + red_cards, career_injuries = career_injuries + injuries, career_games = career_games + games_played",
-        resolve,
       );
-    });
-    await new Promise((resolve) => {
-      game.db.run(
+      await dbRun(
         "UPDATE players SET goals = 0, red_cards = 0, injuries = 0, games_played = 0, suspension_games = 0, suspension_until_matchweek = 0, injury_until_matchweek = 0, transfer_cooldown_until_matchweek = 0",
-        resolve,
       );
-    });
-    await new Promise((resolve) => {
-      game.db.run("UPDATE players SET signed_season = 0", resolve);
-    });
+      await dbRun("UPDATE players SET signed_season = 0");
+      await dbRun("COMMIT");
+    } catch (txErr) {
+      await dbRun("ROLLBACK").catch(() => {});
+      throw txErr;
+    }
 
     // Reset to new season
     game.season += 1;

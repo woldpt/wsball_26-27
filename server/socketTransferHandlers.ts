@@ -65,6 +65,11 @@ export function registerTransferSocketHandlers(
     const playerState = getPlayerBySocket(game, socket.id);
     if (!playerState) return;
 
+    if (isMatchInProgress(game)) {
+      socket.emit("systemMessage", "Não é possível contratar jogadores durante uma partida.");
+      return;
+    }
+
     const validPlayerId = validatePositiveInt(playerId);
     if (!validPlayerId) return;
 
@@ -196,10 +201,10 @@ export function registerTransferSocketHandlers(
       if (!validPlayerId) return;
 
       const finalMode = mode === "auction" ? "auction" : "fixed";
-      if (finalMode === "auction" && isMatchInProgress(game)) {
+      if (isMatchInProgress(game)) {
         socket.emit(
           "systemMessage",
-          "Leilões só são permitidos após o final das partidas.",
+          "Não é possível listar jogadores durante uma partida.",
         );
         return;
       }
@@ -386,6 +391,11 @@ export function registerTransferSocketHandlers(
 
     const pending = game.pendingRenewalCounterOffers?.[playerId];
     if (!pending || pending.teamId !== playerState.teamId) return;
+
+    if (game.auctions?.[playerId]) {
+      socket.emit("systemMessage", "Jogador já entrou em leilão — a contra-proposta expirou.");
+      return;
+    }
 
     clearTimeout(pending.timer);
     delete game.pendingRenewalCounterOffers[playerId];
