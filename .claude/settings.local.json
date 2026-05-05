@@ -68,7 +68,9 @@
       "Bash(python3 *)",
       "Bash(cat)",
       "Read(//tmp/**)",
-      "Bash(node *)"
+      "Bash(node *)",
+      "Bash(grep -B 2 -A 2 \"\\\\${\" /home/woldpt/git/wsball_26-27/server/coreHelpers.ts)",
+      "Bash(grep *)"
     ]
   },
   "outputStyle": "default"

@@ -987,7 +987,7 @@ export function MatchPanel({
       {isOpen && (
         <motion.div
           key="matchpanel-backdrop"
-          className="fixed inset-0 z-120 bg-zinc-950/90 backdrop-blur-sm flex items-end sm:items-center justify-center sm:p-4"
+          className="fixed inset-0 z-120 bg-zinc-950/90 backdrop-blur-sm flex items-start sm:items-center justify-center sm:p-4"
           initial={{ opacity: 0 }}
           animate={{ opacity: 1 }}
           exit={{ opacity: 0 }}
@@ -995,7 +995,7 @@ export function MatchPanel({
           onClick={mode === "detail" ? onClose : undefined}
         >
           <motion.div
-            className="w-full sm:max-w-lg bg-surface-container border border-outline-variant/30 rounded-t-2xl sm:rounded-lg shadow-2xl flex flex-col max-h-[92vh]"
+            className="w-full sm:max-w-lg bg-surface-container border border-outline-variant/30 rounded-t-2xl sm:rounded-lg shadow-2xl flex flex-col h-[95vh] sm:max-h-[92vh]"
             initial={{ y: 40, opacity: 0.8 }}
             animate={{ y: 0, opacity: 1 }}
             exit={{ y: 40, opacity: 0 }}

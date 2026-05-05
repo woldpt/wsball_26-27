@@ -11,6 +11,7 @@ Jogo de gestão de futebol baseado em texto, inspirado no Elifoot 98, a correr n
 - React 19 + Vite 8 — SPA em **JavaScript puro** (sem TypeScript)
 - Tailwind CSS 4 via plugin Vite
 - Socket.io-client 4
+- framer-motion — animações de transição de páginas (`PageTransition.jsx`)
 - JSDoc para type hints (sem compilação adicional)
 
 ### Backend (`/server`)
@@ -31,11 +32,13 @@ Jogo de gestão de futebol baseado em texto, inspirado no Elifoot 98, a correr n
 
 ```bash
 cd server
-npm run dev          # dev com tsx (sem compilação)
-npm run build        # compila TypeScript → dist/
-npm run start        # corre dist/index.js
-npm run typecheck    # verifica tipos sem emitir ficheiros
-npm run seed         # seed da base de dados
+npm run dev              # dev com tsx (sem compilação)
+npm run build            # compila TypeScript → dist/
+npm run start            # corre dist/index.js
+npm run typecheck        # verifica tipos sem emitir ficheiros
+npm run seed             # seed da base de dados
+npm run audit:gamestate  # valida integridade do estado do jogo em memória
+npm run audit:socketio   # valida contratos Socket.io entre cliente e servidor
 ```
 
 ### Frontend
@@ -46,6 +49,7 @@ npm run dev          # servidor de desenvolvimento Vite
 npm run build        # build de produção
 npm run lint         # ESLint
 npm run preview      # preview do build
+npm run check:types  # verificação de tipos JSDoc
 ```
 
 ### Docker
@@ -78,10 +82,21 @@ docker compose down         # parar containers
 │   │   │   ├── FinancesTab.jsx
 │   │   │   ├── PlayersTab.jsx
 │   │   │   └── MarketTab.jsx
+│   │   ├── components/
+│   │   │   ├── modals/          # sobreposições de ecrã (WelcomeModal, MatchPanel,
+│   │   │   │                    #   SeasonEndModal, TransferProposalModal, JobOfferModal,
+│   │   │   │                    #   DismissalModal, TeamSquadModal, PlayerHistoryModal,
+│   │   │   │                    #   CupDrawPopup, PenaltyShootoutPopup, RefereePopup, etc.)
+│   │   │   ├── ui/              # componentes de interface maiores (LeagueStandings,
+│   │   │   │                    #   CupBracketPage, TransferHub, TrainingPage,
+│   │   │   │                    #   AuctionNotification, NewsTicker, PageTransition)
+│   │   │   ├── shared/          # componentes atómicos (PlayerLink, AggBadge, GameDialog)
+│   │   │   └── chat/            # ChatWidget
 │   │   ├── utils/
 │   │   │   ├── audio.js         # playNotification, playGoalSound, playVarSound
 │   │   │   ├── fixtures.js      # generateLeagueFixtures
 │   │   │   ├── formatters.js    # formatCurrency, etc.
+│   │   │   ├── localStorage.js  # persistência de cashballSession
 │   │   │   ├── playerHelpers.js # isPlayerAvailable, getFormationRequirements, etc.
 │   │   │   ├── sessionHelpers.js
 │   │   │   └── teamHelpers.js
@@ -106,7 +121,9 @@ docker compose down         # parar containers
     │   ├── socketSessionHandlers.ts
     │   ├── socketTransferHandlers.ts
     │   ├── socketFinanceHandlers.ts
-    │   └── socketCupHandlers.ts
+    │   ├── socketCupHandlers.ts
+    │   ├── socketTrainingHandlers.ts
+    │   └── socketChatHandlers.ts
     ├── *Helpers.ts              # lógica de negócio por domínio:
     │   ├── coreHelpers.ts
     │   ├── matchFlowHelpers.ts
@@ -116,13 +133,23 @@ docker compose down         # parar containers
     │   ├── cupFlowHelpers.ts
     │   ├── auctionHelpers.ts
     │   ├── contractHelpers.ts
+    │   ├── trainingHelpers.ts
     │   ├── npcTransferHelpers.ts
-    │   └── presenceHelpers.ts
+    │   ├── presenceHelpers.ts
+    │   └── coachDismissalHelpers.ts
     ├── auth.js                  # autenticação (bcryptjs)
     ├── adminRoutes.js           # rotas de administração
+    ├── logBootstrap.js          # inicialização de logging
+    ├── scripts/
+    │   ├── gameStateAudit.ts    # valida integridade do ActiveGame em memória
+    │   └── socketioContractValidator.ts  # valida contratos de eventos Socket.io
     ├── db/
-    │   ├── base.db              # ficheiro SQLite
+    │   ├── base.db              # estado do jogo (por room)
+    │   ├── accounts.db          # autenticação de treinadores (gerido por auth.js)
+    │   ├── global_chat.db       # chat global persistente (gerido por globalDatabase.ts)
     │   ├── database.js          # conexão e queries à base de dados
+    │   ├── globalDatabase.ts    # base de dados de chat global
+    │   ├── init.js              # inicialização do schema
     │   ├── schema.sql           # esquema da base de dados
     │   ├── seed.js              # dados iniciais
     │   └── fixtures/            # fixtures para seed
@@ -159,6 +186,10 @@ docker compose down         # parar containers
 
 - **`game/engine.ts`** exporta via `module.exports = {}` (CommonJS) para compatibilidade com o `require()` em `index.ts`; os ficheiros auxiliares do mesmo directório (`commentary.ts`, `playerUtils.ts`, `matchCalculations.ts`) usam ES module exports (`export function`). `engine.ts` re-exporta com `export { ... } from "./playerUtils"` para que os importadores externos possam usar `import { withJuniorGRs } from "./game/engine"`.
 - **Narração** — todas as frases geradas durante a simulação estão em `game/commentary.ts`; não duplicar frases noutros ficheiros.
+- **Factory pattern para helpers** — `createXxxHelpers(deps)` retorna um objecto com funções; `deps` inclui tipicamente `{ io, db, game }`. Exemplo: `createAuctionHelpers(deps)`, `createCupFlowHelpers(deps)`. Nunca instanciar helpers directamente; sempre passar dependências via factory.
+- **Registo de handlers Socket.io** — `registerXxxSocketHandlers(socket, deps)` regista todos os eventos de um domínio num único ponto; chamado dentro do `io.on("connection")` em `index.ts`. Manter eventos de domínios separados em ficheiros distintos.
+- **Sincronização de fase** — `phaseToken` (UUID gerado no início de cada fase) + `phaseAcks` (Set de nomes de treinadores que confirmaram) coordenam acções multi-jogador. Um novo `phaseToken` invalida automaticamente ACKs de fases anteriores; verificar sempre se o token ainda é válido antes de avançar.
+- **`lockedCoaches`** — Set em `ActiveGame` que impede acções (transferências, alterações de tácticas) enquanto a simulação está activa; verificar antes de qualquer mutação de estado de equipa.
 
 ## Git
 
