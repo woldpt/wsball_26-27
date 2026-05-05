@@ -601,7 +601,7 @@ export function registerSessionSocketHandlers(
 
       const cupMatches = await runAll(
         game.db,
-        "SELECT id, round, home_team_id, away_team_id, home_score, away_score, home_et_score, away_et_score, home_penalties, away_penalties, winner_team_id, played FROM cup_matches WHERE season = ? ORDER BY round, id",
+        "SELECT id, round, home_team_id, away_team_id, home_score, away_score, home_et_score, away_et_score, home_penalties, away_penalties, winner_team_id, played FROM cup_matches WHERE season = ? ORDER BY round, id LIMIT 200",
         [game.season],
       );
       socket.emit("calendarData", {

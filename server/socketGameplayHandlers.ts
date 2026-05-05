@@ -34,12 +34,19 @@ export function registerGameplaySocketHandlers(
     emitGlobalPlayerUpdate,
   } = deps;
 
+  const VALID_FORMATIONS = new Set([
+    "4-4-2", "4-3-3", "3-5-2", "5-3-2", "4-5-1", "3-4-3", "4-2-4", "5-4-1",
+  ]);
+  const VALID_STYLES = new Set(["Balanced", "Defensive", "Offensive"]);
+
   socket.on("setTactic", (tactic) => {
     if (
       !tactic ||
       typeof tactic !== "object" ||
       typeof tactic.formation !== "string" ||
-      typeof tactic.style !== "string"
+      typeof tactic.style !== "string" ||
+      !VALID_FORMATIONS.has(tactic.formation) ||
+      !VALID_STYLES.has(tactic.style)
     )
       return;
     const game = getGameBySocket(socket.id);

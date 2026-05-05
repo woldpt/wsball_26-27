@@ -46,11 +46,16 @@ export function registerFinanceSocketHandlers(
     const matchweek = game.matchweek || 1;
     try {
       await runExec(game.db, "BEGIN");
-      await runExec(
+      const result = await runExec(
         game.db,
-        "UPDATE teams SET budget = budget - ?, stadium_capacity = MIN(stadium_capacity + 5000, ?) WHERE id = ?",
-        [cost, maxCapacity, playerState.teamId],
+        "UPDATE teams SET budget = budget - ?, stadium_capacity = MIN(stadium_capacity + 5000, ?) WHERE id = ? AND budget >= ? AND stadium_capacity < ?",
+        [cost, maxCapacity, playerState.teamId, cost, maxCapacity],
       );
+      if (result.changes === 0) {
+        await runExec(game.db, "ROLLBACK").catch(() => {});
+        socket.emit("systemMessage", "Operação inválida (saldo ou capacidade).");
+        return;
+      }
       await runExec(
         game.db,
         "INSERT INTO club_news (team_id, type, title, description, amount, matchweek) VALUES (?, 'stadium_build', 'Expansão do Estádio', '+5000 lugares construídos', ?, ?)",
@@ -76,69 +81,48 @@ export function registerFinanceSocketHandlers(
     socket.emit("systemMessage", "+5000 Lugares Construídos!");
   });
 
-  socket.on("takeLoan", () => {
+  socket.on("takeLoan", async () => {
     const game = getGameBySocket(socket.id);
     if (!game) return;
     const playerState = getPlayerBySocket(game, socket.id);
     if (!playerState) return;
 
-    game.db.get(
-      "SELECT budget, loan_amount FROM teams WHERE id = ?",
+    const result = await runExec(
+      game.db,
+      "UPDATE teams SET budget = budget + 500000, loan_amount = loan_amount + 500000 WHERE id = ? AND loan_amount < 2500000",
       [playerState.teamId],
-      (err, team) => {
-        if (!team) return;
-        if (team.loan_amount >= 2500000) {
-          socket.emit(
-            "systemMessage",
-            "Já tens demasiada dívida (máx: 2.500.000€ — 5 empréstimos)!",
-          );
-          return;
-        }
-        game.db.run(
-          "UPDATE teams SET budget = budget + 500000, loan_amount = loan_amount + 500000 WHERE id = ?",
-          [playerState.teamId],
-          () => {
-            game.db.all("SELECT * FROM teams", (err2, teams) =>
-              io.to(game.roomCode).emit("teamsData", teams),
-            );
-            socket.emit(
-              "systemMessage",
-              "Empréstimo de 500.000€ aprovado (Juro 1,5%/Semana).",
-            );
-          },
-        );
-      },
     );
+    if (result.changes === 0) {
+      socket.emit(
+        "systemMessage",
+        "Já tens demasiada dívida (máx: 2.500.000€ — 5 empréstimos)!",
+      );
+      return;
+    }
+    game.db.all("SELECT * FROM teams", (_err: any, teams: any[]) =>
+      io.to(game.roomCode).emit("teamsData", teams),
+    );
+    socket.emit("systemMessage", "Empréstimo de 500.000€ aprovado (Juro 1,5%/Semana).");
   });
 
-  socket.on("payLoan", () => {
+  socket.on("payLoan", async () => {
     const game = getGameBySocket(socket.id);
     if (!game) return;
     const playerState = getPlayerBySocket(game, socket.id);
     if (!playerState) return;
 
-    game.db.get(
-      "SELECT budget, loan_amount FROM teams WHERE id = ?",
+    const result = await runExec(
+      game.db,
+      "UPDATE teams SET budget = budget - 500000, loan_amount = loan_amount - 500000 WHERE id = ? AND loan_amount >= 500000 AND budget >= 500000",
       [playerState.teamId],
-      (err, team) => {
-        if (team && team.loan_amount >= 500000 && team.budget >= 500000) {
-          game.db.run(
-            "UPDATE teams SET budget = budget - 500000, loan_amount = loan_amount - 500000 WHERE id = ?",
-            [playerState.teamId],
-            () => {
-              game.db.all("SELECT * FROM teams", (err2, teams) =>
-                io.to(game.roomCode).emit("teamsData", teams),
-              );
-              socket.emit("systemMessage", "Dívida paga (500.000€) ao Banco.");
-            },
-          );
-        } else {
-          socket.emit(
-            "systemMessage",
-            "Não deves esse valor, ou não tens 500k disponíveis.",
-          );
-        }
-      },
     );
+    if (result.changes === 0) {
+      socket.emit("systemMessage", "Não deves esse valor, ou não tens 500k disponíveis.");
+      return;
+    }
+    game.db.all("SELECT * FROM teams", (_err: any, teams: any[]) =>
+      io.to(game.roomCode).emit("teamsData", teams),
+    );
+    socket.emit("systemMessage", "Dívida paga (500.000€) ao Banco.");
   });
 }

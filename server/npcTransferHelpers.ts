@@ -205,7 +205,7 @@ export function createNpcTransferHelpers(deps: NpcTransferDeps) {
       setTimeout(() => {
         listPlayerOnMarket(game, candidate.id, "auction", price, null);
       }, auctionDelay);
-      auctionDelay += 18000;
+      auctionDelay = Math.min(auctionDelay + 18000, 120000);
     }
   };
 
