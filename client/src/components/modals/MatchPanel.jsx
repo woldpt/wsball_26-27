@@ -267,6 +267,117 @@ function TabLineup({ fixture, liveMinute, teams }) {
   );
 }
 
+// ── Tab: Adversário (halftime) ───────────────────────────────────────────────
+
+/**
+ * Mostra a escalação e táctica do adversário no intervalo.
+ * @param {{ fixture: object, myTeamId: number, teams: object[] }} props
+ */
+function TabAdversario({ fixture, myTeamId, teams }) {
+  if (!fixture?.homeLineup || !fixture?.awayLineup) return null;
+
+  const isHome = fixture.homeTeamId === myTeamId;
+  const oppLineup = isHome ? fixture.awayLineup : fixture.homeLineup;
+  const oppTeamId = isHome ? fixture.awayTeamId : fixture.homeTeamId;
+  const oppInfo = teams.find((t) => t.id === oppTeamId);
+
+  // Táctica do adversário vem nos campos _t1 (home) / _t2 (away) do fixture
+  const oppTactic = isHome ? fixture._t2 : fixture._t1;
+  const formation = oppTactic?.formation || null;
+  const styleLabel =
+    oppTactic?.style === "ofensivo"
+      ? "Ofensivo"
+      : oppTactic?.style === "defensivo"
+        ? "Defensivo"
+        : oppTactic?.style === "equilibrado"
+          ? "Equilibrado"
+          : null;
+
+  const starters = _sortByPos(oppLineup.filter((p) => p.is_starter !== false && p.starter !== false).slice(0, 11));
+  const bench = oppLineup.filter((p) => !starters.find((s) => s.id === p.id));
+
+  return (
+    <div className="flex-1 overflow-y-auto p-3 space-y-3">
+      {/* Cabeçalho equipa adversária */}
+      <div className="flex items-center gap-2 pb-1 border-b border-zinc-800">
+        <span
+          className="text-xs font-black uppercase tracking-widest truncate"
+          style={{ color: oppInfo?.color_primary || "#f59e0b" }}
+        >
+          {oppInfo?.name || "Adversário"}
+        </span>
+        {(formation || styleLabel) && (
+          <span className="ml-auto text-[10px] font-black text-zinc-400 shrink-0">
+            {[formation, styleLabel].filter(Boolean).join(" · ")}
+          </span>
+        )}
+      </div>
+
+      {/* Titulares */}
+      <div>
+        <p className="text-[9px] font-black uppercase tracking-widest text-zinc-500 mb-1">
+          Titulares
+        </p>
+        <div className="space-y-0.5">
+          {starters.map((p) => (
+            <div key={p.id ?? p.name} className="flex items-center gap-1.5 py-0.5">
+              <span
+                className={`w-6 text-[10px] font-black shrink-0 ${POSITION_TEXT_CLASS[p.position] || "text-zinc-400"}`}
+              >
+                {POSITION_SHORT_LABELS[p.position] || "?"}
+              </span>
+              <span
+                className={`flex-1 truncate text-xs font-bold text-zinc-200 ${POSITION_BORDER_CLASS[p.position] ? "" : ""}`}
+              >
+                {p.name}
+                {!!p.is_star && (p.position === "MED" || p.position === "ATA") && (
+                  <span className="ml-0.5 text-amber-400 font-black">*</span>
+                )}
+              </span>
+              {p.skill != null && (
+                <span className="text-[10px] font-black tabular-nums text-zinc-500 shrink-0">
+                  {p.skill}
+                </span>
+              )}
+            </div>
+          ))}
+        </div>
+      </div>
+
+      {/* Banco */}
+      {bench.length > 0 && (
+        <div>
+          <p className="text-[9px] font-black uppercase tracking-widest text-zinc-500 mb-1">
+            Banco
+          </p>
+          <div className="space-y-0.5">
+            {_sortByPos(bench).map((p) => (
+              <div key={p.id ?? p.name} className="flex items-center gap-1.5 py-0.5 opacity-60">
+                <span
+                  className={`w-6 text-[10px] font-black shrink-0 ${POSITION_TEXT_CLASS[p.position] || "text-zinc-400"}`}
+                >
+                  {POSITION_SHORT_LABELS[p.position] || "?"}
+                </span>
+                <span className="flex-1 truncate text-xs font-bold text-zinc-400">
+                  {p.name}
+                  {!!p.is_star && (p.position === "MED" || p.position === "ATA") && (
+                    <span className="ml-0.5 text-amber-400 font-black">*</span>
+                  )}
+                </span>
+                {p.skill != null && (
+                  <span className="text-[10px] font-black tabular-nums text-zinc-500 shrink-0">
+                    {p.skill}
+                  </span>
+                )}
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
+    </div>
+  );
+}
+
 // ── Tab: Substituições (halftime) ────────────────────────────────────────────
 
 function TabSubs({
@@ -788,6 +899,7 @@ export function MatchPanel({
   isReady,
   cupPreMatch,
   myTeamInCup,
+  myTeamId,
   redCardedHalftimeIds,
   matchAction,
   injuryCountdown,
@@ -823,6 +935,7 @@ export function MatchPanel({
     mode === "halftime"
       ? [
           { id: "subs", label: "Substituições" },
+          { id: "adversario", label: "Adversário" },
           { id: "jogo", label: "Jogo" },
         ]
       : mode === "action"
@@ -1017,6 +1130,13 @@ export function MatchPanel({
                   onResetSub={onResetSub}
                   onResetAllSubs={onResetAllSubs}
                   redCardedHalftimeIds={redCardedHalftimeIds}
+                />
+              )}
+              {effectiveTab === "adversario" && mode === "halftime" && (
+                <TabAdversario
+                  fixture={fixture}
+                  myTeamId={myTeamId}
+                  teams={teams}
                 />
               )}
               {effectiveTab === "lineup" && mode === "detail" && (

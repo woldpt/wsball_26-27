@@ -5334,6 +5334,7 @@ function App() {
         isReady={panelIsReady}
         cupPreMatch={cupPreMatch}
         myTeamInCup={myTeamInCup}
+        myTeamId={me?.teamId}
         redCardedHalftimeIds={redCardedHalftimeIds}
         matchAction={matchAction}
         injuryCountdown={injuryCountdown}
