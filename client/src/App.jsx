@@ -3874,18 +3874,28 @@ function App() {
                                   className={`bg-surface-container-low rounded-md overflow-hidden ${isHumanMatch ? "border-l-2 border-l-primary/50" : ""}`}
                                 >
                                   <div className="flex items-center">
-                                    <div className="flex-1 flex items-center gap-1.5 px-2.5 py-1.5 min-w-0">
-                                      <span
-                                        className="w-2 h-2 rounded-full shrink-0"
-                                        style={{
-                                          backgroundColor:
-                                            hInfo?.color_primary || "#666",
-                                        }}
-                                      />
-                                      <span className="text-sm font-bold text-on-surface truncate">
-                                        {hInfo?.name}
-                                      </span>
-                                    </div>
+                                     <div className="flex-1 flex items-center gap-1.5 px-2.5 py-1.5 min-w-0">
+                                       <span
+                                         className="w-2 h-2 rounded-full shrink-0"
+                                         style={{
+                                           backgroundColor:
+                                             hInfo?.color_primary || "#666",
+                                         }}
+                                       />
+                                       <span className="flex flex-col min-w-0">
+                                         <span className="text-sm font-bold text-on-surface truncate">
+                                           {hInfo?.name}
+                                         </span>
+                                         {(() => {
+                                           const c = players.find((p) => p.teamId === match.homeTeamId);
+                                           return c ? (
+                                             <span className="text-[8px] text-amber-400 font-bold truncate leading-none">
+                                               {c.name}
+                                             </span>
+                                           ) : null;
+                                         })()}
+                                       </span>
+                                     </div>
                                     <button
                                       onClick={() => {
                                         setMatchDetailFixture(match);
@@ -3924,39 +3934,44 @@ function App() {
                                         {currentAway.length}
                                       </span>
                                     </button>
-                                    <div className="flex-1 flex items-center gap-1.5 px-2.5 py-1.5 min-w-0 justify-end">
-                                      <span className="text-sm font-bold text-on-surface truncate">
-                                        {aInfo?.name}
-                                      </span>
-                                      <span
-                                        className="w-2 h-2 rounded-full shrink-0"
-                                        style={{
-                                          backgroundColor:
-                                            aInfo?.color_primary || "#666",
-                                        }}
-                                      />
-                                    </div>
+                                     <div className="flex-1 flex items-center gap-1.5 px-2.5 py-1.5 min-w-0 justify-end">
+                                       <span className="flex flex-col min-w-0 items-end">
+                                         <span className="text-sm font-bold text-on-surface truncate">
+                                           {aInfo?.name}
+                                         </span>
+                                         {(() => {
+                                           const c = players.find((p) => p.teamId === match.awayTeamId);
+                                           return c ? (
+                                             <span className="text-[8px] text-amber-400 font-bold truncate leading-none">
+                                               {c.name}
+                                             </span>
+                                           ) : null;
+                                         })()}
+                                       </span>
+                                       <span
+                                         className="w-2 h-2 rounded-full shrink-0"
+                                         style={{
+                                           backgroundColor:
+                                             aInfo?.color_primary || "#666",
+                                         }}
+                                       />
+                                     </div>
                                   </div>
-                                  <div className="flex text-[9px] text-on-surface-variant/40 px-2.5 pb-1">
-                                    <span className="flex-1 truncate">
-                                      {getMatchLastEventText(
-                                        matchEvents,
-                                        liveMinute,
-                                        "home",
-                                      )}
-                                    </span>
-                                    {isHumanMatch && (
-                                      <span className="text-primary/40 font-bold text-[8px] uppercase">
-                                        {me.name}
-                                      </span>
-                                    )}
-                                    <span className="flex-1 truncate text-right">
-                                      {getMatchLastEventText(
-                                        matchEvents,
-                                        liveMinute,
-                                        "away",
-                                      )}
-                                    </span>
+                                   <div className="flex text-[9px] text-on-surface-variant/40 px-2.5 pb-1">
+                                     <span className="flex-1 truncate">
+                                       {getMatchLastEventText(
+                                         matchEvents,
+                                         liveMinute,
+                                         "home",
+                                       )}
+                                     </span>
+                                     <span className="flex-1 truncate text-right">
+                                       {getMatchLastEventText(
+                                         matchEvents,
+                                         liveMinute,
+                                         "away",
+                                       )}
+                                     </span>
                                   </div>
                                 </div>
                               );
