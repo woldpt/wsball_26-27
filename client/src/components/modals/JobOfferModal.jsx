@@ -120,9 +120,6 @@ export function JobOfferModal({ jobOfferModal, setJobOfferModal }) {
 
           {/* Footer */}
           <div className="px-5 py-4 border-t border-zinc-700/50">
-            <p className="text-zinc-400 text-xs mb-3">
-              A oferta expira na jornada {jobOfferModal.expiresAtMatchweek}.
-            </p>
             <div className="flex gap-3 justify-center">
               <button
                 onClick={() => {

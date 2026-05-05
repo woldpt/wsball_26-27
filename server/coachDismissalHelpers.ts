@@ -231,11 +231,9 @@ export function createCoachDismissalHelpers(deps: CoachDismissalDeps) {
     const player = game.playersByName[coachName];
     if (!player || !player.socketId) return;
 
-    const expiresAtMatchweek = game.matchweek + 1;
     game.pendingJobOffers[coachName] = {
       fromTeamId,
       toTeamId: toTeam.id,
-      expiresAtMatchweek,
     };
 
     // Query squad for toTeam
@@ -281,7 +279,6 @@ export function createCoachDismissalHelpers(deps: CoachDismissalDeps) {
       },
       toTeamDivisionPosition: divisionPosition,
       toTeamSquad: fullSquad,
-      expiresAtMatchweek,
     });
   }
 
@@ -397,21 +394,7 @@ export function createCoachDismissalHelpers(deps: CoachDismissalDeps) {
   // ── MAIN FUNCTION ─────────────────────────────────────────────────────────
 
   const processCoachEvents = async (game: ActiveGame): Promise<void> => {
-    // 1. Expirar ofertas pendentes antigas
-    for (const [coachName, offer] of Object.entries(game.pendingJobOffers)) {
-      if (offer.expiresAtMatchweek <= game.matchweek) {
-        delete game.pendingJobOffers[coachName];
-        const p = game.playersByName[coachName];
-        if (p?.socketId) {
-          io.to(p.socketId).emit(
-            "systemMessage",
-            "A oferta de emprego expirou.",
-          );
-        }
-      }
-    }
-
-    // 2. Carregar todas as equipas e forms
+    // 1. Carregar equipas e forms
     const allTeams = await runAll<AnyRow>(
       game.db,
       "SELECT id, name, division, manager_id, budget FROM teams",
@@ -421,14 +404,14 @@ export function createCoachDismissalHelpers(deps: CoachDismissalDeps) {
       game.season,
     );
 
-    // 3. Equipas humanas activas
+    // 2. Equipas humanas activas
     const humanTeamIds = new Set<number>(
       Object.values(game.playersByName)
         .map((p) => p.teamId)
         .filter((id): id is number => id !== null && id !== undefined),
     );
 
-    // 4. Loop coaches humanos activos — budget e forma
+    // 3. Loop coaches humanos activos — budget e forma
     for (const player of Object.values(game.playersByName)) {
       if (player.teamId === null || player.teamId === undefined) continue;
 
@@ -485,7 +468,7 @@ export function createCoachDismissalHelpers(deps: CoachDismissalDeps) {
       }
     }
 
-    // 5. Loop equipas NPC — forma (limiar de 5 derrotas sem aleatoriedade)
+    // 4. Loop equipas NPC — forma (limiar de 5 derrotas sem aleatoriedade)
     for (const team of allTeams) {
       if (humanTeamIds.has(team.id)) continue;
       if (team.division === 5) continue; // pool interno, invisível
@@ -497,7 +480,7 @@ export function createCoachDismissalHelpers(deps: CoachDismissalDeps) {
       await dismissNpcManager(game, team);
     }
 
-    // 6. Loop coaches humanos activos sobreviventes — verificar convites
+    // 5. Loop coaches humanos activos sobreviventes — verificar convites
     for (const player of Object.values(game.playersByName)) {
       if (player.teamId === null || player.teamId === undefined) continue;
 
@@ -526,7 +509,7 @@ export function createCoachDismissalHelpers(deps: CoachDismissalDeps) {
       await offerJobToCoach(game, coachName, teamId, toTeam, team);
     }
 
-    // 7. Persistir estado
+    // 6. Persistir estado
     saveGameState(game);
   };
 

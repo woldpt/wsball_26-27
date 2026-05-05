@@ -77,14 +77,7 @@ export interface ActiveGame {
   pendingSubstitutions?: Set<number>;
 
   // ── Coach dismissal & job offers ──
-  pendingJobOffers: Record<
-    string,
-    {
-      fromTeamId: number;
-      toTeamId: number;
-      expiresAtMatchweek: number;
-    }
-  >;
+  pendingJobOffers: Record<string, { fromTeamId: number; toTeamId: number }>;
   negativeBudgetStreak: Record<number, number>; // teamId → semanas consecutivas com budget < 0
   dismissedCoachSince: Record<
     string,

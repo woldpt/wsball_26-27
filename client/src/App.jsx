@@ -189,7 +189,7 @@ function App() {
   const [cupPenaltyKickIdx, setCupPenaltyKickIdx] = useState(0); // how many kicks revealed
   const [pendingCupRoundResults, setPendingCupRoundResults] = useState(null); // held until penalty popup closes
   const [welcomeModal, setWelcomeModal] = useState(null); // { teamName }
-  const [jobOfferModal, setJobOfferModal] = useState(null); // null | { fromTeam, toTeam, expiresAtMatchweek }
+  const [jobOfferModal, setJobOfferModal] = useState(null); // null | { fromTeam, toTeam }
   const [dismissalModal, setDismissalModal] = useState(null); // null | { reason, teamName }
   const [seasonEndModal, setSeasonEndModal] = useState(null); // seasonEnd payload
   // Cup match live state
