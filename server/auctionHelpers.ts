@@ -19,7 +19,7 @@ export function createAuctionHelpers(deps: AuctionDeps) {
 
   const refreshMarket = (game: ActiveGame, emitToRoom = true) => {
     game.db.all(
-      `SELECT p.*, t.name as team_name, t.color_primary, t.color_secondary
+      `SELECT p.*, COALESCE(t.name, '?') as team_name, t.color_primary, t.color_secondary
      FROM players p
      LEFT JOIN teams t ON p.team_id = t.id
      WHERE p.team_id IS NOT NULL AND p.transfer_status != 'none'
@@ -81,7 +81,7 @@ export function createAuctionHelpers(deps: AuctionDeps) {
     }
 
     game.db.get(
-      "SELECT p.*, t.name as team_name FROM players p LEFT JOIN teams t ON p.team_id = t.id WHERE p.id = ?",
+      "SELECT p.*, COALESCE(t.name, '?') as team_name FROM players p LEFT JOIN teams t ON p.team_id = t.id WHERE p.id = ?",
       [playerId],
       (err: Error | null, player: any) => {
         if (err || !player) {
@@ -269,7 +269,7 @@ export function createAuctionHelpers(deps: AuctionDeps) {
     const otherHumans = Object.values(game.playersByName).filter(
       (p: any) => p.socketId && p.teamId !== player.team_id,
     );
-    const durationMs = otherHumans.length > 0 ? 30000 : 3000;
+    const durationMs = otherHumans.length > 0 ? 30000 : 15000;
     const now = Date.now();
     const actualDurationMs = durationMs;
 
@@ -337,7 +337,7 @@ export function createAuctionHelpers(deps: AuctionDeps) {
     }
 
     game.db.get(
-      "SELECT p.*, t.name as team_name FROM players p LEFT JOIN teams t ON p.team_id = t.id WHERE p.id = ?",
+      "SELECT p.*, COALESCE(t.name, '?') as team_name FROM players p LEFT JOIN teams t ON p.team_id = t.id WHERE p.id = ?",
       [playerId],
       (err: Error | null, player: any) => {
         if (err || !player) {

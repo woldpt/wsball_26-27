@@ -568,6 +568,7 @@ export function createWeeklyFlowHelpers(deps: WeeklyFlowDeps) {
                 if (seasonDone) {
                   try {
                     await applySeasonEnd(game);
+                    refreshMarket(game);
                   } catch (seErr) {
                     console.error(
                       `[${game.roomCode}] Season end error:`,

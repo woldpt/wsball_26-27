@@ -1337,19 +1337,8 @@ function App() {
       return (b.skill || 0) - (a.skill || 0);
     };
 
-    const myBudget = teams.find((t) => t.id == me?.teamId)?.budget ?? 0;
-
     return marketPairs
       .filter((player) => player.team_id !== marketTeamId)
-      .filter((player) => {
-        // Hide auctions whose starting bid exceeds our cash balance
-        if (player.transfer_status === "auction") {
-          const startingPrice =
-            player.auction_starting_price || player.transfer_price || 0;
-          if (startingPrice > myBudget) return false;
-        }
-        return true;
-      })
       .filter((player) =>
         normalizedPosition === "all"
           ? true
