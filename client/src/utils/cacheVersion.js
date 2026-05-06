@@ -11,8 +11,8 @@ export async function checkCacheVersion() {
   try {
     const res = await fetch("/api/cache-version");
     const data = await res.json();
-    const serverVersion = data.version;
-    const clientVersion = localStorage.getItem(CACHE_VERSION_KEY);
+    const serverVersion = String(data.version);
+    const clientVersion = String(localStorage.getItem(CACHE_VERSION_KEY));
 
     if (clientVersion !== serverVersion) {
       // Cache desatualizado ou inexistente → hard reset
