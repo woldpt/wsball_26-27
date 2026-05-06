@@ -188,10 +188,26 @@ export function WelcomeModal({ welcomeModal, me, setWelcomeModal }) {
                       {formatCurrency(welcomeModal.budget ?? 0)}
                     </p>
                   </div>
-                </div>
-              )}
+</div>
+                )}
 
-              {/* Action button */}
+                {/* Invite code */}
+                <button
+                  type="button"
+                  onClick={() => {
+                    navigator.clipboard.writeText(me.roomCode);
+                  }}
+                  className="w-full flex items-center justify-between gap-3 bg-zinc-800/60 rounded-lg p-3 border border-emerald-900/30 hover:border-emerald-500/50 transition-colors mb-4 cursor-pointer"
+                >
+                  <span className="text-[10px] uppercase font-bold text-zinc-500 tracking-wider">
+                    Código de Convite:
+                  </span>
+                  <span className="font-black text-emerald-400 text-lg tracking-widest">
+                    {me.roomCode}
+                  </span>
+                </button>
+
+                {/* Action button */}
               <button
                 onClick={() => {
                   if (welcomeModal.isNew) {
