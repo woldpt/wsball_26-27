@@ -77,6 +77,9 @@ export interface ActiveGame {
   pendingMatchAction?: any;
   pendingSubstitutions?: Set<number>;
 
+  // ── Fixture seeds por divisão (ordem aleatória no início de cada época) ──
+  fixtureSeeds: Record<number, number[]>; // div → [teamId, ...] ordenado por seed
+
   // ── Coach dismissal & job offers ──
   pendingJobOffers: Record<string, { fromTeamId: number; toTeamId: number }>;
   negativeBudgetStreak: Record<number, number>; // teamId → semanas consecutivas com budget < 0

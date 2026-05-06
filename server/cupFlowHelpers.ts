@@ -80,6 +80,24 @@ export function createCupFlowHelpers(deps: CupFlowDeps) {
       byDiv[Number(div)] = getStandingsRows(byDiv[Number(div)]);
     }
 
+    // Gerar seeds aleatórios para a próxima época (ordem por classificação final, depois shuffle)
+    game.fixtureSeeds = {};
+    for (const div of [1, 2, 3, 4]) {
+      if (byDiv[div] && byDiv[div].length > 0) {
+        const ids: number[] = byDiv[div].map((t: any) => t.id);
+        // Fisher-Yates shuffle para imprevisibilidade
+        for (let i = ids.length - 1; i > 0; i--) {
+          const j = Math.floor(Math.random() * (i + 1));
+          [ids[i], ids[j]] = [ids[j], ids[i]];
+        }
+        game.fixtureSeeds[div] = ids;
+      }
+    }
+    console.log(
+      `[${game.roomCode}] 🎲 fixtureSeeds gerados para nova época:`,
+      Object.entries(game.fixtureSeeds).map(([d, ids]) => `div${d}=${ids.length}eq`).join(", "),
+    );
+
     const CHAMPION_PRIZE: Record<number, number> = {
       1: 2000000,
       2: 1000000,

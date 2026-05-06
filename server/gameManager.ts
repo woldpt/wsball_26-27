@@ -349,6 +349,9 @@ function getGame(roomCode: string, onReady?: OnReady): ActiveGame | null {
     initialized: false,
     roomName: "",
 
+    // Fixture seeds por divisão (aleatórios por época)
+    fixtureSeeds: {},
+
     // Coach dismissal & job offers
     pendingJobOffers: {},
     negativeBudgetStreak: {},
@@ -577,6 +580,19 @@ function getGame(roomCode: string, onReady?: OnReady): ActiveGame | null {
                     game.dismissalsThisSeason = new Set<string>(names);
                 } catch (_) {}
               }
+              if (st["fixtureSeeds"]) {
+                try {
+                  const parsed = JSON.parse(st["fixtureSeeds"]);
+                  if (parsed && typeof parsed === "object") {
+                    game.fixtureSeeds = Object.fromEntries(
+                      Object.entries(parsed).map(([k, v]) => [
+                        Number(k),
+                        Array.isArray(v) ? (v as number[]) : [],
+                      ]),
+                    );
+                  }
+                } catch (_) {}
+              }
 
               // Set currentEvent from calendarIndex
               game.currentEvent = SEASON_CALENDAR[game.calendarIndex] ?? null;
@@ -683,6 +699,7 @@ function saveGameState(game: ActiveGame): void {
     "dismissalsThisSeason",
     JSON.stringify([...(game.dismissalsThisSeason ?? [])]),
   );
+  upsert("fixtureSeeds", JSON.stringify(game.fixtureSeeds || {}));
 
   // Persist current fixtures for crash recovery (only serialisable fields)
   if (game.currentFixtures && game.currentFixtures.length > 0) {

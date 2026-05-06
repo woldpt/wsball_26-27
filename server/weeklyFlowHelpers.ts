@@ -16,7 +16,7 @@ interface WeeklyFlowDeps {
     db: any,
     division: number,
     matchweek: number,
-    userTeamId?: number,
+    seeds: number[],
   ) => Promise<any[]>;
   finalizeAuction: (game: ActiveGame, playerId: number) => void;
   simulateMatchSegment: (...args: any[]) => Promise<void>;
@@ -836,37 +836,17 @@ export function createWeeklyFlowHelpers(deps: WeeklyFlowDeps) {
                 );
               }
             } else {
-              // League: generate fixtures now.
-              // Em multiplayer, cada divisão usa o teamId do coach humano NESSA divisão
-              // para o cálculo de alternância casa/fora — evita mismatch entre o
-              // sumário mostrado na Táctica e as fixtures reais simuladas.
+              // League: generate fixtures using deterministic seeds per division.
               const mw = (entry as any).matchweek;
-              const humanTeamIds = Object.values(game.playersByName)
-                .map((p) => p.teamId)
-                .filter(Boolean) as number[];
-              // Obter a divisão de cada equipa humana de uma só vez
-              const humanDivisionMap: Record<number, number> = {};
-              if (humanTeamIds.length > 0) {
-                const placeholders = humanTeamIds.map(() => "?").join(",");
-                const rows: any[] = await new Promise((resolve) => {
-                  game.db.all(
-                    `SELECT id, division FROM teams WHERE id IN (${placeholders})`,
-                    humanTeamIds,
-                    (_err: any, r: any[]) => resolve(r || []),
-                  );
-                });
-                for (const row of rows) {
-                  humanDivisionMap[row.division] = row.id;
-                }
-              }
+              const seeds = game.fixtureSeeds || {};
               console.log(
                 `[${game.roomCode}] ⚽ Generating league fixtures for mw=${mw}`,
               );
               const [f1, f2, f3, f4] = await Promise.all([
-                generateFixturesForDivision(game.db, 1, mw, humanDivisionMap[1]),
-                generateFixturesForDivision(game.db, 2, mw, humanDivisionMap[2]),
-                generateFixturesForDivision(game.db, 3, mw, humanDivisionMap[3]),
-                generateFixturesForDivision(game.db, 4, mw, humanDivisionMap[4]),
+                generateFixturesForDivision(game.db, 1, mw, seeds[1] ?? []),
+                generateFixturesForDivision(game.db, 2, mw, seeds[2] ?? []),
+                generateFixturesForDivision(game.db, 3, mw, seeds[3] ?? []),
+                generateFixturesForDivision(game.db, 4, mw, seeds[4] ?? []),
               ]);
               game.currentFixtures = [...f1, ...f2, ...f3, ...f4];
               console.log(

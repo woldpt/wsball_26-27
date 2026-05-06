@@ -101,95 +101,85 @@ async function getTeamSquad(
   });
 }
 
+// Gera fixtures para uma divisão usando um calendário determinístico com
+// alternância rígida de casa/fora para todas as equipas.
+//
+// Algoritmo: circle method com padrão C/F fixo por posição e jornada.
+//   seeds[0] é o pivot (fixo); seeds[1..n-1] rodam a cada jornada.
+//   Par i na jornada r: se (i + r) % 2 === 0 → seeds[i] em casa, senão fora.
+//   Segunda volta: inverter C/F de cada par da primeira volta correspondente.
+//
+// Se seeds estiver vazio, faz query à DB e embaralha aleatoriamente (1ª época).
 async function generateFixturesForDivision(
   db: Db,
   division: number,
   matchweek: number,
-  userTeamId?: number,
+  seeds: number[],
 ): Promise<MatchFixture[]> {
-  return new Promise<MatchFixture[]>((resolve) => {
+  // Se não há seeds, buscar equipas da DB e embaralhar (primeira época)
+  let seedIds = seeds.length > 0 ? seeds : await new Promise<number[]>((resolve) => {
     db.all(
       "SELECT id FROM teams WHERE division = ? ORDER BY id",
       [division],
-      (err, teams) => {
-        if (err || !teams || teams.length < 2) return resolve([]);
-
-        const n = teams.length;
-        const totalRounds = n - 1;
-        const totalMatchweeks = totalRounds * 2;
-        const normMw = ((matchweek - 1) % totalMatchweeks) + 1;
-        const isSecondLeg = normMw > totalRounds;
-        const round = isSecondLeg ? normMw - totalRounds - 1 : normMw - 1;
-        const rotating = teams.slice(1);
-
-        const rotated = [];
-        for (let i = 0; i < rotating.length; i++) {
-          rotated.push(rotating[(i + round) % rotating.length]);
+      (err: any, rows: Array<{ id: number }>) => {
+        if (err || !rows || rows.length < 2) return resolve([]);
+        const ids = rows.map((r) => r.id);
+        // Fisher-Yates shuffle
+        for (let i = ids.length - 1; i > 0; i--) {
+          const j = Math.floor(Math.random() * (i + 1));
+          [ids[i], ids[j]] = [ids[j], ids[i]];
         }
-
-        const allTeams = [teams[0], ...rotated];
-        const fixtures = [];
-
-        for (let i = 0; i < n / 2; i++) {
-          let homeTeam = allTeams[i];
-          let awayTeam = allTeams[n - 1 - i];
-          if (isSecondLeg) {
-            [homeTeam, awayTeam] = [awayTeam, homeTeam];
-          }
-
-          fixtures.push({
-            homeTeamId: homeTeam.id,
-            awayTeamId: awayTeam.id,
-            finalHomeGoals: 0,
-            finalAwayGoals: 0,
-            events: [],
-          });
-        }
-
-        // Ensure home/away alternation for userTeam across the season.
-        // Compute, for each first-leg round, whether a swap is needed so
-        // the user's team never plays two consecutive home (or away) games.
-        if (userTeamId) {
-          const swapMap: Record<number, boolean> = {};
-          let prevCorrectedHome: boolean | null = null;
-          for (let r = 0; r < totalRounds; r++) {
-            const rot = rotating.map(
-              (_, i) => rotating[(i + r) % rotating.length],
-            );
-            const all = [teams[0], ...rot];
-            let rawIsHome: boolean | null = null;
-            for (let i = 0; i < Math.floor(n / 2); i++) {
-              if (all[i].id === userTeamId) {
-                rawIsHome = true;
-                break;
-              }
-              if (all[n - 1 - i].id === userTeamId) {
-                rawIsHome = false;
-                break;
-              }
-            }
-            if (rawIsHome === null) continue;
-            const needsSwap =
-              prevCorrectedHome !== null && rawIsHome === prevCorrectedHome;
-            swapMap[r] = needsSwap;
-            prevCorrectedHome = needsSwap ? !rawIsHome : rawIsHome;
-          }
-
-          if (swapMap[round]) {
-            const idx = fixtures.findIndex(
-              (f) => f.homeTeamId === userTeamId || f.awayTeamId === userTeamId,
-            );
-            if (idx >= 0) {
-              const f = fixtures[idx];
-              [f.homeTeamId, f.awayTeamId] = [f.awayTeamId, f.homeTeamId];
-            }
-          }
-        }
-
-        resolve(fixtures);
+        resolve(ids);
       },
     );
   });
+
+  const n = seedIds.length;
+  if (n < 2) return [];
+
+  const totalRounds = n - 1;           // jornadas na primeira volta
+  const totalMatchweeks = totalRounds * 2;
+  const normMw = ((matchweek - 1) % totalMatchweeks) + 1;
+  const isSecondLeg = normMw > totalRounds;
+  // round 0-indexed dentro da volta
+  const round = isSecondLeg ? normMw - totalRounds - 1 : normMw - 1;
+
+  // Rotação circle method: seeds[0] fixo, seeds[1..] rodam
+  const rotating = seedIds.slice(1);
+  const rotated: number[] = [];
+  for (let i = 0; i < rotating.length; i++) {
+    rotated.push(rotating[(i + round) % rotating.length]);
+  }
+  const allIds = [seedIds[0], ...rotated];
+
+  const fixtures: MatchFixture[] = [];
+  for (let i = 0; i < Math.floor(n / 2); i++) {
+    const a = allIds[i];
+    const b = allIds[n - 1 - i];
+
+    // Padrão C/F: (i + round) par → a em casa; ímpar → b em casa
+    // Segunda volta: inverter
+    let homeId: number;
+    let awayId: number;
+    const aIsHome = (i + round) % 2 === 0;
+    if (aIsHome !== isSecondLeg) {
+      homeId = a;
+      awayId = b;
+    } else {
+      homeId = b;
+      awayId = a;
+    }
+
+    fixtures.push({
+      homeTeamId: homeId,
+      awayTeamId: awayId,
+      finalHomeGoals: 0,
+      finalAwayGoals: 0,
+      events: [],
+    });
+  }
+
+  return fixtures;
 }
 
 function getCurrentPlayerState(game: ActiveGame, teamId: number) {
