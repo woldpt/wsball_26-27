@@ -97,6 +97,32 @@ function TabJogo({ fixture, liveMinute, teams }) {
         </div>
       )}
 
+      {/* Posse de Bola */}
+      {fixture.homePossession != null && (
+        <div className="bg-surface-bright/40 rounded-sm px-3 py-2">
+          <div className="flex justify-between items-center mb-1.5">
+            <span className="text-[11px] font-black text-zinc-300 tabular-nums">
+              {fixture.homePossession}%
+            </span>
+            <span className="text-[8px] font-black uppercase tracking-widest text-zinc-600">
+              Posse de Bola
+            </span>
+            <span className="text-[11px] font-black text-zinc-300 tabular-nums">
+              {fixture.awayPossession}%
+            </span>
+          </div>
+          <div className="flex h-1.5 rounded-full overflow-hidden bg-zinc-800">
+            <div
+              className="bg-primary transition-all duration-500"
+              style={{ width: `${fixture.homePossession}%` }}
+            />
+            <div
+              className="bg-zinc-500 flex-1 transition-all duration-500"
+            />
+          </div>
+        </div>
+      )}
+
       {/* Events */}
       {visibleEvts.length === 0 ? (
         <p className="text-zinc-600 text-xs text-center py-4 font-bold">

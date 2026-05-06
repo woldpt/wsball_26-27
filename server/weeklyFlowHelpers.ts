@@ -342,6 +342,8 @@ export function createWeeklyFlowHelpers(deps: WeeklyFlowDeps) {
           minuteEvents: (f.events || []).filter((e) => e.minute === minute),
           homeLineup: f.homeLineup || [],
           awayLineup: f.awayLineup || [],
+          homePossession: f._homePossession ?? 50,
+          awayPossession: f._awayPossession ?? 50,
         })),
       });
 

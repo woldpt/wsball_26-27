@@ -810,6 +810,8 @@ export function useSocketListeners(handlers, refs) {
             awayLineup: update.awayLineup?.length
               ? update.awayLineup
               : r.awayLineup,
+            homePossession: update.homePossession ?? r.homePossession ?? 50,
+            awayPossession: update.awayPossession ?? r.awayPossession ?? 50,
           };
         });
         return { ...prev, results: updatedResults };

@@ -840,6 +840,7 @@ async function simulateMatchSegment(
         formFactor,
       style,
       squad,
+      midStrength: avgMidfielderQuality,
     };
   };
 
@@ -919,6 +920,18 @@ async function simulateMatchSegment(
       let probGoal = ratio * 0.03 * getGoalTimeMultiplier(fixture._minute);
       probGoal *= isHome ? 1.08 : 0.92;
       probGoal *= getWeatherGoalMultiplier(fixture._weather);
+
+      // Posse de bola: quem domina o meio campo tem ligeiramente mais probabilidade
+      const totalMid = (currentHome.midStrength || 0) + (currentAway.midStrength || 0);
+      const homePossession = totalMid > 0 ? (currentHome.midStrength || 0) / totalMid : 0.5;
+      const possessionFactor = isHome
+        ? 0.90 + homePossession * 0.20          // range 0.90–1.10
+        : 0.90 + (1 - homePossession) * 0.20;
+      probGoal *= possessionFactor;
+
+      // Guardar posse no fixture para exibição no cliente
+      fixture._homePossession = Math.round(homePossession * 100);
+      fixture._awayPossession = 100 - fixture._homePossession;
 
       // Ego conflict penalty: 3+ craques no onze titular reduzem probabilidade
       const scoringSquad = isHome ? home.squad : away.squad;
@@ -1479,6 +1492,8 @@ async function simulateExtraTime(
           minuteEvents: (fixture.events || []).filter(
             (e: any) => e.minute === minute,
           ),
+          homePossession: fixture._homePossession ?? 50,
+          awayPossession: fixture._awayPossession ?? 50,
         },
       ],
     });
