@@ -395,10 +395,7 @@ export function createCoachDismissalHelpers(deps: CoachDismissalDeps) {
 
   const processCoachEvents = async (game: ActiveGame): Promise<void> => {
     // 1. Carregar equipas e forms
-    const allTeams = await runAll<AnyRow>(
-      game.db,
-      "SELECT id, name, division, manager_id, budget FROM teams",
-    );
+    const allTeams = await runAll<AnyRow>(game.db, "SELECT * FROM teams");
     const forms: Record<number, string> = await getAllTeamForms(
       game.db,
       game.season,
