@@ -767,8 +767,7 @@ export function useSocketListeners(handlers, refs) {
           }
         }
       }
-    }
-    handlers.setMatchResults((prev) => {
+      handlers.setMatchResults((prev) => {
         if (!prev) return prev;
         const updatedResults = (prev.results || []).map((r) => {
           const update = (data.fixtures || []).find(
