@@ -207,6 +207,7 @@ function App() {
   const [financeData, setFinanceData] = useState(null); // { totalTicketRevenue, totalTransferIncome, totalTransferExpenses, sponsorRevenue, homeMatchesPlayed, transferInList, transferOutList }
   const [showTransferSales, setShowTransferSales] = useState(false);
   const [showTransferPurchases, setShowTransferPurchases] = useState(false);
+  const [showTicketBreakdown, setShowTicketBreakdown] = useState(false);
   const [selectedTeam, setSelectedTeam] = useState(null);
   const [selectedTeamSquad, setSelectedTeamSquad] = useState([]);
   const [selectedTeamLoading, setSelectedTeamLoading] = useState(false);
@@ -4044,6 +4045,8 @@ function App() {
                       setShowTransferSales={setShowTransferSales}
                       showTransferPurchases={showTransferPurchases}
                       setShowTransferPurchases={setShowTransferPurchases}
+                      showTicketBreakdown={showTicketBreakdown}
+                      setShowTicketBreakdown={setShowTicketBreakdown}
                       setGameDialog={setGameDialog}
                       teamInfo={teamInfo}
                     />}

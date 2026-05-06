@@ -716,13 +716,18 @@ export function registerSessionSocketHandlers(
       try {
         const homeMatches = await runAll(
           game.db,
-          "SELECT attendance FROM matches WHERE home_team_id = ? AND played = 1",
-          [teamId],
+          "SELECT attendance, matchweek FROM matches WHERE home_team_id = ? AND played = 1 AND season = ? ORDER BY matchweek ASC",
+          [teamId, game.season],
         );
         const totalTicketRevenue = homeMatches.reduce(
           (sum, m) => sum + (m.attendance || 0) * 15,
           0,
         );
+        const ticketBreakdown = homeMatches.map((m) => ({
+          matchweek: m.matchweek,
+          attendance: m.attendance || 0,
+          revenue: (m.attendance || 0) * 15,
+        }));
 
         const transferInList = await runAll(
           game.db,
@@ -768,6 +773,7 @@ export function registerSessionSocketHandlers(
           totalStadiumExpenses,
           sponsorRevenue,
           homeMatchesPlayed: homeMatches.length,
+          ticketBreakdown,
           transferInList,
           transferOutList,
         });
@@ -781,6 +787,7 @@ export function registerSessionSocketHandlers(
           totalStadiumExpenses: 0,
           sponsorRevenue: 0,
           homeMatchesPlayed: 0,
+          ticketBreakdown: [],
           transferInList: [],
           transferOutList: [],
         });

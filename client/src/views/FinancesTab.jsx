@@ -16,6 +16,8 @@ import { formatCurrency } from "../utils/formatters.js";
  *   setShowTransferSales: function,
  *   showTransferPurchases: boolean,
  *   setShowTransferPurchases: function,
+ *   showTicketBreakdown: boolean,
+ *   setShowTicketBreakdown: function,
  *   setGameDialog: function,
  *   teamInfo: object,
  * }} props
@@ -34,6 +36,8 @@ export function FinancesTab({
   setShowTransferSales,
   showTransferPurchases,
   setShowTransferPurchases,
+  showTicketBreakdown,
+  setShowTicketBreakdown,
   setGameDialog,
   teamInfo,
 }) {
@@ -191,22 +195,82 @@ export function FinancesTab({
             </span>
           </div>
           <ul className="space-y-3">
-            <li className="flex justify-between items-center">
-              <div>
-                <p className="text-sm text-on-surface-variant">
-                  Bilheteiras
-                </p>
-                <p className="text-[10px] opacity-40 uppercase">
-                  {financeData?.homeMatchesPlayed || 0}{" "}
-                  jogos em casa
-                </p>
-              </div>
-              <span className="font-headline text-sm font-bold">
-                {formatCurrency(
-                  financeData?.totalTicketRevenue || 0,
-                )}
-              </span>
-            </li>
+            {(financeData?.ticketBreakdown?.length || 0) > 0 ? (
+              <li className="space-y-1">
+                <div
+                  className="flex justify-between items-center cursor-pointer group"
+                  onClick={() =>
+                    setShowTicketBreakdown((v) => !v)
+                  }
+                >
+                  <div>
+                    <p className="text-sm text-on-surface-variant group-hover:text-on-surface transition-colors">
+                      Bilheteiras
+                    </p>
+                    <p className="text-[10px] opacity-40 uppercase flex items-center gap-1">
+                      <span
+                        className="material-symbols-outlined"
+                        style={{ fontSize: "10px" }}
+                      >
+                        {showTicketBreakdown
+                          ? "expand_less"
+                          : "expand_more"}
+                      </span>
+                      {financeData.homeMatchesPlayed || 0}{" "}
+                      jogos em casa
+                    </p>
+                  </div>
+                  <span className="font-headline text-sm font-bold">
+                    {formatCurrency(
+                      financeData.totalTicketRevenue || 0,
+                    )}
+                  </span>
+                </div>
+                {showTicketBreakdown &&
+                  (financeData.ticketBreakdown?.length || 0) > 0 && (
+                    <ul className="pl-3 space-y-1 border-l-2 border-primary/20 ml-1 mt-1">
+                      {financeData.ticketBreakdown.map(
+                        (t, i) => (
+                          <li
+                            key={i}
+                            className="flex justify-between items-center"
+                          >
+                            <div>
+                              <p className="text-xs text-on-surface-variant/80">
+                                J{t.matchweek}
+                              </p>
+                              <p className="text-[10px] opacity-30 uppercase">
+                                {t.attendance.toLocaleString("pt-PT")}{" "}
+                                esp.
+                              </p>
+                            </div>
+                            <span className="text-xs font-bold">
+                              {formatCurrency(t.revenue)}
+                            </span>
+                          </li>
+                        ),
+                      )}
+                    </ul>
+                  )}
+              </li>
+            ) : (
+              <li className="flex justify-between items-center">
+                <div>
+                  <p className="text-sm text-on-surface-variant">
+                    Bilheteiras
+                  </p>
+                  <p className="text-[10px] opacity-40 uppercase">
+                    {financeData?.homeMatchesPlayed || 0}{" "}
+                    jogos em casa
+                  </p>
+                </div>
+                <span className="font-headline text-sm font-bold">
+                  {formatCurrency(
+                    financeData?.totalTicketRevenue || 0,
+                  )}
+                </span>
+              </li>
+            )}
             <li className="flex justify-between items-center">
               <div>
                 <p className="text-sm text-on-surface-variant">
