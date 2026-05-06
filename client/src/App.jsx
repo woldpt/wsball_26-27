@@ -4254,27 +4254,28 @@ function App() {
                               </span>
                               <div className="flex gap-1.5">
                                 {[
-                                  ["Defensive", "🛡️", "Defensivo"],
-                                  ["Balanced", "⚖️", "Equilibrado"],
-                                  ["Offensive", "⚔️", "Ofensivo"],
-                                ].map(([val, icon, lbl]) => (
-                                  <button
-                                    key={val}
-                                    onClick={() => updateTactic({ style: val })}
-                                    className={`flex-1 flex flex-col items-center gap-0.5 py-2 rounded transition-all ${
-                                      tactic.style === val
-                                        ? "bg-primary text-on-primary shadow-md"
-                                        : "bg-surface-container-high hover:bg-surface-bright text-on-surface-variant border border-outline-variant/20"
-                                    }`}
-                                  >
-                                    <span className="text-base leading-none">
-                                      {icon}
-                                    </span>
-                                    <span className="text-[9px] font-black uppercase tracking-wide leading-none">
-                                      {lbl}
-                                    </span>
-                                  </button>
-                                ))}
+                                   ["Defensive", "🛡️", "Defensivo", "Prioriza não sofrer golos. Ataque mais contido, mas difícil de bater. Ideal contra adversários mais fortes."],
+                                   ["Balanced", "⚖️", "Equilibrado", "Postura neutra. Potencia a qualidade real do plantel sem arriscar. Boa escolha quando as equipas são semelhantes."],
+                                   ["Offensive", "⚔️", "Ofensivo", "Pressão total. Mais perigoso no ataque, mas exposto atrás. Ideal contra equipas fechadas ou quando precisas de marcar."],
+                                 ].map(([val, icon, lbl, tooltip]) => (
+                                   <button
+                                     key={val}
+                                     onClick={() => updateTactic({ style: val })}
+                                     title={tooltip}
+                                     className={`flex-1 flex flex-col items-center gap-0.5 py-2 rounded transition-all ${
+                                       tactic.style === val
+                                         ? "bg-primary text-on-primary shadow-md"
+                                         : "bg-surface-container-high hover:bg-surface-bright text-on-surface-variant border border-outline-variant/20"
+                                     }`}
+                                   >
+                                     <span className="text-base leading-none">
+                                       {icon}
+                                     </span>
+                                     <span className="text-[9px] font-black uppercase tracking-wide leading-none">
+                                       {lbl}
+                                     </span>
+                                   </button>
+                                 ))}
                               </div>
                             </div>
                           </div>

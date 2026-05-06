@@ -457,13 +457,14 @@ function TabSubs({
         </span>
         <div className="flex gap-1.5">
           {[
-            { value: "Defensive", label: "Defensivo" },
-            { value: "Balanced", label: "Equilibrado" },
-            { value: "Offensive", label: "Ofensivo" },
-          ].map(({ value, label }) => (
+            { value: "Defensive", label: "Defensivo", tooltip: "Prioriza não sofrer golos. Ataque mais contido, mas difícil de bater. Ideal contra adversários mais fortes." },
+            { value: "Balanced", label: "Equilibrado", tooltip: "Postura neutra. Potencia a qualidade real do plantel sem arriscar. Boa escolha quando as equipas são semelhantes." },
+            { value: "Offensive", label: "Ofensivo", tooltip: "Pressão total. Mais perigoso no ataque, mas exposto atrás. Ideal contra equipas fechadas ou quando precisas de marcar." },
+          ].map(({ value, label, tooltip }) => (
             <button
               key={value}
               onClick={() => onUpdateTactic({ style: value })}
+              title={tooltip}
               className={`flex-1 py-1.5 rounded text-[10px] font-black uppercase tracking-wide transition-colors ${
                 tactic.style === value
                   ? value === "Defensive"
