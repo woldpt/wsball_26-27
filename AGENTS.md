@@ -112,6 +112,19 @@ Streak resets when budget returns to positive.
 
 ## Recent Changes
 
+### 2026-05-06 — Bug fixes
+
+**Bug 1 — Penalty selection window appears after game ends:**
+- In `engine.ts`, added `isLastLeagueMinute` flag to block injuries/substitutions at minute 90+ in league matches
+- Added fallback in `applyPenaltyEvent` — uses full squad if `takerCandidates` is empty (all players red-carded/injured)
+- Added guard in client `useSocketListeners.js` to ignore `matchActionRequired` if game already ended
+
+**Bug 2 — Offline coaches not in Room Players widget:**
+- Removed guard in `presenceHelpers.ts` (was blocking when `lockedCoaches.size < 2`)
+- New `emitPresence(game, io)` in `gameManager.ts` atomically emits both `players` and `awaitingCoaches` events
+- Replaced all `playerListUpdate` emits with `emitPresence(game)` across socket handlers
+- Files: `presenceHelpers.ts`, `gameManager.ts`, `index.ts`, `socketSessionHandlers.ts`, `socketGameplayHandlers.ts`, `weeklyFlowHelpers.ts`, `cupFlowHelpers.ts`
+
 ### 2026-05-06 — Deterministic fixture calendar with rigid H/A alternation
 - **`fixtureSeeds`** now persisted in `game_state` (DB) for crash recovery.
 - Fisher-Yates shuffle + circular method `(i + round) % 2` for rigid H/A alternation on ALL teams.

@@ -398,22 +398,7 @@ export function registerSessionSocketHandlers(
         );
       }
 
-      const doJoin = () => {
-      socket.join(finalRoomCode);
-      socket.join("__global__");
-
-      socket.emit("joinGameSuccess", {
-        roomCode: finalRoomCode,
-        roomName: (game as any).roomName || finalRoomCode,
-      });
-
-      const connectedCount = Object.values(game.playersByName).filter(
-        (player) => player.socketId,
-      ).length;
-      if (connectedCount >= 8 && !game.playersByName[trimmedName]) {
-        socket.emit("systemMessage", "Sala cheia (Máximo 8 Treinadores).");
-        return;
-      }
+      const doJoinContinue = () => {
 
       recordRoomAccess(trimmedName, finalRoomCode);
 
@@ -544,6 +529,52 @@ export function registerSessionSocketHandlers(
           }
         },
       );
+      }; // end doJoinContinue
+
+      const doJoin = () => {
+        socket.join(finalRoomCode);
+        socket.join("__global__");
+
+        socket.emit("joinGameSuccess", {
+          roomCode: finalRoomCode,
+          roomName: (game as any).roomName || finalRoomCode,
+        });
+
+        const connectedCount = Object.values(game.playersByName).filter(
+          (player) => player.socketId,
+        ).length;
+        if (connectedCount >= 8 && !game.playersByName[trimmedName]) {
+          socket.emit("systemMessage", "Sala cheia (Máximo 8 Treinadores).");
+          return;
+        }
+
+        // Pré-popular playersByName com todos os managers registados na sala
+        // (com socketId: null). Garante que coaches offline mas já registados
+        // aparecem sempre no widget de presença, mesmo sem terem reconectado
+        // desde o último arranque do servidor.
+        game.db.all(
+          `SELECT m.name AS coachName, t.id AS teamId
+             FROM managers m
+             JOIN teams t ON t.manager_id = m.id`,
+          [],
+          (errPop: any, rows: any[]) => {
+            if (!errPop && rows) {
+              for (const row of rows) {
+                if (!game.playersByName[row.coachName]) {
+                  game.playersByName[row.coachName] = {
+                    name: row.coachName,
+                    teamId: row.teamId,
+                    roomCode: finalRoomCode,
+                    ready: false,
+                    tactic: { formation: "4-4-2", style: "Balanced" },
+                    socketId: null,
+                  };
+                }
+              }
+            }
+            doJoinContinue();
+          },
+        );
       }; // end doJoin
 
       if (joinMode === "new-game" && roomName) {
