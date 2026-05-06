@@ -8,6 +8,12 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 Jogo de gestão de futebol baseado em texto, inspirado no Elifoot 98, a correr no browser com suporte a multiplayer assíncrono. 1 a 8 treinadores humanos submetem tácticas de forma assíncrona; a simulação das partidas é síncrona (todos confirmam "Pronto" antes do início, intervalo e tempo extra). Eventos transmitidos via Socket.io em tempo real.
 
+## Cache Versioning (Hard Reset)
+
+O servidor expõe `/api/cache-version` que retorna `{ version: SERVER_START_TIME }`. O frontend em `cacheVersion.js` compara com `localStorage.cashball_cache_version`. Se diferentes, limpa todo o localStorage/sessionStorage e força reload. Isto garante que após restart do servidor, o browser não usa dados stale.
+
+A detecção de restart via Socket.io (`serverStartTime`) também existe como fallback em `socket.js`.
+
 ## Stack Tecnológica
 
 ### Frontend (`/client`)
@@ -99,6 +105,7 @@ docker compose down         # parar containers
 │   │   │   └── chat/            # ChatWidget
 │   │   ├── utils/
 │   │   │   ├── audio.js         # playNotification, playGoalSound, playVarSound
+│   │   │   ├── cacheVersion.js # verificação de cache vs. server restart
 │   │   │   ├── fixtures.js      # generateLeagueFixtures
 │   │   │   ├── formatters.js    # formatCurrency, etc.
 │   │   │   ├── localStorage.js  # persistência de cashballSession

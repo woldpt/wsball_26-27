@@ -112,7 +112,22 @@ Streak resets when budget returns to positive.
 
 ## Recent Changes
 
+### 2026-05-06 — Cache versioning (browser hard reset on server restart)
+
+**Browser cache invalidation:**
+- Added `/api/cache-version` endpoint in `server/index.ts` returning `SERVER_START_TIME`
+- Added `checkCacheVersion()` in `client/src/utils/cacheVersion.js` — compares server timestamp with `localStorage.cashball_cache_version`
+- On mismatch: clears all localStorage/sessionStorage and forces page reload
+- Nginx proxies `/api` to backend
+- Files: `server/index.ts`, `client/nginx.conf`, `client/src/utils/cacheVersion.js`, `client/src/App.jsx`
+
 ### 2026-05-06 — Bug fixes
+
+**Bug 0 — Pre-populate adding all managers from all rooms:**
+- Removed buggy pre-populate in `socketSessionHandlers.ts` that was adding ALL managers with teams to `playersByName` regardless of room
+- The query `SELECT m.name, t.id FROM managers m JOIN teams t` had no room filter, causing coaches from other rooms to appear
+- Now `doJoin()` calls `doJoinContinue()` directly without DB query
+- File: `socketSessionHandlers.ts:534-552`
 
 **Bug 1 — Penalty selection window appears after game ends:**
 - In `engine.ts`, added `isLastLeagueMinute` flag to block injuries/substitutions at minute 90+ in league matches
