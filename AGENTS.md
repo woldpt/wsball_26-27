@@ -105,6 +105,28 @@ Streak resets when budget returns to positive.
 - `server/types.ts` — `ActiveGame` type with `dismissalsThisSeason`, `pendingJobOffers`, `negativeBudgetStreak`
 - `client/components/modals/JobOfferModal.jsx` — job offer UI
 
+## Recent Changes
+
+### 2026-05-06 — Calendário determinístico com alternância rígida
+
+- **`fixtureSeeds`** agora é persistido em `game_state` (DB) para recuperação após crash
+- **`generateFixturesForDivision`** usa Fisher-Yates shuffle + método circular com `(i + round) % 2` para alternância rígida Casa/Fora em TODAS as equipas (humanas e NPC)
+- **`swapMap` removido** — já não há alternância especial para equipa do jogador
+- **`applySeasonEnd()`** gera `fixtureSeeds` para a próxima época a partir do ranking final
+- Key files: `server/game/engine.ts`, `server/weeklyFlowHelpers.ts`, `server/cupFlowHelpers.ts`, `server/gameManager.ts`, `server/types.ts`
+
+### 2026-05-06 — Indisponibilidades contam na taça
+
+- **`finalizeCupRound()`** agora reduz `injury_until_matchweek`, `suspension_until_matchweek` e `transfer_cooldown_until_matchweek` em 1 para todos os jogadores das equipas que jogaram a taça (vencedores e derrotados)
+- Usa `MAX(0, ...)` para prevenir valores negativos
+- Key file: `server/cupFlowHelpers.ts:961-977`
+
+### 2026-05-05 — Sons de notificação apenas para equipa do jogador
+
+- **`App.jsx`** e **`useSocketListeners.js`** agora verificam `me?.teamId` em vez de `hasHuman` para sons de notificação, golos e VAR
+- **`playGoalSound()` removido** do bloco de penalties em partidas não-participantes
+- Key files: `client/src/App.jsx:614-650`, `client/src/hooks/useSocketListeners.js:656-853`, `client/src/utils/audio.js`
+
 ## Files to Read First
 
 1. `CLAUDE.md` — full project guide (architecture, UI, conventions)
