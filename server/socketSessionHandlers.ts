@@ -209,6 +209,7 @@ export function registerSessionSocketHandlers(
       calendarIndex: game.calendarIndex,
       currentEvent: game.currentEvent,
       liveMinute: game.liveMinute ?? null,
+      allMatchResults: game.allMatchResults || {},
       // ── Legacy compat fields (derived from new state machine) ────────────────
       matchweek: game.matchweek,
       matchState: legacyMatchState(game.gamePhase),

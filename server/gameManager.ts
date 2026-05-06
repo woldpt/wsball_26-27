@@ -352,6 +352,9 @@ function getGame(roomCode: string, onReady?: OnReady): ActiveGame | null {
     // Fixture seeds por divisão (aleatórios por época)
     fixtureSeeds: {},
 
+    // Histórico de resultados de jornadas
+    allMatchResults: {},
+
     // Coach dismissal & job offers
     pendingJobOffers: {},
     negativeBudgetStreak: {},
@@ -593,6 +596,19 @@ function getGame(roomCode: string, onReady?: OnReady): ActiveGame | null {
                   }
                 } catch (_) {}
               }
+              if (st["allMatchResults"]) {
+                try {
+                  const parsed = JSON.parse(st["allMatchResults"]);
+                  if (parsed && typeof parsed === "object") {
+                    game.allMatchResults = Object.fromEntries(
+                      Object.entries(parsed).map(([k, v]) => [
+                        Number(k),
+                        Array.isArray(v) ? (v as any[]) : [],
+                      ]),
+                    );
+                  }
+                } catch (_) {}
+              }
 
               // Set currentEvent from calendarIndex
               game.currentEvent = SEASON_CALENDAR[game.calendarIndex] ?? null;
@@ -700,6 +716,7 @@ function saveGameState(game: ActiveGame): void {
     JSON.stringify([...(game.dismissalsThisSeason ?? [])]),
   );
   upsert("fixtureSeeds", JSON.stringify(game.fixtureSeeds || {}));
+  upsert("allMatchResults", JSON.stringify(game.allMatchResults || {}));
 
   // Persist current fixtures for crash recovery (only serialisable fields)
   if (game.currentFixtures && game.currentFixtures.length > 0) {

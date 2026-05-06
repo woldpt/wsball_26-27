@@ -537,6 +537,7 @@ export function useSocketListeners(handlers, refs) {
 
     socket.on("gameState", (data) => {
       handlers.setNewsTickerItems([]);
+      if (data.allMatchResults) handlers.setAllMatchResults(data.allMatchResults);
       if (data.matchweek) handlers.setMatchweekCount(data.matchweek - 1);
       if (data.year) handlers.setSeasonYear(data.year);
       if (data.tactic) {

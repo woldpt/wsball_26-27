@@ -1,3 +1,4 @@
+import { useState } from "react";
 import { PlayerLink } from "../shared/PlayerLink.jsx";
 
 const DIVISION_NAMES = {
@@ -226,6 +227,123 @@ function DivisionTable({
   );
 }
 
+function MatchweekResults({ allMatchResults, completedJornada, teams }) {
+  const matchweeks = Object.keys(allMatchResults)
+    .map(Number)
+    .filter((mw) => mw <= completedJornada)
+    .sort((a, b) => b - a);
+
+  if (!matchweeks.length) return null;
+
+  const teamMap = {};
+  teams.forEach((t) => {
+    teamMap[t.id] = t;
+  });
+
+  return (
+    <section className="bg-surface-container rounded-md overflow-hidden">
+      <div className="px-4 py-2.5 bg-surface-container-high border-b border-outline-variant/20 flex items-center gap-2">
+        <span className="text-on-surface-variant/60">📋</span>
+        <h3 className="font-headline font-black text-xs tracking-tight uppercase text-on-surface-variant/60">
+          Resultados das Jornadas
+        </h3>
+      </div>
+      <div className="divide-y divide-outline-variant/10">
+        {matchweeks.map((mw) => (
+          <MatchweekRow
+            key={mw}
+            matchweek={mw}
+            matches={allMatchResults[mw]}
+            teamMap={teamMap}
+          />
+        ))}
+      </div>
+    </section>
+  );
+}
+
+function MatchweekRow({ matchweek, matches, teamMap }) {
+  const [expanded, setExpanded] = useState(false);
+
+  const homeWins = matches.filter(
+    (m) => m.homeGoals > m.awayGoals,
+  ).length;
+  const draws = matches.filter((m) => m.homeGoals === m.awayGoals).length;
+  const awayWins = matches.filter(
+    (m) => m.awayGoals > m.homeGoals,
+  ).length;
+
+  return (
+    <div className="transition-colors hover:bg-surface-container-high/40">
+      <button
+        onClick={() => setExpanded(!expanded)}
+        className="w-full flex items-center justify-between px-4 py-2.5 text-left"
+      >
+        <div className="flex items-center gap-3">
+          <span className="text-on-surface-variant/40 text-[10px] font-black uppercase tracking-widest">
+            J{matchweek}
+          </span>
+          <span className="text-[10px] text-on-surface-variant/30 font-bold">
+            {matches.length} jogos
+          </span>
+        </div>
+        <div className="flex items-center gap-2">
+          <span className="text-[9px] text-emerald-400/60 font-bold">{homeWins}V</span>
+          <span className="text-[9px] text-zinc-500/60 font-bold">{draws}E</span>
+          <span className="text-[9px] text-red-400/60 font-bold">{awayWins}D</span>
+          <span
+            className={`text-[10px] text-on-surface-variant/30 transition-transform ${expanded ? "rotate-90" : ""}`}
+          >
+            ▶
+          </span>
+        </div>
+      </button>
+      {expanded && (
+        <div className="px-4 pb-2.5 space-y-0.5">
+          {matches.map((match, idx) => {
+            const homeTeam = teamMap[match.homeTeamId];
+            const awayTeam = teamMap[match.awayTeamId];
+            const homeGoals = match.homeGoals ?? match.finalHomeGoals ?? 0;
+            const awayGoals = match.awayGoals ?? match.finalAwayGoals ?? 0;
+            const homeWin = homeGoals > awayGoals;
+            const draw = homeGoals === awayGoals;
+
+            return (
+              <div
+                key={idx}
+                className="flex items-center gap-2 text-[10px] py-1.5 border-b border-outline-variant/5 last:border-b-0"
+              >
+                {/* Home team */}
+                <span
+                  className={`flex-1 truncate text-right font-bold ${
+                    homeWin ? "text-emerald-400" : draw ? "text-zinc-400" : "text-on-surface-variant/50"
+                  }`}
+                >
+                  {homeTeam?.name || "?"}
+                </span>
+
+                {/* Score */}
+                <span className="px-2 py-px bg-surface-bright rounded-sm font-black text-[11px] text-on-surface min-w-[3.5rem] text-center">
+                  {homeGoals}-{awayGoals}
+                </span>
+
+                {/* Away team */}
+                <span
+                  className={`flex-1 truncate font-bold ${
+                    awayGoals > homeGoals ? "text-emerald-400" : draw ? "text-zinc-400" : "text-on-surface-variant/50"
+                  }`}
+                >
+                  {awayTeam?.name || "?"}
+                </span>
+              </div>
+            );
+          })}
+        </div>
+      )}
+    </div>
+  );
+}
+
 function GoldenBootSidebar({ topScorers, myTeamId }) {
   if (!topScorers?.length) return null;
 
@@ -373,6 +491,7 @@ function AllTimeChampions({ allChampions }) {
  *   matchweekCount: number,
  *   palmares: { allChampions: Array },
  *   onTeamClick: Function,
+ *   allMatchResults: Record<number, Array>,
  * }} props
  */
 export function LeagueStandings({
@@ -385,6 +504,7 @@ export function LeagueStandings({
   palmares,
   onTeamClick,
   players = [],
+  allMatchResults = {},
 }) {
   const humanTeamIds = new Set(
     players.filter((p) => p.teamId != null).map((p) => String(p.teamId)),
@@ -453,6 +573,13 @@ export function LeagueStandings({
           </div>
         </div>
       </div>
+
+      {/* Matchweek results */}
+      <MatchweekResults
+        allMatchResults={allMatchResults}
+        completedJornada={completedJornada}
+        teams={teams}
+      />
 
       {/* All-time champions */}
       {palmares?.allChampions?.length > 0 && (

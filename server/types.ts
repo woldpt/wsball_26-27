@@ -80,6 +80,9 @@ export interface ActiveGame {
   // ── Fixture seeds por divisão (ordem aleatória no início de cada época) ──
   fixtureSeeds: Record<number, number[]>; // div → [teamId, ...] ordenado por seed
 
+  // ── Histórico de resultados de todas as jornadas ──
+  allMatchResults: Record<number, any[]>; // matchweek → [{homeTeamId, awayTeamId, homeGoals, awayGoals, ...}, ...]
+
   // ── Coach dismissal & job offers ──
   pendingJobOffers: Record<string, { fromTeamId: number; toTeamId: number }>;
   negativeBudgetStreak: Record<number, number>; // teamId → semanas consecutivas com budget < 0

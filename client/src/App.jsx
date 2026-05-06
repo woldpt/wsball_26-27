@@ -162,6 +162,7 @@ function App() {
   };
 
   const [matchResults, setMatchResults] = useState(null);
+  const [allMatchResults, setAllMatchResults] = useState({});
   const [matchweekCount, setMatchweekCount] = useState(0);
   const [seasonYear, setSeasonYear] = useState(2026);
   const [activeTab, setActiveTab] = useState("club");
@@ -367,6 +368,7 @@ function App() {
       setCupRoundResults,
       setPendingCupRoundResults,
       setMatchResults,
+      setAllMatchResults,
       setLiveMinute,
       setSubsMade,
       setSubbedOut,
@@ -3983,6 +3985,7 @@ function App() {
                       palmares={palmares}
                       onTeamClick={handleOpenTeamSquad}
                       players={players}
+                      allMatchResults={allMatchResults}
                     />
                   )}
 

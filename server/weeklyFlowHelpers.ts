@@ -537,6 +537,11 @@ export function createWeeklyFlowHelpers(deps: WeeklyFlowDeps) {
               completedMatchweek,
             ),
           }));
+
+          // Store in history
+          game.allMatchResults = game.allMatchResults ?? {};
+          game.allMatchResults[completedMatchweek] = fullTimeFixtures;
+
           io.to(game.roomCode).emit("matchResults", {
             matchweek: completedMatchweek,
             results: fullTimeFixtures,

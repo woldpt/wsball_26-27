@@ -10,6 +10,7 @@ export function StandingsTab({
   palmares,
   onTeamClick,
   players,
+  allMatchResults,
 }) {
   return (
     <LeagueStandings
@@ -22,6 +23,7 @@ export function StandingsTab({
       palmares={palmares}
       onTeamClick={onTeamClick}
       players={players}
+      allMatchResults={allMatchResults}
     />
   );
 }
