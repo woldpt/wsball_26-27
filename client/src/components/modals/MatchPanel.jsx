@@ -395,6 +395,7 @@ function TabSubs({
   onResetSub,
   onResetAllSubs,
   redCardedHalftimeIds,
+  injuredHalftimeIds,
 }) {
   return (
     <div className="flex flex-col flex-1 min-h-0 overflow-hidden">
@@ -469,7 +470,8 @@ function TabSubs({
                 (p) =>
                   tactic.positions[p.id] === "Titular" &&
                   !subbedOut.includes(p.id) &&
-                  !redCardedHalftimeIds.has(p.id),
+                  !redCardedHalftimeIds.has(p.id) &&
+                  !injuredHalftimeIds?.has(p.id),
               )
               .map((p) => {
                 const grAvailableOnBench = annotatedSquad.some(
@@ -547,6 +549,9 @@ function TabSubs({
           <div className="flex-1 overflow-y-auto">
             {annotatedSquad
               .filter((p) => tactic.positions[p.id] === "Suplente")
+              .filter(
+                (p) => !injuredHalftimeIds?.has(p.id),
+              )
               .map((p) => {
                 const alreadyUsed = subbedOut.includes(p.id);
                 const sourcePlayer = swapSource
@@ -901,6 +906,7 @@ export function MatchPanel({
   myTeamInCup,
   myTeamId,
   redCardedHalftimeIds,
+  injuredHalftimeIds,
   matchAction,
   injuryCountdown,
   onResolveAction,
@@ -1130,6 +1136,7 @@ export function MatchPanel({
                   onResetSub={onResetSub}
                   onResetAllSubs={onResetAllSubs}
                   redCardedHalftimeIds={redCardedHalftimeIds}
+                  injuredHalftimeIds={injuredHalftimeIds}
                 />
               )}
               {effectiveTab === "adversario" && mode === "halftime" && (

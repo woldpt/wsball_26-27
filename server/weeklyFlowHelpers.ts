@@ -190,12 +190,23 @@ export function createWeeklyFlowHelpers(deps: WeeklyFlowDeps) {
               .map((p: any) => p.id);
 
             // Players not in squad who are now marked as Titular (subbed in at halftime)
-            const toAddIds = Object.entries(positions)
+            let toAddIds = Object.entries(positions)
               .filter(
                 ([id, status]) =>
                   status === "Titular" && !currentIds.has(Number(id)),
               )
               .map(([id]) => Number(id));
+
+            // Filter out injured players from incoming substitutions
+            const injuredIds = new Set(
+              (fixture.events || [])
+                .filter(
+                  (e: any) =>
+                    e.type === "injury" && e.team === teamSide && e.playerId,
+                )
+                .map((e: any) => e.playerId),
+            );
+            toAddIds = toAddIds.filter((id) => !injuredIds.has(id));
 
             if (toRemoveIds.length === 0 && toAddIds.length === 0) return;
 

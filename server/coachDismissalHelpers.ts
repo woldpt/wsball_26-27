@@ -38,9 +38,9 @@ export function createCoachDismissalHelpers(deps: CoachDismissalDeps) {
   };
   const DISMISSAL_BY_BUDGET_MAX = 0.95; // streak >= 5
   const INVITE_BY_WINS: Record<number, number> = {
-    3: 0.08,
-    4: 0.25,
-    5: 0.55,
+    3: 0.05,
+    4: 0.15,
+    5: 0.35,
   };
 
   // ── Internal helpers ───────────────────────────────────────────────────────
@@ -504,8 +504,14 @@ export function createCoachDismissalHelpers(deps: CoachDismissalDeps) {
       );
       if (npcCandidates.length === 0) continue;
 
-      const toTeam =
-        npcCandidates[Math.floor(Math.random() * npcCandidates.length)];
+      // Preferir equipas em má forma (< 2 vitórias nos últimos 5 jogos)
+      const struggling = npcCandidates.filter((t) => {
+        const f = forms[t.id] ?? "";
+        const wins = f.split("").slice(0, 5).filter((r: string) => r === "V").length;
+        return wins < 2;
+      });
+      const pool = struggling.length > 0 ? struggling : npcCandidates;
+      const toTeam = pool[Math.floor(Math.random() * pool.length)];
       await offerJobToCoach(game, coachName, teamId, toTeam, team);
     }
 

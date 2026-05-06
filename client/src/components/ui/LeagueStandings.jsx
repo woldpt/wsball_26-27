@@ -265,13 +265,14 @@ function MatchweekResults({ allMatchResults, completedJornada, teams }) {
 function MatchweekRow({ matchweek, matches, teamMap }) {
   const [expanded, setExpanded] = useState(false);
 
-  const homeWins = matches.filter(
-    (m) => m.homeGoals > m.awayGoals,
-  ).length;
-  const draws = matches.filter((m) => m.homeGoals === m.awayGoals).length;
-  const awayWins = matches.filter(
-    (m) => m.awayGoals > m.homeGoals,
-  ).length;
+  // Agrupar jogos por divisão
+  const byDivision = {};
+  matches.forEach((match) => {
+    const div = teamMap[match.homeTeamId]?.division ?? teamMap[match.awayTeamId]?.division ?? 0;
+    if (!byDivision[div]) byDivision[div] = [];
+    byDivision[div].push(match);
+  });
+  const divisionOrder = Object.keys(byDivision).map(Number).sort((a, b) => a - b);
 
   return (
     <div className="transition-colors hover:bg-surface-container-high/40">
@@ -287,57 +288,58 @@ function MatchweekRow({ matchweek, matches, teamMap }) {
             {matches.length} jogos
           </span>
         </div>
-        <div className="flex items-center gap-2">
-          <span className="text-[9px] text-emerald-400/60 font-bold">{homeWins}V</span>
-          <span className="text-[9px] text-zinc-500/60 font-bold">{draws}E</span>
-          <span className="text-[9px] text-red-400/60 font-bold">{awayWins}D</span>
-          <span
-            className={`text-[10px] text-on-surface-variant/30 transition-transform ${expanded ? "rotate-90" : ""}`}
-          >
-            ▶
-          </span>
-        </div>
+        <span
+          className={`text-[10px] text-on-surface-variant/30 transition-transform ${expanded ? "rotate-90" : ""}`}
+        >
+          ▶
+        </span>
       </button>
       {expanded && (
-        <div className="px-4 pb-2.5 space-y-0.5">
-          {matches.map((match, idx) => {
-            const homeTeam = teamMap[match.homeTeamId];
-            const awayTeam = teamMap[match.awayTeamId];
-            const homeGoals = match.homeGoals ?? match.finalHomeGoals ?? 0;
-            const awayGoals = match.awayGoals ?? match.finalAwayGoals ?? 0;
-            const homeWin = homeGoals > awayGoals;
-            const draw = homeGoals === awayGoals;
-
-            return (
-              <div
-                key={idx}
-                className="flex items-center gap-2 text-[10px] py-1.5 border-b border-outline-variant/5 last:border-b-0"
-              >
-                {/* Home team */}
-                <span
-                  className={`flex-1 truncate text-right font-bold ${
-                    homeWin ? "text-emerald-400" : draw ? "text-zinc-400" : "text-on-surface-variant/50"
-                  }`}
-                >
-                  {homeTeam?.name || "?"}
-                </span>
-
-                {/* Score */}
-                <span className="px-2 py-px bg-surface-bright rounded-sm font-black text-[11px] text-on-surface min-w-[3.5rem] text-center">
-                  {homeGoals}-{awayGoals}
-                </span>
-
-                {/* Away team */}
-                <span
-                  className={`flex-1 truncate font-bold ${
-                    awayGoals > homeGoals ? "text-emerald-400" : draw ? "text-zinc-400" : "text-on-surface-variant/50"
-                  }`}
-                >
-                  {awayTeam?.name || "?"}
+        <div className="pb-2.5">
+          {divisionOrder.map((div) => (
+            <div key={div}>
+              <div className="px-4 py-1 bg-surface-container-low/50 border-y border-outline-variant/10">
+                <span className="text-[8px] font-black uppercase tracking-widest text-on-surface-variant/40">
+                  {DIVISION_NAMES[div] || `Divisão ${div}`}
                 </span>
               </div>
-            );
-          })}
+              <div className="px-4 space-y-0.5 pt-1">
+                {byDivision[div].map((match, idx) => {
+                  const homeTeam = teamMap[match.homeTeamId];
+                  const awayTeam = teamMap[match.awayTeamId];
+                  const homeGoals = match.homeGoals ?? match.finalHomeGoals ?? 0;
+                  const awayGoals = match.awayGoals ?? match.finalAwayGoals ?? 0;
+                  const homeWin = homeGoals > awayGoals;
+                  const draw = homeGoals === awayGoals;
+
+                  return (
+                    <div
+                      key={idx}
+                      className="flex items-center gap-2 text-[10px] py-1.5 border-b border-outline-variant/5 last:border-b-0"
+                    >
+                      <span
+                        className={`flex-1 truncate text-right font-bold ${
+                          homeWin ? "text-emerald-400" : draw ? "text-zinc-400" : "text-on-surface-variant/50"
+                        }`}
+                      >
+                        {homeTeam?.name || "?"}
+                      </span>
+                      <span className="px-2 py-px bg-surface-bright rounded-sm font-black text-[11px] text-on-surface min-w-[3.5rem] text-center">
+                        {homeGoals}-{awayGoals}
+                      </span>
+                      <span
+                        className={`flex-1 truncate font-bold ${
+                          awayGoals > homeGoals ? "text-emerald-400" : draw ? "text-zinc-400" : "text-on-surface-variant/50"
+                        }`}
+                      >
+                        {awayTeam?.name || "?"}
+                      </span>
+                    </div>
+                  );
+                })}
+              </div>
+            </div>
+          ))}
         </div>
       )}
     </div>

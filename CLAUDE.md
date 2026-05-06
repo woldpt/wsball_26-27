@@ -1,3 +1,7 @@
+# CLAUDE.md
+
+This file provides guidance to Claude Code (claude.ai/code) when working with code in this repository.
+
 # CashBall 26/27 — Guia para Claude Code
 
 ## Visão Geral do Projecto
@@ -16,7 +20,7 @@ Jogo de gestão de futebol baseado em texto, inspirado no Elifoot 98, a correr n
 
 ### Backend (`/server`)
 
-- Node.js + Express 5 em **TypeScript**
+- Node.js + Express 5 em **TypeScript** (strict mode desactivado — `tsconfig.json` tem `strict: false`)
 - Socket.io 4
 - SQLite 3 (ficheiro local em `server/db/base.db`)
 - bcryptjs, dotenv, express-rate-limit
@@ -25,6 +29,7 @@ Jogo de gestão de futebol baseado em texto, inspirado no Elifoot 98, a correr n
 
 - Docker Compose (`docker-compose.yml` na raiz)
 - Backend: porta 3000; Frontend: ip fixo `172.100.0.57` na rede `cftunnel` (externa)
+- `CORS_ORIGINS` env var (ou `http://localhost:5173` por omissão)
 
 ## Comandos Úteis
 
@@ -162,9 +167,67 @@ docker compose down         # parar containers
 - **Backend em TypeScript, Frontend em JavaScript puro** — não adicionar TypeScript ao frontend
 - **SQLite, não PostgreSQL** — base de dados em ficheiro local, adequada para 32 treinadores
 - **Submissão assíncrona, simulação síncrona** — a jornada avança quando todos submetem; a simulação pausa no intervalo e tempo extra para confirmação
-- **Divisão 5 (Distritais)** — existe apenas internamente no backend (`gameConstants.ts`) como pool de equipas IA; invisível para jogadores humanos
+- **Divisão 5 (Distritais)** — existe apenas internamente no backend (`gameConstants.ts`) como pool de equipas IA; invisível para jogadores humanos e nunca mostrada na UI
 - **Socket.io para eventos em tempo real** — não usar polling; todos os eventos de jogo são transmitidos via WebSocket
 - **auth.js mantido em JavaScript** — não converter para TypeScript sem necessidade
+
+## Máquina de Estados `gamePhase`
+
+`ActiveGame.gamePhase` é a fonte de verdade para o estado de uma jornada. Campeonato e taça **nunca correm em simultâneo** — o calendário é linear com 19 entradas (`SEASON_CALENDAR` em `gameConstants.ts`). `game.calendarIndex` indica a posição actual; `game.matchweek` é um campo de conveniência, **não** a fonte de verdade.
+
+Transições válidas:
+```
+lobby → match_first_half → match_halftime → match_second_half
+  → [taça, se empatado] match_et_gate → match_extra_time
+  → match_finalizing → lobby
+```
+
+Fases transitórias (`match_first_half`, `match_second_half`, `match_extra_time`, `match_finalizing`) são **repostas automaticamente para `lobby`** ao reiniciar o servidor — impede jogos permanentemente bloqueados após crash.
+
+## Persistência do `ActiveGame` (Memória vs. DB)
+
+O mapa `activeGames` em `gameManager.ts` é a única cópia activa de cada jogo. A sincronização com a base de dados é **selectiva, não contínua**:
+
+- **Estado transitório** (fixtures, lineups, minuto actual durante simulação) — só em memória; gravado via `saveGameState()` em eventos específicos
+- **Estado persistente** (classificações, registos de jogadores, histórico de transferências, orçamentos) — gravado na BD imediatamente após cada mutação
+- **`game.lockedCoaches`** — **nunca é persistido**; os treinadores adicionam-se ao Set ao reconectarem via `assignPlayer()`. Persistir causaria bloqueios permanentes após crash
+- Após restart, fases transitórias são descartadas: os treinadores precisam de se reconectar e confirmar "Pronto" novamente
+
+## Orquestração Semanal (`checkAllReady`)
+
+`checkAllReady()` em `weeklyFlowHelpers.ts` é o ponto central de despacho. Ao receber confirmação de todos os treinadores conectados/bloqueados:
+
+1. Avança `calendarIndex`, aplica rendimento semanal por divisão e deduz salários
+2. Gera fixtures e chama `runMatchSegment(game, 1, 45)` — segmento 1.ª parte
+3. Pausa em `match_halftime`; aguarda nova confirmação
+4. Chama `runMatchSegment(game, 46, 90)` — segmento 2.ª parte
+5. Para taças empatadas: pausa em `match_et_gate`, depois `runMatchSegment(game, 91, 120)`
+6. Penalties se necessário, depois `match_finalizing` e retorno ao `lobby`
+
+**Guarda contra execução dupla**: `segmentRunning[game.roomCode]` booleano — verificar antes de qualquer chamada a `runMatchSegment`.
+
+**Timeout de segurança no intervalo** (120 s): se não houver treinadores conectados, avança automaticamente. Se houver treinadores, aguarda indefinidamente — não forçar o avanço enquanto estão a ajustar substituições.
+
+**Draw da taça**: é preparado **no fim do evento anterior** (não no início da partida de taça) — os treinadores vêem os adversários e definem tácticas no lobby antes do início.
+
+## Fluxo de Orçamento Semanal
+
+Por cada jornada (campeonato ou taça), em `checkAllReady()` antes da simulação:
+1. Rendimento base semanal por divisão (div 1: 80k, div 2: 50k, …, div 5: 5k)
+2. Dedução de salários (soma de todos os jogadores da equipa)
+3. Juros de empréstimo (1,5 % do montante em dívida)
+4. Receita de bilheteira (€15 por espectador — só no campeonato, após a partida)
+5. Receita de patrocínio — no final da época (depende da divisão)
+
+## Despedimento de Treinadores
+
+`processCoachEvents()` em `coachDismissalHelpers.ts` avalia elegibilidade após cada jornada:
+
+- **Maus resultados**: 2+ semanas consecutivas sem vitórias → avaliação de despedimento
+- **Orçamento negativo**: 3+ semanas consecutivas com orçamento < 0 → despedimento obrigatório
+- Campos persistidos: `dismissedCoachSince`, `negativeBudgetStreak`, `dismissalsThisSeason`
+
+Após despedimento, a equipa fica disponível via `acceptJobOffer` / `declineJobOffer`. Se recusada por todos, a equipa joga com gestor NPC na jornada seguinte.
 
 ## Efeitos Visuais e UI
 
@@ -186,7 +249,7 @@ docker compose down         # parar containers
 
 - **`game/engine.ts`** exporta via `module.exports = {}` (CommonJS) para compatibilidade com o `require()` em `index.ts`; os ficheiros auxiliares do mesmo directório (`commentary.ts`, `playerUtils.ts`, `matchCalculations.ts`) usam ES module exports (`export function`). `engine.ts` re-exporta com `export { ... } from "./playerUtils"` para que os importadores externos possam usar `import { withJuniorGRs } from "./game/engine"`.
 - **Narração** — todas as frases geradas durante a simulação estão em `game/commentary.ts`; não duplicar frases noutros ficheiros.
-- **Factory pattern para helpers** — `createXxxHelpers(deps)` retorna um objecto com funções; `deps` inclui tipicamente `{ io, db, game }`. Exemplo: `createAuctionHelpers(deps)`, `createCupFlowHelpers(deps)`. Nunca instanciar helpers directamente; sempre passar dependências via factory.
+- **Factory pattern para helpers** — `createXxxHelpers(deps)` retorna um objecto com funções; `deps` inclui tipicamente `{ io, db, game }`. Exemplo: `createAuctionHelpers(deps)`, `createCupFlowHelpers(deps)`. Nunca instanciar helpers directamente; sempre passar dependências via factory. As dependências de `createWeeklyFlowHelpers` incluem: `generateFixturesForDivision`, `simulateMatchSegment`, `applyTrainingBonuses`, `startCupRound`, `finalizeCupRound`, `applySeasonEnd`, `listPlayerOnMarket`, `finalizeAuction`, `processContractExpiries`, `processCoachEvents`.
 - **Registo de handlers Socket.io** — `registerXxxSocketHandlers(socket, deps)` regista todos os eventos de um domínio num único ponto; chamado dentro do `io.on("connection")` em `index.ts`. Manter eventos de domínios separados em ficheiros distintos.
 - **Sincronização de fase** — `phaseToken` (UUID gerado no início de cada fase) + `phaseAcks` (Set de nomes de treinadores que confirmaram) coordenam acções multi-jogador. Um novo `phaseToken` invalida automaticamente ACKs de fases anteriores; verificar sempre se o token ainda é válido antes de avançar.
 - **`lockedCoaches`** — Set em `ActiveGame` que impede acções (transferências, alterações de tácticas) enquanto a simulação está activa; verificar antes de qualquer mutação de estado de equipa.

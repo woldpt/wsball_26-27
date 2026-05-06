@@ -1999,6 +1999,13 @@ function App() {
       .map((e) => e.playerId)
       .filter(Boolean),
   );
+  // Jogadores lesionados no meu jogo (para filtrar do painel de intervalo)
+  const injuredHalftimeIds = new Set(
+    (myMatch?.events || [])
+      .filter((e) => e.type === "injury" && e.team === mySideInHalftime)
+      .map((e) => e.playerId)
+      .filter(Boolean),
+  );
   // Indica se o coach está na ronda actual da Taça
   const myTeamInCup =
     cupActiveTeamIds.length === 0 ||
@@ -3638,13 +3645,15 @@ function App() {
                                       const currentHome = matchEvents.filter(
                                         (e) =>
                                           e.minute <= liveMinute &&
-                                          e.type === "goal" &&
+                                          (e.type === "goal" ||
+                                            e.type === "penalty_goal") &&
                                           e.team === "home",
                                       );
                                       const currentAway = matchEvents.filter(
                                         (e) =>
                                           e.minute <= liveMinute &&
-                                          e.type === "goal" &&
+                                          (e.type === "goal" ||
+                                            e.type === "penalty_goal") &&
                                           e.team === "away",
                                       );
                                       const isHumanMatch = players.some(
@@ -5334,6 +5343,7 @@ function App() {
         myTeamInCup={myTeamInCup}
         myTeamId={me?.teamId}
         redCardedHalftimeIds={redCardedHalftimeIds}
+        injuredHalftimeIds={injuredHalftimeIds}
         matchAction={matchAction}
         injuryCountdown={injuryCountdown}
         onResolveAction={handleResolveMatchAction}
