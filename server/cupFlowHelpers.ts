@@ -469,6 +469,9 @@ export function createCupFlowHelpers(deps: CupFlowDeps) {
     // Skip draw animation for the final (round 5) — fixtures are set silently
     if (round === 5) return;
 
+    // Reset draw-seen tracking for this new round
+    game.cupDrawSeenBy = new Set();
+
     // Compute humanInCup for the client's draw payload
     const connectedPlayers = getPlayerList(game);
     const humanTeamIds = new Set(connectedPlayers.map((p) => p.teamId));
@@ -487,6 +490,11 @@ export function createCupFlowHelpers(deps: CupFlowDeps) {
 
     // Emit draw so clients can show the animation in the lobby
     io.to(game.roomCode).emit("cupDrawStart", drawPayload);
+
+    // Mark all currently connected coaches as having seen the draw
+    for (const player of connectedPlayers) {
+      game.cupDrawSeenBy.add(player.name);
+    }
   }
 
   // ─── CUP ROUND FINALIZATION (ET + PENALTIES) ────────────────────────────────
@@ -1037,6 +1045,10 @@ export function createCupFlowHelpers(deps: CupFlowDeps) {
       game.currentEvent?.type === "cup" &&
       game.currentFixtures.length > 0
     ) {
+      const coachName = game.socketToName[socket.id];
+      if (coachName && game.cupDrawSeenBy.has(coachName)) {
+        return;
+      }
       const entry = game.currentEvent as any;
       const connectedPlayers = getPlayerList(game);
       const humanTeamIds = new Set(connectedPlayers.map((p) => p.teamId));
@@ -1051,6 +1063,9 @@ export function createCupFlowHelpers(deps: CupFlowDeps) {
         humanInCup,
         season: game.season,
       });
+      if (coachName) {
+        game.cupDrawSeenBy.add(coachName);
+      }
       return;
     }
 

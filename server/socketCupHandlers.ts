@@ -90,10 +90,19 @@ export function registerCupSocketHandlers(socket: any, deps: CupHandlerDeps) {
     game._cupETAnimHandler(socket.id);
   });
 
+  // ── Cup draw acknowledged ───────────────────────────────────────────────────
+  socket.on("cupDrawAcknowledged", () => {
+    const game = getGameBySocket(socket.id);
+    if (!game) return;
+    const name = game.socketToName[socket.id];
+    if (name) {
+      game.cupDrawSeenBy.add(name);
+    }
+  });
+
   // ── Legacy compat shims (no-ops) ────────────────────────────────────────────
   // Cup now uses the same lobby → setReady flow as league.
   // These events are kept so old clients don't throw errors, but do nothing.
-  socket.on("cupDrawAcknowledged", () => {});
   socket.on("cupKickOff", () => {});
   socket.on("cupHalfTimeReady", () => {});
   

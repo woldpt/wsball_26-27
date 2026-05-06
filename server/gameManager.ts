@@ -337,6 +337,7 @@ function getGame(roomCode: string, onReady?: OnReady): ActiveGame | null {
     // Cup runtime payloads
     cupTeamIds: [],
     cupHalftimePayload: null,
+    cupDrawSeenBy: new Set<string>(),
 
     // Retained fields
     lockedCoaches: new Set<string>(),
@@ -510,6 +511,14 @@ function getGame(roomCode: string, onReady?: OnReady): ActiveGame | null {
                 } catch (_) {}
               }
 
+              // Cup draw seen-by tracking
+              if (st["cupDrawSeenBy"]) {
+                try {
+                  const parsed = JSON.parse(st["cupDrawSeenBy"]);
+                  if (Array.isArray(parsed)) game.cupDrawSeenBy = new Set(parsed);
+                } catch (_) {}
+              }
+
               // Current fixtures (for reconnect during match or cup lobby)
               if (st["currentFixtures"]) {
                 try {
@@ -652,6 +661,10 @@ function saveGameState(game: ActiveGame): void {
   upsert(
     "cupHalftimePayload",
     game.cupHalftimePayload ? JSON.stringify(game.cupHalftimePayload) : "null",
+  );
+  upsert(
+    "cupDrawSeenBy",
+    JSON.stringify([...(game.cupDrawSeenBy ?? [])]),
   );
   upsert(
     "lastHalftimePayload",

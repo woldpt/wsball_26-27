@@ -63,6 +63,7 @@ export interface ActiveGame {
   // ── Cup runtime payloads ──
   cupTeamIds: number[];
   cupHalftimePayload: unknown | null;
+  cupDrawSeenBy: Set<string>; // coachNames que já viram o sorteio do round actual
 
   // ── Retained fields ──
   lockedCoaches: Set<string>;
