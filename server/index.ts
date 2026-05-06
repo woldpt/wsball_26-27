@@ -163,6 +163,10 @@ app.get("/health", (req, res) => {
   res.json({ status: "ok", uptime: process.uptime() });
 });
 
+app.get("/api/cache-version", (_req, res) => {
+  res.json({ version: SERVER_START_TIME });
+});
+
 app.get("/saves", apiLimiter, async (req, res) => {
   try {
     const files = fs.readdirSync(resolveDbDir());

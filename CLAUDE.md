@@ -71,7 +71,6 @@ docker compose down         # parar containers
 ├── client/
 │   ├── src/
 │   │   ├── App.jsx              # componente raiz (live + tactic tabs; restantes extraídos)
-│   │   ├── AdminPanel.jsx       # painel de administração
 │   │   ├── socket.js            # configuração Socket.io-client
 │   │   ├── countryFlags.js      # mapeamento de bandeiras
 │   │   ├── main.jsx             # ponto de entrada React
@@ -91,7 +90,8 @@ docker compose down         # parar containers
 │   │   │   ├── modals/          # sobreposições de ecrã (WelcomeModal, MatchPanel,
 │   │   │   │                    #   SeasonEndModal, TransferProposalModal, JobOfferModal,
 │   │   │   │                    #   DismissalModal, TeamSquadModal, PlayerHistoryModal,
-│   │   │   │                    #   CupDrawPopup, PenaltyShootoutPopup, RefereePopup, etc.)
+│   │   │   │                    #   CupDrawPopup, PenaltyShootoutPopup,
+│   │   │   │                    #   PenaltySuspensePopup, RefereePopup, etc.)
 │   │   │   ├── ui/              # componentes de interface maiores (LeagueStandings,
 │   │   │   │                    #   CupBracketPage, TransferHub, TrainingPage,
 │   │   │   │                    #   AuctionNotification, NewsTicker, PageTransition)
@@ -103,7 +103,6 @@ docker compose down         # parar containers
 │   │   │   ├── formatters.js    # formatCurrency, etc.
 │   │   │   ├── localStorage.js  # persistência de cashballSession
 │   │   │   ├── playerHelpers.js # isPlayerAvailable, getFormationRequirements, etc.
-│   │   │   ├── sessionHelpers.js
 │   │   │   └── teamHelpers.js
 │   │   └── constants/
 │   │       └── index.js         # DIVISION_NAMES, TICKER_TEAM_COLORS, etc.

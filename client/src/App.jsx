@@ -69,6 +69,7 @@ import {
   isSameTeamId,
 } from "./utils/teamHelpers.js";
 import { useSocketListeners } from "./hooks/useSocketListeners.js";
+import { checkCacheVersion } from "./utils/cacheVersion.js";
 // ── Extracted views ────────────────────────────────────────────────────────
 import { StandingsTab } from "./views/StandingsTab.jsx";
 import { BracketTab } from "./views/BracketTab.jsx";
@@ -106,6 +107,18 @@ if (window.location.search) {
 }
 
 function App() {
+  const [cacheReady, setCacheReady] = useState(false);
+  useLayoutEffect(() => {
+    checkCacheVersion().then((needsReload) => {
+      if (needsReload) {
+        window.location.reload();
+      } else {
+        setCacheReady(true);
+      }
+    });
+  }, []);
+  if (!cacheReady) return null;
+
   const savedSessionRef = React.useRef(loadSavedSession());
   const savedSession = savedSessionRef.current;
   const [teams, setTeams] = useState([]);
