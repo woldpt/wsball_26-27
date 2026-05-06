@@ -958,6 +958,24 @@ export function createCupFlowHelpers(deps: CupFlowDeps) {
       console.error(`[${game.roomCode}] training (cup): error applying bonuses:`, trainErr);
     }
 
+    // Reduzir timers de indisponibilidade para equipas que jogaram esta ronda
+    if (game.cupTeamIds.length > 0) {
+      const placeholders = game.cupTeamIds.map(() => "?").join(", ");
+      await runAll(
+        game.db,
+        `UPDATE players
+         SET
+           injury_until_matchweek             = MAX(0, injury_until_matchweek - 1),
+           suspension_until_matchweek         = MAX(0, suspension_until_matchweek - 1),
+           transfer_cooldown_until_matchweek  = MAX(0, transfer_cooldown_until_matchweek - 1)
+         WHERE team_id IN (${placeholders})`,
+        game.cupTeamIds,
+      );
+      console.log(
+        `[${game.roomCode}] ⏱ Timers reduzidos para ${game.cupTeamIds.length} equipas da Taça`,
+      );
+    }
+
     // Advance calendar
     game.calendarIndex += 1;
     game.currentEvent = SEASON_CALENDAR[game.calendarIndex] ?? null;
