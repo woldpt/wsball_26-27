@@ -77,6 +77,9 @@ export function WelcomeModal({ welcomeModal, me, setWelcomeModal }) {
                 <h2 className="font-black text-2xl text-white tracking-tight leading-tight uppercase">
                   {welcomeModal.teamName}
                 </h2>
+                <p className="text-amber-400 text-sm font-bold mt-2 uppercase tracking-widest">
+                  Treinador: {me.name}
+                </p>
                 {welcomeModal.division != null && (
                   <span
                     className="inline-block mt-2 px-3 py-1 rounded border text-[10px] font-black tracking-widest uppercase"
@@ -226,12 +229,6 @@ export function WelcomeModal({ welcomeModal, me, setWelcomeModal }) {
               >
                 {welcomeModal.isNew ? "Vamos lá! 🚀" : "Continuar 🎯"}
               </button>
-
-              {/* Footer microcopy */}
-              <div className="mt-5 pt-4 border-t border-emerald-900/20 flex justify-between text-[9px] text-zinc-600 font-bold uppercase tracking-widest">
-                <span>{me.name}</span>
-                <span>{me.roomCode}</span>
-              </div>
             </div>
           </motion.div>
         </motion.div>
