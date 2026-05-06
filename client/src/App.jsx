@@ -627,11 +627,11 @@ function App() {
           didFlashGoal = true;
         }
       });
-      // Sound only for matches involving a human coach
-      const hasHuman = players.some(
-        (p) => p.teamId === match.homeTeamId || p.teamId === match.awayTeamId,
-      );
-      if (hasHuman) {
+      // Sound only for the current user's own match
+      const isMyMatch =
+        me?.teamId != null &&
+        (match.homeTeamId === me.teamId || match.awayTeamId === me.teamId);
+      if (isMyMatch) {
         const hasGoal = events.some((e) =>
           ["goal", "penalty_goal", "var_goal_pending"].includes(e.type),
         );
