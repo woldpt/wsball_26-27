@@ -2035,7 +2035,7 @@ function App() {
     ? "action"
     : showHalftimePanel && !isPlayingMatch
       ? "halftime"
-      : showMatchDetail
+      : showMatchDetail && !isPlayingMatch && !showHalftimePanel
         ? "detail"
         : null;
   const panelFixture = showMatchDetail ? matchDetailFixture : myMatch || null;
