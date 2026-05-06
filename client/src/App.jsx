@@ -117,8 +117,16 @@ function App() {
       }
     });
   }, []);
-  const savedSessionRef = React.useRef(loadSavedSession());
-  const savedSession = savedSessionRef.current;
+
+  // Load session only AFTER cache version check — avoids stale session data
+  // if server restarted and cache was cleared during the check window.
+  const [savedSession, setSavedSession] = useState(null);
+  useEffect(() => {
+    if (cacheReady) {
+      setSavedSession(loadSavedSession());
+    }
+  }, [cacheReady]);
+
   const [teams, setTeams] = useState([]);
   const [teamForms, setTeamForms] = useState({});
   const [players, setPlayers] = useState([]);

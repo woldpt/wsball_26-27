@@ -512,16 +512,6 @@ export function useSocketListeners(handlers, refs) {
         return updated;
       });
       if (refs.joinTimerRef.current) clearTimeout(refs.joinTimerRef.current);
-
-      const cacheKey = `cashball_cache_busted_${roomCode}`;
-      if (!sessionStorage.getItem(cacheKey)) {
-        sessionStorage.setItem(cacheKey, "1");
-        window.location.href =
-          window.location.origin +
-          window.location.pathname +
-          "?t=" +
-          Date.now();
-      }
     });
     socket.on("joinError", (msg) => {
       handlers.setJoinError(msg);
