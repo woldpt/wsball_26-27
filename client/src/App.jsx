@@ -117,8 +117,6 @@ function App() {
       }
     });
   }, []);
-  if (!cacheReady) return null;
-
   const savedSessionRef = React.useRef(loadSavedSession());
   const savedSession = savedSessionRef.current;
   const [teams, setTeams] = useState([]);
@@ -451,6 +449,7 @@ function App() {
       injuryCountdownRef,
       goalFlashRef,
       forceGoalFlashRender,
+      joinTimerRef,
       players,
     }
   );
@@ -2087,6 +2086,8 @@ function App() {
   const loanAmount = teamInfo?.loan_amount || 0;
   const loanInterestPerWeek = Math.round(loanAmount * 0.025);
   const currentBudget = teamInfo?.budget || 0;
+
+  if (!cacheReady) return null;
 
   return (
     <div className="min-h-dvh bg-surface text-on-surface font-body tracking-tight">
