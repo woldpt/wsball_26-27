@@ -823,6 +823,19 @@ function getPlayerList(game: ActiveGame): PlayerSession[] {
   return Object.values(game.playersByName).filter((p) => p.socketId !== null);
 }
 
+/**
+ * Emite playerListUpdate + awaitingCoaches de forma atómica.
+ * Usar em vez de emitir os dois eventos separadamente para garantir
+ * que o cliente recebe sempre os dois estados sincronizados.
+ */
+function emitPresence(game: ActiveGame, io: any): void {
+  io.to(game.roomCode).emit("playerListUpdate", getPlayerList(game));
+  const offline = Object.entries(game.playersByName)
+    .filter(([, session]) => !session.socketId)
+    .map(([name]) => name);
+  io.to(game.roomCode).emit("awaitingCoaches", offline);
+}
+
 function closeAllDatabases(): Promise<void> {
   const closes = Object.values(activeGames).map(
     (game) =>
@@ -850,6 +863,7 @@ module.exports = {
   bindSocket,
   unbindSocket,
   getPlayerList,
+  emitPresence,
   activeGames,
   doesGameExist,
   generateUniqueRoomCode,

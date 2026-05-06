@@ -22,6 +22,7 @@ const {
   bindSocket,
   unbindSocket,
   getPlayerList,
+  emitPresence: emitPresenceHelper,
   doesGameExist,
   generateUniqueRoomCode,
   closeAllDatabases,
@@ -293,6 +294,9 @@ const io = new Server(server, {
 const emitAwaitingCoaches = (game: ActiveGame) =>
   emitAwaitingCoachesHelper(game, io);
 
+// Emite playerListUpdate + awaitingCoaches de forma atómica
+const emitPresence = (game: ActiveGame) => emitPresenceHelper(game, io);
+
 const auctionHelpers = createAuctionHelpers({
   io,
   isMatchInProgress,
@@ -371,6 +375,7 @@ const cupFlowHelpers = createCupFlowHelpers({
   simulatePenaltyShootout,
   pickRefereeSummary,
   getPlayerList,
+  emitPresence,
   applyTrainingBonuses,
 });
 
@@ -395,6 +400,7 @@ const handleDeclineJobOffer = coachDismissalHelpers.handleDeclineJobOffer;
 const weeklyFlowHelpers = createWeeklyFlowHelpers({
   io,
   getPlayerList,
+  emitPresence,
   generateFixturesForDivision,
   finalizeAuction,
   simulateMatchSegment,
@@ -447,6 +453,7 @@ io.on("connection", (socket) => {
     emitCurrentPhaseToSocket,
     ensurePhaseTimeout,
     emitAwaitingCoaches,
+    emitPresence,
     checkAllReady,
     runAll,
     runGet,
@@ -494,6 +501,7 @@ io.on("connection", (socket) => {
     unbindSocket,
     checkAllReady,
     emitAwaitingCoaches,
+    emitPresence,
     handleAcceptJobOffer,
     handleDeclineJobOffer,
     emitGlobalPlayerUpdate,

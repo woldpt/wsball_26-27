@@ -44,6 +44,7 @@ interface SessionHandlerDeps {
   emitCurrentPhaseToSocket: (game: ActiveGame, socket: any) => void;
   ensurePhaseTimeout: (game: ActiveGame) => void;
   emitAwaitingCoaches: (game: ActiveGame) => void;
+  emitPresence: (game: ActiveGame) => void;
   checkAllReady: (game: ActiveGame) => void | Promise<void>;
   runAll: RunAll;
   runGet: RunGet;
@@ -112,6 +113,7 @@ export function registerSessionSocketHandlers(
     emitCurrentPhaseToSocket,
     ensurePhaseTimeout,
     emitAwaitingCoaches,
+    emitPresence,
     checkAllReady,
     runAll,
     runGet,
@@ -230,8 +232,7 @@ export function registerSessionSocketHandlers(
     emitCurrentPhaseToSocket(game, socket);
     ensurePhaseTimeout(game);
 
-    io.to(roomCode).emit("playerListUpdate", getPlayerList(game));
-    emitAwaitingCoaches(game);
+    emitPresence(game);
     emitGlobalPlayerUpdate?.();
 
     // If halftime is already waiting and all coaches are now ready (e.g. safety
@@ -485,10 +486,7 @@ export function registerSessionSocketHandlers(
                     lastHalfTimePayload: null,
                   });
 
-                  io.to(finalRoomCode).emit(
-                    "playerListUpdate",
-                    getPlayerList(game),
-                  );
+                  emitPresence(game);
                   emitGlobalPlayerUpdate?.();
 
                   game.db.all(

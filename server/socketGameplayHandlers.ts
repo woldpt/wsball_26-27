@@ -12,6 +12,7 @@ interface GameplayHandlerDeps {
   unbindSocket: (game: ActiveGame, socketId: string) => void;
   checkAllReady: (game: ActiveGame) => void | Promise<void>;
   emitAwaitingCoaches: (game: ActiveGame) => void;
+  emitPresence: (game: ActiveGame) => void;
   handleAcceptJobOffer: (game: ActiveGame, coachName: string) => Promise<void>;
   handleDeclineJobOffer: (game: ActiveGame, coachName: string) => void;
   emitGlobalPlayerUpdate?: () => void;
@@ -29,6 +30,7 @@ export function registerGameplaySocketHandlers(
     unbindSocket,
     checkAllReady,
     emitAwaitingCoaches,
+    emitPresence,
     handleAcceptJobOffer,
     handleDeclineJobOffer,
     emitGlobalPlayerUpdate,
@@ -66,7 +68,7 @@ export function registerGameplaySocketHandlers(
     console.log(
       `[${game.roomCode}] 👤 ${playerState.name} setReady=${ready} | phase=${game.gamePhase}`,
     );
-    io.to(game.roomCode).emit("playerListUpdate", getPlayerList(game));
+    emitPresence(game);
     checkAllReady(game);
   });
 
@@ -185,9 +187,8 @@ export function registerGameplaySocketHandlers(
     }
 
     unbindSocket(game, socket.id);
-    io.to(game.roomCode).emit("playerListUpdate", getPlayerList(game));
+    emitPresence(game);
     emitGlobalPlayerUpdate?.();
-    emitAwaitingCoaches(game);
     // Let remaining ready coaches proceed if all are now ready.
     // Skip in lobby: a disconnect must never auto-start the match.
     if (game.gamePhase !== "lobby") {

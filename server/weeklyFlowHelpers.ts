@@ -12,6 +12,7 @@ import { withJuniorGRs } from "./game/engine";
 interface WeeklyFlowDeps {
   io: any;
   getPlayerList: (game: ActiveGame) => PlayerSession[];
+  emitPresence: (game: ActiveGame) => void;
   generateFixturesForDivision: (
     db: any,
     division: number,
@@ -65,6 +66,7 @@ export function createWeeklyFlowHelpers(deps: WeeklyFlowDeps) {
   const {
     io,
     getPlayerList,
+    emitPresence,
     generateFixturesForDivision,
     finalizeAuction,
     simulateMatchSegment,
@@ -414,7 +416,7 @@ export function createWeeklyFlowHelpers(deps: WeeklyFlowDeps) {
       Object.values(game.playersByName).forEach((p) => {
         p.ready = false;
       });
-      io.to(game.roomCode).emit("playerListUpdate", getPlayerList(game));
+      emitPresence(game);
       saveGameState(game);
 
       // Safety timeout: auto-advance halftime if coaches don't respond within 120s.
@@ -688,12 +690,12 @@ export function createWeeklyFlowHelpers(deps: WeeklyFlowDeps) {
                               withJuniorGRs(squad, player.teamId as number, game.matchweek || 1),
                             );
                           });
-                          io.to(game.roomCode).emit("playerListUpdate", getPlayerList(game));
+                          emitPresence(game);
                           resolveOuter();
                         };
 
                         if (activeTeamIds.length === 0) {
-                          io.to(game.roomCode).emit("playerListUpdate", getPlayerList(game));
+                          emitPresence(game);
                           resolveOuter();
                           return;
                         }
@@ -885,7 +887,7 @@ export function createWeeklyFlowHelpers(deps: WeeklyFlowDeps) {
             Object.values(game.playersByName).forEach((p) => {
               p.ready = false;
             });
-            io.to(game.roomCode).emit("playerListUpdate", getPlayerList(game));
+            emitPresence(game);
             io.to(game.roomCode).emit(
               "systemMessage",
               "⚠ Erro ao gerar jogos. Tenta novamente.",

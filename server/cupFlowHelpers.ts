@@ -36,6 +36,7 @@ interface CupFlowDeps {
     matchweek: number,
   ) => { name: string; balance: number; favorsTeamA: boolean };
   getPlayerList: (game: ActiveGame) => PlayerSession[];
+  emitPresence: (game: ActiveGame) => void;
   applyTrainingBonuses: (
     game: ActiveGame,
     fixtures: any[],
@@ -58,6 +59,7 @@ export function createCupFlowHelpers(deps: CupFlowDeps) {
     simulatePenaltyShootout,
     pickRefereeSummary,
     getPlayerList,
+    emitPresence,
     applyTrainingBonuses,
   } = deps;
 
@@ -609,7 +611,7 @@ export function createCupFlowHelpers(deps: CupFlowDeps) {
           })),
         };
         game.lastHalftimePayload = etGatePayload;
-        io.to(game.roomCode).emit("playerListUpdate", getPlayerList(game));
+        emitPresence(game);
         io.to(game.roomCode).emit("cupETHalfTime", etGatePayload);
 
         await new Promise<void>((resolve) => {
@@ -628,7 +630,7 @@ export function createCupFlowHelpers(deps: CupFlowDeps) {
         console.log(
           `[${game.roomCode}] ⏩ ET gate resolved — starting extra time`,
         );
-        io.to(game.roomCode).emit("playerListUpdate", getPlayerList(game));
+        emitPresence(game);
 
         // Apply ET substitutions and re-read tactics changed during the pause screen
         const lineupSnapshotET = (squad: any[]) =>
@@ -1017,7 +1019,7 @@ export function createCupFlowHelpers(deps: CupFlowDeps) {
         console.error(`[${game.roomCode}] Season end error (from cup):`, seErr);
       }
     } else {
-      io.to(game.roomCode).emit("playerListUpdate", getPlayerList(game));
+      emitPresence(game);
     }
   }
 
