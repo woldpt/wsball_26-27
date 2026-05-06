@@ -433,9 +433,11 @@ async function applyPenaltyEvent({
   game: ActiveGame;
 }) {
   const teamId = teamSide === "home" ? fixture.homeTeamId : fixture.awayTeamId;
-  const takerCandidates = squad.filter((p) =>
+  const filteredCandidates = squad.filter((p) =>
     isPlayerAvailable(p, currentMatchweek),
   );
+  // Fallback: se nenhum jogador disponível (todos expulsos/lesionados), usar squad completo
+  const takerCandidates = filteredCandidates.length > 0 ? filteredCandidates : squad;
   const fallback = () => selectPenaltyTaker(takerCandidates)?.id || null;
   const result = await waitForMatchAction({
     game,
@@ -994,6 +996,10 @@ async function simulateMatchSegment(
 
     const isCupExtraTime =
       minute >= 91 && context.game?.currentEvent?.type === "cup";
+    // No último minuto regulamentar da liga (min 90+), não disparar eventos bloqueantes
+    // para evitar que a janela de acção apareça após o apito final
+    const isLastLeagueMinute =
+      minute >= 90 && context.game?.currentEvent?.type !== "cup";
     const penaltyChance = minute < 90 || isCupExtraTime ? 0.002 : 0;
     if (Math.random() < penaltyChance) {
       const attackingSide = Math.random() < 0.5 ? "home" : "away";
@@ -1130,7 +1136,7 @@ async function simulateMatchSegment(
             : fixture._weather === "chuva"
               ? 1.2
               : 1.0;
-    if (injuryChance < 0.003 * weatherInjuryMult) {
+    if (!isLastLeagueMinute && injuryChance < 0.003 * weatherInjuryMult) {
       const isHomeInjury = Math.random() > 0.5;
       const squad = isHomeInjury ? home.squad : away.squad;
       const side = isHomeInjury ? "home" : "away";
@@ -1159,8 +1165,8 @@ async function simulateMatchSegment(
       }
     }
 
-    // User substitutions
-    if (game.pendingSubstitutions && game.pendingSubstitutions.size > 0) {
+    // User substitutions (ignorar no último minuto regulamentar da liga)
+    if (!isLastLeagueMinute && game.pendingSubstitutions && game.pendingSubstitutions.size > 0) {
       const teamsToSub = [fixture.homeTeamId, fixture.awayTeamId].filter((id) =>
         game.pendingSubstitutions.has(id),
       );

@@ -871,6 +871,9 @@ export function useSocketListeners(handlers, refs) {
     });
 
     socket.on("matchActionRequired", (data) => {
+      // Ignorar se o jogo já terminou (evita janela de acção pós-apito final)
+      if (!refs.isPlayingMatchRef.current) return;
+
       handlers.setIsMatchActionPending(true);
 
       const isTargetCoach = isSameTeamId(data?.teamId, refs.meRef.current?.teamId);
