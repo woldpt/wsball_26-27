@@ -177,17 +177,16 @@ export function createContractHelpers(deps: ContractDeps) {
             );
           });
         } else {
-          const div5Team = await runGet(
-            game.db,
-            "SELECT id FROM teams WHERE division = 5 ORDER BY RANDOM() LIMIT 1",
-            [],
-          );
-          const fallbackTeamId = div5Team?.id ?? player.team_id;
+          // Treinador offline e sem orçamento — leiloar jogador em vez de enviar para div 5
           const newWageFallback = Math.max(Math.round((player.skill || 0) * 40), 500);
+          const auctionPrice = Math.max(
+            Math.round(effectiveValue(player) * 0.65),
+            newWageFallback * 12,
+          );
           await new Promise((resolve) => {
             game.db.run(
-              "UPDATE players SET team_id = ?, wage = ?, contract_until_matchweek = ?, transfer_status = 'none', transfer_price = 0, contract_request_pending = 0 WHERE id = ?",
-              [fallbackTeamId, newWageFallback, getSeasonEndMatchweek(currentMw), player.id],
+              "UPDATE players SET transfer_status = 'auction', transfer_price = ?, contract_until_matchweek = 0, contract_request_pending = 0 WHERE id = ?",
+              [auctionPrice, player.id],
               resolve,
             );
           });
