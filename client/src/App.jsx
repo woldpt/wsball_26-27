@@ -127,6 +127,9 @@ function App() {
     setSavedSession(session);
     if (session) {
       setMe({ name: session.name, password: session.password, roomCode: session.roomCode });
+      setName(session.name);
+      setPassword(session.password);
+      setRoomCode(session.roomCode);
       setJoining(true);
     }
   }, [cacheReady]);

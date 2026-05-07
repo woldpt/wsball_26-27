@@ -1034,7 +1034,7 @@ export function MatchPanel({
           onClick={mode === "detail" ? onClose : undefined}
         >
           <motion.div
-            className="w-full sm:max-w-2xl bg-surface-container border border-outline-variant/30 rounded-t-2xl sm:rounded-lg shadow-2xl flex flex-col h-[95vh] sm:max-h-[92vh] mt-[3.5rem]"
+            className="w-full sm:max-w-2xl bg-surface-container border border-outline-variant/30 rounded-t-2xl sm:rounded-lg shadow-2xl flex flex-col max-h-[95vh] sm:max-h-[92vh] mt-[3.5rem]"
             initial={{ y: 40, opacity: 0.8 }}
             animate={{ y: 0, opacity: 1 }}
             exit={{ y: 40, opacity: 0 }}
