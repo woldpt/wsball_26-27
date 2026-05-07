@@ -11,6 +11,7 @@ import {
 } from "../constants/index.js";
 import { generateLeagueFixtures } from "../utils/fixtures.js";
 import { getPlayerStat } from "../utils/playerHelpers.js";
+import { formatCurrency } from "../utils/formatters.js";
 import { isSameTeamId } from "../utils/teamHelpers.js";
 import { useState } from "react";
 
@@ -64,6 +65,8 @@ export function TeamSquadView({
   const selectedDivTeams = teams
     .filter((t) => t.division === selectedTeamDivision)
     .sort((a, b) => a.id - b.id);
+
+  const seasonYear = calendarData?.year ?? new Date().getFullYear();
 
   const getTeamFixtures = () => {
     const curIdx = calendarData?.calendarIndex ?? 0;
@@ -149,33 +152,106 @@ export function TeamSquadView({
     <div className="min-h-screen w-full bg-surface text-on-surface flex flex-col">
       {/* Header */}
       <div
-        className="px-6 py-6 border-b border-zinc-800 flex flex-col gap-4"
-        style={{ background: selectedTeam.color_primary || "#18181b" }}
+        className="relative px-6 py-8 border-b border-zinc-800 overflow-hidden"
+        style={{
+          background: selectedTeam.color_primary || "#18181b",
+        }}
       >
-        <div>
-          <p
-            className="text-xs uppercase tracking-widest font-black"
-            style={{ color: selectedTeam.color_secondary || "#ffffff" }}
+        {/* Ambient glow blobs */}
+        <div
+          className="pointer-events-none absolute -top-16 -left-16 w-80 h-80 rounded-full blur-[100px] opacity-15"
+          style={{ background: selectedTeam.color_primary || "#2d6a4f" }}
+        />
+        <div
+          className="pointer-events-none absolute top-24 -right-16 w-64 h-64 rounded-full blur-[80px] opacity-10"
+          style={{ background: selectedTeam.color_secondary || "#e9c349" }}
+        />
+
+        {/* Gradient overlay */}
+        <div
+          className="pointer-events-none absolute inset-0"
+          style={{
+            background: selectedTeam.color_primary
+              ? `linear-gradient(to right, ${selectedTeam.color_primary}40, transparent 70%)`
+              : "linear-gradient(to right, #2d6a4f40, transparent 70%)",
+          }}
+        />
+
+        {/* Hero section */}
+        <div className="relative flex flex-col sm:flex-row gap-5 items-start sm:items-center">
+          {/* Team badge */}
+          <div
+            className="w-20 h-20 rounded-xl flex items-center justify-center text-4xl font-black shrink-0 shadow-lg border border-white/10"
+            style={{
+              background: selectedTeam.color_primary || "#201f1f",
+              color: selectedTeam.color_secondary || "#fff",
+            }}
           >
-            {activeTab === "squad" ? "Plantel" : "Calendário"}
-          </p>
-          <h3
-            className="text-3xl md:text-4xl font-black"
-            style={{ color: selectedTeam.color_secondary || "#ffffff" }}
-          >
-            {selectedTeam.name}
-          </h3>
-          <p
-            className="text-sm font-bold"
-            style={{ color: selectedTeam.color_secondary || "#ffffff" }}
-          >
-            {DIVISION_NAMES[selectedTeam.division] ||
-              `Divisão ${selectedTeam.division}`}
-          </p>
+            {selectedTeam.name?.[0] || "?"}
+          </div>
+
+          {/* Team info */}
+          <div className="flex-1 min-w-0">
+            <p
+              className="text-xs uppercase tracking-widest font-black mb-1"
+              style={{ color: selectedTeam.color_secondary || "#fff" }}
+            >
+              {DIVISION_NAMES[selectedTeam.division] ||
+                `Divisão ${selectedTeam.division}`}
+            </p>
+            <h1
+              className="font-headline text-3xl md:text-4xl font-black tracking-tighter leading-none mb-1 truncate"
+              style={{ color: selectedTeam.color_secondary || "#ffffff" }}
+            >
+              {selectedTeam.name}
+            </h1>
+            <p className="text-sm text-on-surface-variant/80 font-bold">
+              Época {seasonYear}
+            </p>
+          </div>
+
+          {/* Manager */}
+          <div className="shrink-0 text-right hidden sm:block">
+            <p className="text-[10px] uppercase tracking-widest text-on-surface-variant/80 font-black mb-1">
+              Manager
+            </p>
+            <p className="font-headline font-black text-on-surface text-lg tracking-tight">
+              {me?.name || "—" }
+            </p>
+          </div>
         </div>
 
+        {/* Budget widget (only for own team) */}
+        {isOwnTeam && (
+          <div className="relative mt-5">
+            <div
+              className="bg-surface-container-high rounded-lg p-4 flex flex-col justify-between border-t-2"
+              style={{
+                borderColor: selectedTeam.color_primary || "#2d6a4f",
+              }}
+            >
+              <div className="flex justify-between items-start mb-2">
+                <div>
+                  <p className="text-[10px] uppercase tracking-widest text-on-surface-variant font-black mb-1.5">
+                    Saldo Disponível
+                  </p>
+                  <p
+                    className={`font-headline text-2xl font-black ${
+                      myBudget >= 0
+                        ? "text-on-surface"
+                        : "text-error"
+                    }`}
+                  >
+                    {formatCurrency(myBudget)}
+                  </p>
+                </div>
+              </div>
+            </div>
+          </div>
+        )}
+
         {/* Tab Navigation */}
-        <div className="flex items-center gap-1 bg-surface-container-high rounded-lg p-2">
+        <div className="relative mt-5 flex items-center gap-1 bg-surface-container-high rounded-lg p-2">
           <button
             onClick={() => setActiveTab("squad")}
             className={`px-4 py-2 rounded text-sm font-black uppercase tracking-wide transition-all ${
