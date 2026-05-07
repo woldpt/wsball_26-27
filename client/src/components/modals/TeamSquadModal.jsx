@@ -273,7 +273,7 @@ export function TeamSquadModal({
                       drew,
                       fixture,
                     }) => {
-                      const matchweek = fixture.result?.matchweek ?? 0;
+                      const matchweek = fixture.matchweek ?? fixture.result?.matchweek ?? 0;
                       const status = matchweek <= currentMatchweek ? "done" : "future";
                       const isCurrent = matchweek === currentMatchweek;
                       const isDone = status === "done";
