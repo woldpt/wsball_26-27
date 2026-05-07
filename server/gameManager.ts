@@ -339,6 +339,9 @@ function getGame(roomCode: string, onReady?: OnReady): ActiveGame | null {
     cupHalftimePayload: null,
     cupDrawSeenBy: new Set<string>(),
 
+    // Room owner
+    roomCreator: "",
+
     // Retained fields
     lockedCoaches: new Set<string>(),
     globalMarket: [],
@@ -550,6 +553,11 @@ function getGame(roomCode: string, onReady?: OnReady): ActiveGame | null {
               // Restoring from DB could include coaches who are offline after a restart,
               // which would permanently block checkAllReady until they reconnect.
 
+              // Room creator (persisted so Admin badge survives restarts)
+              if (st["roomCreator"]) {
+                game.roomCreator = String(st["roomCreator"]);
+              }
+
               // Coach dismissal persistence (transient: pendingJobOffers is never persisted)
               game.pendingJobOffers = {};
               if (st["negativeBudgetStreak"]) {
@@ -706,6 +714,7 @@ function saveGameState(game: ActiveGame): void {
   );
   upsert("lockedCoaches", JSON.stringify([...game.lockedCoaches]));
   upsert("roomName", (game as any).roomName || "");
+  upsert("roomCreator", game.roomCreator || "");
   upsert(
     "negativeBudgetStreak",
     JSON.stringify(game.negativeBudgetStreak || {}),

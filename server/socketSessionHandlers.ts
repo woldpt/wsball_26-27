@@ -211,6 +211,7 @@ export function registerSessionSocketHandlers(
         tactic: game.playersByName[name]?.tactic || null,
         lockedCoaches: [...game.lockedCoaches],
         lastHalfTimePayload: null,
+        roomCreator: game.roomCreator || "",
       });
     }
 
@@ -239,6 +240,7 @@ export function registerSessionSocketHandlers(
           game.gamePhase === "match_halftime"
             ? game.lastHalftimePayload || null
             : null,
+        roomCreator: game.roomCreator || "",
       });
 
       emitCurrentPhaseToSocket(game, socket);
@@ -412,6 +414,12 @@ export function registerSessionSocketHandlers(
       }
 
       const doJoinContinue = () => {
+
+      // Definir o criador da sala quando é criada de raiz
+      if (joinMode === "new-game" && !game.roomCreator) {
+        game.roomCreator = trimmedName;
+        saveGameState(game);
+      }
 
       recordRoomAccess(trimmedName, finalRoomCode);
 

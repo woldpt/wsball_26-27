@@ -65,6 +65,9 @@ export interface ActiveGame {
   cupHalftimePayload: unknown | null;
   cupDrawSeenBy: Set<string>; // coachNames que já viram o sorteio do round actual
 
+  // ── Room owner ──
+  roomCreator: string; // nome do coach que criou a sala (badge Admin + poder de kick)
+
   // ── Retained fields ──
   lockedCoaches: Set<string>;
   globalMarket: any[];

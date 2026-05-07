@@ -931,7 +931,7 @@ export function MatchPanel({
 }) {
   const shouldReduceMotion = useReducedMotion();
   const getDefaultTab = (m) =>
-    m === "halftime" || m === "action" ? "intervencao" : "lineup";
+    m === "halftime" || m === "action" ? "intervencao" : "adversario";
 
   const [activeTab, setActiveTab] = useState(() => getDefaultTab(mode));
 
@@ -980,7 +980,8 @@ export function MatchPanel({
             { id: "jogo", label: "Jogo" },
           ]
         : [
-            { id: "lineup", label: "Escalações" },
+            { id: "adversario", label: "Casa" },
+            { id: "lineup", label: "Fora" },
             { id: "jogo", label: "Jogo" },
           ];
 
@@ -1206,10 +1207,17 @@ export function MatchPanel({
                       teams={teams}
                     />
                   )}
-                  {effectiveTab === "lineup" && mode === "detail" && (
-                    <TabLineup
+                  {effectiveTab === "adversario" && mode === "detail" && (
+                    <TabAdversario
                       fixture={fixture}
-                      liveMinute={liveMinute}
+                      myTeamId={fixture?.awayTeamId}
+                      teams={teams}
+                    />
+                  )}
+                  {effectiveTab === "lineup" && mode === "detail" && (
+                    <TabAdversario
+                      fixture={fixture}
+                      myTeamId={fixture?.homeTeamId}
                       teams={teams}
                     />
                   )}
@@ -1244,16 +1252,6 @@ export function MatchPanel({
                           : "▶ INICIAR 2ª PARTE"}
                 </button>
               </>
-            )}
-            {mode === "detail" && (
-              <div className="shrink-0 px-4 py-3 border-t border-zinc-800">
-                <button
-                  onClick={onClose}
-                  className="w-full py-2.5 rounded-xl text-sm font-black uppercase tracking-widest bg-zinc-800 hover:bg-zinc-700 text-zinc-200 transition-colors"
-                >
-                  ◀ Voltar à partida
-                </button>
-              </div>
             )}
           </motion.div>
         </motion.div>
