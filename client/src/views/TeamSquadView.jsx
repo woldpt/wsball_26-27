@@ -1,5 +1,5 @@
-import { AggBadge } from "../shared/AggBadge.jsx";
-import { PlayerLink } from "../shared/PlayerLink.jsx";
+import { AggBadge } from "../../shared/AggBadge.jsx";
+import { PlayerLink } from "../../shared/PlayerLink.jsx";
 import {
   FLAG_TO_COUNTRY,
   DIVISION_NAMES,
