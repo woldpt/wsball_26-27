@@ -16,8 +16,11 @@ export function generateLeagueFixtures(seedIds, matchweek) {
   for (let i = 0; i < Math.floor(n / 2); i++) {
     const a = allIds[i];
     const b = allIds[n - 1 - i];
-    const aIsHome = (i + round) % 2 === 0;
-    if (aIsHome !== isSecondLeg) {
+    // Padrão C/F alternado: cada equipa tem alternância perfeita
+    const teamIndexInSeed = seedIds.indexOf(a);
+    const isSecondLegMatchweek = isSecondLeg ? 1 : 0;
+    const aIsHome = (teamIndexInSeed + round + isSecondLegMatchweek) % 2 === 0;
+    if (aIsHome) {
       fixtures.push({ homeTeamId: a, awayTeamId: b });
     } else {
       fixtures.push({ homeTeamId: b, awayTeamId: a });

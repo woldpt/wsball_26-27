@@ -116,20 +116,14 @@ async function generateFixturesForDivision(
   matchweek: number,
   seeds: number[],
 ): Promise<MatchFixture[]> {
-  // Se não há seeds, buscar equipas da DB e embaralhar (primeira época)
+  // Se não há seeds, buscar equipas da DB ordenadas (sem embaralhar)
   let seedIds = seeds.length > 0 ? seeds : await new Promise<number[]>((resolve) => {
     db.all(
       "SELECT id FROM teams WHERE division = ? ORDER BY id",
       [division],
       (err: any, rows: Array<{ id: number }>) => {
         if (err || !rows || rows.length < 2) return resolve([]);
-        const ids = rows.map((r) => r.id);
-        // Fisher-Yates shuffle
-        for (let i = ids.length - 1; i > 0; i--) {
-          const j = Math.floor(Math.random() * (i + 1));
-          [ids[i], ids[j]] = [ids[j], ids[i]];
-        }
-        resolve(ids);
+        resolve(rows.map((r) => r.id));
       },
     );
   });
@@ -157,12 +151,14 @@ async function generateFixturesForDivision(
     const a = allIds[i];
     const b = allIds[n - 1 - i];
 
-    // Padrão C/F: (i + round) par → a em casa; ímpar → b em casa
-    // Segunda volta: inverter
+    // Padrão C/F alternado: cada equipa tem alternância perfeita
     let homeId: number;
     let awayId: number;
-    const aIsHome = (i + round) % 2 === 0;
-    if (aIsHome !== isSecondLeg) {
+    // Encontrar posição da equipa no seeds original
+    const teamIndexInSeed = seedIds.indexOf(a);
+    const isSecondLegMatchweek = isSecondLeg ? 1 : 0;
+    const aIsHome = (teamIndexInSeed + round + isSecondLegMatchweek) % 2 === 0;
+    if (aIsHome) {
       homeId = a;
       awayId = b;
     } else {

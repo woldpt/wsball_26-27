@@ -103,12 +103,7 @@ export function createWeeklyFlowHelpers(deps: WeeklyFlowDeps) {
             [div],
             (err: any, rows: Array<{ id: number }>) => {
               if (err || !rows || rows.length < 2) return resolve([]);
-              const arr = rows.map((r) => r.id);
-              for (let i = arr.length - 1; i > 0; i--) {
-                const j = Math.floor(Math.random() * (i + 1));
-                [arr[i], arr[j]] = [arr[j], arr[i]];
-              }
-              resolve(arr);
+              resolve(rows.map((r) => r.id));
             },
           );
         });

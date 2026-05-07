@@ -1,52 +1,36 @@
 # CashBall 26/27 — Agent Instructions
 
-## Quick Start
-
-```bash
-# Full stack
-docker compose up --build
-
-# Dev (two terminals)
-cd server && npm run dev
-cd client && npm run dev
-```
-
-## Commands
-
+## Essential Commands
 | Action | Command |
 |--------|---------|
-| Backend dev | `cd server && npm run dev` |
-| Backend build + start | `cd server && npm run build && npm start` |
-| Backend typecheck | `cd server && npm run typecheck` |
-| Seed DB (mock) | `cd server && npm run seed` |
-| Seed DB (real) | `cd server && npm run seed:real` |
-| Frontend dev | `cd client && npm run dev` |
-| Frontend lint | `cd client && npm run lint` |
-| JSDoc check | `cd client && npm run check:types` |
-| Socket.io audit | `cd server && npm run audit:socketio` |
-| Game state audit | `cd server && npm run audit:gamestate <ROOM_CODE>` |
+| Backend Dev | `cd server && npm run dev` |
+| Backend Typecheck | `cd server && npm run typecheck` |
+| Backend Seed | `cd server && npm run seed` (real: `seed:real`) |
+| Frontend Dev | `cd client && npm run dev` |
+| Frontend Typecheck | `cd client && npm run check:types` |
+| Audit Socket.io | `cd server && npm run audit:socketio` |
+| Audit Game State | `cd server && npm run audit:gamestate <ROOM_CODE>` |
+| Full Stack | `docker compose up --build` |
 
-## Architecture
+## Architecture Pitfalls
+- **Frontend JS / Backend TS:** Client is **pure JavaScript**. Use JSDoc for types. Never add TS to `client/`.
+- **`game/engine.ts` Quirk:** Uses **CommonJS** (`module.exports`). Other `game/` files use ESM. `engine.ts` re-exports them.
+- **Socket Listeners:** Must be in `client/src/hooks/useSocketListeners.js`. **Crucial:** New listeners require a corresponding setter in the `handlers` object in `App.jsx` or they will be silent no-ops.
+- **Sidebar Offsets:** Overlays/modals must use `lg:left-14` or `lg:left-64` to track `sidebarCollapsed` state.
+- **Factory Pattern:** Use `createXxxHelpers(deps)`. Never instantiate helpers directly.
+- **Portuguese (PT):** All UI text, messages, and code comments must be in Portuguese (PT).
 
-- **Backend:** Express 5 + Socket.io 4 in TypeScript (`server/`, `tsconfig.json` has `strict: false`)
-- **Frontend:** React 19 + Vite 8 in JavaScript (`client/src/`, no TypeScript)
-- **DB:** SQLite at `server/db/base.db` (per room), `accounts.db`, `global_chat.db`
-- **Factory pattern:** All helpers use `createXxxHelpers(deps)`, never instantiate directly
-- **Socket handlers:** 7 files (`socket*Handlers.ts`) in `io.on("connection")`
+## State & Data Flow
+- **Game Truth:** `game.calendarIndex` is the source of truth for the season progress, **not** `game.matchweek`.
+- **State Machine:** `gamePhase` (lobby → match_first_half → match_halftime → match_second_half → match_finalizing). Transit phases reset to `lobby` on server restart.
+- **Memory vs DB:** `activeGames` (in-memory) is the primary state. DB sync is selective. `game.lockedCoaches` is **never** persisted to avoid permanent locks after crashes.
+- **Synchronization:** Use `phaseToken` (UUID) to validate ACKs. A new token invalidates previous ACKs.
+- ** la Cache Versioning:** Server `/api/cache-version` triggers a full `localStorage` wipe on the client if versions mismatch (prevents stale data after restart).
 
-## Critical Conventions
-
-- **Frontend is JS.** Use JSDoc for type hints.
-- **Socket listeners in** `client/src/hooks/useSocketListeners.js`. Add new handlers to the `handlers` object from `App.jsx` — missing setters cause silent no-ops.
-- **Tabs in** `client/src/views/` (9 files). Only `BracketTab` accesses socket directly. `live` and `tactic` inline in `App.jsx`.
-- **`game/engine.ts`** uses CommonJS (`module.exports`). Other `game/` files use ES modules. Re-export via `engine.ts`.
-- **All narration** in `game/commentary.ts`. Never duplicate phrases.
-- **Portuguese (PT)** for UI text, messages, and code comments.
-- **`auth.js` and `adminRoutes.js`** are intentionally JavaScript.
-- **Sidebar overlays** (modals, auction blinds) must use `lg:left-14` / `lg:left-64` offset to track `sidebarCollapsed` state.
-
-## Files to Read First
-
-1. `CLAUDE.md` — full project guide
-2. `README.md` — game mechanics and rules
-3. `SKILLS.md` — auditing tools
+## Key Files
+- `server/index.ts`: Entry point, Socket.io setup.
+- `server/gameManager.ts`: Room and state management.
+- `server/game/engine.ts`: Match simulation logic.
+- `client/src/App.jsx`: Global state and core UI logic.
+- `client/src/hooks/useSocketListeners.js`: Centralized socket event handling.
+- `server/game/commentary.ts`: All simulation narration (never duplicate phrases).

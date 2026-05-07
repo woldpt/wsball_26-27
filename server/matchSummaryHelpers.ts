@@ -46,12 +46,7 @@ export function createMatchSummaryHelpers(deps: MatchSummaryDeps) {
           [div],
         );
         if (rows.length < 2) continue;
-        const arr = rows.map((r) => r.id);
-        for (let i = arr.length - 1; i > 0; i--) {
-          const j = Math.floor(Math.random() * (i + 1));
-          [arr[i], arr[j]] = [arr[j], arr[i]];
-        }
-        game.fixtureSeeds[div] = arr;
+        game.fixtureSeeds[div] = rows.map((r) => r.id);
         changed = true;
       }
     }
