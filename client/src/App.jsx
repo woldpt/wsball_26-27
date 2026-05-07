@@ -3184,19 +3184,7 @@ function App() {
                                         : `${DIVISION_NAMES[hInfo?.division] || ""} · Jornada ${matchResults.matchweek}`}
                                     </span>
                                   </div>
-                                  {isPlayingMatch && !isMatchActionPending && (
-                                    <button
-                                      onClick={() =>
-                                        socket.emit("request_substitution")
-                                      }
-                                      className="text-[10px] font-black uppercase tracking-widest bg-surface-container-high hover:bg-surface-bright text-zinc-300 px-3 py-1.5 rounded-sm border border-outline-variant/20 transition-colors flex items-center gap-1.5"
-                                    >
-                                      <span className="material-symbols-outlined text-[14px]">
-                                        pause
-                                      </span>
-                                       Pausa / Sub
-                                    </button>
-                                  )}
+
                                 </div>
 
                                 {/* Banner de pausa de substituição — visível aos outros treinadores */}
@@ -3374,8 +3362,12 @@ function App() {
                                     return (
                                       <button
                                         onClick={() => {
-                                          setMatchDetailFixture(myMatch);
-                                          setShowMatchDetail(true);
+                                          if (isPlayingMatch && !isMatchActionPending) {
+                                            socket.emit("request_substitution");
+                                          } else {
+                                            setMatchDetailFixture(myMatch);
+                                            setShowMatchDetail(true);
+                                          }
                                         }}
                                         className="flex flex-col items-center gap-1 shrink-0 cursor-pointer"
                                       >

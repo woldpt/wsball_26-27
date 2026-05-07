@@ -175,62 +175,75 @@ export function registerSessionSocketHandlers(
     );
     socket.emit("marketUpdate", game.globalMarket);
 
-    // Smooth reconnect: send current match state to clients rejoining mid-match
-    if (
-      (game.gamePhase === "match_first_half" ||
-        game.gamePhase === "match_second_half") &&
-      game.currentFixtures?.length > 0
-    ) {
-      const entry = game.currentEvent as any;
-      // Reconnects must always receive replay payload; if minute is not persisted yet, use phase start.
-      const fallbackMinute = game.gamePhase === "match_first_half" ? 1 : 46;
-      socket.emit("matchReplay", {
-        minute: game.liveMinute ?? fallbackMinute,
+    // Quando o servidor reinicia a meio de um jogo, reset completo ao lobby para
+    // que a simulação recomece do início quando o 1º coach se reconecta.
+    const matchPhases: GamePhase[] = [
+      "match_first_half",
+      "match_second_half",
+      "match_halftime",
+      "match_extra_time",
+      "match_et_gate",
+      "match_finalizing",
+    ];
+    const didResetMatch = matchPhases.includes(game.gamePhase as GamePhase);
+    if (didResetMatch) {
+      console.log(
+        `[${roomCode}] 🔄 Jogo interrompido (fase: ${game.gamePhase}) — a resetar ao lobby para nova simulação`,
+      );
+      game.gamePhase = "lobby";
+      game.liveMinute = null;
+      game.currentFixtures = [];
+      game.lastHalftimePayload = null;
+      game.cupHalftimePayload = null;
+      saveGameState(game);
+
+      // Notificar toda a sala para que todos os clientes voltem ao ecrã de táticas
+      io.to(roomCode).emit("gameState", {
+        gamePhase: "lobby",
+        calendarIndex: game.calendarIndex,
+        currentEvent: game.currentEvent,
+        allMatchResults: game.allMatchResults || {},
         matchweek: game.matchweek,
-        isCup: entry?.type === "cup",
-        cupRoundName: entry?.roundName || null,
-        fixtures: game.currentFixtures.map((f: any) => ({
-          homeTeamId: f.homeTeamId,
-          awayTeamId: f.awayTeamId,
-          homeTeam: f.homeTeam || null,
-          awayTeam: f.awayTeam || null,
-          finalHomeGoals: f.finalHomeGoals || 0,
-          finalAwayGoals: f.finalAwayGoals || 0,
-          events: (f.events || []).slice(),
-          homeLineup: f.homeLineup || [],
-          awayLineup: f.awayLineup || [],
-          attendance: f.attendance || null,
-        })),
+        matchState: "idle",
+        cupState: "idle",
+        cupRound: 0,
+        year: game.year,
+        tactic: game.playersByName[name]?.tactic || null,
+        lockedCoaches: [...game.lockedCoaches],
+        lastHalfTimePayload: null,
       });
     }
 
     // Emit gameState with both new fields and legacy compat fields
-    socket.emit("gameState", {
-      // ── New fields ──────────────────────────────────────────────────────────
-      gamePhase: game.gamePhase,
-      calendarIndex: game.calendarIndex,
-      currentEvent: game.currentEvent,
-      liveMinute: game.liveMinute ?? null,
-      allMatchResults: game.allMatchResults || {},
-      // ── Legacy compat fields (derived from new state machine) ────────────────
-      matchweek: game.matchweek,
-      matchState: legacyMatchState(game.gamePhase),
-      cupState: legacyCupState(game),
-      cupRound:
-        game.currentEvent?.type === "cup"
-          ? (game.currentEvent as any).round
-          : 0,
-      year: game.year,
-      tactic: game.playersByName[name]?.tactic || null,
-      lockedCoaches: [...game.lockedCoaches],
-      lastHalfTimePayload:
-        game.gamePhase === "match_halftime"
-          ? game.lastHalftimePayload || null
-          : null,
-    });
+    // (ignorado se já foi feito o reset de partida acima — a sala já recebeu gameState)
+    if (!didResetMatch) {
+      socket.emit("gameState", {
+        // ── New fields ──────────────────────────────────────────────────────────
+        gamePhase: game.gamePhase,
+        calendarIndex: game.calendarIndex,
+        currentEvent: game.currentEvent,
+        liveMinute: game.liveMinute ?? null,
+        allMatchResults: game.allMatchResults || {},
+        // ── Legacy compat fields (derived from new state machine) ────────────────
+        matchweek: game.matchweek,
+        matchState: legacyMatchState(game.gamePhase),
+        cupState: legacyCupState(game),
+        cupRound:
+          game.currentEvent?.type === "cup"
+            ? (game.currentEvent as any).round
+            : 0,
+        year: game.year,
+        tactic: game.playersByName[name]?.tactic || null,
+        lockedCoaches: [...game.lockedCoaches],
+        lastHalfTimePayload:
+          game.gamePhase === "match_halftime"
+            ? game.lastHalftimePayload || null
+            : null,
+      });
 
-    emitCurrentPhaseToSocket(game, socket);
-    ensurePhaseTimeout(game);
+      emitCurrentPhaseToSocket(game, socket);
+      ensurePhaseTimeout(game);
+    }
 
     emitPresence(game);
     emitGlobalPlayerUpdate?.();
