@@ -1,6 +1,6 @@
 import { useState } from "react";
 // eslint-disable-next-line no-unused-vars
-import { motion, AnimatePresence } from "framer-motion";
+import { motion, AnimatePresence, useReducedMotion } from "framer-motion";
 import { getEffectiveLineup } from "../../utils/playerHelpers.js";
 import {
   POSITION_TEXT_CLASS,
@@ -404,9 +404,12 @@ function TabAdversario({ fixture, myTeamId, teams }) {
   );
 }
 
-// ── Tab: Substituições (halftime) ────────────────────────────────────────────
+// ── Tab: Intervenção unificada ────────────────────────────────────────────────
 
-function TabSubs({
+function TabIntervencao({
+  mode,
+  matchAction,
+  injuryCountdown,
   tactic,
   onUpdateTactic,
   annotatedSquad,
@@ -422,448 +425,411 @@ function TabSubs({
   onResetAllSubs,
   redCardedHalftimeIds,
   injuredHalftimeIds,
+  onResolveAction,
 }) {
+  const shouldReduceMotion = useReducedMotion();
+  const actionType = matchAction?.type || null;
+  const isHalftime = mode === "halftime";
+  const isActionMode = mode === "action";
+  const isPenalty = actionType === "penalty";
+  const isForcedSwap = actionType === "injury" || actionType === "gk_red_card";
+  const isActionSub = actionType === "user_substitution";
+
+  const selectedOutId =
+    typeof swapSource === "object" && swapSource !== null
+      ? swapSource.id
+      : swapSource;
+  const selectedInId =
+    typeof swapTarget === "object" && swapTarget !== null
+      ? swapTarget.id
+      : swapTarget;
+
+  const forceOutPlayer =
+    matchAction?.injuredPlayer ||
+    matchAction?.sentOffPlayer ||
+    matchAction?.dismissedPlayer ||
+    null;
+
+  const sortPlayers = (arr = []) =>
+    [...arr].sort(
+      (a, b) =>
+        (POS_ORDER[a.position] ?? 9) - (POS_ORDER[b.position] ?? 9) ||
+        (b.skill ?? 0) - (a.skill ?? 0),
+    );
+
+  const onPitchPlayers = isHalftime
+    ? sortPlayers(
+        annotatedSquad.filter(
+          (p) =>
+            tactic.positions[p.id] === "Titular" &&
+            !subbedOut.includes(p.id) &&
+            !redCardedHalftimeIds.has(p.id) &&
+            !injuredHalftimeIds?.has(p.id),
+        ),
+      )
+    : isPenalty
+      ? sortPlayers(matchAction?.takerCandidates || [])
+      : isActionSub
+        ? sortPlayers(matchAction?.onPitch || [])
+        : forceOutPlayer
+          ? [forceOutPlayer]
+          : [];
+
+  const benchPlayers = isHalftime
+    ? sortPlayers(
+        annotatedSquad
+          .filter((p) => tactic.positions[p.id] === "Suplente")
+          .filter((p) => !injuredHalftimeIds?.has(p.id)),
+      )
+    : isPenalty
+      ? []
+      : sortPlayers(matchAction?.benchPlayers || []);
+
+  const playerById = (id) =>
+    annotatedSquad.find((p) => p.id === id) ||
+    onPitchPlayers.find((p) => p.id === id) ||
+    benchPlayers.find((p) => p.id === id) ||
+    null;
+
+  const effectiveOutId = selectedOutId || (isForcedSwap ? forceOutPlayer?.id : null);
+  const sourcePlayer = playerById(effectiveOutId);
+
+  const handlePickOut = (player) => {
+    if (!player) return;
+    onSelectOut(isActionMode ? player : player.id);
+  };
+
+  const handlePickIn = (player) => {
+    if (!player) return;
+    onSelectIn(isActionMode ? player : player.id);
+  };
+
+  const canConfirmSwap =
+    !!effectiveOutId && !!selectedInId && (!isHalftime || subsMade < MAX_MATCH_SUBS);
+
+  const actionTheme = isPenalty
+    ? "from-amber-600/20 via-amber-500/5 to-transparent"
+    : isForcedSwap
+      ? "from-red-700/20 via-orange-500/10 to-transparent"
+      : isActionSub
+        ? "from-cyan-500/20 via-blue-500/10 to-transparent"
+        : "from-emerald-500/15 via-primary/10 to-transparent";
+
+  const titleText = isHalftime
+    ? "Gestão da Equipa"
+    : isPenalty
+      ? "Escolhe o marcador"
+      : isForcedSwap
+        ? `Substituição obrigatória · ${forceOutPlayer?.name || "jogador"}`
+        : "Pausa para substituição";
+
   return (
-    <div className="flex flex-col flex-1 min-h-0 overflow-hidden">
-      {/* Confirmed subs strip */}
-      {confirmedSubs.length > 0 && (
-        <div className="shrink-0 px-3 py-2 bg-surface-container/60 border-b border-outline-variant/20 flex flex-wrap gap-1.5">
+    <div className="flex flex-col flex-1 min-h-0 overflow-hidden bg-[linear-gradient(170deg,#0d0d14_0%,#11111b_45%,#0e1018_100%)]">
+      {confirmedSubs.length > 0 && isHalftime && (
+        <div className="shrink-0 px-3 py-2 border-b border-cyan-900/40 bg-cyan-950/20 flex flex-wrap gap-1.5">
           {confirmedSubs.map((sub) => {
             const outP = annotatedSquad.find((p) => p.id === sub.out);
             const inP = annotatedSquad.find((p) => p.id === sub.in);
             return (
               <div
                 key={`${sub.out}-${sub.in}`}
-                className="flex items-center gap-1 bg-zinc-800 rounded-full pl-2 pr-2.5 py-0.5 text-[10px] font-bold"
+                className="flex items-center gap-1 rounded-full pl-2 pr-2.5 py-0.5 text-[10px] font-bold border border-cyan-800/40 bg-zinc-950/80"
               >
-                <span className="text-zinc-600 shrink-0">🔄</span>
-                <span className="text-red-400 truncate max-w-22">
-                  {outP?.name ?? "?"}
-                </span>
+                <span className="text-cyan-400 shrink-0">🔄</span>
+                <span className="text-rose-300 truncate max-w-22">{outP?.name ?? "?"}</span>
                 <span className="text-zinc-600 shrink-0 mx-0.5">→</span>
-                <span className="text-emerald-400 truncate max-w-22">
-                  {inP?.name ?? "?"}
-                </span>
+                <span className="text-emerald-300 truncate max-w-22">{inP?.name ?? "?"}</span>
               </div>
             );
           })}
         </div>
       )}
 
-      {/* Mentality */}
-      <div className="shrink-0 px-3 py-2 bg-surface-container/60 border-b border-outline-variant/20">
-        <span className="block text-[9px] font-black uppercase tracking-widest text-zinc-500 mb-1.5">
-          Mentalidade
-        </span>
-        <div className="flex gap-1.5">
-          {[
-            { value: "Defensive", label: "Defensivo", tooltip: "Prioriza não sofrer golos. Ataque mais contido, mas difícil de bater. Ideal contra adversários mais fortes." },
-            { value: "Balanced", label: "Equilibrado", tooltip: "Postura neutra. Potencia a qualidade real do plantel sem arriscar. Boa escolha quando as equipas são semelhantes." },
-            { value: "Offensive", label: "Ofensivo", tooltip: "Pressão total. Mais perigoso no ataque, mas exposto atrás. Ideal contra equipas fechadas ou quando precisas de marcar." },
-          ].map(({ value, label, tooltip }) => (
-            <button
-              key={value}
-              onClick={() => onUpdateTactic({ style: value })}
-              title={tooltip}
-              className={`flex-1 py-1.5 rounded text-[10px] font-black uppercase tracking-wide transition-colors ${
-                tactic.style === value
-                  ? value === "Defensive"
-                    ? "bg-blue-600 text-white"
-                    : value === "Offensive"
-                      ? "bg-amber-500 text-zinc-950"
-                      : "bg-primary text-on-primary"
-                  : "bg-zinc-800 text-zinc-400 hover:bg-zinc-700 hover:text-zinc-200"
-              }`}
-            >
-              {label}
-            </button>
-          ))}
+      {isHalftime && (
+        <div className="shrink-0 px-3 py-2 border-b border-zinc-800 bg-zinc-950/65">
+          <span className="block text-[9px] font-black uppercase tracking-[0.22em] text-zinc-500 mb-1.5">
+            Mentalidade
+          </span>
+          <div className="grid grid-cols-3 gap-1.5">
+            {[
+              { value: "Defensive", label: "Defensivo" },
+              { value: "Balanced", label: "Equilibrado" },
+              { value: "Offensive", label: "Ofensivo" },
+            ].map(({ value, label }) => (
+              <button
+                key={value}
+                onClick={() => onUpdateTactic({ style: value })}
+                className={`py-1.5 rounded text-[10px] font-black uppercase tracking-wide transition-all border ${
+                  tactic.style === value
+                    ? value === "Defensive"
+                      ? "bg-blue-600/90 border-blue-400/70 text-white shadow-[0_0_16px_rgba(37,99,235,0.35)]"
+                      : value === "Offensive"
+                        ? "bg-amber-500/90 border-amber-300/70 text-zinc-950 shadow-[0_0_16px_rgba(245,158,11,0.35)]"
+                        : "bg-primary border-primary/60 text-on-primary shadow-[0_0_16px_rgba(99,102,241,0.35)]"
+                    : "bg-zinc-900/80 border-zinc-700/60 text-zinc-400 hover:border-zinc-500 hover:text-zinc-200"
+                }`}
+              >
+                {label}
+              </button>
+            ))}
+          </div>
         </div>
+      )}
+
+      <div className={`shrink-0 px-3 py-2 border-b border-zinc-800 bg-gradient-to-r ${actionTheme}`}>
+        <p className="text-[11px] font-black uppercase tracking-[0.2em] text-zinc-100 text-center truncate">
+          {titleText}
+        </p>
+        {isForcedSwap && injuryCountdown !== null && (
+          <p className="text-center text-amber-300 font-black text-[10px] mt-1 tracking-wide animate-pulse">
+            Auto-substituição em {injuryCountdown}s
+          </p>
+        )}
       </div>
 
-      {/* Two-column player list */}
-      <div className="flex flex-1 min-h-0 overflow-hidden">
-        {/* Em Campo */}
-        <div className="flex flex-col min-w-0 border-r border-zinc-800 flex-1 overflow-hidden">
-          <div className="shrink-0 flex items-center gap-1.5 px-3 py-1.5 bg-surface-container/40 border-b border-outline-variant/20">
-            <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 shrink-0" />
-            <span className="text-[9px] font-black uppercase tracking-widest text-emerald-500">
+      <div className="flex flex-1 min-h-0 overflow-hidden flex-col md:flex-row">
+        <div className="flex flex-col min-w-0 flex-1 overflow-hidden border-b md:border-b-0 md:border-r border-zinc-800/90">
+          <div className="shrink-0 flex items-center gap-1.5 px-3 py-1.5 bg-zinc-950/70 border-b border-zinc-800/90">
+            <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 shrink-0" />
+            <span className="text-[9px] font-black uppercase tracking-[0.2em] text-emerald-300">
               Em Campo
             </span>
           </div>
           <div className="flex-1 overflow-y-auto">
-            {annotatedSquad
-              .filter(
-                (p) =>
-                  tactic.positions[p.id] === "Titular" &&
-                  !subbedOut.includes(p.id) &&
-                  !redCardedHalftimeIds.has(p.id) &&
-                  !injuredHalftimeIds?.has(p.id),
-              )
-              .map((p) => {
-                const grAvailableOnBench = annotatedSquad.some(
-                  (bp) =>
-                    tactic.positions[bp.id] === "Suplente" &&
-                    bp.position === "GR" &&
-                    !subbedOut.includes(bp.id),
-                );
-                const noGrReplacement =
-                  p.position === "GR" && !grAvailableOnBench;
-                const canSelectOut =
-                  subsMade < MAX_MATCH_SUBS && !noGrReplacement;
-                return (
-                  <div
-                    key={p.id}
-                    onClick={() => canSelectOut && onSelectOut(p.id)}
-                    title={
-                      noGrReplacement
-                        ? "Não há GR no banco para substituir"
-                        : undefined
-                    }
-                    className={`flex items-center gap-2 px-2 py-1.5 border-b border-zinc-800/40 select-none transition-all border-l-2 ${
-                      swapSource === p.id
-                        ? "bg-red-500/15 border-l-red-500"
-                        : canSelectOut
-                          ? "cursor-pointer hover:bg-zinc-800/50 border-l-transparent"
-                          : "opacity-40 cursor-not-allowed border-l-transparent"
+            {onPitchPlayers.map((p, i) => {
+              const grAvailableOnBench = benchPlayers.some(
+                (bp) => bp.position === "GR" && !subbedOut.includes(bp.id),
+              );
+              const noGrReplacement = isHalftime && p.position === "GR" && !grAvailableOnBench;
+              const isLockedForced = isForcedSwap && !!forceOutPlayer && p.id !== forceOutPlayer.id;
+              const disabled =
+                noGrReplacement ||
+                isLockedForced ||
+                (isHalftime && subsMade >= MAX_MATCH_SUBS) ||
+                (isPenalty && !(matchAction?.takerCandidates || []).find((c) => c.id === p.id));
+              const selected = effectiveOutId === p.id;
+              return (
+                <motion.button
+                  key={p.id}
+                  onClick={() => !disabled && handlePickOut(p)}
+                  title={noGrReplacement ? "Não há GR no banco para substituir" : undefined}
+                  initial={
+                    shouldReduceMotion
+                      ? false
+                      : { opacity: 0, x: -10, filter: "blur(2px)" }
+                  }
+                  animate={
+                    shouldReduceMotion
+                      ? undefined
+                      : { opacity: 1, x: 0, filter: "blur(0px)" }
+                  }
+                  transition={
+                    shouldReduceMotion
+                      ? undefined
+                      : { duration: 0.2, delay: Math.min(i, 6) * 0.02 }
+                  }
+                  className={`w-full flex items-center gap-2 px-2 py-2 border-b border-zinc-800/50 text-left select-none transition-all border-l-2 ${
+                    selected
+                      ? "bg-rose-500/15 border-l-rose-400 shadow-[inset_0_0_20px_rgba(244,63,94,0.18)]"
+                      : disabled
+                        ? "opacity-40 cursor-not-allowed border-l-transparent"
+                        : "cursor-pointer hover:bg-zinc-800/55 border-l-transparent"
+                  }`}
+                >
+                  <span
+                    className={`shrink-0 px-1 py-0.5 rounded-sm text-[8px] font-black border-l-2 ${
+                      selected
+                        ? "bg-rose-500/20 text-rose-200 border-l-rose-400"
+                        : `bg-surface-bright ${POSITION_BORDER_CLASS[p.position] || "border-zinc-500"} ${POSITION_TEXT_CLASS[p.position]}`
                     }`}
                   >
-                    <span
-                      className={`shrink-0 px-1 py-0.5 rounded-sm text-[8px] font-black border-l-2 ${
-                        swapSource === p.id
-                          ? "bg-red-500/20 text-red-300 border-l-red-400"
-                          : `bg-surface-bright ${POSITION_BORDER_CLASS[p.position] || "border-zinc-500"} ${POSITION_TEXT_CLASS[p.position]}`
-                      }`}
-                    >
-                      {POSITION_SHORT_LABELS[p.position]}
+                    {POSITION_SHORT_LABELS[p.position]}
+                  </span>
+                  <span className={`flex-1 truncate text-[11px] font-bold ${selected ? "text-rose-100" : "text-zinc-100"}`}>
+                    {p.name}
+                    {!!p.is_star && (p.position === "MED" || p.position === "ATA") && (
+                      <span className="ml-0.5 text-amber-400 font-black">*</span>
+                    )}
+                  </span>
+                  <div className="shrink-0 grid grid-cols-3 items-center gap-x-1.5 text-right">
+                    <span className={`text-[11px] font-black tabular-nums ${selected ? "text-rose-300" : "text-zinc-400"}`}>
+                      {p.skill ?? "—"}
                     </span>
-                    <span
-                      className={`flex-1 truncate text-[11px] font-bold ${swapSource === p.id ? "text-red-200" : "text-zinc-200"}`}
-                    >
-                      {p.name}
-                      {!!p.is_star &&
-                        (p.position === "MED" || p.position === "ATA") && (
-                          <span className="ml-0.5 text-amber-400 font-black">
-                            *
-                          </span>
-                        )}
+                    <span className="text-[10px] text-cyan-400/70 tabular-nums">
+                      🛡️{p.resistance ?? "–"}
                     </span>
-                    <div className="shrink-0 grid grid-cols-3 items-center gap-x-2 text-right">
-                      <span
-                        className={`text-[12px] font-black tabular-nums ${swapSource === p.id ? "text-red-400" : "text-zinc-400"}`}
-                      >
-                        {p.skill}
-                      </span>
-                      <span className="text-[10px] text-cyan-400/70 tabular-nums">
-                        🛡️{p.resistance ?? "–"}
-                      </span>
-                      <FormBadge form={p.form} />
-                    </div>
+                    <FormBadge form={p.form} />
                   </div>
-                );
-              })}
+                </motion.button>
+              );
+            })}
+            {onPitchPlayers.length === 0 && (
+              <p className="text-center text-zinc-600 text-xs font-bold py-6">Sem opções em campo</p>
+            )}
           </div>
         </div>
 
-        {/* Banco */}
         <div className="flex flex-col min-w-0 flex-1 overflow-hidden">
-          <div className="shrink-0 flex items-center gap-1.5 px-3 py-1.5 bg-surface-container/40 border-b border-outline-variant/20">
-            <span className="w-1.5 h-1.5 rounded-full bg-zinc-600 shrink-0" />
-            <span className="text-[9px] font-black uppercase tracking-widest text-zinc-500">
-              Banco
+          <div className="shrink-0 flex items-center gap-1.5 px-3 py-1.5 bg-zinc-950/70 border-b border-zinc-800/90">
+            <span className="w-1.5 h-1.5 rounded-full bg-cyan-400 shrink-0" />
+            <span className="text-[9px] font-black uppercase tracking-[0.2em] text-cyan-300">
+              {isPenalty ? "Escolha" : "Banco"}
             </span>
           </div>
           <div className="flex-1 overflow-y-auto">
-            {annotatedSquad
-              .filter((p) => tactic.positions[p.id] === "Suplente")
-              .filter(
-                (p) => !injuredHalftimeIds?.has(p.id),
-              )
-              .map((p) => {
-                const alreadyUsed = subbedOut.includes(p.id);
-                const sourcePlayer = swapSource
-                  ? annotatedSquad.find((sp) => sp.id === swapSource)
-                  : null;
+            {isPenalty ? (
+              <p className="text-center text-zinc-500 text-xs font-bold py-8 px-4">
+                Seleciona o marcador na coluna "Em Campo".
+              </p>
+            ) : (
+              benchPlayers.map((p, i) => {
+                const alreadyUsed = isHalftime && subbedOut.includes(p.id);
                 const positionMismatch =
-                  !!swapSource &&
                   !!sourcePlayer &&
                   (sourcePlayer.position === "GR") !== (p.position === "GR");
                 const disabled =
-                  alreadyUsed || subsMade >= MAX_MATCH_SUBS || positionMismatch;
+                  alreadyUsed ||
+                  positionMismatch ||
+                  (isHalftime && subsMade >= MAX_MATCH_SUBS);
+                const selected = selectedInId === p.id;
                 return (
-                  <div
+                  <motion.button
                     key={p.id}
-                    onClick={() => !disabled && onSelectIn(p.id)}
-                    className={`flex items-center gap-2 px-2 py-1.5 border-b border-zinc-800/40 select-none transition-all border-l-2 ${
+                    onClick={() => !disabled && handlePickIn(p)}
+                    initial={
+                      shouldReduceMotion
+                        ? false
+                        : { opacity: 0, x: 10, filter: "blur(2px)" }
+                    }
+                    animate={
+                      shouldReduceMotion
+                        ? undefined
+                        : { opacity: 1, x: 0, filter: "blur(0px)" }
+                    }
+                    transition={
+                      shouldReduceMotion
+                        ? undefined
+                        : { duration: 0.2, delay: Math.min(i, 6) * 0.02 }
+                    }
+                    className={`w-full flex items-center gap-2 px-2 py-2 border-b border-zinc-800/50 text-left select-none transition-all border-l-2 ${
                       alreadyUsed
-                        ? "opacity-20 cursor-not-allowed border-l-transparent"
-                        : swapTarget === p.id
-                          ? "bg-emerald-500/15 border-l-emerald-500 cursor-pointer"
+                        ? "opacity-25 cursor-not-allowed border-l-transparent"
+                        : selected
+                          ? "bg-emerald-500/15 border-l-emerald-400 shadow-[inset_0_0_20px_rgba(16,185,129,0.2)]"
                           : disabled
                             ? "opacity-40 cursor-not-allowed border-l-transparent"
-                            : "cursor-pointer hover:bg-zinc-800/50 border-l-transparent"
+                            : "cursor-pointer hover:bg-zinc-800/55 border-l-transparent"
                     }`}
                   >
                     <span
                       className={`shrink-0 px-1 py-0.5 rounded-sm text-[8px] font-black border-l-2 ${
                         alreadyUsed
-                          ? "bg-zinc-800/40 text-zinc-700 border-zinc-700"
-                          : swapTarget === p.id
-                            ? "bg-emerald-500/20 text-emerald-300 border-l-emerald-400"
+                          ? "bg-zinc-900 text-zinc-700 border-zinc-700"
+                          : selected
+                            ? "bg-emerald-500/20 text-emerald-200 border-l-emerald-400"
                             : `bg-surface-bright ${POSITION_BORDER_CLASS[p.position] || "border-zinc-500"} ${POSITION_TEXT_CLASS[p.position]}`
                       }`}
                     >
                       {POSITION_SHORT_LABELS[p.position]}
                     </span>
-                    <span
-                      className={`flex-1 truncate text-[11px] font-bold ${
-                        alreadyUsed
-                          ? "text-zinc-700 line-through"
-                          : swapTarget === p.id
-                            ? "text-emerald-200"
-                            : "text-zinc-200"
-                      }`}
-                    >
+                    <span className={`flex-1 truncate text-[11px] font-bold ${selected ? "text-emerald-100" : "text-zinc-100"}`}>
                       {p.name}
-                      {!alreadyUsed &&
-                        !!p.is_star &&
-                        (p.position === "MED" || p.position === "ATA") && (
-                          <span className="ml-0.5 text-amber-400 font-black">
-                            *
-                          </span>
-                        )}
+                      {!alreadyUsed && !!p.is_star && (p.position === "MED" || p.position === "ATA") && (
+                        <span className="ml-0.5 text-amber-400 font-black">*</span>
+                      )}
                     </span>
                     <div className="shrink-0 flex items-center gap-1">
-                      <span
-                        className={`text-[10px] font-black tabular-nums ${
-                          alreadyUsed
-                            ? "text-zinc-700"
-                            : swapTarget === p.id
-                              ? "text-emerald-400"
-                              : "text-zinc-600"
-                        }`}
-                      >
-                        {alreadyUsed ? "—" : p.skill}
+                      <span className={`text-[11px] font-black tabular-nums ${selected ? "text-emerald-300" : "text-zinc-500"}`}>
+                        {alreadyUsed ? "—" : (p.skill ?? "—")}
                       </span>
                       {!alreadyUsed && p.resistance != null && (
-                        <span className="text-[12px] text-cyan-400/70 tabular-nums">
-                          🛡️{p.resistance}
-                        </span>
+                        <span className="text-[10px] text-cyan-400/70 tabular-nums">🛡️{p.resistance}</span>
                       )}
                       {!alreadyUsed && <FormBadge form={p.form} />}
                     </div>
-                  </div>
+                  </motion.button>
                 );
-              })}
+              })
+            )}
+            {!isPenalty && benchPlayers.length === 0 && (
+              <p className="text-center text-zinc-600 text-xs font-bold py-6">Sem opções no banco</p>
+            )}
           </div>
         </div>
       </div>
 
-      {/* Swap action bar */}
-      {swapSource || swapTarget ? (
-        <div className="shrink-0 flex items-center gap-2 px-3 py-2.5 border-t border-outline-variant/30 bg-surface-container">
+      <div className="shrink-0 border-t border-zinc-800/80 bg-zinc-950/80 px-3 py-2">
+        <div className="flex items-center gap-2 min-w-0">
           <div className="flex-1 flex items-center gap-2 min-w-0">
-            {swapSource ? (
-              <span className="bg-red-950 text-red-300 border border-red-800/60 text-[10px] font-black px-2 py-0.5 rounded truncate max-w-[40%]">
-                {annotatedSquad.find((p) => p.id === swapSource)?.name ?? "?"}
-              </span>
-            ) : (
-              <span className="text-zinc-600 text-[10px] italic">
-                escolhe em campo…
-              </span>
-            )}
-            <span className="text-zinc-500 shrink-0 font-black text-sm">→</span>
-            {swapTarget ? (
-              <span className="bg-emerald-950 text-emerald-300 border border-emerald-800/60 text-[10px] font-black px-2 py-0.5 rounded truncate max-w-[40%]">
-                {annotatedSquad.find((p) => p.id === swapTarget)?.name ?? "?"}
-              </span>
-            ) : (
-              <span className="text-zinc-600 text-[10px] italic">
-                escolhe do banco…
-              </span>
+            <span className="text-[10px] text-zinc-600 shrink-0">Sai</span>
+            <span className="bg-rose-950/90 text-rose-200 border border-rose-800/70 text-[10px] font-black px-2 py-0.5 rounded truncate max-w-[38%]">
+              {effectiveOutId ? playerById(effectiveOutId)?.name || "?" : "—"}
+            </span>
+            {!isPenalty && (
+              <>
+                <span className="text-zinc-500 shrink-0 font-black text-sm">→</span>
+                <span className="text-[10px] text-zinc-600 shrink-0">Entra</span>
+                <span className="bg-emerald-950/90 text-emerald-200 border border-emerald-800/70 text-[10px] font-black px-2 py-0.5 rounded truncate max-w-[38%]">
+                  {selectedInId ? playerById(selectedInId)?.name || "?" : "—"}
+                </span>
+              </>
             )}
           </div>
-          <button
-            onClick={onResetSub}
-            className="shrink-0 w-6 h-6 rounded-full bg-zinc-800 hover:bg-zinc-700 text-zinc-500 hover:text-white text-[10px] flex items-center justify-center transition-colors"
-          >
-            ✕
-          </button>
-          <button
-            onClick={onConfirmSub}
-            disabled={!swapSource || !swapTarget}
-            className={`shrink-0 px-3 py-1.5 rounded text-[10px] font-black uppercase tracking-wide transition-colors ${
-              swapSource && swapTarget
-                ? "bg-emerald-600 hover:bg-emerald-500 text-white"
-                : "bg-zinc-800 text-zinc-600 cursor-not-allowed"
-            }`}
-          >
-            Substituir
-          </button>
-        </div>
-      ) : subsMade < MAX_MATCH_SUBS ? (
-        <div className="shrink-0 border-t border-zinc-800/60 px-4 py-1.5 text-center">
-          <span className="text-[9px] text-zinc-700 font-bold uppercase tracking-wide">
-            Toca num jogador em campo ou no banco para substituir
-          </span>
-        </div>
-      ) : null}
 
-      {confirmedSubs.length > 0 && (
-        <div className="shrink-0 border-t border-zinc-800/30 px-4 py-1.5 flex justify-center">
+          {isHalftime ? (
+            <>
+              <button
+                onClick={onResetSub}
+                className="shrink-0 w-7 h-7 rounded-full bg-zinc-800 hover:bg-zinc-700 text-zinc-500 hover:text-white text-[10px] flex items-center justify-center transition-colors"
+              >
+                ✕
+              </button>
+              <button
+                onClick={onConfirmSub}
+                disabled={!canConfirmSwap}
+                className={`shrink-0 px-3 py-1.5 rounded text-[10px] font-black uppercase tracking-wide transition-all ${
+                  canConfirmSwap
+                    ? "bg-emerald-600 hover:bg-emerald-500 text-white shadow-[0_0_20px_rgba(16,185,129,0.35)]"
+                    : "bg-zinc-800 text-zinc-600 cursor-not-allowed"
+                }`}
+              >
+                Substituir
+              </button>
+            </>
+          ) : (
+            <>
+              <button
+                onClick={() => onResolveAction(null)}
+                className="shrink-0 px-2.5 py-1.5 rounded text-[10px] font-black uppercase tracking-wide border border-zinc-700 text-zinc-300 hover:bg-zinc-800"
+              >
+                Auto
+              </button>
+              <button
+                disabled={isPenalty ? !effectiveOutId : !canConfirmSwap}
+                onClick={() =>
+                  isPenalty
+                    ? onResolveAction(effectiveOutId || null)
+                    : onResolveAction({ playerOut: effectiveOutId, playerIn: selectedInId })
+                }
+                className="shrink-0 px-3 py-1.5 rounded text-[10px] font-black uppercase tracking-wide bg-primary hover:brightness-110 text-on-primary disabled:opacity-50 disabled:cursor-not-allowed"
+              >
+                Confirmar
+              </button>
+            </>
+          )}
+        </div>
+      </div>
+
+      {isHalftime && confirmedSubs.length > 0 && (
+        <div className="shrink-0 border-t border-zinc-800/30 px-4 py-1.5 flex justify-center bg-zinc-950/70">
           <button
             onClick={onResetAllSubs}
-            className="text-[9px] font-black uppercase tracking-widest text-red-400 hover:text-red-600 transition-colors"
+            className="text-[9px] font-black uppercase tracking-widest text-rose-400 hover:text-rose-300 transition-colors"
           >
             ↺ Anular todas as substituições
           </button>
         </div>
       )}
-    </div>
-  );
-}
-
-// ── Tab: Ação urgente ────────────────────────────────────────────────────────
-
-function TabAction({
-  matchAction,
-  injuryCountdown,
-  swapSource,
-  swapTarget,
-  onSelectOut,
-  onSelectIn,
-  onResolveAction,
-}) {
-  if (!matchAction) return null;
-
-  if (matchAction.type === "user_substitution") {
-    const posOrder = { GR: 0, DEF: 1, MED: 2, ATA: 3 };
-    const sortPlayers = (arr) =>
-      [...arr].sort(
-        (a, b) =>
-          (posOrder[a.position] ?? 9) - (posOrder[b.position] ?? 9) ||
-          (b.skill ?? 0) - (a.skill ?? 0),
-      );
-    const onPitchSorted = sortPlayers(matchAction.onPitch || []);
-    const benchSorted = sortPlayers(matchAction.benchPlayers || []);
-
-    return (
-      <div className="flex flex-col flex-1 min-h-0 overflow-hidden">
-        <div className="flex flex-1 gap-4 p-4 min-h-0 overflow-hidden">
-          <div className="flex-1 flex flex-col gap-2 overflow-hidden">
-            <h3 className="text-zinc-300 font-bold text-center text-xs uppercase tracking-wider shrink-0">
-              Em campo (sai)
-            </h3>
-            <div className="space-y-2 overflow-y-auto pr-1">
-              {onPitchSorted.map((player) => (
-                <button
-                  key={`out-${player.id}`}
-                  onClick={() => onSelectOut(player)}
-                  className={`w-full flex items-center justify-between gap-2 px-3 py-2.5 rounded border transition-colors text-left ${swapSource?.id === player.id ? "border-primary bg-primary/20" : "border-outline-variant/20 bg-surface hover:bg-surface-bright"}`}
-                >
-                  <span className="font-bold text-white truncate text-sm">
-                    {player.name}
-                  </span>
-                  <span className="text-[11px] font-black uppercase tracking-widest text-zinc-400 flex items-center gap-1 shrink-0">
-                    {player.position} · {player.skill}
-                    {player.resistance != null && (
-                      <>
-                        {" "}
-                        ·{" "}
-                        <span className="text-cyan-400/70">
-                          🛡️{player.resistance}
-                        </span>
-                      </>
-                    )}
-                    {player.form != null && (
-                      <>
-                        {" "}
-                        · <FormBadge form={player.form} />
-                      </>
-                    )}
-                  </span>
-                </button>
-              ))}
-            </div>
-          </div>
-          <div className="flex-1 flex flex-col gap-2 overflow-hidden">
-            <h3 className="text-zinc-300 font-bold text-center text-xs uppercase tracking-wider shrink-0">
-              No banco (entra)
-            </h3>
-            <div className="space-y-2 overflow-y-auto pr-1">
-              {benchSorted.map((player) => (
-                <button
-                  key={`in-${player.id}`}
-                  onClick={() => onSelectIn(player)}
-                  className={`w-full flex items-center justify-between gap-2 px-3 py-2.5 rounded border transition-colors text-left ${swapTarget?.id === player.id ? "border-primary bg-primary/20" : "border-outline-variant/20 bg-surface hover:bg-surface-bright"}`}
-                >
-                  <span className="font-bold text-white truncate text-sm">
-                    {player.name}
-                  </span>
-                  <span className="text-[11px] font-black uppercase tracking-widest text-zinc-400 flex items-center gap-1 shrink-0">
-                    {player.position} · {player.skill}
-                    {player.resistance != null && (
-                      <>
-                        {" "}
-                        ·{" "}
-                        <span className="text-cyan-400/70">
-                          🛡️{player.resistance}
-                        </span>
-                      </>
-                    )}
-                    {player.form != null && (
-                      <>
-                        {" "}
-                        · <FormBadge form={player.form} />
-                      </>
-                    )}
-                  </span>
-                </button>
-              ))}
-            </div>
-          </div>
-        </div>
-      </div>
-    );
-  }
-
-  // Injury or penalty
-  const candidates =
-    matchAction.type === "injury"
-      ? matchAction.benchPlayers || []
-      : matchAction.takerCandidates || [];
-
-  return (
-    <div className="flex flex-col flex-1 min-h-0 overflow-hidden p-4">
-      <p className="text-zinc-300 font-black mb-1 text-sm uppercase tracking-widest text-center">
-        {matchAction.type === "injury"
-          ? `Jogador lesionado: ${matchAction.injuredPlayer?.name || "?"}${matchAction.injuredPlayer?.position ? ` · ${matchAction.injuredPlayer.position}` : ""}`
-          : "Escolhe o jogador para marcar o penalty"}
-      </p>
-      {matchAction.type === "injury" && injuryCountdown !== null && (
-        <p className="text-center text-amber-400 font-black text-xs mb-3 tracking-wide">
-          Auto-substituição em {injuryCountdown}s
-        </p>
-      )}
-      <div className="flex-1 overflow-y-auto space-y-2">
-        {candidates.map((player) => (
-          <button
-            key={player.id}
-            onClick={() => onResolveAction(player.id)}
-            className="w-full flex items-center justify-between gap-3 px-4 py-3 rounded border border-outline-variant/20 bg-surface hover:bg-surface-bright transition-colors text-left"
-          >
-            <span className="font-bold text-white truncate">{player.name}</span>
-            <span className="text-xs font-black uppercase tracking-widest text-zinc-400">
-              {player.position} · {player.skill}
-            </span>
-          </button>
-        ))}
-        {candidates.length === 0 && (
-          <p className="text-center text-zinc-500 font-bold text-sm py-8">
-            Sem opções disponíveis. O sistema escolherá automaticamente.
-          </p>
-        )}
-      </div>
     </div>
   );
 }
@@ -938,8 +904,9 @@ export function MatchPanel({
   injuryCountdown,
   onResolveAction,
 }) {
+  const shouldReduceMotion = useReducedMotion();
   const getDefaultTab = (m) =>
-    m === "halftime" ? "subs" : m === "action" ? "action" : "lineup";
+    m === "halftime" || m === "action" ? "intervencao" : "lineup";
 
   const [activeTab, setActiveTab] = useState(() => getDefaultTab(mode));
 
@@ -967,20 +934,22 @@ export function MatchPanel({
   const tabs =
     mode === "halftime"
       ? [
-          { id: "subs", label: "Substituições" },
+          { id: "intervencao", label: "Intervenção" },
           { id: "adversario", label: "Adversário" },
           { id: "jogo", label: "Jogo" },
         ]
       : mode === "action"
         ? [
             {
-              id: "action",
+              id: "intervencao",
               label:
                 matchAction?.type === "injury"
                   ? "Lesão"
-                  : matchAction?.type === "penalty"
-                    ? "Penálti"
-                    : "Substituição",
+                  : matchAction?.type === "gk_red_card"
+                    ? "Expulsão GR"
+                    : matchAction?.type === "penalty"
+                      ? "Penálti"
+                      : "Pausa Tática",
             },
             { id: "jogo", label: "Jogo" },
           ]
@@ -995,6 +964,17 @@ export function MatchPanel({
     ? activeTab
     : getDefaultTab(mode);
 
+  const actionBadgeLabel =
+    matchAction?.type === "injury"
+      ? "Lesão"
+      : matchAction?.type === "gk_red_card"
+        ? "Expulsão GR"
+        : matchAction?.type === "penalty"
+          ? "Penálti"
+          : matchAction?.type === "user_substitution"
+            ? "Pausa Tática"
+            : "Urgente";
+
   const modeBadgeLabel =
     mode === "halftime"
       ? cupPreMatch
@@ -1005,7 +985,7 @@ export function MatchPanel({
             ? "Intervalo · Taça"
             : "Intervalo"
       : mode === "action"
-        ? "URGENTE"
+        ? actionBadgeLabel
         : null;
 
   const competitionLabel = isCupMatch
@@ -1028,7 +1008,7 @@ export function MatchPanel({
           onClick={mode === "detail" ? onClose : undefined}
         >
           <motion.div
-            className="w-full sm:max-w-lg bg-surface-container border border-outline-variant/30 rounded-t-2xl sm:rounded-lg shadow-2xl flex flex-col h-[95vh] sm:max-h-[92vh] mt-[3.5rem]"
+            className="w-full sm:max-w-2xl bg-surface-container border border-outline-variant/30 rounded-t-2xl sm:rounded-lg shadow-2xl flex flex-col h-[95vh] sm:max-h-[92vh] mt-[3.5rem]"
             initial={{ y: 40, opacity: 0.8 }}
             animate={{ y: 0, opacity: 1 }}
             exit={{ y: 40, opacity: 0 }}
@@ -1036,7 +1016,7 @@ export function MatchPanel({
             onClick={(e) => e.stopPropagation()}
           >
             {/* ── Header ── */}
-            <div className="shrink-0 flex items-center gap-2 px-3 py-2.5 bg-zinc-950 border-b border-zinc-800 rounded-t-2xl sm:rounded-t-lg">
+            <div className="shrink-0 flex items-center gap-2 px-3 py-2.5 bg-[linear-gradient(120deg,#090b12_0%,#121726_45%,#241b10_100%)] border-b border-zinc-800 rounded-t-2xl sm:rounded-t-lg">
               <div className="flex items-center gap-2 flex-1 min-w-0">
                 {isPlayingMatch && mode === "detail" && (
                   <span className="w-2 h-2 rounded-full bg-red-500 animate-pulse shrink-0" />
@@ -1050,8 +1030,8 @@ export function MatchPanel({
                   <span
                     className={`text-[9px] font-black uppercase tracking-widest px-2 py-0.5 rounded-full shrink-0 ${
                       mode === "action"
-                        ? "bg-red-900/60 text-red-400 animate-pulse"
-                        : "bg-zinc-800 text-zinc-400"
+                        ? "bg-red-900/60 text-red-300"
+                        : "bg-zinc-900/80 text-zinc-300"
                     }`}
                   >
                     {modeBadgeLabel}
@@ -1140,57 +1120,74 @@ export function MatchPanel({
 
             {/* ── Tab content ── */}
             <div className="flex-1 min-h-0 overflow-hidden flex flex-col">
-              {effectiveTab === "jogo" && (
-                <TabJogo
-                  fixture={fixture}
-                  liveMinute={liveMinute}
-                  teams={teams}
-                />
-              )}
-              {effectiveTab === "subs" && mode === "halftime" && (
-                <TabSubs
-                  tactic={tactic}
-                  onUpdateTactic={onUpdateTactic}
-                  annotatedSquad={annotatedSquad}
-                  subbedOut={subbedOut}
-                  confirmedSubs={confirmedSubs}
-                  subsMade={subsMade}
-                  swapSource={swapSource}
-                  swapTarget={swapTarget}
-                  onSelectOut={onSelectOut}
-                  onSelectIn={onSelectIn}
-                  onConfirmSub={onConfirmSub}
-                  onResetSub={onResetSub}
-                  onResetAllSubs={onResetAllSubs}
-                  redCardedHalftimeIds={redCardedHalftimeIds}
-                  injuredHalftimeIds={injuredHalftimeIds}
-                />
-              )}
-              {effectiveTab === "adversario" && mode === "halftime" && (
-                <TabAdversario
-                  fixture={fixture}
-                  myTeamId={myTeamId}
-                  teams={teams}
-                />
-              )}
-              {effectiveTab === "lineup" && mode === "detail" && (
-                <TabLineup
-                  fixture={fixture}
-                  liveMinute={liveMinute}
-                  teams={teams}
-                />
-              )}
-              {effectiveTab === "action" && mode === "action" && (
-                <TabAction
-                  matchAction={matchAction}
-                  injuryCountdown={injuryCountdown}
-                  swapSource={swapSource}
-                  swapTarget={swapTarget}
-                  onSelectOut={onSelectOut}
-                  onSelectIn={onSelectIn}
-                  onResolveAction={onResolveAction}
-                />
-              )}
+              <AnimatePresence mode="wait" initial={false}>
+                <motion.div
+                  key={`${mode || "none"}-${effectiveTab}-${matchAction?.type || "none"}`}
+                  className="flex-1 min-h-0 overflow-hidden flex flex-col"
+                  initial={
+                    shouldReduceMotion ? false : { opacity: 0, y: 8, scale: 0.995 }
+                  }
+                  animate={
+                    shouldReduceMotion
+                      ? undefined
+                      : { opacity: 1, y: 0, scale: 1 }
+                  }
+                  exit={
+                    shouldReduceMotion ? undefined : { opacity: 0, y: -6, scale: 0.995 }
+                  }
+                  transition={
+                    shouldReduceMotion
+                      ? undefined
+                      : { duration: 0.18, ease: "easeOut" }
+                  }
+                >
+                  {effectiveTab === "jogo" && (
+                    <TabJogo
+                      fixture={fixture}
+                      liveMinute={liveMinute}
+                      teams={teams}
+                    />
+                  )}
+                  {effectiveTab === "intervencao" &&
+                    (mode === "halftime" || mode === "action") && (
+                    <TabIntervencao
+                      mode={mode}
+                      matchAction={matchAction}
+                      injuryCountdown={injuryCountdown}
+                      tactic={tactic}
+                      onUpdateTactic={onUpdateTactic}
+                      annotatedSquad={annotatedSquad}
+                      subbedOut={subbedOut}
+                      confirmedSubs={confirmedSubs}
+                      subsMade={subsMade}
+                      swapSource={swapSource}
+                      swapTarget={swapTarget}
+                      onSelectOut={onSelectOut}
+                      onSelectIn={onSelectIn}
+                      onConfirmSub={onConfirmSub}
+                      onResetSub={onResetSub}
+                      onResetAllSubs={onResetAllSubs}
+                      redCardedHalftimeIds={redCardedHalftimeIds}
+                      injuredHalftimeIds={injuredHalftimeIds}
+                      onResolveAction={onResolveAction}
+                    />
+                  )}
+                  {effectiveTab === "adversario" && mode === "halftime" && (
+                    <TabAdversario
+                      fixture={fixture}
+                      myTeamId={myTeamId}
+                      teams={teams}
+                    />
+                  )}
+                  {effectiveTab === "lineup" && mode === "detail" && (
+                    <TabLineup
+                      fixture={fixture}
+                      liveMinute={liveMinute}
+                      teams={teams}
+                    />
+                  )}
+                </motion.div>
+              </AnimatePresence>
             </div>
 
             {/* ── Footer ── */}
@@ -1220,39 +1217,6 @@ export function MatchPanel({
                           : "▶ INICIAR 2ª PARTE"}
                 </button>
               </>
-            )}
-            {mode === "action" && (
-              <div className="shrink-0 flex gap-3 px-4 pb-4 pt-2">
-                {matchAction?.type === "user_substitution" ? (
-                  <>
-                    <button
-                      onClick={() => onResolveAction(null)}
-                      className="flex-1 py-3.5 rounded-sm text-sm font-black uppercase tracking-widest transition-all border border-outline-variant/40 hover:bg-surface-bright text-zinc-300"
-                    >
-                      Cancelar
-                    </button>
-                    <button
-                      disabled={!swapSource || !swapTarget}
-                      onClick={() =>
-                        onResolveAction({
-                          playerOut: swapSource.id,
-                          playerIn: swapTarget.id,
-                        })
-                      }
-                      className="flex-1 py-3.5 rounded-sm text-sm font-black uppercase tracking-widest transition-all bg-primary hover:brightness-110 text-on-primary disabled:opacity-50 disabled:cursor-not-allowed"
-                    >
-                      Confirmar
-                    </button>
-                  </>
-                ) : (
-                  <button
-                    onClick={() => onResolveAction(null)}
-                    className="flex-1 py-3.5 rounded-sm text-sm font-black uppercase tracking-widest transition-all bg-primary hover:brightness-110 text-on-primary"
-                  >
-                    Escolha automática
-                  </button>
-                )}
-              </div>
             )}
             {mode === "detail" && (
               <div className="shrink-0 px-4 py-3 border-t border-zinc-800">
