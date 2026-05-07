@@ -87,8 +87,8 @@ export function CupTab({
                           {cupRoundResults.roundName}
                         </span>
                         <span
-                          className={`text-[10px] font-black uppercase tracking-widest px-2 py-0.5 rounded ${cupRoundResults.isFinal ? "bg-amber-500/20 text-amber-400" : "bg-white/8 text-zinc-300"}`}
-                        >
+                           className={`text-[10px] font-black uppercase tracking-widest px-2 py-0.5 rounded ${cupRoundResults.isFinal ? "bg-amber-500/30 text-amber-300 border border-amber-500/30" : "bg-white/8 text-zinc-300"}`}
+                         >
                           {finalLabel}
                         </span>
                       </div>

@@ -472,6 +472,7 @@ export function createCupFlowHelpers(deps: CupFlowDeps) {
         awayTeamId: fixture.awayTeamId,
         homeTeam: home,
         awayTeam: away,
+        round,
         finalHomeGoals: 0,
         finalAwayGoals: 0,
         events: [],
@@ -945,7 +946,7 @@ export function createCupFlowHelpers(deps: CupFlowDeps) {
         if (winnerTeam) {
           io.to(game.roomCode).emit(
             "systemMessage",
-            `🏆 ${winnerTeam.name} venceu a Taça de Portugal de ${game.year}! (+500 000 €)`,
+            `🏆 ${winnerTeam.name} venceu a Taça de Portugal de ${game.year}! (+500 000 €) no Estádio do Jamor`,
           );
         }
       }
@@ -1157,6 +1158,19 @@ export function createCupFlowHelpers(deps: CupFlowDeps) {
         gamePhase: game.gamePhase,
         calendarIndex: game.calendarIndex,
         currentEvent: game.currentEvent,
+        matchweek: game.matchweek,
+        year: game.year,
+      });
+      return;
+    }
+
+    // Lobby: ensure client has current gameState (year, matchweek, calendarIndex)
+    if (game.gamePhase === "lobby") {
+      socket.emit("gameState", {
+        gamePhase: game.gamePhase,
+        calendarIndex: game.calendarIndex,
+        currentEvent: game.currentEvent,
+        allMatchResults: game.allMatchResults || {},
         matchweek: game.matchweek,
         year: game.year,
       });

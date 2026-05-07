@@ -187,7 +187,7 @@ export function createMatchSummaryHelpers(deps: MatchSummaryDeps) {
       competition: "cup" as const,
       cupRound: cupRow.round,
       cupRoundName: cupEntry?.roundName ?? null,
-      venue: isHome ? "Casa" : ("Fora" as "Casa" | "Fora"),
+      venue: cupRow.round === 5 ? "Jamor" : isHome ? "Casa" : "Fora",
       goalsFor,
       goalsAgainst,
       result,
@@ -293,7 +293,7 @@ export function createMatchSummaryHelpers(deps: MatchSummaryDeps) {
         isCup: true,
         cupRound: currentEntry.round,
         cupRoundName: currentEntry.roundName,
-        venue: isHome ? "Casa" : "Fora",
+        venue: currentEntry.round === 5 ? "Jamor" : isHome ? "Casa" : "Fora",
         team: {
           id: team.id,
           name: team.name,

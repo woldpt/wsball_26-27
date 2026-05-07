@@ -34,3 +34,13 @@
 - `client/src/App.jsx`: Global state and core UI logic.
 - `client/src/hooks/useSocketListeners.js`: Centralized socket event handling.
 - `server/game/commentary.ts`: All simulation narration (never duplicate phrases).
+
+## Cup Final (Taça de Portugal)
+- **Round:** `round === 5` (Final), `calendarIndex 18` (last entry in `SEASON_CALENDAR`).
+- **Venue:** Always "Jamor" (neutral ground). Set in `matchSummaryHelpers.ts:190` (history) and `matchSummaryHelpers.ts:296` (next match).
+- **No home advantage:** Home advantage multiplier (1.08/0.92) is disabled in `engine.ts:919` when `fixture.round === 5`.
+- **Commentary:** Dedicated functions in `commentary.ts`: `finalStartPhrase` (minute 1), `finalGoalPhrase` (goals), `finalEndPhrase` (match end). All in Portuguese.
+- **Victory message:** Includes "no Estádio do Jamor" — `cupFlowHelpers.ts:949`.
+- **Badge styling:** `App.jsx:2908` uses `bg-amber-500/20 text-amber-400` for Jamor venue. `CupTab.jsx:90` uses `bg-amber-500/30 text-amber-300 border border-amber-500/30` for isFinal label.
+- **Draw skip:** Final draw is silent (no animation) — `cupFlowHelpers.ts:490`.
+- **fixture.round:** Added to `startCupRound` enriching in `cupFlowHelpers.ts:470` so engine can detect finals.

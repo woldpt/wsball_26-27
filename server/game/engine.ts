@@ -23,6 +23,9 @@ import {
   weatherPhrase,
   secondHalfStartPhrase,
   extraTimeStartPhrase,
+  finalStartPhrase,
+  finalGoalPhrase,
+  finalEndPhrase,
 } from "./commentary";
 import {
   clampSkill,
@@ -848,6 +851,19 @@ async function simulateMatchSegment(
   for (let minute = startMin; minute <= endMin; minute++) {
     fixture._minute = minute;
 
+    if (minute === 1 && !fixture._firstHalfStartComment) {
+      if (fixture.round === 5) {
+        fixture.events.push({
+          minute,
+          type: "phase_start",
+          team: null,
+          emoji: "🏟️",
+          text: `[1'] 🏟️ ${finalStartPhrase()}`,
+        });
+      }
+      fixture._firstHalfStartComment = true;
+    }
+
     if (minute === 46 && !fixture._secondHalfStartComment) {
       fixture.events.push({
         minute,
@@ -916,7 +932,9 @@ async function simulateMatchSegment(
       const ratio =
         adjustedAttack / (adjustedAttack + (defending.defense || 1) * 2);
       let probGoal = ratio * 0.03 * getGoalTimeMultiplier(fixture._minute);
-      probGoal *= isHome ? 1.08 : 0.92;
+      if (fixture.round !== 5) {
+        probGoal *= isHome ? 1.08 : 0.92;
+      }
       probGoal *= getWeatherGoalMultiplier(fixture._weather);
 
       // Posse de bola: quem domina o meio campo tem ligeiramente mais probabilidade
@@ -971,6 +989,10 @@ async function simulateMatchSegment(
       const decisiveChance = Math.min(0.6, craquesInXI * 0.2);
       const isDecisive = Math.random() < decisiveChance;
 
+      const goalText =
+        fixture.round === 5
+          ? finalGoalPhrase(scorer ? scorer.name : "Jogador")
+          : goalPhrase(scorer ? scorer.name : "Jogador");
       fixture.events.push({
         minute,
         type: "goal",
@@ -978,7 +1000,7 @@ async function simulateMatchSegment(
         emoji: "⚽",
         playerId: scorer ? scorer.id : null,
         playerName: scorer ? scorer.name : "Jogador",
-        text: `[${minute}'] ⚽ ${goalPhrase(scorer ? scorer.name : "Jogador")}`,
+        text: `[${minute}'] ⚽ ${goalText}`,
         isDecisive,
       });
 
@@ -1280,6 +1302,25 @@ async function simulateMatchSegment(
   }
 
   delete fixture._minute;
+
+  if (fixture.round === 5 && !fixture._finalEndComment) {
+    const winnerName =
+      fixture.finalHomeGoals > fixture.finalAwayGoals
+        ? fixture.homeTeam?.name
+        : fixture.finalAwayGoals > fixture.finalHomeGoals
+          ? fixture.awayTeam?.name
+          : null;
+    if (winnerName) {
+      fixture.events.push({
+        minute: Math.max(fixture.finalHomeGoals, fixture.finalAwayGoals) + 90,
+        type: "phase_end",
+        team: null,
+        emoji: "🏆",
+        text: `[FIM] 🏆 ${finalEndPhrase(winnerName)}`,
+      });
+    }
+    fixture._finalEndComment = true;
+  }
 }
 
 async function applyPostMatchQualityEvolution(

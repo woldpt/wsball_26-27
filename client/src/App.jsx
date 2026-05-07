@@ -2905,7 +2905,7 @@ function App() {
                         </span>
                       )}
                       <span
-                        className={`text-[10px] font-black uppercase px-2 py-0.5 rounded ${nextMatchSummary?.venue === "Casa" ? "bg-emerald-500/20 text-emerald-400" : "bg-sky-500/20 text-sky-400"}`}
+                        className={`text-[10px] font-black uppercase px-2 py-0.5 rounded ${nextMatchSummary?.venue === "Jamor" ? "bg-amber-500/20 text-amber-400" : nextMatchSummary?.venue === "Casa" ? "bg-emerald-500/20 text-emerald-400" : "bg-sky-500/20 text-sky-400"}`}
                       >
                         {nextMatchSummary?.venue ?? "-"}
                       </span>

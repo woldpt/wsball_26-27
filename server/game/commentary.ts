@@ -595,14 +595,57 @@ function extraTimeStartPhrase(): string {
     `Nada resolvido em 90 minutos. O prolongamento promete sofrimento e decisão.`,
     `Prolongamento em andamento. Quem marcar agora pode escrever a história.`,
     `Segue tudo empatado. Mais meia hora para encontrar um vencedor.`,
-    `O árbitro manda jogar mais 30 minutos. Emoção extra garantida.`,
-    `Prolongamento arrancado. Agora qualquer erro pode ser fatal.`,
-    `As equipas voltam a campo. O cansaço entra em cena, mas o jogo continua.`,
-    `Está tudo empatado. O prolongamento começa com nervos à flor da pele.`,
-    `Mais 30 minutos de drama. Ninguém quer ir aos penáltis ainda.`,
-    `Prolongamento em curso. Agora joga-se com o coração e pouco resto de pernas.`,
-    `Depois de 90 intensos minutos, o jogo continua no modo decisão.`,
-    `Arranca o prolongamento. Última oportunidade antes dos penáltis.`,
+    `O árbitro dá o sinal. Segunda parte em ação.`,
+  ]);
+}
+
+function finalStartPhrase(): string {
+  return pickPhrase([
+    `Chegou a final da Taça de Portugal. No Jamor, tudo começa agora.`,
+    `Final em andamento no Estádio do Jamor. A história está para escrever.`,
+    `Chegamos ao Jamor. A final da Taça de Portugal está a decorrer.`,
+    `Estádio do Jamor em ebulição. A final já arrancou e não há volta atrás.`,
+    `Chegou a hora da final. Jamor, Taça, emoção — está tudo em jogo.`,
+    `O Jamor recebe a final da Taça de Portugal. Quem levanta a taça?`,
+    `Final no Jamor. Um jogo, uma taça, uma história para a eternidade.`,
+    `Jamor em festa. A final da Taça de Portugal arrancou com tudo.`,
+    `Chegámos ao Jamor. A batalha pela Taça de Portugal começa agora.`,
+    `Final da Taça no Estádio do Jamor. A emoção é total.`,
+  ]);
+}
+
+function finalGoalPhrase(name: string): string {
+  return pickPhrase([
+    `GOLOOO! ${name} abre o marcador no Jamor! A final tem nome!`,
+    `${name} marca no Jamor! A Taça de Portugal tem um passo mais perto!`,
+    `Golo no Jamor! ${name} escreve o primeiro capítulo da final.`,
+    `GOLO! ${name} no Jamor, no lugar certo, no momento certo. Taça a caminho.`,
+    `${name} marca na final! Jamor em êxtase com este golo!`,
+    `Golo de ${name} no Jamor! A Taça de Portugal vai ter novo dono.`,
+    `GOLOOO! ${name} desperta o Jamor! A final muda de figura!`,
+    `${name} abre o marcador na final! Jamor a tremer com este golo!`,
+    `Golo no Jamor! ${name} já sonha com a taça levantada.`,
+    `GOLO! ${name} no Jamor, no grande jogo. A Taça está a chegar.`,
+    `Jamor em festa! ${name} marca na final e faz a bancada explodir!`,
+    `Golo de ${name} na final! O Jamor reconhece a classe.`,
+    `GOLOOO! ${name} escreve a história no Jamor! Taça quase a caminho!`,
+    `${name} marca no Jamor! A Taça de Portugal tem um favorito.`,
+    `Golo no Jamor! ${name} já é lenda viva neste estádio.`,
+  ]);
+}
+
+function finalEndPhrase(winnerName: string): string {
+  return pickPhrase([
+    `Fim de jogo no Jamor! ${winnerName} é o novo campeão da Taça de Portugal!`,
+    `Jamor em festa! ${winnerName} levanta a Taça de Portugal!`,
+    `Final no Jamor a terminar! ${winnerName} é o rei da Taça!`,
+    `Taça de Portugal para ${winnerName}! O Jamor grita o nome do campeão!`,
+    `${winnerName} vence a final no Jamor! Taça de Portugal — nova!`,
+    `O Jamor guarda o segredo de ${winnerName} — campeão da Taça de Portugal!`,
+    `Final da Taça a terminar! ${winnerName} no Jamor, campeão!`,
+    `Taça de Portugal 2026: ${winnerName} no Jamor, imponente!`,
+    `${winnerName} ergue a Taça! Jamor em pé, a festejar o campeão!`,
+    `Fim! ${winnerName} é o campeão da Taça de Portugal no Jamor!`,
   ]);
 }
 
@@ -621,4 +664,7 @@ export {
   weatherPhrase,
   secondHalfStartPhrase,
   extraTimeStartPhrase,
+  finalStartPhrase,
+  finalGoalPhrase,
+  finalEndPhrase,
 };
