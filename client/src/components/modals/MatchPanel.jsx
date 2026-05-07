@@ -319,13 +319,35 @@ function TabAdversario({ fixture, myTeamId, teams }) {
           ? "Equilibrado"
           : null;
 
-  const starters = _sortByPos(oppLineup.filter((p) => p.is_starter !== false && p.starter !== false).slice(0, 11));
-  const bench = oppLineup.filter((p) => !starters.find((s) => s.id === p.id));
+  const starters = _sortByPos(
+    oppLineup
+      .filter((p) => p.is_starter !== false && p.starter !== false)
+      .slice(0, 11),
+  );
+
+  const rows = {
+    ATA: starters.filter((p) => p.position === "ATA"),
+    MED: starters.filter((p) => p.position === "MED"),
+    DEF: starters.filter((p) => p.position === "DEF"),
+    GR: starters.filter((p) => p.position === "GR"),
+  };
+  const rowConfig = [
+    { key: "ATA", top: "8%" },
+    { key: "MED", top: "31%" },
+    { key: "DEF", top: "56%" },
+    { key: "GR", top: "81%" },
+  ];
+
+  const posColors = {
+    GR: "bg-amber-500 text-zinc-950",
+    DEF: "bg-sky-500 text-zinc-950",
+    MED: "bg-emerald-500 text-zinc-950",
+    ATA: "bg-rose-500 text-white",
+  };
 
   return (
-    <div className="flex-1 overflow-y-auto p-3 space-y-3">
-      {/* Cabeçalho equipa adversária */}
-      <div className="flex items-center gap-2 pb-1 border-b border-zinc-800">
+    <div className="flex-1 min-h-0 overflow-hidden p-3 space-y-3 bg-[radial-gradient(circle_at_top,#0f1320_0%,#0d0d14_55%,#09090f_100%)]">
+      <div className="flex items-center gap-2 pb-1 border-b border-zinc-800/80">
         <span
           className="text-xs font-black uppercase tracking-widest truncate"
           style={{ color: oppInfo?.color_primary || "#f59e0b" }}
@@ -339,65 +361,68 @@ function TabAdversario({ fixture, myTeamId, teams }) {
         )}
       </div>
 
-      {/* Titulares */}
-      <div>
-        <p className="text-[9px] font-black uppercase tracking-widest text-zinc-500 mb-1">
-          Titulares
+      {starters.length === 0 ? (
+        <p className="text-center text-zinc-500 text-xs font-bold py-6">
+          Sem dados da escalação do adversário
         </p>
-        <div className="space-y-0.5">
-          {starters.map((p) => (
-            <div key={p.id ?? p.name} className="flex items-center gap-1.5 py-0.5">
-              <span
-                className={`w-6 text-[10px] font-black shrink-0 ${POSITION_TEXT_CLASS[p.position] || "text-zinc-400"}`}
-              >
-                {POSITION_SHORT_LABELS[p.position] || "?"}
-              </span>
-              <span
-                className={`flex-1 truncate text-xs font-bold text-zinc-200 ${POSITION_BORDER_CLASS[p.position] ? "" : ""}`}
-              >
-                {p.name}
-                {!!p.is_star && (p.position === "MED" || p.position === "ATA") && (
-                  <span className="ml-0.5 text-amber-400 font-black">*</span>
-                )}
-              </span>
-              {p.skill != null && (
-                <span className="text-[10px] font-black tabular-nums text-zinc-500 shrink-0">
-                  {p.skill}
-                </span>
-              )}
-            </div>
-          ))}
-        </div>
-      </div>
+      ) : (
+        <div className="relative w-full rounded-md overflow-hidden border border-emerald-900/60 bg-[linear-gradient(180deg,#05430e_0%,#0b5e1a_50%,#05430e_100%)]" style={{ aspectRatio: "16/10" }}>
+          <svg
+            className="absolute inset-0 w-full h-full"
+            viewBox="0 0 560 315"
+            preserveAspectRatio="none"
+            aria-hidden="true"
+          >
+            <rect x="10" y="10" width="540" height="295" fill="none" stroke="rgba(255,255,255,0.2)" strokeWidth="1.5" rx="2" />
+            <line x1="10" y1="157" x2="550" y2="157" stroke="rgba(255,255,255,0.15)" strokeWidth="1" />
+            <circle cx="280" cy="157" r="50" fill="none" stroke="rgba(255,255,255,0.12)" strokeWidth="1" />
+            <circle cx="280" cy="157" r="3" fill="rgba(255,255,255,0.18)" />
+            <rect x="168" y="10" width="224" height="70" fill="none" stroke="rgba(255,255,255,0.12)" strokeWidth="1" />
+            <rect x="224" y="10" width="112" height="26" fill="none" stroke="rgba(255,255,255,0.1)" strokeWidth="1" />
+            <rect x="168" y="235" width="224" height="70" fill="none" stroke="rgba(255,255,255,0.12)" strokeWidth="1" />
+            <rect x="224" y="289" width="112" height="26" fill="none" stroke="rgba(255,255,255,0.1)" strokeWidth="1" />
+          </svg>
 
-      {/* Banco */}
-      {bench.length > 0 && (
-        <div>
-          <p className="text-[9px] font-black uppercase tracking-widest text-zinc-500 mb-1">
-            Banco
-          </p>
-          <div className="space-y-0.5">
-            {_sortByPos(bench).map((p) => (
-              <div key={p.id ?? p.name} className="flex items-center gap-1.5 py-0.5 opacity-60">
-                <span
-                  className={`w-6 text-[10px] font-black shrink-0 ${POSITION_TEXT_CLASS[p.position] || "text-zinc-400"}`}
-                >
-                  {POSITION_SHORT_LABELS[p.position] || "?"}
-                </span>
-                <span className="flex-1 truncate text-xs font-bold text-zinc-400">
-                  {p.name}
-                  {!!p.is_star && (p.position === "MED" || p.position === "ATA") && (
-                    <span className="ml-0.5 text-amber-400 font-black">*</span>
-                  )}
-                </span>
-                {p.skill != null && (
-                  <span className="text-[10px] font-black tabular-nums text-zinc-500 shrink-0">
-                    {p.skill}
-                  </span>
-                )}
+          {rowConfig.map(({ key, top }) => {
+            const rowPlayers = rows[key] || [];
+            if (rowPlayers.length === 0) return null;
+            return (
+              <div
+                key={key}
+                className="absolute w-full flex justify-evenly items-start px-3"
+                style={{ top }}
+              >
+                {rowPlayers.map((player) => (
+                  <div
+                    key={player.id ?? player.name}
+                    className="flex flex-col items-center gap-0.5"
+                    style={{ maxWidth: "90px" }}
+                  >
+                    <div
+                      className={`w-9 h-9 rounded-full flex items-center justify-center font-black text-[10px] border border-white/30 shadow-lg ${posColors[player.position] || "bg-zinc-500 text-white"}`}
+                    >
+                      {POSITION_SHORT_LABELS[player.position] || "?"}
+                    </div>
+                    <div
+                      className="bg-black/65 backdrop-blur-sm px-1.5 py-0.5 rounded text-[9px] font-black text-white text-center truncate"
+                      style={{ maxWidth: "85px" }}
+                    >
+                      {player.name}
+                      {!!player.is_star &&
+                        (player.position === "MED" || player.position === "ATA") && (
+                        <span className="ml-0.5 text-amber-400">*</span>
+                      )}
+                    </div>
+                    <span className="text-[9px] font-black text-amber-200 drop-shadow-[0_1px_2px_rgba(0,0,0,0.9)]">
+                      {player.skill ?? "-"}
+                    </span>
+                  </div>
+                ))}
               </div>
-            ))}
-          </div>
+            );
+          })}
+
+          <div className="absolute inset-0 pointer-events-none bg-linear-to-t from-black/35 to-transparent" />
         </div>
       )}
     </div>
@@ -802,7 +827,7 @@ function TabIntervencao({
                 onClick={() => onResolveAction(null)}
                 className="shrink-0 px-2.5 py-1.5 rounded text-[10px] font-black uppercase tracking-wide border border-zinc-700 text-zinc-300 hover:bg-zinc-800"
               >
-                Auto
+                Continuar
               </button>
               <button
                 disabled={isPenalty ? !effectiveOutId : !canConfirmSwap}
@@ -951,6 +976,7 @@ export function MatchPanel({
                       ? "Penálti"
                       : "Pausa Tática",
             },
+            { id: "adversario", label: "Adversário" },
             { id: "jogo", label: "Jogo" },
           ]
         : [
@@ -1172,7 +1198,8 @@ export function MatchPanel({
                       onResolveAction={onResolveAction}
                     />
                   )}
-                  {effectiveTab === "adversario" && mode === "halftime" && (
+                  {effectiveTab === "adversario" &&
+                    (mode === "halftime" || mode === "action") && (
                     <TabAdversario
                       fixture={fixture}
                       myTeamId={myTeamId}

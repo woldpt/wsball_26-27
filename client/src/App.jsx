@@ -283,6 +283,8 @@ function App() {
 
   const meRef = React.useRef(null);
   const isPlayingMatchRef = React.useRef(false);
+  const showHalftimePanelRef = React.useRef(false);
+  const matchActionRef = React.useRef(null);
   const isCupDrawRef = React.useRef(false);
   const teamsRef = React.useRef([]);
   const isLiveSimulationRef = React.useRef(false);
@@ -345,6 +347,14 @@ function App() {
   useEffect(() => {
     isLiveSimulationRef.current = isLiveSimulation;
   }, [isLiveSimulation]);
+
+  useEffect(() => {
+    showHalftimePanelRef.current = showHalftimePanel;
+  }, [showHalftimePanel]);
+
+  useEffect(() => {
+    matchActionRef.current = matchAction;
+  }, [matchAction]);
 
   useEffect(() => {
     isCupExtraTimeRef.current = isCupExtraTime;
@@ -442,6 +452,8 @@ function App() {
     },
     {
       isPlayingMatchRef,
+      showHalftimePanelRef,
+      matchActionRef,
       isCupDrawRef,
       meRef,
       teamsRef,
@@ -1377,6 +1389,14 @@ function App() {
   const isMatchInProgress =
     isPlayingMatch || showHalftimePanel || !!matchAction;
 
+  useEffect(() => {
+    if (!isMatchInProgress) return;
+    setSelectedAuctionPlayer(null);
+    setAuctionBid("");
+    setMyAuctionBid(null);
+    setAuctionResult(null);
+  }, [isMatchInProgress]);
+
   // Auto-collapse sidebar during Live; restore user preference when Live ends
   React.useEffect(() => {
     if (isMatchInProgress) {
@@ -2053,9 +2073,9 @@ function App() {
   // ── MATCH PANEL ──────────────────────────────────────────────────────────
   const panelMode = matchAction
     ? "action"
-    : showHalftimePanel && !isPlayingMatch
+    : showHalftimePanel
       ? "halftime"
-      : showMatchDetail && !isPlayingMatch && !showHalftimePanel
+      : showMatchDetail
         ? "detail"
         : null;
   const panelFixture = showMatchDetail ? matchDetailFixture : myMatch || null;
@@ -5286,7 +5306,9 @@ function App() {
       {/* ── Auction notification (persiana) ───────────────────────────────── */}
       <div
         className={`fixed top-14 left-0 right-0 z-130 transition-all duration-300 ${
-          selectedAuctionPlayer ? "translate-y-0" : "-translate-y-full"
+          selectedAuctionPlayer && !isMatchInProgress
+            ? "translate-y-0"
+            : "-translate-y-full"
         } ${sidebarCollapsed ? "lg:left-14" : "lg:left-64"}`}
       >
         <AuctionNotification

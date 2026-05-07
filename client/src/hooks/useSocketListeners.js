@@ -45,8 +45,15 @@ export function useSocketListeners(handlers, refs) {
     socket.on("mySquad", (data) => handlers.setMySquad(data));
     socket.on("marketUpdate", (data) => handlers.setMarketPairs(data));
     socket.on("auctionStarted", (auctionData) => {
-      // Never open auction notification during an active match or cup draw
-      if (refs.isPlayingMatchRef.current || refs.isCupDrawRef.current) return;
+      // Never open auction notification during match flow or cup draw
+      if (
+        refs.isPlayingMatchRef.current ||
+        refs.showHalftimePanelRef?.current ||
+        !!refs.matchActionRef?.current ||
+        refs.isCupDrawRef.current
+      ) {
+        return;
+      }
       // Skip if starting price exceeds our available budget
       const myTeamId = refs.meRef.current?.teamId;
       const myTeamBudget =
@@ -861,8 +868,12 @@ export function useSocketListeners(handlers, refs) {
     });
 
     socket.on("matchActionRequired", (data) => {
-      // Ignorar se o jogo já terminou (evita janela de acção pós-apito final)
-      if (!refs.isPlayingMatchRef.current) return;
+      // Ignorar apenas se não houver qualquer contexto de jogo ativo
+      const hasMatchContext =
+        refs.isPlayingMatchRef.current ||
+        refs.showHalftimePanelRef?.current ||
+        !!refs.matchActionRef?.current;
+      if (!hasMatchContext) return;
 
       handlers.setIsMatchActionPending(true);
 
@@ -871,24 +882,30 @@ export function useSocketListeners(handlers, refs) {
         return;
       }
 
+      const currentSquad = Array.isArray(refs.mySquadRef.current)
+        ? refs.mySquadRef.current
+        : [];
+      const currentPositions = refs.tacticRef.current?.positions || {};
+      const squadById = new Map(currentSquad.map((p) => [Number(p.id), p]));
+
       const normalizedAction = { ...(data || {}) };
 
       const toCandidate = (player) => {
         if (!player || player.id === undefined || player.id === null) {
           return null;
         }
+        const id = Number(player.id);
+        const squadPlayer = squadById.get(id);
         return {
-          id: player.id,
-          name: player.name || "Jogador",
-          position: player.position || "MED",
-          skill: Number(player.skill || 0),
+          id,
+          name: player.name || squadPlayer?.name || "Jogador",
+          position: player.position || squadPlayer?.position || "MED",
+          skill: Number(player.skill ?? squadPlayer?.skill ?? 0),
+          resistance: Number(player.resistance ?? squadPlayer?.resistance ?? 0),
+          form: Number(player.form ?? squadPlayer?.form ?? 100),
+          is_star: Boolean(player.is_star ?? squadPlayer?.is_star),
         };
       };
-
-      const currentSquad = Array.isArray(refs.mySquadRef.current)
-        ? refs.mySquadRef.current
-        : [];
-      const currentPositions = refs.tacticRef.current?.positions || {};
 
       if (normalizedAction.type === "penalty") {
         const incomingCandidates = (normalizedAction.takerCandidates || [])
