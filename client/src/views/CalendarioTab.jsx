@@ -521,15 +521,17 @@ export function CalendarioTab({ calendarData, me, teams, seasonYear, calFilter, 
                     <span className="text-[10px] font-black text-on-surface leading-tight">
                       {weekLabel}
                     </span>
-                    <span
-                      className={`hidden sm:inline-block text-[8px] font-black uppercase tracking-widest px-1.5 py-0.5 rounded self-start ${
-                        imHome
-                          ? "bg-emerald-500/20 text-emerald-400"
-                          : "bg-sky-500/20 text-sky-400"
-                      }`}
-                    >
-                      {imHome ? "Casa" : "Fora"}
-                    </span>
+                    {!(type === "cup" && !opponent) && (
+                      <span
+                        className={`hidden sm:inline-block text-[8px] font-black uppercase tracking-widest px-1.5 py-0.5 rounded self-start ${
+                          imHome
+                            ? "bg-emerald-500/20 text-emerald-400"
+                            : "bg-sky-500/20 text-sky-400"
+                        }`}
+                      >
+                        {imHome ? "Casa" : "Fora"}
+                      </span>
+                    )}
                     {isCurrent && (
                       <span className="text-[9px] text-primary font-bold">
                         Hoje
@@ -567,18 +569,22 @@ export function CalendarioTab({ calendarData, me, teams, seasonYear, calFilter, 
                           ? `${stadiumTeam.stadium_name.toUpperCase()} (${imHome ? "Casa" : "Fora"})`
                           : imHome
                             ? "Casa"
-                            : "Fora"}
+                            : (type === "cup" && !opponent)
+                              ? "—"
+                              : "Fora"}
                       </span>
                       {/* Mobile-only home/away indicator */}
-                      <span
-                        className={`sm:hidden text-[8px] font-black uppercase tracking-widest ${
-                          imHome
-                            ? "text-emerald-400"
-                            : "text-sky-400"
-                        }`}
-                      >
-                        {imHome ? "Casa" : "Fora"}
-                      </span>
+                      {!(type === "cup" && !opponent) && (
+                        <span
+                          className={`sm:hidden text-[8px] font-black uppercase tracking-widest ${
+                            imHome
+                              ? "text-emerald-400"
+                              : "text-sky-400"
+                          }`}
+                        >
+                          {imHome ? "Casa" : "Fora"}
+                        </span>
+                      )}
                     </div>
                   </div>
 
