@@ -5317,6 +5317,9 @@ function App() {
         setTransferProposalModal={setTransferProposalModal}
         myBudget={teamInfo?.budget ?? 0}
         currentMatchweek={matchweekCount + 1}
+        calendarData={calendarData}
+        teams={teams}
+        setSelectedTeam={setSelectedTeam}
       />
 
       <TransferProposalModal
