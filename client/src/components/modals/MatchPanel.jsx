@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 // eslint-disable-next-line no-unused-vars
 import { motion, AnimatePresence, useReducedMotion } from "framer-motion";
 import { getEffectiveLineup } from "../../utils/playerHelpers.js";
@@ -325,6 +325,10 @@ function TabAdversario({ fixture, myTeamId, teams }) {
       .slice(0, 11),
   );
 
+  const bench = _sortByPos(
+    oppLineup.filter((p) => p.is_starter === false || p.starter === false),
+  );
+
   const rows = {
     ATA: starters.filter((p) => p.position === "ATA"),
     MED: starters.filter((p) => p.position === "MED"),
@@ -346,7 +350,7 @@ function TabAdversario({ fixture, myTeamId, teams }) {
   };
 
   return (
-    <div className="flex-1 min-h-0 overflow-hidden p-3 space-y-3 bg-[radial-gradient(circle_at_top,#0f1320_0%,#0d0d14_55%,#09090f_100%)]">
+    <div className="flex-1 min-h-0 overflow-y-auto p-3 space-y-3 bg-[radial-gradient(circle_at_top,#0f1320_0%,#0d0d14_55%,#09090f_100%)]">
       <div className="flex items-center gap-2 pb-1 border-b border-zinc-800/80">
         <span
           className="text-xs font-black uppercase tracking-widest truncate"
@@ -423,6 +427,39 @@ function TabAdversario({ fixture, myTeamId, teams }) {
           })}
 
           <div className="absolute inset-0 pointer-events-none bg-linear-to-t from-black/35 to-transparent" />
+        </div>
+      )}
+
+      {/* Banco de suplentes do adversário */}
+      {bench.length > 0 && (
+        <div>
+          <p className="text-[9px] font-black uppercase tracking-widest text-zinc-600 mb-1.5">
+            Banco
+          </p>
+          <div className="grid grid-cols-2 gap-x-3 gap-y-0.5">
+            {bench.map((player) => (
+              <div
+                key={player.id ?? player.name}
+                className="flex items-center gap-1.5 py-0.5"
+              >
+                <span
+                  className={`text-[9px] font-black w-6 shrink-0 ${POSITION_TEXT_CLASS[player.position] || "text-zinc-500"}`}
+                >
+                  {POSITION_SHORT_LABELS[player.position] || "?"}
+                </span>
+                <span className="flex-1 truncate text-[11px] font-bold text-zinc-400">
+                  <PlayerLink playerId={player.id}>{player.name}</PlayerLink>
+                  {!!player.is_star &&
+                    (player.position === "MED" || player.position === "ATA") && (
+                      <span className="ml-0.5 text-amber-400 font-black">*</span>
+                    )}
+                </span>
+                <span className="text-[10px] font-black tabular-nums text-zinc-600 shrink-0">
+                  {player.skill ?? "—"}
+                </span>
+              </div>
+            ))}
+          </div>
         </div>
       )}
     </div>
@@ -935,6 +972,11 @@ export function MatchPanel({
 
   const [activeTab, setActiveTab] = useState(() => getDefaultTab(mode));
 
+  // Repor tab por omissão sempre que o mode muda (ex: null → "action")
+  useEffect(() => {
+    setActiveTab(getDefaultTab(mode));
+  }, [mode]);
+
   const isOpen = !!mode;
 
   const hInfo = fixture ? teams.find((t) => t.id === fixture.homeTeamId) : null;
@@ -1252,6 +1294,23 @@ export function MatchPanel({
                           : "▶ INICIAR 2ª PARTE"}
                 </button>
               </>
+            )}
+            {mode === "action" &&
+              matchAction?.type === "user_substitution" && (
+                <button
+                  onClick={() => onResolveAction(null)}
+                  className="shrink-0 w-full py-3.5 text-sm font-black uppercase tracking-widest bg-primary hover:brightness-110 text-on-primary transition-all"
+                >
+                  ▶ CONTINUAR
+                </button>
+            )}
+            {mode === "detail" && (
+              <button
+                onClick={onClose}
+                className="shrink-0 w-full py-3 text-sm font-black uppercase tracking-widest bg-zinc-900 hover:bg-zinc-800 text-zinc-300 transition-all border-t border-zinc-800"
+              >
+                Fechar
+              </button>
             )}
           </motion.div>
         </motion.div>
