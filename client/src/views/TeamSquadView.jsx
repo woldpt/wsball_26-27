@@ -8,10 +8,10 @@ import {
   POSITION_BG_CLASS,
   POSITION_BORDER_CLASS,
   POSITION_LABEL_MAP,
-} from "../../constants/index.js";
-import { generateLeagueFixtures } from "../../utils/fixtures.js";
-import { getPlayerStat } from "../../utils/playerHelpers.js";
-import { isSameTeamId } from "../../utils/teamHelpers.js";
+} from "../constants/index.js";
+import { generateLeagueFixtures } from "../utils/fixtures.js";
+import { getPlayerStat } from "../utils/playerHelpers.js";
+import { isSameTeamId } from "../utils/teamHelpers.js";
 import { useState } from "react";
 
 /**
