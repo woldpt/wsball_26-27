@@ -150,6 +150,22 @@ export function registerSessionSocketHandlers(
       });
     }
 
+    // Check if this team had a pending match action that was already resolved
+    const pendingAction: any = game.pendingMatchAction;
+    if (pendingAction && pendingAction.teamId === team.id) {
+      const actionId = pendingAction.actionId;
+      console.log(
+        `[${roomCode}] ⚠ Reconnecting coach ${name} had pending action (actionId=${actionId}) that was already resolved`,
+      );
+      socket.emit("matchActionExpired", {
+        actionId,
+        type: pendingAction.type,
+        teamId: team.id,
+        reason: "coach_disconnected",
+      });
+      game.pendingMatchAction = null;
+    }
+
     game.lockedCoaches.add(name);
     if (game.lockedCoaches.size >= 2) {
       saveGameState(game);

@@ -618,6 +618,30 @@ function getGame(roomCode: string, onReady?: OnReady): ActiveGame | null {
                 } catch (_) {}
               }
 
+              // Restore pending match action for crash recovery (stub finalize/timer)
+              if (st["pendingMatchAction"] && st["pendingMatchAction"] !== "null") {
+                try {
+                  const parsed = JSON.parse(st["pendingMatchAction"]);
+                  if (parsed && parsed.actionId && parsed.fallback !== undefined) {
+                    game.pendingMatchAction = {
+                      actionId: parsed.actionId,
+                      type: parsed.type || "unknown",
+                      teamId: parsed.teamId,
+                      timer: null as any,
+                      finalize: (_choice: any, _source: string) => {
+                        console.log(
+                          `[gameManager] ⚠ Stale pendingMatchAction finalize called (actionId=${parsed.actionId})`,
+                        );
+                      },
+                      fallback: () => parsed.fallback,
+                    };
+                    console.log(
+                      `[gameManager] 🔄 Restored pendingMatchAction stub from DB (actionId=${parsed.actionId}, teamId=${parsed.teamId})`,
+                    );
+                  }
+                } catch (_) {}
+              }
+
               // Set currentEvent from calendarIndex
               game.currentEvent = SEASON_CALENDAR[game.calendarIndex] ?? null;
 
@@ -726,6 +750,22 @@ function saveGameState(game: ActiveGame): void {
   );
   upsert("fixtureSeeds", JSON.stringify(game.fixtureSeeds || {}));
   upsert("allMatchResults", JSON.stringify(game.allMatchResults || {}));
+
+  // Persist pending match action for crash recovery (only serialisable fields)
+  if (game.pendingMatchAction) {
+    const pa = game.pendingMatchAction;
+    upsert(
+      "pendingMatchAction",
+      JSON.stringify({
+        actionId: pa.actionId,
+        type: pa.type,
+        teamId: pa.teamId,
+        fallback: pa.fallback ? pa.fallback() : null,
+      }),
+    );
+  } else {
+    upsert("pendingMatchAction", "null");
+  }
 
   // Persist current fixtures for crash recovery (only serialisable fields)
   if (game.currentFixtures && game.currentFixtures.length > 0) {

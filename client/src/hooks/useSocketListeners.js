@@ -1015,6 +1015,30 @@ export function useSocketListeners(handlers, refs) {
       );
     });
 
+    socket.on("coachDisconnected", ({ coachName, teamId }) => {
+      handlers.pushTickerItem(
+        `${coachName} desconectou-se`,
+        null,
+        null,
+        teamId,
+      );
+    });
+
+    socket.on("matchActionExpired", ({ actionId, type, reason }) => {
+      handlers.setIsMatchActionPending(false);
+      clearInterval(refs.injuryCountdownRef.current);
+      refs.injuryCountdownRef.current = null;
+      handlers.setInjuryCountdown(null);
+      handlers.setMatchAction(null);
+      handlers.addToast(
+        type === "user_substitution"
+          ? "Substituição expirada — decisão automática aplicada"
+          : type === "injury"
+          ? "Lesão sem substituição — decisão automática aplicada"
+          : "Decisão expirada — ação automática aplicada",
+      );
+    });
+
     // BUG-11 FIX: matchResults clears showHalftimePanel (2nd half replay)
     socket.on("matchResults", (data) => {
       handlers.setIsMatchActionPending(false);
@@ -1203,6 +1227,8 @@ export function useSocketListeners(handlers, refs) {
       socket.off("matchActionResolved");
       socket.off("substitutionPauseStarted");
       socket.off("substitutionPauseEnded");
+      socket.off("coachDisconnected");
+      socket.off("matchActionExpired");
       socket.off("roomLocked");
       socket.off("awaitingCoaches");
       socket.off("gameState");

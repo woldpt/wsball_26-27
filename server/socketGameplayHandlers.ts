@@ -195,6 +195,12 @@ export function registerGameplaySocketHandlers(
       `[${game.roomCode}] 🔌 Disconnect: ${playerState?.name ?? "unknown"} (socket=${socket.id}) | phase=${game.gamePhase}`,
     );
 
+    if (!playerState) {
+      unbindSocket(game, socket.id);
+      emitPresence(game);
+      return;
+    }
+
     if (playerState) {
       // In lobby: reset ready state so a refreshing coach must re-confirm their tactic.
       // This prevents a disconnect from triggering an auto-advance into the match.
@@ -234,14 +240,37 @@ export function registerGameplaySocketHandlers(
           );
         }
       }
+
+      // Emit coach disconnected notification to the room
+      const disconnectingName = playerState.name;
+      const disconnectingTeamId = playerState.teamId;
+      if (disconnectingTeamId) {
+        io.to(game.roomCode).emit("coachDisconnected", {
+          coachName: disconnectingName,
+          teamId: disconnectingTeamId,
+        });
+      }
     }
 
     unbindSocket(game, socket.id);
     emitPresence(game);
     emitGlobalPlayerUpdate?.();
+
+    // Clear phase timer to prevent stale timeouts after disconnect/reconnect
+    if (game.phaseTimer) {
+      clearTimeout(game.phaseTimer);
+      game.phaseTimer = null;
+    }
+
     // Let remaining ready coaches proceed if all are now ready.
-    // Skip in lobby: a disconnect must never auto-start the match.
-    if (game.gamePhase !== "lobby") {
+    // Skip in lobby, match running, and match_finalizing: a disconnect must
+    // never auto-start the match or interfere with ongoing simulation.
+    const isMatchRunning =
+      game.gamePhase === "match_first_half" ||
+      game.gamePhase === "match_second_half" ||
+      game.gamePhase === "match_extra_time";
+    const isFinalizing = game.gamePhase === "match_finalizing";
+    if (!isMatchRunning && !isFinalizing && game.gamePhase !== "lobby") {
       checkAllReady(game);
     }
   });
