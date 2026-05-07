@@ -4148,7 +4148,7 @@ function App() {
                       palmaresTeamId={palmaresTeamId}
                       setTransferProposalModal={setTransferProposalModal}
                       myBudget={currentBudget}
-                      currentMatchweek={matchweekCount}
+                      currentMatchweek={matchweekCount + 1}
                       calendarData={calendarData}
                       teams={teams}
                     />

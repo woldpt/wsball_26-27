@@ -211,14 +211,16 @@ export function TeamSquadView({
           </div>
 
           {/* Manager */}
-          <div className="shrink-0 text-right hidden sm:block">
-            <p className="text-[10px] uppercase tracking-widest text-on-surface-variant/80 font-black mb-1">
-              Manager
-            </p>
-            <p className="font-headline font-black text-on-surface text-lg tracking-tight">
-              {me?.name || "—" }
-            </p>
-          </div>
+          {isOwnTeam && (
+            <div className="shrink-0 text-right hidden sm:block">
+              <p className="text-[10px] uppercase tracking-widest text-on-surface-variant/80 font-black mb-1">
+                Manager
+              </p>
+              <p className="font-headline font-black text-on-surface text-lg tracking-tight">
+                {me?.name || "—" }
+              </p>
+            </div>
+          )}
         </div>
 
         {/* Budget widget (only for own team) */}
