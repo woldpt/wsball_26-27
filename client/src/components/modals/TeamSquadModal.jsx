@@ -366,15 +366,17 @@ export function TeamSquadModal({
                             <span className="text-[10px] font-black text-on-surface leading-tight">
                               {weekLabel}
                             </span>
-                            <span
-                              className={`hidden sm:inline-block text-[8px] font-black uppercase tracking-widest px-1.5 py-0.5 rounded self-start ${
-                                imHome
-                                  ? "bg-emerald-500/20 text-emerald-400"
-                                  : "bg-sky-500/20 text-sky-400"
-                              }`}
-                            >
-                              {imHome ? "Casa" : "Fora"}
-                            </span>
+                            {opponent && (
+                              <span
+                                className={`hidden sm:inline-block text-[8px] font-black uppercase tracking-widest px-1.5 py-0.5 rounded self-start ${
+                                  imHome
+                                    ? "bg-emerald-500/20 text-emerald-400"
+                                    : "bg-sky-500/20 text-sky-400"
+                                }`}
+                              >
+                                {imHome ? "Casa" : "Fora"}
+                              </span>
+                            )}
                             {isCurrent && (
                               <span className="text-[9px] text-primary font-bold">
                                 Hoje
@@ -416,7 +418,7 @@ export function TeamSquadModal({
                                     ? "Casa"
                                     : "Fora"}
                               </span>
-                              {!(opponent) && (
+                              {opponent && (
                                 <span
                                   className={`sm:hidden text-[8px] font-black uppercase tracking-widest ${
                                     imHome
