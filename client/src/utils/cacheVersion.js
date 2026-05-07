@@ -1,4 +1,24 @@
 const CACHE_VERSION_KEY = "cashball_cache_version";
+const PRESERVED_LOCAL_KEYS = [
+  "cashballSession",
+  "cashballAdminSession",
+  CACHE_VERSION_KEY,
+];
+
+function preserveLocalStorageKeys(keys) {
+  const preserved = new Map();
+  keys.forEach((key) => {
+    const value = localStorage.getItem(key);
+    if (value !== null) preserved.set(key, value);
+  });
+  return preserved;
+}
+
+function restoreLocalStorageKeys(preserved) {
+  preserved.forEach((value, key) => {
+    localStorage.setItem(key, value);
+  });
+}
 
 /**
  * Verifica se o cache do browser está sincronizado com o servidor.
@@ -15,8 +35,10 @@ export async function checkCacheVersion() {
     const clientVersion = String(localStorage.getItem(CACHE_VERSION_KEY));
 
     if (clientVersion !== serverVersion) {
-      // Cache desatualizado ou inexistente → hard reset
+      // Cache desatualizado ou inexistente → hard reset sem perder sessão
+      const preservedLocal = preserveLocalStorageKeys(PRESERVED_LOCAL_KEYS);
       localStorage.clear();
+      restoreLocalStorageKeys(preservedLocal);
       sessionStorage.clear();
       localStorage.setItem(CACHE_VERSION_KEY, serverVersion);
       return true;
