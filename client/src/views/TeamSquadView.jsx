@@ -101,7 +101,8 @@ export function TeamSquadView({
       );
       if (myFixture) {
         futureFixtures.push({
-          fixture: myFixture,
+          homeTeamId: myFixture.homeTeamId,
+          awayTeamId: myFixture.awayTeamId,
           result: null,
           matchweek: mw,
           calendarIndex: mw - 1,
