@@ -89,7 +89,26 @@ export function TeamSquadModal({
       }))
       .filter((f) => f.homeTeamId === selectedTeam.id || f.awayTeamId === selectedTeam.id);
 
-    const processed = calEntries.map((fixture) => {
+    const futureFixtures = [];
+    for (let mw = curIdx + 1; mw <= 14; mw++) {
+      const fixtures = generateLeagueFixtures(
+        cal?.fixtureSeeds?.[selectedTeamDivision] ?? selectedDivTeams.map((t) => t.id),
+        mw
+      ).map((f) => ({ ...f, result: null }));
+      const myFixture = fixtures.find(
+        (f) => f.homeTeamId === selectedTeam.id || f.awayTeamId === selectedTeam.id
+      );
+      if (myFixture) {
+        futureFixtures.push({
+          fixture: myFixture,
+          result: null,
+          matchweek: mw,
+          calendarIndex: mw - 1,
+        });
+      }
+    }
+
+    const processed = [...calEntries, ...futureFixtures].map((fixture) => {
       const imHome = fixture.homeTeamId === selectedTeam.id;
       const opponent = teams.find(
         (t) => t.id === (imHome ? fixture.awayTeamId : fixture.homeTeamId)
