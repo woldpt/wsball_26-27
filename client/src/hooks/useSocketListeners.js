@@ -40,7 +40,15 @@ export function useSocketListeners(handlers, refs) {
     socket.on("teamsData", (data) => handlers.setTeams(data));
     socket.on("teamForms", (data) => handlers.setTeamForms(data || {}));
     socket.on("playerListUpdate", (data) => {
-      handlers.setPlayers(data);
+      // Suporta formato novo { players, roomCreator } e legado (array)
+      if (Array.isArray(data)) {
+        handlers.setPlayers(data);
+      } else if (data && Array.isArray(data.players)) {
+        handlers.setPlayers(data.players);
+        if (typeof data.roomCreator === "string") {
+          handlers.setRoomCreator(data.roomCreator);
+        }
+      }
     });
     socket.on("mySquad", (data) => handlers.setMySquad(data));
     socket.on("marketUpdate", (data) => handlers.setMarketPairs(data));
@@ -546,6 +554,9 @@ export function useSocketListeners(handlers, refs) {
       }
       if (Array.isArray(data.lockedCoaches)) {
         handlers.setLockedCoaches(data.lockedCoaches);
+      }
+      if (typeof data.roomCreator === "string") {
+        handlers.setRoomCreator(data.roomCreator);
       }
       // Restore match-in-progress state on reconnect
       if (data.matchState === "halftime" && data.lastHalfTimePayload) {
@@ -1129,6 +1140,18 @@ export function useSocketListeners(handlers, refs) {
     socket.on("connect", onConnect);
     socket.on("disconnect", onDisconnect);
     socket.on("sessionDisplaced", () => handlers.setSessionDisplaced(true));
+    socket.on("kicked", ({ reason } = {}) => {
+      // Notificar o coach expulso e forçar saída da sala
+      handlers.setGameDialog({
+        title: "Removido da sala",
+        message: reason || "Foste removido da sala pelo Admin.",
+        onClose: () => {
+          handlers.setGameDialog(null);
+          handlers.setMe(null);
+          handlers.setRoomCode("");
+        },
+      });
+    });
 
     return () => {
       socket.off("teamsData");
@@ -1188,6 +1211,7 @@ export function useSocketListeners(handlers, refs) {
       socket.off("connect", onConnect);
       socket.off("disconnect", onDisconnect);
       socket.off("sessionDisplaced");
+      socket.off("kicked");
     };
   }, []); // eslint-disable-line react-hooks/exhaustive-deps
 }

@@ -838,7 +838,10 @@ function getPlayerList(game: ActiveGame): PlayerSession[] {
  * que o cliente recebe sempre os dois estados sincronizados.
  */
 function emitPresence(game: ActiveGame, io: any): void {
-  io.to(game.roomCode).emit("playerListUpdate", getPlayerList(game));
+  io.to(game.roomCode).emit("playerListUpdate", {
+    players: getPlayerList(game),
+    roomCreator: game.roomCreator || "",
+  });
   const offline = Object.entries(game.playersByName)
     .filter(([, session]) => !session.socketId)
     .map(([name]) => name);

@@ -506,6 +506,7 @@ io.on("connection", (socket) => {
     checkAllReady,
     emitAwaitingCoaches,
     emitPresence,
+    saveGameState,
     handleAcceptJobOffer,
     handleDeclineJobOffer,
     emitGlobalPlayerUpdate,

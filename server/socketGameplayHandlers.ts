@@ -13,6 +13,7 @@ interface GameplayHandlerDeps {
   checkAllReady: (game: ActiveGame) => void | Promise<void>;
   emitAwaitingCoaches: (game: ActiveGame) => void;
   emitPresence: (game: ActiveGame) => void;
+  saveGameState: (game: ActiveGame) => void;
   handleAcceptJobOffer: (game: ActiveGame, coachName: string) => Promise<void>;
   handleDeclineJobOffer: (game: ActiveGame, coachName: string) => void;
   emitGlobalPlayerUpdate?: () => void;
@@ -31,6 +32,7 @@ export function registerGameplaySocketHandlers(
     checkAllReady,
     emitAwaitingCoaches,
     emitPresence,
+    saveGameState,
     handleAcceptJobOffer,
     handleDeclineJobOffer,
     emitGlobalPlayerUpdate,
@@ -134,6 +136,54 @@ export function registerGameplaySocketHandlers(
     } else {
       pending.finalize(finalChoice, "human");
     }
+  });
+
+  // Expulsar um coach da sala (apenas Admin no lobby)
+  socket.on("kickCoach", ({ targetName }: { targetName: string }) => {
+    const game = getGameBySocket(socket.id);
+    if (!game) return;
+    if (game.gamePhase !== "lobby") return;
+
+    const requesterName = game.socketToName[socket.id];
+    if (!requesterName || requesterName !== game.roomCreator) return;
+    if (!targetName || targetName === requesterName) return;
+
+    const target = game.playersByName[targetName];
+    if (!target) return;
+
+    // Notificar o coach expulso antes de remover
+    const targetSocketId = target.socketId;
+    if (targetSocketId) {
+      io.to(targetSocketId).emit("kicked", {
+        reason: "Foste removido da sala pelo Admin.",
+      });
+    }
+
+    // Remover coach da sala
+    delete game.playersByName[targetName];
+    game.lockedCoaches.delete(targetName);
+
+    // Libertar a equipa no DB
+    if (target.teamId) {
+      game.db.run(
+        "UPDATE teams SET manager_id = NULL WHERE id = ?",
+        [target.teamId],
+        () => {},
+      );
+      game.db.run(
+        "DELETE FROM managers WHERE name = ?",
+        [targetName],
+        () => {},
+      );
+    }
+
+    saveGameState(game);
+    emitPresence(game);
+    emitGlobalPlayerUpdate?.();
+
+    console.log(
+      `[${game.roomCode}] 🚫 Admin ${requesterName} expulsou ${targetName}`,
+    );
   });
 
   socket.on("disconnect", () => {

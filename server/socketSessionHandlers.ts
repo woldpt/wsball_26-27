@@ -490,6 +490,7 @@ export function registerSessionSocketHandlers(
                     tactic: null,
                     lockedCoaches: [...game.lockedCoaches],
                     lastHalfTimePayload: null,
+                    roomCreator: game.roomCreator || "",
                   });
 
                   emitPresence(game);

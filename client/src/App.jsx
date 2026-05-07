@@ -156,6 +156,7 @@ function App() {
   const [toasts, setToasts] = useState([]);
   const [_lockedCoaches, setLockedCoaches] = useState([]);
   const [awaitingCoaches, setAwaitingCoaches] = useState([]);
+  const [roomCreator, setRoomCreator] = useState("");
   const joinTimerRef = React.useRef(null);
 
   const addToast = (msg) => {
@@ -428,6 +429,7 @@ function App() {
       setFinanceData,
       setLockedCoaches,
       setAwaitingCoaches,
+      setRoomCreator,
       setRefereePopup,
       setGameDialog,
       setWelcomeModal,
@@ -756,6 +758,7 @@ function App() {
     setTactic(DEFAULT_TACTIC);
     setLockedCoaches([]);
     setAwaitingCoaches([]);
+    setRoomCreator("");
     setNextMatchSummary(null);
     setNextMatchSummaryLoading(false);
     setIsPlayingMatch(false);
@@ -2338,7 +2341,7 @@ function App() {
                           ? "text-emerald-400"
                           : "text-amber-400";
                       return (
-                        <div
+                         <div
                           key={coach.name || i}
                           className="flex items-center gap-3 px-4 py-2.5"
                         >
@@ -2365,6 +2368,11 @@ function App() {
                                   (tu)
                                 </span>
                               )}
+                              {coach.name === roomCreator && (
+                                <span className="ml-1.5 text-[9px] font-black uppercase tracking-widest text-amber-400 bg-amber-400/10 px-1.5 py-0.5 rounded">
+                                  Admin
+                                </span>
+                              )}
                             </p>
                             {coachTeam && (
                               <p
@@ -2377,11 +2385,33 @@ function App() {
                               </p>
                             )}
                           </div>
-                          <span
-                            className={`shrink-0 text-[10px] font-black ${statusColor}`}
-                          >
-                            {statusLabel}
-                          </span>
+                          {/* Botão kick: só Admin no lobby, não se pode expulsar a si mesmo */}
+                          {me.name === roomCreator &&
+                            coach.name !== me.name &&
+                            matchweekCount === 0 && (
+                              <button
+                                onClick={() => {
+                                  socket.emit("kickCoach", {
+                                    targetName: coach.name,
+                                  });
+                                }}
+                                className="shrink-0 text-[9px] font-black uppercase tracking-widest text-rose-400 hover:text-rose-300 bg-rose-400/10 hover:bg-rose-400/20 px-1.5 py-0.5 rounded transition-colors"
+                                title={`Expulsar ${coach.name}`}
+                              >
+                                Kick
+                              </button>
+                            )}
+                          {!(
+                            me.name === roomCreator &&
+                            coach.name !== me.name &&
+                            matchweekCount === 0
+                          ) && (
+                            <span
+                              className={`shrink-0 text-[10px] font-black ${statusColor}`}
+                            >
+                              {statusLabel}
+                            </span>
+                          )}
                         </div>
                       );
                     })}
