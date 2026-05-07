@@ -122,8 +122,12 @@ function App() {
   // if server restarted and cache was cleared during the check window.
   const [savedSession, setSavedSession] = useState(null);
   useEffect(() => {
-    if (cacheReady) {
-      setSavedSession(loadSavedSession());
+    if (!cacheReady) return;
+    const session = loadSavedSession();
+    setSavedSession(session);
+    if (session) {
+      setMe({ name: session.name, password: session.password, roomCode: session.roomCode });
+      setJoining(true);
     }
   }, [cacheReady]);
 
@@ -131,26 +135,18 @@ function App() {
   const [teamForms, setTeamForms] = useState({});
   const [players, setPlayers] = useState([]);
   const [mySquad, setMySquad] = useState([]);
-  const [me, setMe] = useState(
-    savedSession
-      ? {
-          name: savedSession.name,
-          password: savedSession.password,
-          roomCode: savedSession.roomCode,
-        }
-      : null,
-  );
+  const [me, setMe] = useState(null);
 
-  const [name, setName] = useState(savedSession?.name || "");
-  const [password, setPassword] = useState(savedSession?.password || "");
-  const [roomCode, setRoomCode] = useState(savedSession?.roomCode || "");
+  const [name, setName] = useState("");
+  const [password, setPassword] = useState("");
+  const [roomCode, setRoomCode] = useState("");
   const [authPhase, setAuthPhase] = useState("login");
   const [joinMode, setJoinMode] = useState(null);
   const [confirmPassword, setConfirmPassword] = useState("");
   const [availableSaves, setAvailableSaves] = useState([]);
   const [authSubmitting, setAuthSubmitting] = useState(false);
   const [authError, setAuthError] = useState("");
-  const [joining, setJoining] = useState(Boolean(savedSession));
+  const [joining, setJoining] = useState(false);
   const [disconnected, setDisconnected] = useState(false);
   const [sessionDisplaced, setSessionDisplaced] = useState(false);
   const [joinError, setJoinError] = useState("");
