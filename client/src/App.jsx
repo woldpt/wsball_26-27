@@ -27,7 +27,6 @@ import { PenaltyShootoutPopup } from "./components/modals/PenaltyShootoutPopup.j
 import { MatchPanel } from "./components/modals/MatchPanel.jsx";
 import { RefereePopup } from "./components/modals/RefereePopup.jsx";
 import { GameDialog } from "./components/shared/GameDialog.jsx";
-import { TeamSquadModal } from "./components/modals/TeamSquadModal.jsx";
 import { TransferProposalModal } from "./components/modals/TransferProposalModal.jsx";
 import { AuctionNotification } from "./components/ui/AuctionNotification.jsx";
 import { NewsTicker } from "./components/ui/NewsTicker.jsx";
@@ -905,12 +904,6 @@ function App() {
     setSelectedTeamLoading(true);
     socket.emit("requestTeamSquad", team.id);
     socket.emit("requestPalmares", { teamId: team.id });
-  };
-
-  const handleCloseTeamSquad = () => {
-    setSelectedTeam(null);
-    setSelectedTeamSquad([]);
-    setSelectedTeamLoading(false);
   };
 
   const closeRefereePopup = () => setRefereePopup(null);
@@ -5323,23 +5316,6 @@ function App() {
           </div>
         </div>
       </main>
-
-      <TeamSquadModal
-        selectedTeam={selectedTeam}
-        selectedTeamSquad={selectedTeamSquad}
-        selectedTeamLoading={selectedTeamLoading}
-        me={me}
-        players={players}
-        palmares={palmares}
-        palmaresTeamId={palmaresTeamId}
-        handleCloseTeamSquad={handleCloseTeamSquad}
-        setTransferProposalModal={setTransferProposalModal}
-        myBudget={teamInfo?.budget ?? 0}
-        currentMatchweek={matchweekCount + 1}
-        calendarData={calendarData}
-        teams={teams}
-        setSelectedTeam={setSelectedTeam}
-      />
 
       <TransferProposalModal
         transferProposalModal={transferProposalModal}
