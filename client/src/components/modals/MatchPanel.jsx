@@ -1034,7 +1034,7 @@ export function MatchPanel({
           onClick={mode === "detail" ? onClose : undefined}
         >
           <motion.div
-            className="w-full sm:max-w-2xl bg-surface-container border border-outline-variant/30 rounded-t-2xl sm:rounded-lg shadow-2xl flex flex-col max-h-[95vh] sm:max-h-[92vh] mt-[3.5rem]"
+            className="w-full sm:max-w-2xl bg-surface-container border border-outline-variant/30 rounded-t-2xl sm:rounded-lg shadow-2xl flex flex-col max-h-[calc(95vh-3.5rem)] sm:max-h-[calc(92vh-3.5rem)] mt-[3.5rem]"
             initial={{ y: 40, opacity: 0.8 }}
             animate={{ y: 0, opacity: 1 }}
             exit={{ y: 40, opacity: 0 }}
@@ -1145,7 +1145,7 @@ export function MatchPanel({
             </div>
 
             {/* ── Tab content ── */}
-            <div className="flex-1 min-h-0 overflow-hidden flex flex-col">
+            <div className="flex-1 min-h-[400px] overflow-hidden flex flex-col">
               <AnimatePresence mode="wait" initial={false}>
                 <motion.div
                   key={`${mode || "none"}-${effectiveTab}-${matchAction?.type || "none"}`}

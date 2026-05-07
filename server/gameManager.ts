@@ -615,7 +615,7 @@ function getGame(roomCode: string, onReady?: OnReady): ActiveGame | null {
 
               // Load market
               db.all(
-                "SELECT * FROM players WHERE team_id IS NOT NULL AND transfer_status != 'none' ORDER BY RANDOM() LIMIT 40",
+                "SELECT p.*, COALESCE(t.name, 'Sem clube') as team_name FROM players p LEFT JOIN teams t ON p.team_id = t.id WHERE p.team_id IS NOT NULL AND p.transfer_status != 'none' ORDER BY RANDOM() LIMIT 40",
                 (err7, rows) => {
                   if (!err7 && rows) game.globalMarket = rows;
                   game.initialized = true;
