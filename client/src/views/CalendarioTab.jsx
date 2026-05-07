@@ -148,9 +148,8 @@ export function CalendarioTab({ calendarData, me, teams, seasonYear, calFilter, 
                   result: m,
                 })) ?? [])
             : generateLeagueFixtures(
-                myDivTeams,
+                cal?.fixtureSeeds?.[myDivision] ?? myDivTeams.map((t) => t.id),
                 entry.matchweek,
-                myTeamId,
               ).map((f) => ({ ...f, result: null }));
         const myFixture = divFixtures.find(
           (f) =>

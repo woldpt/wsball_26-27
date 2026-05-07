@@ -36,6 +36,29 @@ export function createMatchSummaryHelpers(deps: MatchSummaryDeps) {
     pickRefereeSummary,
   } = deps;
 
+  async function ensureFixtureSeeds(game: ActiveGame, divs: number[]): Promise<void> {
+    let changed = false;
+    for (const div of divs) {
+      if (!game.fixtureSeeds[div] || game.fixtureSeeds[div].length === 0) {
+        const rows = await runAll<{ id: number }>(
+          game.db,
+          "SELECT id FROM teams WHERE division = ? ORDER BY id",
+          [div],
+        );
+        if (rows.length < 2) continue;
+        const arr = rows.map((r) => r.id);
+        for (let i = arr.length - 1; i > 0; i--) {
+          const j = Math.floor(Math.random() * (i + 1));
+          [arr[i], arr[j]] = [arr[j], arr[i]];
+        }
+        game.fixtureSeeds[div] = arr;
+        changed = true;
+      }
+    }
+    // Seeds will be persisted by checkAllReady when the match starts.
+    void changed;
+  }
+
   function generateWeatherForecast() {
     const weatherRoll = Math.random();
     let condition: string;
@@ -316,6 +339,7 @@ export function createMatchSummaryHelpers(deps: MatchSummaryDeps) {
       standings.map((standingTeam, index) => [standingTeam.id, index + 1]),
     );
 
+    await ensureFixtureSeeds(game, [team.division]);
     const fixtures = await generateFixturesForDivision(
       game.db,
       team.division,

@@ -612,7 +612,8 @@ export function registerSessionSocketHandlers(
     try {
       const leagueMatches = await runAll(
         game.db,
-        "SELECT id, matchweek, home_team_id, away_team_id, home_score, away_score, attendance, home_lineup, away_lineup, narrative FROM matches WHERE played = 1 ORDER BY matchweek, id",
+        "SELECT id, matchweek, home_team_id, away_team_id, home_score, away_score, attendance, home_lineup, away_lineup, narrative FROM matches WHERE played = 1 AND season = ? ORDER BY matchweek, id",
+        [game.season],
       );
 
       // Parse JSON fields from database
@@ -636,6 +637,7 @@ export function registerSessionSocketHandlers(
         year: game.year,
         matchweek: game.matchweek,
         gamePhase: game.gamePhase,
+        fixtureSeeds: game.fixtureSeeds ?? {},
         leagueMatches: parsedLeagueMatches,
         cupMatches,
       });

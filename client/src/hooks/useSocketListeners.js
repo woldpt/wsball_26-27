@@ -399,6 +399,9 @@ export function useSocketListeners(handlers, refs) {
       handlers.setCupRoundResults(data);
       // Don't navigate away yet — if a penalty shootout popup is open, wait for it to close first.
       handlers.setPendingCupRoundResults(data);
+      // matchweek doesn't increment after cup rounds, so the useEffect in App.jsx
+      // won't fire — refresh calendar manually.
+      socket.emit("requestCalendar");
     });
     socket.on("cupSecondHalfStart", (data) => {
       handlers.setIsMatchActionPending(false);

@@ -90,6 +90,43 @@ export function createWeeklyFlowHelpers(deps: WeeklyFlowDeps) {
   // Guard against concurrent match segment execution
   const segmentRunning: Record<string, boolean> = {};
 
+  // Initialize fixture seeds for the given divisions if not yet set.
+  // Seeds are normally generated at season end; this handles epoch 1 and any
+  // gap where seeds were never persisted.
+  async function ensureFixtureSeeds(game: ActiveGame, divs: number[]): Promise<void> {
+    let changed = false;
+    for (const div of divs) {
+      if (!game.fixtureSeeds[div] || game.fixtureSeeds[div].length === 0) {
+        const ids = await new Promise<number[]>((resolve) => {
+          game.db.all(
+            "SELECT id FROM teams WHERE division = ? ORDER BY id",
+            [div],
+            (err: any, rows: Array<{ id: number }>) => {
+              if (err || !rows || rows.length < 2) return resolve([]);
+              const arr = rows.map((r) => r.id);
+              for (let i = arr.length - 1; i > 0; i--) {
+                const j = Math.floor(Math.random() * (i + 1));
+                [arr[i], arr[j]] = [arr[j], arr[i]];
+              }
+              resolve(arr);
+            },
+          );
+        });
+        if (ids.length >= 2) {
+          game.fixtureSeeds[div] = ids;
+          changed = true;
+        }
+      }
+    }
+    if (changed) {
+      console.log(
+        `[${game.roomCode}] 🎲 fixtureSeeds inicializados (season 1):`,
+        Object.entries(game.fixtureSeeds).map(([d, ids]) => `div${d}=${(ids as number[]).length}eq`).join(", "),
+      );
+      saveGameState(game);
+    }
+  }
+
   // ─── UNIFIED MATCH SEGMENT RUNNER ───────────────────────────────────────────
   // Handles both league and cup first/second halves.
   // Uses game.currentFixtures populated by the caller.
@@ -858,7 +895,8 @@ export function createWeeklyFlowHelpers(deps: WeeklyFlowDeps) {
             } else {
               // League: generate fixtures using deterministic seeds per division.
               const mw = (entry as any).matchweek;
-              const seeds = game.fixtureSeeds || {};
+              await ensureFixtureSeeds(game, [1, 2, 3, 4]);
+              const seeds = game.fixtureSeeds;
               console.log(
                 `[${game.roomCode}] ⚽ Generating league fixtures for mw=${mw}`,
               );
