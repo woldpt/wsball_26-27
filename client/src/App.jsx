@@ -80,6 +80,7 @@ import { ClubTab } from "./views/ClubTab.jsx";
 import { FinancesTab } from "./views/FinancesTab.jsx";
 import { PlayersTab } from "./views/PlayersTab.jsx";
 import { MarketTab } from "./views/MarketTab.jsx";
+import { TeamSquadView } from "./views/TeamSquadView.jsx";
 // ── App-level constants ────────────────────────────────────────────────────
 const WEATHER_LABELS = {
   "☀️": "Sol",
@@ -898,6 +899,7 @@ function App() {
 
   const handleOpenTeamSquad = (team) => {
     if (!team) return;
+    setActiveTab("squad");
     setSelectedTeam(team);
     setSelectedTeamSquad([]);
     setSelectedTeamLoading(true);
@@ -4141,6 +4143,23 @@ function App() {
                       listPlayerFixed={listPlayerFixed}
                       removeFromTransferList={removeFromTransferList}
                     />}
+
+                  {activeTab === "squad" && (
+                    <TeamSquadView
+                      selectedTeam={selectedTeam}
+                      selectedTeamSquad={selectedTeamSquad}
+                      selectedTeamLoading={selectedTeamLoading}
+                      me={me}
+                      players={players}
+                      palmares={palmares}
+                      palmaresTeamId={palmaresTeamId}
+                      setTransferProposalModal={setTransferProposalModal}
+                      myBudget={currentBudget}
+                      currentMatchweek={matchweekCount}
+                      calendarData={calendarData}
+                      teams={teams}
+                    />
+                  )}
 
                   {activeTab === "training" && (
                     <TrainingTab
