@@ -4313,27 +4313,25 @@ function App() {
                               const hasFamiliarity =
                                 fam && fam.bonus > 0 && fam.count >= 1;
                               const badgeColor = hasFamiliarity
-                                ? fam.count >= 21
+                                ? fam.count >= 10
                                   ? "bg-amber-500/15 border-amber-500/30 text-amber-300"
-                                  : fam.count >= 11
+                                  : fam.count >= 6
                                     ? "bg-emerald-500/15 border-emerald-500/30 text-emerald-300"
                                     : "bg-sky-500/15 border-sky-500/30 text-sky-300"
                                 : "bg-surface-container-high border-outline-variant/10 text-on-surface-variant/40";
                               const bonusText = hasFamiliarity
                                 ? `(+${Math.round(fam.bonus * 100)}%)`
                                 : "";
-                              const tierLabel = hasFamiliarity
-                                ? fam.count >= 21
-                                  ? "5x ⭐"
-                                  : fam.count >= 16
-                                    ? "4x ⭐"
-                                    : fam.count >= 11
-                                      ? "3x ⭐"
-                                      : fam.count >= 6
-                                        ? "2x ⭐"
-                                        : fam.count >= 3
-                                          ? "1x ⭐"
-                                          : "-"
+                              const stars = hasFamiliarity
+                                ? fam.count >= 10
+                                  ? "⭐⭐⭐⭐⭐"
+                                  : fam.count >= 8
+                                    ? "⭐⭐⭐⭐"
+                                    : fam.count >= 6
+                                      ? "⭐⭐⭐"
+                                      : fam.count >= 4
+                                        ? "⭐⭐"
+                                        : "⭐"
                                 : "";
                               return (
                                 <div className="px-5 py-2 border-b border-outline-variant/15">
@@ -4342,20 +4340,7 @@ function App() {
                                       className={`flex flex-col gap-1 px-3 py-2 rounded-md border ${badgeColor}`}
                                     >
                                       <div className="flex items-center gap-2">
-                                        <span className="text-sm">
-                                          {fam.count >= 21
-                                            ? "⭐⭐⭐"
-                                            : fam.count >= 16
-                                              ? "⭐⭐⭐"
-                                              : fam.count >= 11
-                                                ? "⭐⭐"
-                                                : fam.count >= 6
-                                                  ? "⭐⭐"
-                                                  : "⭐"}
-                                        </span>
-                                        <span className="text-[10px] font-black uppercase tracking-widest">
-                                          {tierLabel}
-                                        </span>
+                                        <span className="text-sm">{stars}</span>
                                         <span className="text-[9px] opacity-70">
                                           {bonusText}
                                         </span>
@@ -4377,7 +4362,6 @@ function App() {
                                       className={`flex flex-col gap-1 px-3 py-2 rounded-md border ${badgeColor}`}
                                     >
                                       <div className="flex items-center gap-2">
-                                        <span className="text-sm"> </span>
                                         <span className="text-[10px] font-black uppercase tracking-widest">
                                           Sem rotina
                                         </span>
