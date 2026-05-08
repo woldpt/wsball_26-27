@@ -371,10 +371,10 @@ function TabAdversario({ fixture, myTeamId, teams }) {
     GR: starters.filter((p) => p.position === "GR"),
   };
   const rowConfig = [
-    { key: "ATA", top: "8%" },
-    { key: "MED", top: "31%" },
-    { key: "DEF", top: "56%" },
-    { key: "GR", top: "81%" },
+    { key: "GR", top: "8%" },
+    { key: "DEF", top: "31%" },
+    { key: "MED", top: "56%" },
+    { key: "ATA", top: "81%" },
   ];
 
   const posColors = {
@@ -405,122 +405,155 @@ function TabAdversario({ fixture, myTeamId, teams }) {
           Sem dados da escalação do adversário
         </p>
       ) : (
-        <div
-          className="relative w-full rounded-md overflow-hidden border border-emerald-900/60 bg-[linear-gradient(180deg,#05430e_0%,#0b5e1a_50%,#05430e_100%)]"
-          style={{ aspectRatio: "16/10", maxHeight: "300px" }}
-        >
-          <svg
-            className="absolute inset-0 w-full h-full"
-            viewBox="0 0 560 315"
-            preserveAspectRatio="none"
-            aria-hidden="true"
+        <div className="flex gap-3 flex-1 min-h-0">
+          <div
+            className="relative flex-1 rounded-md overflow-hidden border border-emerald-900/60 bg-[linear-gradient(180deg,#05430e_0%,#0b5e1a_50%,#05430e_100%)]"
+            style={{ aspectRatio: "9/16" }}
           >
-            <rect
-              x="10"
-              y="10"
-              width="540"
-              height="295"
-              fill="none"
-              stroke="rgba(255,255,255,0.2)"
-              strokeWidth="1.5"
-              rx="2"
-            />
-            <line
-              x1="10"
-              y1="157"
-              x2="550"
-              y2="157"
-              stroke="rgba(255,255,255,0.15)"
-              strokeWidth="1"
-            />
-            <circle
-              cx="280"
-              cy="157"
-              r="50"
-              fill="none"
-              stroke="rgba(255,255,255,0.12)"
-              strokeWidth="1"
-            />
-            <circle cx="280" cy="157" r="3" fill="rgba(255,255,255,0.18)" />
-            <rect
-              x="168"
-              y="10"
-              width="224"
-              height="70"
-              fill="none"
-              stroke="rgba(255,255,255,0.12)"
-              strokeWidth="1"
-            />
-            <rect
-              x="224"
-              y="10"
-              width="112"
-              height="26"
-              fill="none"
-              stroke="rgba(255,255,255,0.1)"
-              strokeWidth="1"
-            />
-            <rect
-              x="168"
-              y="235"
-              width="224"
-              height="70"
-              fill="none"
-              stroke="rgba(255,255,255,0.12)"
-              strokeWidth="1"
-            />
-            <rect
-              x="224"
-              y="289"
-              width="112"
-              height="26"
-              fill="none"
-              stroke="rgba(255,255,255,0.1)"
-              strokeWidth="1"
-            />
-          </svg>
+            <svg
+              className="absolute inset-0 w-full h-full"
+              viewBox="0 0 315 560"
+              preserveAspectRatio="xMidYMid meet"
+              aria-hidden="true"
+            >
+              <rect
+                x="10"
+                y="10"
+                width="295"
+                height="540"
+                fill="none"
+                stroke="rgba(255,255,255,0.2)"
+                strokeWidth="1.5"
+                rx="2"
+              />
+              <line
+                x1="10"
+                y1="280"
+                x2="305"
+                y2="280"
+                stroke="rgba(255,255,255,0.15)"
+                strokeWidth="1"
+              />
+              <circle
+                cx="157"
+                cy="280"
+                r="50"
+                fill="none"
+                stroke="rgba(255,255,255,0.12)"
+                strokeWidth="1"
+              />
+              <circle cx="157" cy="280" r="3" fill="rgba(255,255,255,0.18)" />
+              <rect
+                x="25"
+                y="10"
+                width="265"
+                height="150"
+                fill="none"
+                stroke="rgba(255,255,255,0.12)"
+                strokeWidth="1"
+              />
+              <rect
+                x="85"
+                y="10"
+                width="145"
+                height="40"
+                fill="none"
+                stroke="rgba(255,255,255,0.1)"
+                strokeWidth="1"
+              />
+              <rect
+                x="25"
+                y="400"
+                width="265"
+                height="150"
+                fill="none"
+                stroke="rgba(255,255,255,0.12)"
+                strokeWidth="1"
+              />
+              <rect
+                x="85"
+                y="510"
+                width="145"
+                height="40"
+                fill="none"
+                stroke="rgba(255,255,255,0.1)"
+                strokeWidth="1"
+              />
+            </svg>
 
-          {rowConfig.map(({ key, top }) => {
-            const rowPlayers = rows[key] || [];
-            if (rowPlayers.length === 0) return null;
-            return (
-              <div
-                key={key}
-                className="absolute w-full flex justify-evenly items-start px-3"
-                style={{ top }}
-              >
-                {rowPlayers.map((player) => (
-                  <div
-                    key={player.id ?? player.name}
-                    className="flex flex-col items-center gap-0.5"
-                    style={{ maxWidth: "90px" }}
+            {rowConfig.map(({ key, top }) => {
+              const rowPlayers = rows[key] || [];
+              if (rowPlayers.length === 0) return null;
+              return (
+                <div
+                  key={key}
+                  className="absolute w-full flex justify-evenly items-start px-3"
+                  style={{ top }}
+                >
+                  {rowPlayers.map((player) => (
+                    <div
+                      key={player.id ?? player.name}
+                      className="flex flex-col items-center gap-0.5"
+                      style={{ maxWidth: "90px" }}
+                    >
+                      <div
+                        className={`w-9 h-9 rounded-full flex items-center justify-center font-black text-[10px] border border-white/30 shadow-lg ${posColors[player.position] || "bg-zinc-500 text-white"}`}
+                      >
+                        {POSITION_SHORT_LABELS[player.position] || "?"}
+                      </div>
+                      <div
+                        className="bg-black/65 backdrop-blur-sm px-1.5 py-0.5 rounded text-[9px] font-black text-white text-center truncate"
+                        style={{ maxWidth: "85px" }}
+                      >
+                        {player.name}
+                        {!!player.is_star &&
+                          (player.position === "MED" ||
+                            player.position === "ATA") && (
+                            <span className="ml-0.5 text-amber-400">*</span>
+                          )}
+                      </div>
+                      <span className="text-[9px] font-black text-amber-200 drop-shadow-[0_1px_2px_rgba(0,0,0,0.9)]">
+                        {player.skill ?? "-"}
+                      </span>
+                    </div>
+                  ))}
+                </div>
+              );
+            })}
+
+            <div className="absolute inset-0 pointer-events-none bg-linear-to-t from-black/35 to-transparent" />
+          </div>
+
+          {/* Banco de suplentes — coluna lateral direita */}
+          <div className="w-36 shrink-0 flex flex-col">
+            <p className="text-[9px] font-black uppercase tracking-widest text-zinc-600 mb-1.5">
+              Banco
+            </p>
+            <div className="flex-1 overflow-y-auto">
+              {bench.map((player) => (
+                <div
+                  key={player.id ?? player.name}
+                  className="flex items-center gap-1.5 py-1 px-1.5 rounded bg-surface-container-high/30"
+                >
+                  <span
+                    className={`w-6 h-6 rounded-full flex items-center justify-center text-[8px] font-black border border-white/20 shrink-0 ${posColors[player.position] || "bg-zinc-500 text-white"}`}
                   >
-                    <div
-                      className={`w-9 h-9 rounded-full flex items-center justify-center font-black text-[10px] border border-white/30 shadow-lg ${posColors[player.position] || "bg-zinc-500 text-white"}`}
-                    >
-                      {POSITION_SHORT_LABELS[player.position] || "?"}
-                    </div>
-                    <div
-                      className="bg-black/65 backdrop-blur-sm px-1.5 py-0.5 rounded text-[9px] font-black text-white text-center truncate"
-                      style={{ maxWidth: "85px" }}
-                    >
-                      {player.name}
-                      {!!player.is_star &&
-                        (player.position === "MED" ||
-                          player.position === "ATA") && (
-                          <span className="ml-0.5 text-amber-400">*</span>
-                        )}
-                    </div>
-                    <span className="text-[9px] font-black text-amber-200 drop-shadow-[0_1px_2px_rgba(0,0,0,0.9)]">
-                      {player.skill ?? "-"}
-                    </span>
-                  </div>
-                ))}
-              </div>
-            );
-          })}
-
-          <div className="absolute inset-0 pointer-events-none bg-linear-to-t from-black/35 to-transparent" />
+                    {POSITION_SHORT_LABELS[player.position] || "?"}
+                  </span>
+                  <span className="flex-1 truncate text-[10px] font-bold text-zinc-300">
+                    {player.name}
+                    {!!player.is_star &&
+                      (player.position === "MED" || player.position === "ATA") && (
+                        <span className="ml-0.5 text-amber-400 font-black">*</span>
+                      )}
+                  </span>
+                  <span className="text-[9px] font-black tabular-nums text-zinc-500 shrink-0">
+                    {player.skill ?? "—"}
+                  </span>
+                </div>
+              ))}
+            </div>
+          </div>
         </div>
       )}
 
