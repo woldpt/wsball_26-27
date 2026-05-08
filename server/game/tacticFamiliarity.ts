@@ -134,6 +134,40 @@ export function getBestTacticFamiliarity(
   };
 }
 
+// Apaga 1 registo (o mais antigo) de cada táctica não usada há mais de 2 jornadas.
+// Chamada após cada jogo de liga, imediatamente depois de registar a táctica usada.
+export function applyTacticDecay(
+  db: any,
+  teamId: number,
+  playerName: string,
+  currentMatchweek: number,
+): void {
+  db.all(
+    `SELECT formation, style, MAX(matchweek) AS lastUsed
+     FROM player_tactic_history
+     WHERE team_id = ? AND player_name = ?
+     GROUP BY formation, style`,
+    [teamId, playerName],
+    (err: any, rows: Array<{ formation: string; style: string; lastUsed: number }> | undefined) => {
+      if (err || !rows) return;
+      for (const row of rows) {
+        const gap = currentMatchweek - row.lastUsed;
+        // gap > 2: tolerância de 2 jornadas sem uso; ao 3º jogo apaga 1 registo
+        if (gap > 2) {
+          db.run(
+            `DELETE FROM player_tactic_history
+             WHERE id = (
+               SELECT MIN(id) FROM player_tactic_history
+               WHERE team_id = ? AND player_name = ? AND formation = ? AND style = ?
+             )`,
+            [teamId, playerName, row.formation, row.style],
+          );
+        }
+      }
+    },
+  );
+}
+
 // Devolve a familiaridade de todas as combinações formação+estilo de uma vez,
 // usando uma única query SQL para evitar N+1 callbacks.
 export function getAllTacticFamiliarity(
