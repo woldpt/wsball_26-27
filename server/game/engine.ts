@@ -1637,6 +1637,7 @@ module.exports = {
   applyPostMatchQualityEvolution,
   simulateExtraTime,
   simulatePenaltyShootout,
+  generateIntroEvents,
 };
 
 // ─── EXTRA TIME ──────────────────────────────────────────────────────────────
