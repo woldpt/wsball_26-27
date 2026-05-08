@@ -60,6 +60,7 @@ function TabJogo({ fixture, liveMinute, teams }) {
           "red",
           "injury",
           "substitution",
+          "phase_start",
         ].includes(e.type),
     )
     .sort((a, b) => (a.minute ?? 0) - (b.minute ?? 0));
