@@ -117,9 +117,7 @@ function TabJogo({ fixture, liveMinute, teams }) {
               className="bg-primary transition-all duration-500"
               style={{ width: `${fixture.homePossession}%` }}
             />
-            <div
-              className="bg-zinc-500 flex-1 transition-all duration-500"
-            />
+            <div className="bg-zinc-500 flex-1 transition-all duration-500" />
           </div>
         </div>
       )}
@@ -322,14 +320,10 @@ function TabAdversario({ fixture, myTeamId, teams }) {
           : null;
 
   const starters = _sortByPos(
-    oppLineup
-      .filter((p) => p.is_starter === true)
-      .slice(0, 11),
+    oppLineup.filter((p) => p.is_starter === true).slice(0, 11),
   );
 
-  const bench = _sortByPos(
-    oppLineup.filter((p) => p.is_starter === false),
-  );
+  const bench = _sortByPos(oppLineup.filter((p) => p.is_starter === false));
 
   const rows = {
     ATA: starters.filter((p) => p.position === "ATA"),
@@ -372,21 +366,79 @@ function TabAdversario({ fixture, myTeamId, teams }) {
           Sem dados da escalação do adversário
         </p>
       ) : (
-        <div className="relative w-full rounded-md overflow-hidden border border-emerald-900/60 bg-[linear-gradient(180deg,#05430e_0%,#0b5e1a_50%,#05430e_100%)]" style={{ aspectRatio: "16/10", maxHeight: "300px" }}>
+        <div
+          className="relative w-full rounded-md overflow-hidden border border-emerald-900/60 bg-[linear-gradient(180deg,#05430e_0%,#0b5e1a_50%,#05430e_100%)]"
+          style={{ aspectRatio: "16/10", maxHeight: "300px" }}
+        >
           <svg
             className="absolute inset-0 w-full h-full"
             viewBox="0 0 560 315"
             preserveAspectRatio="none"
             aria-hidden="true"
           >
-            <rect x="10" y="10" width="540" height="295" fill="none" stroke="rgba(255,255,255,0.2)" strokeWidth="1.5" rx="2" />
-            <line x1="10" y1="157" x2="550" y2="157" stroke="rgba(255,255,255,0.15)" strokeWidth="1" />
-            <circle cx="280" cy="157" r="50" fill="none" stroke="rgba(255,255,255,0.12)" strokeWidth="1" />
+            <rect
+              x="10"
+              y="10"
+              width="540"
+              height="295"
+              fill="none"
+              stroke="rgba(255,255,255,0.2)"
+              strokeWidth="1.5"
+              rx="2"
+            />
+            <line
+              x1="10"
+              y1="157"
+              x2="550"
+              y2="157"
+              stroke="rgba(255,255,255,0.15)"
+              strokeWidth="1"
+            />
+            <circle
+              cx="280"
+              cy="157"
+              r="50"
+              fill="none"
+              stroke="rgba(255,255,255,0.12)"
+              strokeWidth="1"
+            />
             <circle cx="280" cy="157" r="3" fill="rgba(255,255,255,0.18)" />
-            <rect x="168" y="10" width="224" height="70" fill="none" stroke="rgba(255,255,255,0.12)" strokeWidth="1" />
-            <rect x="224" y="10" width="112" height="26" fill="none" stroke="rgba(255,255,255,0.1)" strokeWidth="1" />
-            <rect x="168" y="235" width="224" height="70" fill="none" stroke="rgba(255,255,255,0.12)" strokeWidth="1" />
-            <rect x="224" y="289" width="112" height="26" fill="none" stroke="rgba(255,255,255,0.1)" strokeWidth="1" />
+            <rect
+              x="168"
+              y="10"
+              width="224"
+              height="70"
+              fill="none"
+              stroke="rgba(255,255,255,0.12)"
+              strokeWidth="1"
+            />
+            <rect
+              x="224"
+              y="10"
+              width="112"
+              height="26"
+              fill="none"
+              stroke="rgba(255,255,255,0.1)"
+              strokeWidth="1"
+            />
+            <rect
+              x="168"
+              y="235"
+              width="224"
+              height="70"
+              fill="none"
+              stroke="rgba(255,255,255,0.12)"
+              strokeWidth="1"
+            />
+            <rect
+              x="224"
+              y="289"
+              width="112"
+              height="26"
+              fill="none"
+              stroke="rgba(255,255,255,0.1)"
+              strokeWidth="1"
+            />
           </svg>
 
           {rowConfig.map(({ key, top }) => {
@@ -415,9 +467,10 @@ function TabAdversario({ fixture, myTeamId, teams }) {
                     >
                       {player.name}
                       {!!player.is_star &&
-                        (player.position === "MED" || player.position === "ATA") && (
-                        <span className="ml-0.5 text-amber-400">*</span>
-                      )}
+                        (player.position === "MED" ||
+                          player.position === "ATA") && (
+                          <span className="ml-0.5 text-amber-400">*</span>
+                        )}
                     </div>
                     <span className="text-[9px] font-black text-amber-200 drop-shadow-[0_1px_2px_rgba(0,0,0,0.9)]">
                       {player.skill ?? "-"}
@@ -452,8 +505,11 @@ function TabAdversario({ fixture, myTeamId, teams }) {
                 <span className="flex-1 truncate text-[11px] font-bold text-zinc-400">
                   <PlayerLink playerId={player.id}>{player.name}</PlayerLink>
                   {!!player.is_star &&
-                    (player.position === "MED" || player.position === "ATA") && (
-                      <span className="ml-0.5 text-amber-400 font-black">*</span>
+                    (player.position === "MED" ||
+                      player.position === "ATA") && (
+                      <span className="ml-0.5 text-amber-400 font-black">
+                        *
+                      </span>
                     )}
                 </span>
                 <span className="text-[10px] font-black tabular-nums text-zinc-600 shrink-0">
@@ -555,7 +611,8 @@ function TabIntervencao({
     benchPlayers.find((p) => p.id === id) ||
     null;
 
-  const effectiveOutId = selectedOutId || (isForcedSwap ? forceOutPlayer?.id : null);
+  const effectiveOutId =
+    selectedOutId || (isForcedSwap ? forceOutPlayer?.id : null);
   const sourcePlayer = playerById(effectiveOutId);
 
   const handlePickOut = (player) => {
@@ -569,7 +626,9 @@ function TabIntervencao({
   };
 
   const canConfirmSwap =
-    !!effectiveOutId && !!selectedInId && (!isHalftime || subsMade < MAX_MATCH_SUBS);
+    !!effectiveOutId &&
+    !!selectedInId &&
+    (!isHalftime || subsMade < MAX_MATCH_SUBS);
 
   const actionTheme = isPenalty
     ? "from-amber-600/20 via-amber-500/5 to-transparent"
@@ -600,9 +659,13 @@ function TabIntervencao({
                 className="flex items-center gap-1 rounded-full pl-2 pr-2.5 py-0.5 text-[10px] font-bold border border-cyan-800/40 bg-zinc-950/80"
               >
                 <span className="text-cyan-400 shrink-0">🔄</span>
-                <span className="text-rose-300 truncate max-w-22">{outP?.name ?? "?"}</span>
+                <span className="text-rose-300 truncate max-w-22">
+                  {outP?.name ?? "?"}
+                </span>
                 <span className="text-zinc-600 shrink-0 mx-0.5">→</span>
-                <span className="text-emerald-300 truncate max-w-22">{inP?.name ?? "?"}</span>
+                <span className="text-emerald-300 truncate max-w-22">
+                  {inP?.name ?? "?"}
+                </span>
               </div>
             );
           })}
@@ -640,7 +703,9 @@ function TabIntervencao({
         </div>
       )}
 
-      <div className={`shrink-0 px-3 py-2 border-b border-zinc-800 bg-gradient-to-r ${actionTheme}`}>
+      <div
+        className={`shrink-0 px-3 py-2 border-b border-zinc-800 bg-gradient-to-r ${actionTheme}`}
+      >
         <p className="text-[11px] font-black uppercase tracking-[0.2em] text-zinc-100 text-center truncate">
           {titleText}
         </p>
@@ -664,19 +729,28 @@ function TabIntervencao({
               const grAvailableOnBench = benchPlayers.some(
                 (bp) => bp.position === "GR" && !subbedOut.includes(bp.id),
               );
-              const noGrReplacement = isHalftime && p.position === "GR" && !grAvailableOnBench;
-              const isLockedForced = isForcedSwap && !!forceOutPlayer && p.id !== forceOutPlayer.id;
+              const noGrReplacement =
+                isHalftime && p.position === "GR" && !grAvailableOnBench;
+              const isLockedForced =
+                isForcedSwap && !!forceOutPlayer && p.id !== forceOutPlayer.id;
               const disabled =
                 noGrReplacement ||
                 isLockedForced ||
                 (isHalftime && subsMade >= MAX_MATCH_SUBS) ||
-                (isPenalty && !(matchAction?.takerCandidates || []).find((c) => c.id === p.id));
+                (isPenalty &&
+                  !(matchAction?.takerCandidates || []).find(
+                    (c) => c.id === p.id,
+                  ));
               const selected = effectiveOutId === p.id;
               return (
                 <motion.button
                   key={p.id}
                   onClick={() => !disabled && handlePickOut(p)}
-                  title={noGrReplacement ? "Não há GR no banco para substituir" : undefined}
+                  title={
+                    noGrReplacement
+                      ? "Não há GR no banco para substituir"
+                      : undefined
+                  }
                   initial={
                     shouldReduceMotion
                       ? false
@@ -709,14 +783,21 @@ function TabIntervencao({
                   >
                     {POSITION_SHORT_LABELS[p.position]}
                   </span>
-                  <span className={`flex-1 truncate text-[11px] font-bold ${selected ? "text-rose-100" : "text-zinc-100"}`}>
+                  <span
+                    className={`flex-1 truncate text-[11px] font-bold ${selected ? "text-rose-100" : "text-zinc-100"}`}
+                  >
                     {p.name}
-                    {!!p.is_star && (p.position === "MED" || p.position === "ATA") && (
-                      <span className="ml-0.5 text-amber-400 font-black">*</span>
-                    )}
+                    {!!p.is_star &&
+                      (p.position === "MED" || p.position === "ATA") && (
+                        <span className="ml-0.5 text-amber-400 font-black">
+                          *
+                        </span>
+                      )}
                   </span>
                   <div className="shrink-0 grid grid-cols-3 items-center gap-x-1.5 text-right">
-                    <span className={`text-[11px] font-black tabular-nums ${selected ? "text-rose-300" : "text-zinc-400"}`}>
+                    <span
+                      className={`text-[11px] font-black tabular-nums ${selected ? "text-rose-300" : "text-zinc-400"}`}
+                    >
                       {p.skill ?? "—"}
                     </span>
                     <span className="text-[10px] text-cyan-400/70 tabular-nums">
@@ -728,7 +809,9 @@ function TabIntervencao({
               );
             })}
             {onPitchPlayers.length === 0 && (
-              <p className="text-center text-zinc-600 text-xs font-bold py-6">Sem opções em campo</p>
+              <p className="text-center text-zinc-600 text-xs font-bold py-6">
+                Sem opções em campo
+              </p>
             )}
           </div>
         </div>
@@ -796,18 +879,28 @@ function TabIntervencao({
                     >
                       {POSITION_SHORT_LABELS[p.position]}
                     </span>
-                    <span className={`flex-1 truncate text-[11px] font-bold ${selected ? "text-emerald-100" : "text-zinc-100"}`}>
+                    <span
+                      className={`flex-1 truncate text-[11px] font-bold ${selected ? "text-emerald-100" : "text-zinc-100"}`}
+                    >
                       {p.name}
-                      {!alreadyUsed && !!p.is_star && (p.position === "MED" || p.position === "ATA") && (
-                        <span className="ml-0.5 text-amber-400 font-black">*</span>
-                      )}
+                      {!alreadyUsed &&
+                        !!p.is_star &&
+                        (p.position === "MED" || p.position === "ATA") && (
+                          <span className="ml-0.5 text-amber-400 font-black">
+                            *
+                          </span>
+                        )}
                     </span>
                     <div className="shrink-0 flex items-center gap-1">
-                      <span className={`text-[11px] font-black tabular-nums ${selected ? "text-emerald-300" : "text-zinc-500"}`}>
+                      <span
+                        className={`text-[11px] font-black tabular-nums ${selected ? "text-emerald-300" : "text-zinc-500"}`}
+                      >
                         {alreadyUsed ? "—" : (p.skill ?? "—")}
                       </span>
                       {!alreadyUsed && p.resistance != null && (
-                        <span className="text-[10px] text-cyan-400/70 tabular-nums">🛡️{p.resistance}</span>
+                        <span className="text-[10px] text-cyan-400/70 tabular-nums">
+                          🛡️{p.resistance}
+                        </span>
                       )}
                       {!alreadyUsed && <FormBadge form={p.form} />}
                     </div>
@@ -816,7 +909,9 @@ function TabIntervencao({
               })
             )}
             {!isPenalty && benchPlayers.length === 0 && (
-              <p className="text-center text-zinc-600 text-xs font-bold py-6">Sem opções no banco</p>
+              <p className="text-center text-zinc-600 text-xs font-bold py-6">
+                Sem opções no banco
+              </p>
             )}
           </div>
         </div>
@@ -831,8 +926,12 @@ function TabIntervencao({
             </span>
             {!isPenalty && (
               <>
-                <span className="text-zinc-500 shrink-0 font-black text-sm">→</span>
-                <span className="text-[10px] text-zinc-600 shrink-0">Entra</span>
+                <span className="text-zinc-500 shrink-0 font-black text-sm">
+                  →
+                </span>
+                <span className="text-[10px] text-zinc-600 shrink-0">
+                  Entra
+                </span>
                 <span className="bg-emerald-950/90 text-emerald-200 border border-emerald-800/70 text-[10px] font-black px-2 py-0.5 rounded truncate max-w-[38%]">
                   {selectedInId ? playerById(selectedInId)?.name || "?" : "—"}
                 </span>
@@ -863,21 +962,18 @@ function TabIntervencao({
           ) : (
             <>
               <button
-                onClick={() => onResolveAction(null)}
-                className="shrink-0 px-2.5 py-1.5 rounded text-[10px] font-black uppercase tracking-wide border border-zinc-700 text-zinc-300 hover:bg-zinc-800"
-              >
-                Continuar
-              </button>
-              <button
                 disabled={isPenalty ? !effectiveOutId : !canConfirmSwap}
                 onClick={() =>
                   isPenalty
                     ? onResolveAction(effectiveOutId || null)
-                    : onResolveAction({ playerOut: effectiveOutId, playerIn: selectedInId })
+                    : onResolveAction({
+                        playerOut: effectiveOutId,
+                        playerIn: selectedInId,
+                      })
                 }
                 className="shrink-0 px-3 py-1.5 rounded text-[10px] font-black uppercase tracking-wide bg-primary hover:brightness-110 text-on-primary disabled:opacity-50 disabled:cursor-not-allowed"
               >
-                Confirmar
+                Substituir
               </button>
             </>
           )}
@@ -1196,7 +1292,9 @@ export function MatchPanel({
                   key={`${mode || "none"}-${effectiveTab}-${matchAction?.type || "none"}`}
                   className="flex-1 min-h-0 overflow-hidden flex flex-col"
                   initial={
-                    shouldReduceMotion ? false : { opacity: 0, y: 8, scale: 0.995 }
+                    shouldReduceMotion
+                      ? false
+                      : { opacity: 0, y: 8, scale: 0.995 }
                   }
                   animate={
                     shouldReduceMotion
@@ -1204,7 +1302,9 @@ export function MatchPanel({
                       : { opacity: 1, y: 0, scale: 1 }
                   }
                   exit={
-                    shouldReduceMotion ? undefined : { opacity: 0, y: -6, scale: 0.995 }
+                    shouldReduceMotion
+                      ? undefined
+                      : { opacity: 0, y: -6, scale: 0.995 }
                   }
                   transition={
                     shouldReduceMotion
@@ -1221,36 +1321,36 @@ export function MatchPanel({
                   )}
                   {effectiveTab === "intervencao" &&
                     (mode === "halftime" || mode === "action") && (
-                    <TabIntervencao
-                      mode={mode}
-                      matchAction={matchAction}
-                      injuryCountdown={injuryCountdown}
-                      tactic={tactic}
-                      onUpdateTactic={onUpdateTactic}
-                      annotatedSquad={annotatedSquad}
-                      subbedOut={subbedOut}
-                      confirmedSubs={confirmedSubs}
-                      subsMade={subsMade}
-                      swapSource={swapSource}
-                      swapTarget={swapTarget}
-                      onSelectOut={onSelectOut}
-                      onSelectIn={onSelectIn}
-                      onConfirmSub={onConfirmSub}
-                      onResetSub={onResetSub}
-                      onResetAllSubs={onResetAllSubs}
-                      redCardedHalftimeIds={redCardedHalftimeIds}
-                      injuredHalftimeIds={injuredHalftimeIds}
-                      onResolveAction={onResolveAction}
-                    />
-                  )}
+                      <TabIntervencao
+                        mode={mode}
+                        matchAction={matchAction}
+                        injuryCountdown={injuryCountdown}
+                        tactic={tactic}
+                        onUpdateTactic={onUpdateTactic}
+                        annotatedSquad={annotatedSquad}
+                        subbedOut={subbedOut}
+                        confirmedSubs={confirmedSubs}
+                        subsMade={subsMade}
+                        swapSource={swapSource}
+                        swapTarget={swapTarget}
+                        onSelectOut={onSelectOut}
+                        onSelectIn={onSelectIn}
+                        onConfirmSub={onConfirmSub}
+                        onResetSub={onResetSub}
+                        onResetAllSubs={onResetAllSubs}
+                        redCardedHalftimeIds={redCardedHalftimeIds}
+                        injuredHalftimeIds={injuredHalftimeIds}
+                        onResolveAction={onResolveAction}
+                      />
+                    )}
                   {effectiveTab === "adversario" &&
                     (mode === "halftime" || mode === "action") && (
-                    <TabAdversario
-                      fixture={fixture}
-                      myTeamId={myTeamId}
-                      teams={teams}
-                    />
-                  )}
+                      <TabAdversario
+                        fixture={fixture}
+                        myTeamId={myTeamId}
+                        teams={teams}
+                      />
+                    )}
                   {effectiveTab === "adversario" && mode === "detail" && (
                     <TabAdversario
                       fixture={fixture}
@@ -1297,14 +1397,13 @@ export function MatchPanel({
                 </button>
               </>
             )}
-            {mode === "action" &&
-              matchAction?.type === "user_substitution" && (
-                <button
-                  onClick={() => onResolveAction(null)}
-                  className="shrink-0 w-full py-3.5 text-sm font-black uppercase tracking-widest bg-primary hover:brightness-110 text-on-primary transition-all"
-                >
-                  ▶ CONTINUAR
-                </button>
+            {mode === "action" && matchAction?.type === "user_substitution" && (
+              <button
+                onClick={() => onResolveAction(null)}
+                className="shrink-0 w-full py-3.5 text-sm font-black uppercase tracking-widest bg-primary hover:brightness-110 text-on-primary transition-all"
+              >
+                ▶ CONTINUAR
+              </button>
             )}
             {mode === "detail" && (
               <button
