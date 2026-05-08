@@ -835,7 +835,7 @@ async function simulateMatchSegment(
         : true,
     }));
     const bench = (fullRoster || [])
-      .filter((p: any) => !starterIds.has(p.id))
+      .filter((p: any) => !starterIds.has(p.id) && (!tactic?.positions || tactic.positions[p.id] === "Suplente"))
       .map((p: any) => ({
         id: p.id,
         name: p.name,
