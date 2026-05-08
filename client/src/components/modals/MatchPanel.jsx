@@ -311,23 +311,24 @@ function TabAdversario({ fixture, myTeamId, teams }) {
   // Táctica do adversário vem nos campos _t1 (home) / _t2 (away) do fixture
   const oppTactic = isHome ? fixture._t2 : fixture._t1;
   const formation = oppTactic?.formation || null;
+  const styleRaw = oppTactic?.style?.toUpperCase?.() || null;
   const styleLabel =
-    oppTactic?.style === "ofensivo"
+    styleRaw === "OFENSIVO"
       ? "Ofensivo"
-      : oppTactic?.style === "defensivo"
+      : styleRaw === "DEFENSIVO"
         ? "Defensivo"
-        : oppTactic?.style === "equilibrado"
+        : styleRaw === "EQUILIBRADO"
           ? "Equilibrado"
           : null;
 
   const starters = _sortByPos(
     oppLineup
-      .filter((p) => p.is_starter !== false && p.starter !== false)
+      .filter((p) => p.is_starter === true)
       .slice(0, 11),
   );
 
   const bench = _sortByPos(
-    oppLineup.filter((p) => p.is_starter === false || p.starter === false),
+    oppLineup.filter((p) => p.is_starter === false),
   );
 
   const rows = {

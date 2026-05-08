@@ -95,14 +95,14 @@ export async function generateAITactic(
   db: any,
   teamId: number,
   opponentId: number,
-): Promise<{ formation: string; style: string }> {
-  return new Promise<{ formation: string; style: string }>((resolve) => {
+): Promise<{ formation: string; style: string; positions: Record<number, string> }> {
+  return new Promise<{ formation: string; style: string; positions: Record<number, string> }>((resolve) => {
     db.all(
       "SELECT * FROM players WHERE team_id IN (?, ?) AND team_id IS NOT NULL",
       [teamId, opponentId],
       (err: any, rows: PlayerRow[] | undefined) => {
         if (!rows || rows.length === 0) {
-          return resolve({ formation: "4-4-2", style: "EQUILIBRADO" });
+          return resolve({ formation: "4-4-2", style: "EQUILIBRADO", positions: {} });
         }
 
         const selfRows = rows.filter((p) => p.team_id === teamId);
@@ -125,7 +125,24 @@ export async function generateAITactic(
         const ratio = avgOpp > 0 ? avgSelf / avgOpp : 1;
         const style = ratio >= 1.10 ? "OFENSIVO" : ratio <= 0.90 ? "DEFENSIVO" : "EQUILIBRADO";
 
-        resolve({ formation: bestFormation, style });
+        // Seleccionar os 11 melhores jogadores por formação e marcar como Titular
+        const w = FORMATION_WEIGHTS[bestFormation];
+        const pickBest = (pool: PlayerRow[], n: number): PlayerRow[] =>
+          [...pool].sort((a, b) => (b.skill || 0) - (a.skill || 0)).slice(0, n);
+
+        const grs = pickBest(selfRows.filter((p) => p.position === "GR"), w.GR);
+        const defs = pickBest(selfRows.filter((p) => p.position === "DEF"), w.DEF);
+        const meds = pickBest(selfRows.filter((p) => p.position === "MED"), w.MED);
+        const atas = pickBest(selfRows.filter((p) => p.position === "ATA"), w.ATA);
+        const starters = [...grs, ...defs, ...meds, ...atas];
+        const starterIds = new Set(starters.map((p) => p.id));
+
+        const positions: Record<number, string> = {};
+        for (const p of selfRows) {
+          positions[p.id] = starterIds.has(p.id) ? "Titular" : "Suplente";
+        }
+
+        resolve({ formation: bestFormation, style, positions });
       },
     );
   });

@@ -195,16 +195,31 @@ export function createWeeklyFlowHelpers(deps: WeeklyFlowDeps) {
     // At the start of the second half, apply halftime tactic changes (substitutions/style)
     // to the cached squads. fixture._homeSquad/_awaySquad were set during the first half and
     // won't reflect tactic position changes made during the interval otherwise.
-    // Helper to create lineup snapshot
-    const lineupSnapshot = (squad: any[], tactic: any) =>
-      squad.map((p) => ({
+    // Helper para criar snapshot de lineup (titulares + suplentes do fullRoster)
+    const lineupSnapshot = (squad: any[], tactic: any, fullRoster?: any[]) => {
+      const starterIds = new Set(squad.map((p: any) => p.id));
+      const starters = squad.map((p: any) => ({
         id: p.id,
         name: p.name,
         position: p.position,
         is_star: p.is_star || 0,
         skill: p.skill,
-        is_starter: tactic?.positions?.[p.id] === "Titular",
+        is_starter: tactic?.positions
+          ? tactic.positions[p.id] === "Titular"
+          : true,
       }));
+      const bench = (fullRoster || [])
+        .filter((p: any) => !starterIds.has(p.id))
+        .map((p: any) => ({
+          id: p.id,
+          name: p.name,
+          position: p.position,
+          is_star: p.is_star || 0,
+          skill: p.skill,
+          is_starter: false,
+        }));
+      return [...starters, ...bench];
+    };
 
     // At the start of the second half, apply halftime tactic changes (substitutions/style)
     if (startMin === 46) {
@@ -270,9 +285,9 @@ export function createWeeklyFlowHelpers(deps: WeeklyFlowDeps) {
 
             // Update the lineup snapshot to reflect the new squad composition
             if (teamSide === "home") {
-              fixture.homeLineup = lineupSnapshot(squad, tactic);
+              fixture.homeLineup = lineupSnapshot(squad, tactic, fixture._homeFullRoster);
             } else {
-              fixture.awayLineup = lineupSnapshot(squad, tactic);
+              fixture.awayLineup = lineupSnapshot(squad, tactic, fixture._awayFullRoster);
             }
 
             // Emit halftime_sub events so the client lineup display reflects the changes
@@ -417,6 +432,8 @@ export function createWeeklyFlowHelpers(deps: WeeklyFlowDeps) {
             events: (fixture.events || []).slice(),
             homeLineup: fixture.homeLineup || [],
             awayLineup: fixture.awayLineup || [],
+            _t1: fixture._t1 || null,
+            _t2: fixture._t2 || null,
             attendance: fixture.attendance || null,
             referee: pickRefereeSummary(
               game.roomCode,
@@ -946,18 +963,33 @@ export function createWeeklyFlowHelpers(deps: WeeklyFlowDeps) {
             segmentRunning[game.roomCode] = false;
           }
 
-          // Capture first-half lineups from the squads that actually played.
-          // League fixtures don't have homeLineup/awayLineup set before this point.
-          // These are needed so applyTrainingBonuses sees all players who participated.
-          const lineupSnapshot = (squad: any[], tactic: any) =>
-            squad.map((p) => ({
+          // Captura lineups da primeira parte a partir dos squads que realmente jogaram.
+          // Liga fixtures não têm homeLineup/awayLineup definidos antes deste ponto.
+          // Necessário para applyTrainingBonuses ver todos os jogadores participantes.
+          const lineupSnapshot2 = (squad: any[], tactic: any, fullRoster?: any[]) => {
+            const starterIds = new Set(squad.map((p: any) => p.id));
+            const starters = squad.map((p: any) => ({
               id: p.id,
               name: p.name,
               position: p.position,
               is_star: p.is_star || 0,
               skill: p.skill,
-              is_starter: tactic?.positions?.[p.id] === "Titular",
+              is_starter: tactic?.positions
+                ? tactic.positions[p.id] === "Titular"
+                : true,
             }));
+            const bench = (fullRoster || [])
+              .filter((p: any) => !starterIds.has(p.id))
+              .map((p: any) => ({
+                id: p.id,
+                name: p.name,
+                position: p.position,
+                is_star: p.is_star || 0,
+                skill: p.skill,
+                is_starter: false,
+              }));
+            return [...starters, ...bench];
+          };
           for (let fi = 0; fi < game.currentFixtures.length; fi++) {
             const fx = game.currentFixtures[fi];
             const p1 = Object.values(game.playersByName).find(
@@ -969,9 +1001,9 @@ export function createWeeklyFlowHelpers(deps: WeeklyFlowDeps) {
             const t1 = (p1?.tactic as object) || fx._t1 || {};
             const t2 = (p2?.tactic as object) || fx._t2 || {};
             if (!fx.homeLineup && fx._homeSquad)
-              fx.homeLineup = lineupSnapshot(fx._homeSquad, t1);
+              fx.homeLineup = lineupSnapshot2(fx._homeSquad, t1, fx._homeFullRoster);
             if (!fx.awayLineup && fx._awaySquad)
-              fx.awayLineup = lineupSnapshot(fx._awaySquad, t2);
+              fx.awayLineup = lineupSnapshot2(fx._awaySquad, t2, fx._awayFullRoster);
           }
 
           // segmentRunning is now false; safe to auto-advance if all coaches were dismissed.

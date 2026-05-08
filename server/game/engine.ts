@@ -751,18 +751,34 @@ async function simulateMatchSegment(
   }
 
   // Snapshot the lineups for this segment so clients can display "who was on the pitch"
-  const lineupSnapshot = (squad: any[], tactic: any) =>
-    squad.map((p) => ({
+  // Inclui titulares e suplentes (do fullRoster que não estão no squad activo)
+  const lineupSnapshot = (squad: any[], tactic: any, fullRoster?: any[]) => {
+    const starterIds = new Set(squad.map((p: any) => p.id));
+    const starters = squad.map((p) => ({
       id: p.id,
       name: p.name,
       position: p.position,
       is_star: p.is_star || 0,
       skill: p.skill,
-      is_starter: tactic?.positions?.[p.id] === "Titular",
+      is_starter: tactic?.positions
+        ? tactic.positions[p.id] === "Titular"
+        : true,
     }));
+    const bench = (fullRoster || [])
+      .filter((p: any) => !starterIds.has(p.id))
+      .map((p: any) => ({
+        id: p.id,
+        name: p.name,
+        position: p.position,
+        is_star: p.is_star || 0,
+        skill: p.skill,
+        is_starter: false,
+      }));
+    return [...starters, ...bench];
+  };
   if (!fixture.homeLineup || fixture.homeLineup.length === 0) {
-    fixture.homeLineup = lineupSnapshot(homeSquad, homeTactic);
-    fixture.awayLineup = lineupSnapshot(awaySquad, awayTactic);
+    fixture.homeLineup = lineupSnapshot(homeSquad, homeTactic, fixture._homeFullRoster);
+    fixture.awayLineup = lineupSnapshot(awaySquad, awayTactic, fixture._awayFullRoster);
   }
 
   // Persistent lineup tracking across all minutes in this segment
