@@ -2314,7 +2314,7 @@ function App() {
               {/* Dropdown panel */}
               {showOnlineDropdown && (
                 <div
-                  className="absolute top-full right-0 mt-2 w-72 rounded-xl shadow-2xl border border-outline-variant/30 overflow-hidden z-50"
+                  className="absolute top-full right-0 mt-2 w-80 rounded-xl shadow-2xl border border-outline-variant/30 overflow-hidden z-50"
                   style={{ background: "#1a1a1a" }}
                 >
                   <div
