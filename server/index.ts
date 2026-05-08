@@ -452,6 +452,7 @@ io.on("connection", (socket) => {
     getGameBySocket,
     getPlayerBySocket,
     bindSocket,
+    unbindSocket,
     getPlayerList,
     saveGameState,
     emitCurrentPhaseToSocket,

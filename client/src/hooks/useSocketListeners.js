@@ -36,10 +36,24 @@ function hasSeenWelcomeThisSession(coachName, roomCode) {
  */
 export function useSocketListeners(handlers, refs) {
   useEffect(() => {
-    socket.on("calendarData", (data) => handlers.setCalendarData(data));
-    socket.on("teamsData", (data) => handlers.setTeams(data));
-    socket.on("teamForms", (data) => handlers.setTeamForms(data || {}));
+    // Guarda de sala: rejeita eventos de jogo quando não há sala activa.
+    // Evita que broadcasts da sala anterior contaminem o estado após "Sair".
+    const inRoom = () => !!refs.roomCodeRef?.current;
+
+    socket.on("calendarData", (data) => {
+      if (!inRoom()) return;
+      handlers.setCalendarData(data);
+    });
+    socket.on("teamsData", (data) => {
+      if (!inRoom()) return;
+      handlers.setTeams(data);
+    });
+    socket.on("teamForms", (data) => {
+      if (!inRoom()) return;
+      handlers.setTeamForms(data || {});
+    });
     socket.on("playerListUpdate", (data) => {
+      if (!inRoom()) return;
       // Suporta formato novo { players, roomCreator } e legado (array)
       if (Array.isArray(data)) {
         handlers.setPlayers(data);
@@ -50,8 +64,14 @@ export function useSocketListeners(handlers, refs) {
         }
       }
     });
-    socket.on("mySquad", (data) => handlers.setMySquad(data));
-    socket.on("marketUpdate", (data) => handlers.setMarketPairs(data));
+    socket.on("mySquad", (data) => {
+      if (!inRoom()) return;
+      handlers.setMySquad(data);
+    });
+    socket.on("marketUpdate", (data) => {
+      if (!inRoom()) return;
+      handlers.setMarketPairs(data);
+    });
     socket.on("auctionStarted", (auctionData) => {
       // Never open auction notification during match flow or cup draw
       if (
@@ -114,8 +134,12 @@ export function useSocketListeners(handlers, refs) {
         return prev?.playerId === result.playerId ? null : prev;
       });
     });
-    socket.on("topScorers", (data) => handlers.setTopScorers(data));
+    socket.on("topScorers", (data) => {
+      if (!inRoom()) return;
+      handlers.setTopScorers(data);
+    });
     socket.on("seasonEnd", (data) => {
+      if (!inRoom()) return;
       // Show the season-end awards modal
       handlers.setSeasonEndModal(data);
       if (data.year) handlers.setSeasonYear(data.year);
@@ -149,10 +173,12 @@ export function useSocketListeners(handlers, refs) {
       }
     });
     socket.on("nextMatchSummary", (data) => {
+      if (!inRoom()) return;
       handlers.setNextMatchSummary(data);
       handlers.setNextMatchSummaryLoading(false);
     });
     socket.on("cupDrawStart", (data) => {
+      if (!inRoom()) return;
       // Never open the cup draw popup during an active match
       if (refs.isPlayingMatchRef.current) return;
       refs.isCupDrawRef.current = true;
@@ -166,6 +192,7 @@ export function useSocketListeners(handlers, refs) {
       handlers.setShowCupDrawPopup(true);
     });
     socket.on("cupPreMatch", (data) => {
+      if (!inRoom()) return;
       handlers.setMatchResults({ matchweek: data.season, results: [] });
       handlers.setShowHalftimePanel(true);
       handlers.setIsPlayingMatch(false);
@@ -544,6 +571,7 @@ export function useSocketListeners(handlers, refs) {
     });
 
     socket.on("gameState", (data) => {
+      if (!inRoom()) return;
       handlers.setNewsTickerItems([]);
       if (data.allMatchResults) handlers.setAllMatchResults(data.allMatchResults);
       if (data.matchweek) handlers.setMatchweekCount(data.matchweek - 1);
@@ -612,14 +640,17 @@ export function useSocketListeners(handlers, refs) {
     });
 
     socket.on("roomLocked", ({ coaches }) => {
+      if (!inRoom()) return;
       handlers.setLockedCoaches(coaches || []);
     });
 
     socket.on("awaitingCoaches", (offline) => {
+      if (!inRoom()) return;
       handlers.setAwaitingCoaches(offline || []);
     });
 
     socket.on("matchReplay", (data) => {
+      if (!inRoom()) return;
       // Reconnected mid-match: fast-forward to current minute without animation
       refs.matchReplayActiveRef.current = true;
       handlers.setLiveMinute(data.minute);
@@ -653,6 +684,7 @@ export function useSocketListeners(handlers, refs) {
     });
 
     socket.on("matchSegmentStart", (data) => {
+      if (!inRoom()) return;
       handlers.setIsMatchActionPending(false);
       handlers.setIsLiveSimulation(true);
       refs.matchReplayActiveRef.current = false;
@@ -699,6 +731,7 @@ export function useSocketListeners(handlers, refs) {
     });
 
     socket.on("matchMinuteUpdate", (data) => {
+      if (!inRoom()) return;
       // Don't let ET minutes from another fixture advance the clock for coaches
       // whose match already ended in regulation (isCupExtraTime would be false).
       if (data.minute <= 90 || refs.isCupExtraTimeRef.current) {
@@ -888,6 +921,7 @@ export function useSocketListeners(handlers, refs) {
     });
 
     socket.on("halfTimeResults", (data) => {
+      if (!inRoom()) return;
       handlers.setIsMatchActionPending(false);
       handlers.setMatchAction(null);
       handlers.setIsLiveSimulation(false);
@@ -1038,6 +1072,7 @@ export function useSocketListeners(handlers, refs) {
     });
 
     socket.on("coachDisconnected", ({ coachName, teamId }) => {
+      if (!inRoom()) return;
       handlers.pushTickerItem(
         `${coachName} desconectou-se`,
         null,
@@ -1063,6 +1098,7 @@ export function useSocketListeners(handlers, refs) {
 
     // BUG-11 FIX: matchResults clears showHalftimePanel (2nd half replay)
     socket.on("matchResults", (data) => {
+      if (!inRoom()) return;
       handlers.setIsMatchActionPending(false);
       handlers.setMatchAction(null);
       const myTeamId = refs.meRef.current?.teamId;
@@ -1131,11 +1167,15 @@ export function useSocketListeners(handlers, refs) {
     });
 
     socket.on("coachDismissed", ({ reason, teamName }) => {
+      if (!inRoom()) return;
       handlers.setJobOfferModal(null);
       refs.pendingDismissalRef.current = { reason, teamName };
     });
 
-    socket.on("jobOffer", (data) => handlers.setJobOfferModal(data));
+    socket.on("jobOffer", (data) => {
+      if (!inRoom()) return;
+      handlers.setJobOfferModal(data);
+    });
 
     socket.on("chatMessage", (msg) => {
       const isOwn = msg.coachName === refs.meRef.current?.name;

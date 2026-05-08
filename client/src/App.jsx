@@ -287,6 +287,7 @@ function App() {
   const sidebarUserPrefRef = React.useRef(sidebarCollapsed);
 
   const meRef = React.useRef(null);
+  const roomCodeRef = React.useRef("");
   const isPlayingMatchRef = React.useRef(false);
   const showHalftimePanelRef = React.useRef(false);
   const matchActionRef = React.useRef(null);
@@ -464,6 +465,7 @@ function App() {
       matchActionRef,
       isCupDrawRef,
       meRef,
+      roomCodeRef,
       teamsRef,
       mySquadRef,
       tacticRef,
@@ -486,6 +488,10 @@ function App() {
   useEffect(() => {
     meRef.current = me;
   }, [me]);
+
+  useEffect(() => {
+    roomCodeRef.current = me?.roomCode || "";
+  }, [me?.roomCode]);
 
   // Auto-scroll chat messages panel
   useEffect(() => {
@@ -871,6 +877,10 @@ function App() {
 
   const handleJoin = () => {
     if (name && password && roomCode && !joining) {
+      // Se já estava numa sala, sair dela antes de entrar na nova
+      if (me?.roomCode) {
+        socket.emit("leaveRoom");
+      }
       resetGameState();
       setJoinError("");
       setJoining(true);
@@ -2477,6 +2487,16 @@ function App() {
             {/* SAIR */}
             <button
               onClick={() => {
+                // Notificar o servidor para saída limpa da sala
+                if (me?.roomCode) {
+                  socket.emit("leaveRoom");
+                  // Limpar roomCode do localStorage imediatamente para evitar
+                  // auto-rejoin para esta sala numa próxima sessão
+                  try {
+                    const s = JSON.parse(window.localStorage.getItem("cashballSession") || "{}");
+                    window.localStorage.setItem("cashballSession", JSON.stringify({ name: s.name, password: s.password, roomCode: "" }));
+                  } catch { /* ignorar */ }
+                }
                 resetGameState();
                 setMe(null);
                 setAuthPhase("mode");

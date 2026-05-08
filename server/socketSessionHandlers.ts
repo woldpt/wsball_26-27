@@ -39,6 +39,7 @@ interface SessionHandlerDeps {
     name: string,
     socketId: string,
   ) => string | null;
+  unbindSocket: (game: ActiveGame, socketId: string) => void;
   getPlayerList: (game: ActiveGame) => PlayerSession[];
   saveGameState: (game: ActiveGame) => void;
   emitCurrentPhaseToSocket: (game: ActiveGame, socket: any) => void;
@@ -108,6 +109,7 @@ export function registerSessionSocketHandlers(
     getGameBySocket,
     getPlayerBySocket,
     bindSocket,
+    unbindSocket,
     getPlayerList,
     saveGameState,
     emitCurrentPhaseToSocket,
@@ -751,6 +753,63 @@ export function registerSessionSocketHandlers(
       }
     },
   );
+
+  // ─── leaveRoom ─────────────────────────────────────────────────────────────
+  // Saída voluntária da sala: desvincula o socket, remove da sessão activa e
+  // notifica os restantes coaches. A equipa fica associada ao coach na DB
+  // (manager_id inalterado) para que possa voltar mais tarde.
+  socket.on("leaveRoom", () => {
+    const game = getGameBySocket(socket.id);
+    if (!game) return;
+
+    const playerState = getPlayerBySocket(game, socket.id);
+    const coachName = playerState?.name ?? game.socketToName?.[socket.id];
+
+    console.log(
+      `[${game.roomCode}] 🚪 leaveRoom: ${coachName ?? "unknown"} (socket=${socket.id})`,
+    );
+
+    if (playerState) {
+      // Repor ready para lobby
+      playerState.ready = false;
+
+      // Remover dos lockedCoaches
+      game.lockedCoaches.delete(playerState.name);
+
+      // Cancelar pendingMatchAction se era deste coach
+      const pendingAction: any = game.pendingMatchAction;
+      if (pendingAction && pendingAction.teamId === playerState.teamId) {
+        if (pendingAction.timer) clearTimeout(pendingAction.timer);
+        try {
+          pendingAction.finalize(pendingAction.fallback?.(), "auto");
+        } catch (_) {}
+        game.pendingMatchAction = null;
+      }
+
+      // Remover de playersByName — sessão activa limpa
+      delete game.playersByName[playerState.name];
+    }
+
+    // Desvincular socket e sair da sala Socket.io
+    unbindSocket(game, socket.id);
+    socket.leave(game.roomCode);
+
+    // Notificar restantes coaches
+    io.to(game.roomCode).emit("coachDisconnected", {
+      coachName: coachName ?? null,
+      teamId: playerState?.teamId ?? null,
+    });
+    emitPresence(game);
+
+    // Verificar se o jogo pode avançar sem este coach (ex: halftime a dois)
+    const activePhases = [
+      "match_halftime",
+      "match_et_gate",
+    ];
+    if (activePhases.includes(game.gamePhase)) {
+      checkAllReady(game);
+    }
+  });
 
   socket.on(
     "requestFinanceData",
