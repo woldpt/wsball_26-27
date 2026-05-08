@@ -21,6 +21,7 @@
 - **Sidebar Offsets:** Overlays/modals must track `sidebarCollapsed` with `lg:left-14` (collapsed) / `lg:left-64` (expanded) — see `App.jsx:5331`.
 - **Factory Pattern:** Use `createXxxHelpers(deps)`. Never instantiate helpers directly.
 - **Socket Handlers:** `registerXxxSocketHandlers(socket, deps)` in 7 files under `server/`. Called inside `io.on("connection")` in `index.ts`.
+- **Tactic Familiarity:** `player_tactic_history` table stores coach tactic usage. `game/tacticFamiliarity.ts` exports `getTacticFamiliarity()`. Socket handler `requestTacticFamiliarity` → `tacticFamiliarity`. Engine applies bonus (0–6%) to attack/defense in `getPower()`.
 - **Portuguese (PT):** All UI text, messages, and code comments must be in Portuguese (PT).
 
 ## State & Data Flow

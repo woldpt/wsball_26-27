@@ -421,6 +421,17 @@ function getGame(roomCode: string, onReady?: OnReady): ActiveGame | null {
             message TEXT NOT NULL,
             timestamp INTEGER NOT NULL
           )`);
+          db.run(`CREATE TABLE IF NOT EXISTS player_tactic_history (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            team_id INTEGER NOT NULL,
+            player_name TEXT NOT NULL,
+            formation TEXT NOT NULL,
+            style TEXT NOT NULL,
+            matchweek INTEGER NOT NULL,
+            competition TEXT DEFAULT 'league',
+            result TEXT,
+            FOREIGN KEY(team_id) REFERENCES teams(id)
+          )`);
 
           // ── Read persisted state (flat: one query for all keys) ──────────────
           db.all(

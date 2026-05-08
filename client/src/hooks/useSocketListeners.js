@@ -592,6 +592,10 @@ export function useSocketListeners(handlers, refs) {
       }
     });
 
+    socket.on("tacticFamiliarity", (data) => {
+      handlers.setTacticFamiliarity(data);
+    });
+
     socket.on("roomLocked", ({ coaches }) => {
       handlers.setLockedCoaches(coaches || []);
     });

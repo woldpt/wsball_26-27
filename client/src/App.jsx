@@ -236,6 +236,7 @@ function App() {
   const [calendarData, setCalendarData] = useState(null);
   const [calFilter, setCalFilter] = useState("all"); // "all" | "league" | "cup"
   const [tactic, setTactic] = useState(DEFAULT_TACTIC);
+  const [tacticFamiliarity, setTacticFamiliarity] = useState(null);
   const [liveMinute, setLiveMinute] = useState(90);
   const [isPlayingMatch, setIsPlayingMatch] = useState(false);
   const [isLiveSimulation, setIsLiveSimulation] = useState(false);
@@ -2840,6 +2841,9 @@ function App() {
                     setActiveTab("tactic");
                     setMobileSubMenu(null);
                     window.scrollTo(0, 0);
+                    if (socket && teamInfo?.id && tactic) {
+                      socket.emit("requestTacticFamiliarity", teamInfo.id);
+                    }
                   }}
                   className="flex-1 flex flex-col items-center justify-center gap-0.5 text-[10px] font-black uppercase tracking-wider transition-colors relative"
                   style={{
@@ -4266,6 +4270,70 @@ function App() {
                                   >
                                     {ml}
                                   </span>
+                                </div>
+);
+                             })()}
+
+                            {/* Familiaridade com táctica */}
+                            {(() => {
+                              const fam = tacticFamiliarity;
+                              const hasFamiliarity = fam && fam.bonus > 0 && fam.count >= 1;
+                              const badgeColor = hasFamiliarity
+                                ? fam.count >= 21
+                                  ? "bg-amber-500/15 border-amber-500/30 text-amber-300"
+                                  : fam.count >= 11
+                                    ? "bg-emerald-500/15 border-emerald-500/30 text-emerald-300"
+                                    : "bg-sky-500/15 border-sky-500/30 text-sky-300"
+                                : "bg-surface-container-high border-outline-variant/10 text-on-surface-variant/40";
+                              const bonusText = hasFamiliarity ? `(+${Math.round(fam.bonus * 100)}%)` : "";
+                              const tierLabel = hasFamiliarity
+                                ? fam.count >= 21
+                                  ? "Mestre"
+                                  : fam.count >= 16
+                                    ? "Dominante"
+                                    : fam.count >= 11
+                                      ? "Consolidada"
+                                      : fam.count >= 6
+                                        ? "Familiar"
+                                        : fam.count >= 3
+                                          ? "Ganhando rotina"
+                                          : "A familiarizar"
+                                : "";
+                              return (
+                                <div className="px-5 py-2 border-b border-outline-variant/15">
+                                  {hasFamiliarity && (
+                                    <div className={`flex flex-col gap-1 px-3 py-2 rounded-md border ${badgeColor}`}>
+                                      <div className="flex items-center gap-2">
+                                        <span className="text-sm">📈</span>
+                                        <span className="text-[10px] font-black uppercase tracking-widest">
+                                          {tierLabel}
+                                        </span>
+                                        <span className="text-[9px] opacity-70">
+                                          {bonusText}
+                                        </span>
+                                      </div>
+                                      <div className="flex items-center gap-1.5 text-[9px] opacity-70">
+                                        <span>{fam.formation}</span>
+                                        <span>·</span>
+                                        <span>{fam.style}</span>
+                                        <span>·</span>
+                                        <span>{fam.count} jogo{fam.count > 1 ? "s" : ""}</span>
+                                      </div>
+                                    </div>
+                                  )}
+                                  {!hasFamiliarity && (
+                                    <div className={`flex flex-col gap-1 px-3 py-2 rounded-md border ${badgeColor}`}>
+                                      <div className="flex items-center gap-2">
+                                        <span className="text-sm">🎯</span>
+                                        <span className="text-[10px] font-black uppercase tracking-widest">
+                                          Sem rotina
+                                        </span>
+                                      </div>
+                                      <div className="text-[9px] opacity-70">
+                                        Usa tácticas diferentes ou jogo novo
+                                      </div>
+                                    </div>
+                                  )}
                                 </div>
                               );
                             })()}

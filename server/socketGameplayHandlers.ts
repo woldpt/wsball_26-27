@@ -1,5 +1,6 @@
 import type { ActiveGame, PlayerSession } from "./types";
 import { withJuniorGRs } from "./game/engine";
+import { getTacticFamiliarity } from "./game/tacticFamiliarity";
 
 interface GameplayHandlerDeps {
   io: any;
@@ -58,6 +59,27 @@ export function registerGameplaySocketHandlers(
     if (game && playerState) {
       playerState.tactic = tactic;
     }
+  });
+
+  socket.on("requestTacticFamiliarity", (teamId) => {
+    const game = getGameBySocket(socket.id);
+    if (!game) return;
+    const playerState = getPlayerBySocket(game, socket.id);
+    if (!game || !playerState || !playerState.teamId) return;
+    const tactic = playerState.tactic;
+    if (!tactic?.formation) return;
+
+    const familiarity = getTacticFamiliarity(
+      game.db,
+      playerState.teamId,
+      playerState.name,
+      tactic.formation,
+      tactic.style,
+    );
+    socket.emit("tacticFamiliarity", {
+      ...familiarity,
+      teamId,
+    });
   });
 
   socket.on("setReady", (ready) => {

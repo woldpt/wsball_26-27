@@ -1,5 +1,6 @@
 import type { ActiveGame } from "./types";
 import { SEASON_CALENDAR } from "./gameConstants";
+import { getTacticFamiliarity } from "./game/tacticFamiliarity";
 
 interface MatchSummaryDeps {
   runAll: <T extends Record<string, any> = Record<string, any>>(
@@ -457,6 +458,25 @@ export function createMatchSummaryHelpers(deps: MatchSummaryDeps) {
 
                 applyFormDelta(homeLineupIds, homeWon);
                 applyFormDelta(awayLineupIds, awayWon);
+
+                // Registra táctica para cada coach humano com equipa nos fixtures
+                const recordTacticHistory = (teamId: number, tactic: any, result: string) => {
+                  if (!tactic?.formation || !tactic?.style) return;
+                  const playerState = Object.values(game.playersByName).find(
+                    (p) => p.teamId === teamId && p.socketId,
+                  );
+                  if (playerState) {
+                    game.db.run(
+                      "INSERT INTO player_tactic_history (team_id, player_name, formation, style, matchweek, competition, result) VALUES (?, ?, ?, ?, ?, ?, ?)",
+                      [teamId, playerState.name, tactic.formation, tactic.style, matchweek, "league", result],
+                    );
+                  }
+                };
+
+                const homeResult = homeWon ? "V" : drew ? "E" : "D";
+                const awayResult = awayWon ? "V" : drew ? "E" : "D";
+                recordTacticHistory(match.homeTeamId, match._t1, homeResult);
+                recordTacticHistory(match.awayTeamId, match._t2, awayResult);
 
                 remaining -= 1;
                 if (remaining === 0 && onDone) onDone();

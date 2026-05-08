@@ -767,7 +767,7 @@ async function simulateMatchSegment(
   const homeLineupIds = new Set<number>(homeSquad.map((p: any) => p.id));
   const awayLineupIds = new Set<number>(awaySquad.map((p: any) => p.id));
 
-  const getPower = (squad, tactic, morale = 50) => {
+  const getPower = (squad, tactic, morale = 50, familiarityBonus = 0) => {
     const formation = String(tactic?.formation || "4-4-2");
     const style = normaliseStyle(tactic?.style);
 
@@ -827,26 +827,61 @@ async function simulateMatchSegment(
     const attackBase = avgMidfielderQuality * 0.4 + avgForwardQuality * 0.6;
     const defenseBase = avgDefenderQuality * 0.6 + avgKeeperQuality * 0.4;
 
+    const familiarityAttackFactor = 1 + familiarityBonus;
+    const familiarityDefenseFactor = 1 + familiarityBonus * 0.5;
+
     return {
       attack:
         attackBase *
         formationAttack *
         Math.max(0.5, Math.min(1.5, moraleAttackFactor)) *
         styleOffensiveFactor[style] *
-        formFactor,
+        formFactor *
+        familiarityAttackFactor,
       defense:
         defenseBase *
         formationDefense *
         Math.max(0.75, Math.min(1.25, moraleDefenseFactor)) *
-        formFactor,
+        formFactor *
+        familiarityDefenseFactor,
       style,
       squad,
       midStrength: avgMidfielderQuality,
     };
   };
 
-  const home = getPower(homeSquad, homeTactic, homeMorale);
-  const away = getPower(awaySquad, awayTactic, awayMorale);
+  // Calcula familiaridade para cada equipa
+  const calcFamiliarity = (teamId, tacticLocal) => {
+    if (!tacticLocal?.formation) return 0;
+    const playerState = (Object.values(game.playersByName).find(
+      (p) => (p as any).teamId === teamId && (p as any).socketId,
+    )) as any;
+    if (!playerState) return 0;
+    let count = 0;
+    try {
+      game.db.get(
+        "SELECT COUNT(*) AS cnt FROM player_tactic_history WHERE team_id = ? AND player_name = ? AND formation = ? AND style = ?",
+        [teamId, playerState.name, tacticLocal.formation, normaliseStyle(tacticLocal.style)],
+        (err, row) => {
+          if (!err && row) count = row.cnt;
+        },
+      );
+    } catch {
+      return 0;
+    }
+    const thresholds = [
+      { min: 21, b: 0.06 }, { min: 16, b: 0.05 }, { min: 11, b: 0.04 },
+      { min: 6, b: 0.03 }, { min: 3, b: 0.02 }, { min: 1, b: 0.01 },
+    ];
+    const tier = thresholds.find((t) => count >= t.min);
+    return tier ? tier.b : 0;
+  };
+
+  const homeFam = calcFamiliarity(fixture.homeTeamId, homeTactic);
+  const awayFam = calcFamiliarity(fixture.awayTeamId, awayTactic);
+
+  const home = getPower(homeSquad, homeTactic, homeMorale, homeFam);
+  const away = getPower(awaySquad, awayTactic, awayMorale, awayFam);
 
   for (let minute = startMin; minute <= endMin; minute++) {
     fixture._minute = minute;
@@ -907,8 +942,8 @@ async function simulateMatchSegment(
       fixture._fatigue3Applied = true;
     }
 
-    const currentHome = getPower(home.squad, homeTactic, homeMorale);
-    const currentAway = getPower(away.squad, awayTactic, awayMorale);
+    const currentHome = getPower(home.squad, homeTactic, homeMorale, homeFam);
+    const currentAway = getPower(away.squad, awayTactic, awayMorale, awayFam);
 
     let goalScoredThisMinute = false;
 
