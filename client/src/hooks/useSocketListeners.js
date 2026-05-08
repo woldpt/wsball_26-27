@@ -599,9 +599,14 @@ export function useSocketListeners(handlers, refs) {
     socket.on("allTacticFamiliarity", (entries) => {
       // Converter array [{formation, style, count, bonus, label}]
       // para map { "4-3-3|OFENSIVO": { count, bonus, label }, ... }
+      // Normalizar estilo para uppercase PT independentemente do valor guardado na DB
+      const styleToUpper = (s) => {
+        const m = { Defensive: "DEFENSIVO", Balanced: "EQUILIBRADO", Offensive: "OFENSIVO" };
+        return m[s] || (s || "").toUpperCase();
+      };
       const map = {};
       (entries || []).forEach((e) => {
-        map[`${e.formation}|${e.style}`] = e;
+        map[`${e.formation}|${styleToUpper(e.style)}`] = { ...e, style: styleToUpper(e.style) };
       });
       handlers.setAllTacticFamiliarity(map);
     });

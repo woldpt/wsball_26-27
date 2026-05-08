@@ -61,7 +61,7 @@ export function registerGameplaySocketHandlers(
     }
   });
 
-  socket.on("requestTacticFamiliarity", (teamId) => {
+  socket.on("requestTacticFamiliarity", async (teamId) => {
     const game = getGameBySocket(socket.id);
     if (!game) return;
     const playerState = getPlayerBySocket(game, socket.id);
@@ -69,7 +69,7 @@ export function registerGameplaySocketHandlers(
     const tactic = playerState.tactic;
     if (!tactic?.formation) return;
 
-    const familiarity = getTacticFamiliarity(
+    const familiarity = await getTacticFamiliarity(
       game.db,
       playerState.teamId,
       playerState.name,

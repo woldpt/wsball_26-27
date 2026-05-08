@@ -41,40 +41,32 @@ export function getTacticFamiliarity(
   playerName: string,
   currentFormation: string,
   currentStyle: string,
-): TacticFamiliarityResult {
-  let count = 0;
-  let totalGames = 0;
-
-  try {
+): Promise<TacticFamiliarityResult> {
+  return new Promise((resolve) => {
     db.get(
       "SELECT COUNT(*) AS cnt FROM player_tactic_history WHERE team_id = ? AND player_name = ? AND formation = ? AND style = ?",
       [teamId, playerName, currentFormation, currentStyle],
       (err: any, row: any) => {
-        if (!err && row) count = row.cnt;
+        const count = (!err && row) ? row.cnt : 0;
+        db.get(
+          "SELECT COUNT(*) AS cnt FROM player_tactic_history WHERE team_id = ? AND player_name = ?",
+          [teamId, playerName],
+          (err2: any, row2: any) => {
+            const totalGames = (!err2 && row2) ? row2.cnt : 0;
+            const tier = TIER_THRESHOLDS.find((t) => count >= t.min) || TIER_THRESHOLDS[TIER_THRESHOLDS.length - 1];
+            resolve({
+              bonus: count >= 1 ? tier.bonus : 0,
+              count,
+              isMostUsed: true,
+              totalGames,
+              formation: currentFormation,
+              style: currentStyle,
+            });
+          },
+        );
       },
     );
-
-    db.get(
-      "SELECT COUNT(*) AS cnt FROM player_tactic_history WHERE team_id = ? AND player_name = ?",
-      [teamId, playerName],
-      (err: any, row: any) => {
-        if (!err && row) totalGames = row.cnt;
-      },
-    );
-  } catch {
-    // Table may not exist yet — return zero
-  }
-
-  const tier = TIER_THRESHOLDS.find((t) => count >= t.min) || TIER_THRESHOLDS[TIER_THRESHOLDS.length - 1];
-
-  return {
-    bonus: tier.bonus,
-    count,
-    isMostUsed: true,
-    totalGames,
-    formation: currentFormation,
-    style: currentStyle,
-  };
+  });
 }
 
 export function getBestTacticFamiliarity(
