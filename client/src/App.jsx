@@ -237,6 +237,8 @@ function App() {
   const [calFilter, setCalFilter] = useState("all"); // "all" | "league" | "cup"
   const [tactic, setTactic] = useState(DEFAULT_TACTIC);
   const [tacticFamiliarity, setTacticFamiliarity] = useState(null);
+  // Map formação+estilo → entrada de familiaridade, ex: { "4-3-3|OFENSIVO": { count, bonus, label } }
+  const [allTacticFamiliarity, setAllTacticFamiliarity] = useState({});
   const [liveMinute, setLiveMinute] = useState(90);
   const [isPlayingMatch, setIsPlayingMatch] = useState(false);
   const [isLiveSimulation, setIsLiveSimulation] = useState(false);
@@ -451,6 +453,8 @@ function App() {
       addToast,
       pushTickerItem,
       setSubstitutionPause,
+      setTacticFamiliarity,
+      setAllTacticFamiliarity,
     },
     {
       isPlayingMatchRef,
@@ -2555,6 +2559,10 @@ function App() {
                 if (isMatchInProgress) return;
                 setActiveTab("tactic");
                 window.scrollTo(0, 0);
+                if (socket && teamInfo?.id && tactic) {
+                  socket.emit("requestTacticFamiliarity", teamInfo.id);
+                  socket.emit("requestAllTacticFamiliarity");
+                }
               }}
               title={
                 sidebarCollapsed
@@ -2843,6 +2851,7 @@ function App() {
                     window.scrollTo(0, 0);
                     if (socket && teamInfo?.id && tactic) {
                       socket.emit("requestTacticFamiliarity", teamInfo.id);
+                      socket.emit("requestAllTacticFamiliarity");
                     }
                   }}
                   className="flex-1 flex flex-col items-center justify-center gap-0.5 text-[10px] font-black uppercase tracking-wider transition-colors relative"
@@ -4338,51 +4347,85 @@ function App() {
                               );
                             })()}
 
-                            {/* Formation pill buttons */}
+                            {/* Formation pill buttons + familiaridade */}
                             {(() => {
                               const hasLineup = titulares.length > 0;
                               const lastLabel = TACTIC_FORMATIONS.find(
                                 (f) => f.value === tactic.formation,
                               )?.label;
+
+                              // Para cada formação, calcular a melhor familiaridade entre todos os estilos
+                              const getBestForFormation = (formation) => {
+                                const styles = ["OFENSIVO", "DEFENSIVO", "EQUILIBRADO"];
+                                let best = null;
+                                for (const s of styles) {
+                                  const entry = allTacticFamiliarity[`${formation}|${s}`];
+                                  if (entry && (!best || entry.count > best.count)) best = entry;
+                                }
+                                return best;
+                              };
+
+                              const TIER_COLORS = {
+                                "Mestre":          { bar: "bg-amber-400",   text: "text-amber-300",   bg: "bg-amber-500/10"  },
+                                "Dominante":       { bar: "bg-emerald-400", text: "text-emerald-300", bg: "bg-emerald-500/10" },
+                                "Consolidada":     { bar: "bg-emerald-500", text: "text-emerald-400", bg: "bg-emerald-500/10" },
+                                "Familiar":        { bar: "bg-sky-400",     text: "text-sky-300",     bg: "bg-sky-500/10"    },
+                                "Ganhando rotina": { bar: "bg-sky-500",     text: "text-sky-400",     bg: "bg-sky-500/10"    },
+                                "A familiarizar":  { bar: "bg-slate-500",   text: "text-slate-400",   bg: "bg-slate-500/10"  },
+                              };
+                              const MAX_COUNT = 21;
+
                               return (
-                                <div className="px-5 py-3 border-b border-outline-variant/15 flex flex-col gap-2">
-                                  <div className="flex flex-wrap gap-2">
-                                    {TACTIC_FORMATIONS.map(
-                                      ({ value, label }) => {
-                                        const isAvailable =
-                                          formationAvailabilityByValue[
-                                            value
-                                          ] === true;
-                                        return (
-                                          <button
-                                            key={value}
-                                            disabled={!isAvailable}
-                                            title={
-                                              isAvailable
-                                                ? undefined
-                                                : "Indisponível: faltam jogadores aptos por posição"
-                                            }
-                                            onClick={() =>
-                                              isAvailable &&
-                                              handleAutoPick(value)
-                                            }
-                                            className={`px-3 py-1.5 text-[10px] font-black uppercase tracking-widest transition-all rounded-sm ${
-                                              !isAvailable
-                                                ? "bg-surface-container-high text-on-surface-variant/35 border border-outline-variant/10 cursor-not-allowed"
-                                                : hasLineup &&
-                                                    tactic.formation === value
-                                                  ? "bg-primary text-on-primary"
-                                                  : "bg-surface-container-high hover:bg-surface-bright text-on-surface-variant hover:text-on-surface border border-outline-variant/20"
-                                            }`}
-                                          >
-                                            {label}
-                                          </button>
-                                        );
-                                      },
-                                    )}
-                                  </div>
+                                <div className="px-3 py-3 border-b border-outline-variant/15 flex flex-col gap-1">
+                                  {TACTIC_FORMATIONS.map(({ value, label }) => {
+                                    const isAvailable = formationAvailabilityByValue[value] === true;
+                                    const isActive = hasLineup && tactic.formation === value;
+                                    const best = getBestForFormation(value);
+                                    const colors = best ? (TIER_COLORS[best.label] || TIER_COLORS["A familiarizar"]) : null;
+                                    const pct = best ? Math.min(100, Math.round((best.count / MAX_COUNT) * 100)) : 0;
+
+                                    return (
+                                      <div key={value} className="flex items-center gap-2">
+                                        {/* Pill */}
+                                        <button
+                                          disabled={!isAvailable}
+                                          title={isAvailable ? undefined : "Indisponível: faltam jogadores aptos por posição"}
+                                          onClick={() => isAvailable && handleAutoPick(value)}
+                                          className={`shrink-0 w-[110px] px-2 py-1.5 text-[10px] font-black uppercase tracking-widest transition-all rounded-sm text-left ${
+                                            !isAvailable
+                                              ? "bg-surface-container-high text-on-surface-variant/35 border border-outline-variant/10 cursor-not-allowed"
+                                              : isActive
+                                                ? "bg-primary text-on-primary"
+                                                : "bg-surface-container-high hover:bg-surface-bright text-on-surface-variant hover:text-on-surface border border-outline-variant/20"
+                                          }`}
+                                        >
+                                          {label}
+                                        </button>
+
+                                        {/* Familiaridade */}
+                                        {best ? (
+                                          <div className={`flex-1 flex items-center gap-1.5 px-2 py-1 rounded-sm ${colors.bg}`}>
+                                            <div className="flex-1 h-1.5 bg-outline-variant/20 rounded-full overflow-hidden">
+                                              <div
+                                                className={`h-full rounded-full transition-all ${colors.bar}`}
+                                                style={{ width: `${pct}%` }}
+                                              />
+                                            </div>
+                                            <span className={`text-[9px] font-black uppercase tracking-widest shrink-0 ${colors.text}`}>
+                                              {best.label}
+                                            </span>
+                                          </div>
+                                        ) : (
+                                          <div className="flex-1 flex items-center gap-1.5 px-2 py-1 rounded-sm bg-surface-container-high/40">
+                                            <div className="flex-1 h-1.5 bg-outline-variant/15 rounded-full" />
+                                            <span className="text-[9px] text-on-surface-variant/25 uppercase tracking-widest shrink-0">—</span>
+                                          </div>
+                                        )}
+                                      </div>
+                                    );
+                                  })}
                                   {!hasLineup && lastLabel && (
-                                    <p className="text-[9px] text-on-surface-variant/40 font-bold uppercase tracking-widest">
+                                    <p className="text-[9px] text-on-surface-variant/40 font-bold uppercase tracking-widest mt-1">
                                       Última: {lastLabel}
                                     </p>
                                   )}

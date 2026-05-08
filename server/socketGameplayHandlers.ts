@@ -1,6 +1,6 @@
 import type { ActiveGame, PlayerSession } from "./types";
 import { withJuniorGRs } from "./game/engine";
-import { getTacticFamiliarity } from "./game/tacticFamiliarity";
+import { getTacticFamiliarity, getAllTacticFamiliarity } from "./game/tacticFamiliarity";
 
 interface GameplayHandlerDeps {
   io: any;
@@ -80,6 +80,17 @@ export function registerGameplaySocketHandlers(
       ...familiarity,
       teamId,
     });
+  });
+
+  // Devolve a familiaridade de todas as combinações formação+estilo de uma vez
+  socket.on("requestAllTacticFamiliarity", async () => {
+    const game = getGameBySocket(socket.id);
+    if (!game) return;
+    const playerState = getPlayerBySocket(game, socket.id);
+    if (!playerState?.teamId) return;
+
+    const entries = await getAllTacticFamiliarity(game.db, playerState.teamId, playerState.name);
+    socket.emit("allTacticFamiliarity", entries);
   });
 
   socket.on("setReady", (ready) => {

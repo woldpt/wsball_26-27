@@ -11,6 +11,14 @@ type TacticFamiliarityResult = {
   style: string;
 };
 
+type TacticFamiliarityEntry = {
+  formation: string;
+  style: string;
+  count: number;
+  bonus: number;
+  label: string;
+};
+
 const TIER_THRESHOLDS = [
   { min: 21, bonus: 0.06, label: "Mestre" },
   { min: 16, bonus: 0.05, label: "Dominante" },
@@ -124,4 +132,36 @@ export function getBestTacticFamiliarity(
     isMostUsed: true,
     totalGames,
   };
+}
+
+// Devolve a familiaridade de todas as combinações formação+estilo de uma vez,
+// usando uma única query SQL para evitar N+1 callbacks.
+export function getAllTacticFamiliarity(
+  db: any,
+  teamId: number,
+  playerName: string,
+): Promise<TacticFamiliarityEntry[]> {
+  return new Promise((resolve) => {
+    db.all(
+      `SELECT formation, style, COUNT(*) AS cnt
+       FROM player_tactic_history
+       WHERE team_id = ? AND player_name = ?
+       GROUP BY formation, style`,
+      [teamId, playerName],
+      (err: any, rows: Array<{ formation: string; style: string; cnt: number }> | undefined) => {
+        if (err || !rows) return resolve([]);
+        const result: TacticFamiliarityEntry[] = rows.map((row) => {
+          const tier = TIER_THRESHOLDS.find((t) => row.cnt >= t.min);
+          return {
+            formation: row.formation,
+            style: row.style,
+            count: row.cnt,
+            bonus: tier ? tier.bonus : 0,
+            label: tier ? tier.label : "",
+          };
+        });
+        resolve(result);
+      },
+    );
+  });
 }

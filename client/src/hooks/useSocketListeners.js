@@ -596,6 +596,16 @@ export function useSocketListeners(handlers, refs) {
       handlers.setTacticFamiliarity(data);
     });
 
+    socket.on("allTacticFamiliarity", (entries) => {
+      // Converter array [{formation, style, count, bonus, label}]
+      // para map { "4-3-3|OFENSIVO": { count, bonus, label }, ... }
+      const map = {};
+      (entries || []).forEach((e) => {
+        map[`${e.formation}|${e.style}`] = e;
+      });
+      handlers.setAllTacticFamiliarity(map);
+    });
+
     socket.on("roomLocked", ({ coaches }) => {
       handlers.setLockedCoaches(coaches || []);
     });
