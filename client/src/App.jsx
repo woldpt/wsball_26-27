@@ -5564,6 +5564,7 @@ function App() {
                   {activeTab === "market" && (
                     <TransferHub
                       players={filteredMarketPlayers}
+                      teams={teams}
                       budget={teamInfo?.budget ?? 0}
                       me={me}
                       marketPositionFilter={marketPositionFilter}

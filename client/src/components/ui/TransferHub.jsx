@@ -55,11 +55,36 @@ function statusConfig(status) {
   };
 }
 
+/** @param {string} hex */
+function normalizeHex(hex) {
+  if (typeof hex !== "string") return null;
+  const clean = hex.trim().replace("#", "");
+  if (/^[0-9a-fA-F]{3}$/.test(clean)) {
+    return `#${clean
+      .split("")
+      .map((c) => c + c)
+      .join("")}`;
+  }
+  if (/^[0-9a-fA-F]{6}$/.test(clean)) return `#${clean}`;
+  return null;
+}
+
+/** @param {string} hex @param {number} alpha */
+function hexToRgba(hex, alpha) {
+  const n = normalizeHex(hex);
+  if (!n) return `rgba(149,212,179,${alpha})`;
+  const r = Number.parseInt(n.slice(1, 3), 16);
+  const g = Number.parseInt(n.slice(3, 5), 16);
+  const b = Number.parseInt(n.slice(5, 7), 16);
+  return `rgba(${r},${g},${b},${alpha})`;
+}
+
 function MarketCard({
   player,
   budget,
   me,
   isSameTeamId,
+  teamColorById,
   isFlipped,
   onFlip,
   onOpenDetails,
@@ -73,6 +98,13 @@ function MarketCard({
   const isFixed = player.transfer_status === "fixed";
   const isListed = isAuction || isFixed;
   const isMyAuction = isSameTeamId(player.auction_seller_team_id, me?.teamId);
+  const teamColor =
+    player.team_color_primary ||
+    player.color_primary ||
+    teamColorById.get(Number(player.team_id)) ||
+    "#95d4b3";
+  const tintStrong = hexToRgba(teamColor, 0.18);
+  const tintSoft = hexToRgba(teamColor, 0.08);
 
   return (
     <div className="[perspective:1200px]">
@@ -94,7 +126,10 @@ function MarketCard({
           className={`relative h-[360px] w-full transition-transform duration-500 [transform-style:preserve-3d] ${isFlipped ? "[transform:rotateY(180deg)]" : ""}`}
         >
           <article
-            className={`absolute inset-0 rounded-xl border bg-surface-container-low/95 p-4 shadow-xl ring-1 ${posRingClass(player.position)} [backface-visibility:hidden] overflow-hidden`}
+            className={`absolute inset-0 rounded-xl border-2 bg-surface-container-low/95 p-4 shadow-xl ring-2 ${posRingClass(player.position)} [backface-visibility:hidden] overflow-hidden`}
+            style={{
+              background: `linear-gradient(165deg, ${tintStrong} 0%, ${tintSoft} 35%, rgba(24,27,40,0.96) 100%)`,
+            }}
           >
             <div className="absolute inset-0 pointer-events-none bg-[radial-gradient(ellipse_at_top_right,rgba(255,255,255,0.06),transparent_65%)]" />
             <div className="relative flex h-full flex-col">
@@ -175,7 +210,12 @@ function MarketCard({
             </div>
           </article>
 
-          <article className="absolute inset-0 rounded-xl border border-outline-variant/25 bg-surface-container-low p-4 shadow-xl [transform:rotateY(180deg)] [backface-visibility:hidden] overflow-hidden">
+          <article
+            className="absolute inset-0 rounded-xl border-2 border-outline-variant/35 bg-surface-container-low p-4 shadow-xl [transform:rotateY(180deg)] [backface-visibility:hidden] overflow-hidden"
+            style={{
+              background: `linear-gradient(15deg, ${tintSoft} 0%, rgba(25,28,41,0.98) 55%, ${hexToRgba(teamColor, 0.12)} 100%)`,
+            }}
+          >
             <div className="absolute inset-0 pointer-events-none bg-[radial-gradient(ellipse_at_bottom_left,rgba(255,255,255,0.05),transparent_65%)]" />
             <div className="relative flex h-full flex-col">
               <div className="flex items-start justify-between gap-3">
@@ -303,6 +343,7 @@ function MarketCard({
 /**
  * @param {{
  *   players: Array,
+ *   teams: Array,
  *   budget: number,
  *   me: object,
  *   marketPositionFilter: string,
@@ -317,6 +358,7 @@ function MarketCard({
  */
 export function TransferHub({
   players,
+  teams,
   budget,
   me,
   marketPositionFilter,
@@ -330,6 +372,16 @@ export function TransferHub({
 }) {
   const [search, setSearch] = useState("");
   const [flippedId, setFlippedId] = useState(null);
+
+  const teamColorById = useMemo(() => {
+    const map = new Map();
+    for (let i = 0; i < (teams || []).length; i += 1) {
+      const t = teams[i];
+      if (!t) continue;
+      map.set(Number(t.id), t.color_primary || t.colorPrimary || null);
+    }
+    return map;
+  }, [teams]);
 
   const visible = useMemo(() => {
     if (!search.trim()) return players;
@@ -415,6 +467,7 @@ export function TransferHub({
                 budget={budget}
                 me={me}
                 isSameTeamId={isSameTeamId}
+                teamColorById={teamColorById}
                 isFlipped={flippedId === player.id}
                 onFlip={() =>
                   setFlippedId((prev) => (prev === player.id ? null : player.id))
