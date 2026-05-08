@@ -103,12 +103,9 @@ export function withJuniorGRs(
   const availableGRCount = squad.filter(
     (p) => p.position === "GR" && isPlayerAvailable(p, matchweek),
   ).length;
-  if (availableGRCount >= 2) return squad;
-  const needed = 2 - availableGRCount;
+  if (availableGRCount >= 1) return squad;
   const juniors: PlayerRow[] = [];
-  for (let i = 0; i < needed; i++) {
-    juniors.push(generateJuniorGR(teamId, matchweek, i));
-  }
+  juniors.push(generateJuniorGR(teamId, matchweek, 0));
   return [...squad, ...juniors];
 }
 
