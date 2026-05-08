@@ -944,6 +944,31 @@ export function createWeeklyFlowHelpers(deps: WeeklyFlowDeps) {
               console.log(
                 `[${game.roomCode}] ⚽ Generated ${game.currentFixtures.length} league fixtures`,
               );
+
+              // Enriquecer fixtures com nomes das equipas para narração de táticas
+              const allTeamIds = new Set<number>();
+              for (const f of game.currentFixtures) {
+                allTeamIds.add(f.homeTeamId);
+                allTeamIds.add(f.awayTeamId);
+              }
+              const teamRows = await new Promise<Array<{ id: number; name: string }>>(
+                (resolve) => {
+                  game.db.all(
+                    "SELECT id, name FROM teams WHERE id IN (" + Array.from(allTeamIds).map(() => "?").join(",") + ")",
+                    [...allTeamIds],
+                    (err: any, rows: Array<{ id: number; name: string }>) => {
+                      resolve(rows || []);
+                    },
+                  );
+                },
+              );
+              const teamMap = new Map(teamRows.map((t) => [t.id, t.name] as [number, string]));
+              for (const f of game.currentFixtures) {
+                const homeName = teamMap.get(f.homeTeamId);
+                const awayName = teamMap.get(f.awayTeamId);
+                if (homeName) f.homeTeam = { id: f.homeTeamId, name: homeName };
+                if (awayName) f.awayTeam = { id: f.awayTeamId, name: awayName };
+              }
             }
           } catch (fixtureErr) {
             console.error(
