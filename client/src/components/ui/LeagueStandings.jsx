@@ -41,6 +41,7 @@ function DivisionTable({
   teamForms,
   myTeamId,
   humanTeamIds,
+  coachNames,
   onTeamClick,
 }) {
   const divTeams = teams
@@ -165,7 +166,7 @@ function DivisionTable({
                       {!isMe && isHuman && (
                         <span
                           className="shrink-0 text-amber-400 text-[8px]"
-                          title="Treinador humano"
+                          title={coachNames?.[t.id] || "Treinador humano"}
                         >
                           👤
                         </span>
@@ -511,6 +512,12 @@ export function LeagueStandings({
   const humanTeamIds = new Set(
     players.filter((p) => p.teamId != null).map((p) => String(p.teamId)),
   );
+  const coachNames = {};
+  if (teams?.length) {
+    teams.forEach((t) => {
+      if (t.coach_name) coachNames[t.id] = t.coach_name;
+    });
+  }
 
   return (
     <div className="space-y-4">
@@ -546,6 +553,7 @@ export function LeagueStandings({
               teamForms={teamForms}
               myTeamId={myTeamId}
               humanTeamIds={humanTeamIds}
+              coachNames={coachNames}
               onTeamClick={onTeamClick}
             />
           ))}
