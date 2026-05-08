@@ -2314,7 +2314,7 @@ function App() {
               {/* Dropdown panel */}
               {showOnlineDropdown && (
                 <div
-                  className="absolute top-full right-0 mt-2 w-64 rounded-xl shadow-2xl border border-outline-variant/30 overflow-hidden z-50"
+                  className="absolute top-full right-0 mt-2 w-72 rounded-xl shadow-2xl border border-outline-variant/30 overflow-hidden z-50"
                   style={{ background: "#1a1a1a" }}
                 >
                   <div
@@ -2406,7 +2406,7 @@ function App() {
                                 </span>
                               )}
                               {coach.name === roomCreator && (
-                                <span className="ml-1.5 text-[9px] font-black uppercase tracking-widest text-amber-400 bg-amber-400/10 px-1.5 py-0.5 rounded">
+                                <span className="ml-1.5 text-[9px] font-black uppercase tracking-widest text-amber-400 bg-amber-400/10 px-2 py-0.5 rounded shrink-0">
                                   Admin
                                 </span>
                               )}
