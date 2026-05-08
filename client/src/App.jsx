@@ -63,10 +63,7 @@ import {
   getAvailablePositionCounts,
   isFormationAvailable,
 } from "./utils/playerHelpers.js";
-import {
-  normalizeTeamId,
-  isSameTeamId,
-} from "./utils/teamHelpers.js";
+import { normalizeTeamId, isSameTeamId } from "./utils/teamHelpers.js";
 import { useSocketListeners } from "./hooks/useSocketListeners.js";
 import { checkCacheVersion } from "./utils/cacheVersion.js";
 // ── Extracted views ────────────────────────────────────────────────────────
@@ -126,7 +123,11 @@ function App() {
     const session = loadSavedSession();
     setSavedSession(session);
     if (session) {
-      setMe({ name: session.name, password: session.password, roomCode: session.roomCode });
+      setMe({
+        name: session.name,
+        password: session.password,
+        roomCode: session.roomCode,
+      });
       setName(session.name);
       setPassword(session.password);
       setRoomCode(session.roomCode);
@@ -477,9 +478,8 @@ function App() {
       forceGoalFlashRender,
       joinTimerRef,
       players,
-    }
+    },
   );
-
 
   // Keep meRef in sync so the onConnect closure above always has the latest me
   useEffect(() => {
@@ -2341,7 +2341,7 @@ function App() {
                           ? "text-emerald-400"
                           : "text-amber-400";
                       return (
-                         <div
+                        <div
                           key={coach.name || i}
                           className="flex items-center gap-3 px-4 py-2.5"
                         >
@@ -3222,7 +3222,6 @@ function App() {
                                         : `${DIVISION_NAMES[hInfo?.division] || ""} · Jornada ${matchResults.matchweek}`}
                                     </span>
                                   </div>
-
                                 </div>
 
                                 {/* Banner de pausa de substituição — visível aos outros treinadores */}
@@ -3232,7 +3231,8 @@ function App() {
                                       pause_circle
                                     </span>
                                     <span>
-                                      {substitutionPause.coachName} está a fazer substituições...
+                                      {substitutionPause.coachName} está a fazer
+                                      substituições...
                                     </span>
                                   </div>
                                 )}
@@ -3282,11 +3282,17 @@ function App() {
                                           .toUpperCase()}
                                       </span>
                                       {(() => {
-                                        const homeCoach = players.find((p) => p.teamId === myMatch.homeTeamId);
+                                        const homeCoach = players.find(
+                                          (p) =>
+                                            p.teamId === myMatch.homeTeamId,
+                                        );
                                         if (!homeCoach) return null;
-                                        const isMe = myMatch.homeTeamId === me.teamId;
+                                        const isMe =
+                                          myMatch.homeTeamId === me.teamId;
                                         return (
-                                          <div className={`absolute -bottom-2.5 left-1/2 -translate-x-1/2 px-2 py-0.5 rounded-sm font-black text-[8px] tracking-widest uppercase whitespace-nowrap shadow-lg ${isMe ? "bg-primary text-on-primary" : "bg-amber-500 text-zinc-950"}`}>
+                                          <div
+                                            className={`absolute -bottom-2.5 left-1/2 -translate-x-1/2 px-2 py-0.5 rounded-sm font-black text-[8px] tracking-widest uppercase whitespace-nowrap shadow-lg ${isMe ? "bg-primary text-on-primary" : "bg-amber-500 text-zinc-950"}`}
+                                          >
                                             {homeCoach.name}
                                           </div>
                                         );
@@ -3400,7 +3406,10 @@ function App() {
                                     return (
                                       <button
                                         onClick={() => {
-                                          if (isPlayingMatch && !isMatchActionPending) {
+                                          if (
+                                            isPlayingMatch &&
+                                            !isMatchActionPending
+                                          ) {
                                             socket.emit("request_substitution");
                                           } else {
                                             setMatchDetailFixture(myMatch);
@@ -3459,11 +3468,17 @@ function App() {
                                           .toUpperCase()}
                                       </span>
                                       {(() => {
-                                        const awayCoach = players.find((p) => p.teamId === myMatch.awayTeamId);
+                                        const awayCoach = players.find(
+                                          (p) =>
+                                            p.teamId === myMatch.awayTeamId,
+                                        );
                                         if (!awayCoach) return null;
-                                        const isMe = myMatch.awayTeamId === me.teamId;
+                                        const isMe =
+                                          myMatch.awayTeamId === me.teamId;
                                         return (
-                                          <div className={`absolute -bottom-2.5 left-1/2 -translate-x-1/2 px-2 py-0.5 rounded-sm font-black text-[8px] tracking-widest uppercase whitespace-nowrap shadow-lg ${isMe ? "bg-primary text-on-primary" : "bg-amber-500 text-zinc-950"}`}>
+                                          <div
+                                            className={`absolute -bottom-2.5 left-1/2 -translate-x-1/2 px-2 py-0.5 rounded-sm font-black text-[8px] tracking-widest uppercase whitespace-nowrap shadow-lg ${isMe ? "bg-primary text-on-primary" : "bg-amber-500 text-zinc-950"}`}
+                                          >
                                             {awayCoach.name}
                                           </div>
                                         );
@@ -3947,28 +3962,31 @@ function App() {
                                   className={`bg-surface-container-low rounded-md overflow-hidden ${isHumanMatch ? "border-l-2 border-l-primary/50" : ""}`}
                                 >
                                   <div className="flex items-center">
-                                     <div className="flex-1 flex items-center gap-1.5 px-2.5 py-1.5 min-w-0">
-                                       <span
-                                         className="w-2 h-2 rounded-full shrink-0"
-                                         style={{
-                                           backgroundColor:
-                                             hInfo?.color_primary || "#666",
-                                         }}
-                                       />
-                                       <span className="flex flex-col min-w-0">
-                                         <span className="text-sm font-bold text-on-surface truncate">
-                                           {hInfo?.name}
-                                         </span>
-                                         {(() => {
-                                           const c = players.find((p) => p.teamId === match.homeTeamId);
-                                           return c ? (
-                                             <span className="text-[8px] text-amber-400 font-bold truncate leading-none">
-                                               {c.name}
-                                             </span>
-                                           ) : null;
-                                         })()}
-                                       </span>
-                                     </div>
+                                    <div className="flex-1 flex items-center gap-1.5 px-2.5 py-1.5 min-w-0">
+                                      <span
+                                        className="w-2 h-2 rounded-full shrink-0"
+                                        style={{
+                                          backgroundColor:
+                                            hInfo?.color_primary || "#666",
+                                        }}
+                                      />
+                                      <span className="flex flex-col min-w-0">
+                                        <span className="text-sm font-bold text-on-surface truncate">
+                                          {hInfo?.name}
+                                        </span>
+                                        {(() => {
+                                          const c = players.find(
+                                            (p) =>
+                                              p.teamId === match.homeTeamId,
+                                          );
+                                          return c ? (
+                                            <span className="text-[8px] text-amber-400 font-bold truncate leading-none">
+                                              {c.name}
+                                            </span>
+                                          ) : null;
+                                        })()}
+                                      </span>
+                                    </div>
                                     <button
                                       onClick={() => {
                                         setMatchDetailFixture(match);
@@ -4007,44 +4025,47 @@ function App() {
                                         {currentAway.length}
                                       </span>
                                     </button>
-                                     <div className="flex-1 flex items-center gap-1.5 px-2.5 py-1.5 min-w-0 justify-end">
-                                       <span className="flex flex-col min-w-0 items-end">
-                                         <span className="text-sm font-bold text-on-surface truncate">
-                                           {aInfo?.name}
-                                         </span>
-                                         {(() => {
-                                           const c = players.find((p) => p.teamId === match.awayTeamId);
-                                           return c ? (
-                                             <span className="text-[8px] text-amber-400 font-bold truncate leading-none">
-                                               {c.name}
-                                             </span>
-                                           ) : null;
-                                         })()}
-                                       </span>
-                                       <span
-                                         className="w-2 h-2 rounded-full shrink-0"
-                                         style={{
-                                           backgroundColor:
-                                             aInfo?.color_primary || "#666",
-                                         }}
-                                       />
-                                     </div>
+                                    <div className="flex-1 flex items-center gap-1.5 px-2.5 py-1.5 min-w-0 justify-end">
+                                      <span className="flex flex-col min-w-0 items-end">
+                                        <span className="text-sm font-bold text-on-surface truncate">
+                                          {aInfo?.name}
+                                        </span>
+                                        {(() => {
+                                          const c = players.find(
+                                            (p) =>
+                                              p.teamId === match.awayTeamId,
+                                          );
+                                          return c ? (
+                                            <span className="text-[8px] text-amber-400 font-bold truncate leading-none">
+                                              {c.name}
+                                            </span>
+                                          ) : null;
+                                        })()}
+                                      </span>
+                                      <span
+                                        className="w-2 h-2 rounded-full shrink-0"
+                                        style={{
+                                          backgroundColor:
+                                            aInfo?.color_primary || "#666",
+                                        }}
+                                      />
+                                    </div>
                                   </div>
-                                   <div className="flex text-[9px] text-on-surface-variant/40 px-2.5 pb-1">
-                                     <span className="flex-1 truncate">
-                                       {getMatchLastEventText(
-                                         matchEvents,
-                                         liveMinute,
-                                         "home",
-                                       )}
-                                     </span>
-                                     <span className="flex-1 truncate text-right">
-                                       {getMatchLastEventText(
-                                         matchEvents,
-                                         liveMinute,
-                                         "away",
-                                       )}
-                                     </span>
+                                  <div className="flex text-[9px] text-on-surface-variant/40 px-2.5 pb-1">
+                                    <span className="flex-1 truncate">
+                                      {getMatchLastEventText(
+                                        matchEvents,
+                                        liveMinute,
+                                        "home",
+                                      )}
+                                    </span>
+                                    <span className="flex-1 truncate text-right">
+                                      {getMatchLastEventText(
+                                        matchEvents,
+                                        liveMinute,
+                                        "away",
+                                      )}
+                                    </span>
                                   </div>
                                 </div>
                               );
@@ -4088,7 +4109,7 @@ function App() {
                     />
                   )}
 
-                  {activeTab === "calendario" &&
+                  {activeTab === "calendario" && (
                     <CalendarioTab
                       calendarData={calendarData}
                       me={me}
@@ -4098,7 +4119,8 @@ function App() {
                       setCalFilter={setCalFilter}
                       matchweekCount={matchweekCount}
                       handleOpenTeamSquad={handleOpenTeamSquad}
-                    />}
+                    />
+                  )}
                   {activeTab === "club" && (
                     <ClubTab
                       teamInfo={teamInfo}
@@ -4113,7 +4135,7 @@ function App() {
                     />
                   )}
 
-                  {activeTab === "finances" &&
+                  {activeTab === "finances" && (
                     <FinancesTab
                       financeData={financeData}
                       totalWeeklyWage={totalWeeklyWage}
@@ -4132,9 +4154,10 @@ function App() {
                       setShowTicketBreakdown={setShowTicketBreakdown}
                       setGameDialog={setGameDialog}
                       teamInfo={teamInfo}
-                    />}
+                    />
+                  )}
 
-                  {activeTab === "players" &&
+                  {activeTab === "players" && (
                     <PlayersTab
                       mySquad={mySquad}
                       annotatedSquad={annotatedSquad}
@@ -4148,7 +4171,8 @@ function App() {
                       listPlayerAuction={listPlayerAuction}
                       listPlayerFixed={listPlayerFixed}
                       removeFromTransferList={removeFromTransferList}
-                    />}
+                    />
+                  )}
 
                   {activeTab === "squad" && (
                     <TeamSquadView
@@ -4280,13 +4304,14 @@ function App() {
                                     {ml}
                                   </span>
                                 </div>
-);
-                             })()}
+                              );
+                            })()}
 
                             {/* Familiaridade com táctica */}
                             {(() => {
                               const fam = tacticFamiliarity;
-                              const hasFamiliarity = fam && fam.bonus > 0 && fam.count >= 1;
+                              const hasFamiliarity =
+                                fam && fam.bonus > 0 && fam.count >= 1;
                               const badgeColor = hasFamiliarity
                                 ? fam.count >= 21
                                   ? "bg-amber-500/15 border-amber-500/30 text-amber-300"
@@ -4294,32 +4319,40 @@ function App() {
                                     ? "bg-emerald-500/15 border-emerald-500/30 text-emerald-300"
                                     : "bg-sky-500/15 border-sky-500/30 text-sky-300"
                                 : "bg-surface-container-high border-outline-variant/10 text-on-surface-variant/40";
-                              const bonusText = hasFamiliarity ? `(+${Math.round(fam.bonus * 100)}%)` : "";
+                              const bonusText = hasFamiliarity
+                                ? `(+${Math.round(fam.bonus * 100)}%)`
+                                : "";
                               const tierLabel = hasFamiliarity
                                 ? fam.count >= 21
-                                  ? "Mestre"
+                                  ? "5x ⭐"
                                   : fam.count >= 16
-                                    ? "Dominante"
+                                    ? "4x ⭐"
                                     : fam.count >= 11
-                                      ? "Consolidada"
+                                      ? "3x ⭐"
                                       : fam.count >= 6
-                                        ? "Familiar"
+                                        ? "2x ⭐"
                                         : fam.count >= 3
-                                          ? "Ganhando rotina"
-                                          : "A familiarizar"
+                                          ? "1x ⭐"
+                                          : "-"
                                 : "";
                               return (
                                 <div className="px-5 py-2 border-b border-outline-variant/15">
                                   {hasFamiliarity && (
-                                    <div className={`flex flex-col gap-1 px-3 py-2 rounded-md border ${badgeColor}`}>
+                                    <div
+                                      className={`flex flex-col gap-1 px-3 py-2 rounded-md border ${badgeColor}`}
+                                    >
                                       <div className="flex items-center gap-2">
-                                        <span className="text-sm">{
-                                          fam.count >= 21 ? "⭐⭐⭐" :
-                                          fam.count >= 16 ? "⭐⭐⭐" :
-                                          fam.count >= 11 ? "⭐⭐" :
-                                          fam.count >= 6  ? "⭐⭐" :
-                                          "⭐"
-                                        }</span>
+                                        <span className="text-sm">
+                                          {fam.count >= 21
+                                            ? "⭐⭐⭐"
+                                            : fam.count >= 16
+                                              ? "⭐⭐⭐"
+                                              : fam.count >= 11
+                                                ? "⭐⭐"
+                                                : fam.count >= 6
+                                                  ? "⭐⭐"
+                                                  : "⭐"}
+                                        </span>
                                         <span className="text-[10px] font-black uppercase tracking-widest">
                                           {tierLabel}
                                         </span>
@@ -4332,12 +4365,17 @@ function App() {
                                         <span>·</span>
                                         <span>{fam.style}</span>
                                         <span>·</span>
-                                        <span>{fam.count} jogo{fam.count > 1 ? "s" : ""}</span>
+                                        <span>
+                                          {fam.count} jogo
+                                          {fam.count > 1 ? "s" : ""}
+                                        </span>
                                       </div>
                                     </div>
                                   )}
                                   {!hasFamiliarity && (
-                                    <div className={`flex flex-col gap-1 px-3 py-2 rounded-md border ${badgeColor}`}>
+                                    <div
+                                      className={`flex flex-col gap-1 px-3 py-2 rounded-md border ${badgeColor}`}
+                                    >
                                       <div className="flex items-center gap-2">
                                         <span className="text-sm"> </span>
                                         <span className="text-[10px] font-black uppercase tracking-widest">
@@ -4362,41 +4400,96 @@ function App() {
 
                               // Para cada formação, calcular a melhor familiaridade entre todos os estilos
                               const getBestForFormation = (formation) => {
-                                const styles = ["OFENSIVO", "DEFENSIVO", "EQUILIBRADO"];
+                                const styles = [
+                                  "OFENSIVO",
+                                  "DEFENSIVO",
+                                  "EQUILIBRADO",
+                                ];
                                 let best = null;
                                 for (const s of styles) {
-                                  const entry = allTacticFamiliarity[`${formation}|${s}`];
-                                  if (entry && (!best || entry.count > best.count)) best = entry;
+                                  const entry =
+                                    allTacticFamiliarity[`${formation}|${s}`];
+                                  if (
+                                    entry &&
+                                    (!best || entry.count > best.count)
+                                  )
+                                    best = entry;
                                 }
                                 return best;
                               };
 
                               const TIER_COLORS = {
-                                "Mestre":          { bar: "bg-amber-400",   text: "text-amber-300",   bg: "bg-amber-500/10"  },
-                                "Dominante":       { bar: "bg-emerald-400", text: "text-emerald-300", bg: "bg-emerald-500/10" },
-                                "Consolidada":     { bar: "bg-emerald-500", text: "text-emerald-400", bg: "bg-emerald-500/10" },
-                                "Familiar":        { bar: "bg-sky-400",     text: "text-sky-300",     bg: "bg-sky-500/10"    },
-                                "Ganhando rotina": { bar: "bg-sky-500",     text: "text-sky-400",     bg: "bg-sky-500/10"    },
-                                "A familiarizar":  { bar: "bg-slate-500",   text: "text-slate-400",   bg: "bg-slate-500/10"  },
+                                Mestre: {
+                                  bar: "bg-amber-400",
+                                  text: "text-amber-300",
+                                  bg: "bg-amber-500/10",
+                                },
+                                Dominante: {
+                                  bar: "bg-emerald-400",
+                                  text: "text-emerald-300",
+                                  bg: "bg-emerald-500/10",
+                                },
+                                Consolidada: {
+                                  bar: "bg-emerald-500",
+                                  text: "text-emerald-400",
+                                  bg: "bg-emerald-500/10",
+                                },
+                                Familiar: {
+                                  bar: "bg-sky-400",
+                                  text: "text-sky-300",
+                                  bg: "bg-sky-500/10",
+                                },
+                                "Ganhando rotina": {
+                                  bar: "bg-sky-500",
+                                  text: "text-sky-400",
+                                  bg: "bg-sky-500/10",
+                                },
+                                "A familiarizar": {
+                                  bar: "bg-slate-500",
+                                  text: "text-slate-400",
+                                  bg: "bg-slate-500/10",
+                                },
                               };
                               const MAX_COUNT = 21;
 
                               return (
                                 <div className="px-3 py-3 border-b border-outline-variant/15 flex flex-col gap-1">
                                   {TACTIC_FORMATIONS.map(({ value, label }) => {
-                                    const isAvailable = formationAvailabilityByValue[value] === true;
-                                    const isActive = hasLineup && tactic.formation === value;
+                                    const isAvailable =
+                                      formationAvailabilityByValue[value] ===
+                                      true;
+                                    const isActive =
+                                      hasLineup && tactic.formation === value;
                                     const best = getBestForFormation(value);
-                                    const colors = best ? (TIER_COLORS[best.label] || TIER_COLORS["A familiarizar"]) : null;
-                                    const pct = best ? Math.min(100, Math.round((best.count / MAX_COUNT) * 100)) : 0;
+                                    const colors = best
+                                      ? TIER_COLORS[best.label] ||
+                                        TIER_COLORS["A familiarizar"]
+                                      : null;
+                                    const pct = best
+                                      ? Math.min(
+                                          100,
+                                          Math.round(
+                                            (best.count / MAX_COUNT) * 100,
+                                          ),
+                                        )
+                                      : 0;
 
                                     return (
-                                      <div key={value} className="flex items-center gap-2">
+                                      <div
+                                        key={value}
+                                        className="flex items-center gap-2"
+                                      >
                                         {/* Pill */}
                                         <button
                                           disabled={!isAvailable}
-                                          title={isAvailable ? undefined : "Indisponível: faltam jogadores aptos por posição"}
-                                          onClick={() => isAvailable && handleAutoPick(value)}
+                                          title={
+                                            isAvailable
+                                              ? undefined
+                                              : "Indisponível: faltam jogadores aptos por posição"
+                                          }
+                                          onClick={() =>
+                                            isAvailable && handleAutoPick(value)
+                                          }
                                           className={`shrink-0 w-[110px] px-2 py-1.5 text-[10px] font-black uppercase tracking-widest transition-all rounded-sm text-left ${
                                             !isAvailable
                                               ? "bg-surface-container-high text-on-surface-variant/35 border border-outline-variant/10 cursor-not-allowed"
@@ -4410,21 +4503,27 @@ function App() {
 
                                         {/* Familiaridade */}
                                         {best ? (
-                                          <div className={`flex-1 flex items-center gap-1.5 px-2 py-1 rounded-sm ${colors.bg}`}>
+                                          <div
+                                            className={`flex-1 flex items-center gap-1.5 px-2 py-1 rounded-sm ${colors.bg}`}
+                                          >
                                             <div className="flex-1 h-1.5 bg-outline-variant/20 rounded-full overflow-hidden">
                                               <div
                                                 className={`h-full rounded-full transition-all ${colors.bar}`}
                                                 style={{ width: `${pct}%` }}
                                               />
                                             </div>
-                                            <span className={`text-[9px] font-black uppercase tracking-widest shrink-0 ${colors.text}`}>
+                                            <span
+                                              className={`text-[9px] font-black uppercase tracking-widest shrink-0 ${colors.text}`}
+                                            >
                                               {best.label}
                                             </span>
                                           </div>
                                         ) : (
                                           <div className="flex-1 flex items-center gap-1.5 px-2 py-1 rounded-sm bg-surface-container-high/40">
                                             <div className="flex-1 h-1.5 bg-outline-variant/15 rounded-full" />
-                                            <span className="text-[9px] text-on-surface-variant/25 uppercase tracking-widest shrink-0">—</span>
+                                            <span className="text-[9px] text-on-surface-variant/25 uppercase tracking-widest shrink-0">
+                                              —
+                                            </span>
                                           </div>
                                         )}
                                       </div>
@@ -4446,28 +4545,43 @@ function App() {
                               </span>
                               <div className="flex gap-1.5">
                                 {[
-                                   ["Defensive", "🛡️", "Defensivo", "Prioriza não sofrer golos. Ataque mais contido, mas difícil de bater. Ideal contra adversários mais fortes."],
-                                   ["Balanced", "⚖️", "Equilibrado", "Postura neutra. Potencia a qualidade real do plantel sem arriscar. Boa escolha quando as equipas são semelhantes."],
-                                   ["Offensive", "⚔️", "Ofensivo", "Pressão total. Mais perigoso no ataque, mas exposto atrás. Ideal contra equipas fechadas ou quando precisas de marcar."],
-                                 ].map(([val, icon, lbl, tooltip]) => (
-                                   <button
-                                     key={val}
-                                     onClick={() => updateTactic({ style: val })}
-                                     title={tooltip}
-                                     className={`flex-1 flex flex-col items-center gap-0.5 py-2 rounded transition-all ${
-                                       tactic.style === val
-                                         ? "bg-primary text-on-primary shadow-md"
-                                         : "bg-surface-container-high hover:bg-surface-bright text-on-surface-variant border border-outline-variant/20"
-                                     }`}
-                                   >
-                                     <span className="text-base leading-none">
-                                       {icon}
-                                     </span>
-                                     <span className="text-[9px] font-black uppercase tracking-wide leading-none">
-                                       {lbl}
-                                     </span>
-                                   </button>
-                                 ))}
+                                  [
+                                    "Defensive",
+                                    "🛡️",
+                                    "Defensivo",
+                                    "Prioriza não sofrer golos. Ataque mais contido, mas difícil de bater. Ideal contra adversários mais fortes.",
+                                  ],
+                                  [
+                                    "Balanced",
+                                    "⚖️",
+                                    "Equilibrado",
+                                    "Postura neutra. Potencia a qualidade real do plantel sem arriscar. Boa escolha quando as equipas são semelhantes.",
+                                  ],
+                                  [
+                                    "Offensive",
+                                    "⚔️",
+                                    "Ofensivo",
+                                    "Pressão total. Mais perigoso no ataque, mas exposto atrás. Ideal contra equipas fechadas ou quando precisas de marcar.",
+                                  ],
+                                ].map(([val, icon, lbl, tooltip]) => (
+                                  <button
+                                    key={val}
+                                    onClick={() => updateTactic({ style: val })}
+                                    title={tooltip}
+                                    className={`flex-1 flex flex-col items-center gap-0.5 py-2 rounded transition-all ${
+                                      tactic.style === val
+                                        ? "bg-primary text-on-primary shadow-md"
+                                        : "bg-surface-container-high hover:bg-surface-bright text-on-surface-variant border border-outline-variant/20"
+                                    }`}
+                                  >
+                                    <span className="text-base leading-none">
+                                      {icon}
+                                    </span>
+                                    <span className="text-[9px] font-black uppercase tracking-wide leading-none">
+                                      {lbl}
+                                    </span>
+                                  </button>
+                                ))}
                               </div>
                             </div>
                           </div>

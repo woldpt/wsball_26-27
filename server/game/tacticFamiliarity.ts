@@ -20,15 +20,24 @@ type TacticFamiliarityEntry = {
 };
 
 const TIER_THRESHOLDS = [
-  { min: 21, bonus: 0.06, label: "Mestre" },
-  { min: 16, bonus: 0.05, label: "Dominante" },
-  { min: 11, bonus: 0.04, label: "Consolidada" },
-  { min: 6, bonus: 0.03, label: "Familiar" },
-  { min: 3, bonus: 0.02, label: "Ganhando rotina" },
-  { min: 1, bonus: 0.01, label: "A familiarizar" },
+  { min: 21, bonus: 0.06, label: "5x⭐" },
+  { min: 16, bonus: 0.05, label: "4x⭐" },
+  { min: 11, bonus: 0.04, label: "3x⭐" },
+  { min: 6, bonus: 0.03, label: "2x⭐" },
+  { min: 3, bonus: 0.02, label: "1x⭐" },
+  { min: 1, bonus: 0.01, label: "-" },
 ];
 
-export function insertTacticHistory(db: any, teamId: number, playerName: string, formation: string, style: string, matchweek: number, competition: string, result: string): void {
+export function insertTacticHistory(
+  db: any,
+  teamId: number,
+  playerName: string,
+  formation: string,
+  style: string,
+  matchweek: number,
+  competition: string,
+  result: string,
+): void {
   db.run(
     "INSERT INTO player_tactic_history (team_id, player_name, formation, style, matchweek, competition, result) VALUES (?, ?, ?, ?, ?, ?, ?)",
     [teamId, playerName, formation, style, matchweek, competition, result],
@@ -47,13 +56,15 @@ export function getTacticFamiliarity(
       "SELECT COUNT(*) AS cnt FROM player_tactic_history WHERE team_id = ? AND player_name = ? AND formation = ? AND style = ?",
       [teamId, playerName, currentFormation, currentStyle],
       (err: any, row: any) => {
-        const count = (!err && row) ? row.cnt : 0;
+        const count = !err && row ? row.cnt : 0;
         db.get(
           "SELECT COUNT(*) AS cnt FROM player_tactic_history WHERE team_id = ? AND player_name = ?",
           [teamId, playerName],
           (err2: any, row2: any) => {
-            const totalGames = (!err2 && row2) ? row2.cnt : 0;
-            const tier = TIER_THRESHOLDS.find((t) => count >= t.min) || TIER_THRESHOLDS[TIER_THRESHOLDS.length - 1];
+            const totalGames = !err2 && row2 ? row2.cnt : 0;
+            const tier =
+              TIER_THRESHOLDS.find((t) => count >= t.min) ||
+              TIER_THRESHOLDS[TIER_THRESHOLDS.length - 1];
             resolve({
               bonus: count >= 1 ? tier.bonus : 0,
               count,
@@ -74,7 +85,14 @@ export function getBestTacticFamiliarity(
   teamId: number,
   playerName: string,
   allFormations: string[],
-): { bonus: number; count: number; formation: string; style: string; isMostUsed: boolean; totalGames: number } {
+): {
+  bonus: number;
+  count: number;
+  formation: string;
+  style: string;
+  isMostUsed: boolean;
+  totalGames: number;
+} {
   let totalGames = 0;
   let bestBonus = 0;
   let bestCount = 0;
@@ -101,7 +119,10 @@ export function getBestTacticFamiliarity(
               cnt = row.cnt;
               const tier = TIER_THRESHOLDS.find((t) => cnt >= t.min);
               const bonus = tier ? tier.bonus : 0;
-              if (bonus > bestBonus || (bonus === bestBonus && cnt > bestCount)) {
+              if (
+                bonus > bestBonus ||
+                (bonus === bestBonus && cnt > bestCount)
+              ) {
                 bestBonus = bonus;
                 bestCount = cnt;
                 bestFormation = formation;
@@ -140,7 +161,12 @@ export function applyTacticDecay(
      WHERE team_id = ? AND player_name = ?
      GROUP BY formation, style`,
     [teamId, playerName],
-    (err: any, rows: Array<{ formation: string; style: string; lastUsed: number }> | undefined) => {
+    (
+      err: any,
+      rows:
+        | Array<{ formation: string; style: string; lastUsed: number }>
+        | undefined,
+    ) => {
       if (err || !rows) return;
       for (const row of rows) {
         const gap = currentMatchweek - row.lastUsed;
@@ -174,7 +200,12 @@ export function getAllTacticFamiliarity(
        WHERE team_id = ? AND player_name = ?
        GROUP BY formation, style`,
       [teamId, playerName],
-      (err: any, rows: Array<{ formation: string; style: string; cnt: number }> | undefined) => {
+      (
+        err: any,
+        rows:
+          | Array<{ formation: string; style: string; cnt: number }>
+          | undefined,
+      ) => {
         if (err || !rows) return resolve([]);
         const result: TacticFamiliarityEntry[] = rows.map((row) => {
           const tier = TIER_THRESHOLDS.find((t) => row.cnt >= t.min);
