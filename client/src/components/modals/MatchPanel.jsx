@@ -172,6 +172,45 @@ function TabJogo({ fixture, liveMinute, teams }) {
           })}
         </div>
       )}
+
+      {/* Narração */}
+      {(() => {
+        const commentary = evts
+          .filter((e) => e.minute <= liveMinute && e.text)
+          .sort((a, b) => (b.minute ?? 0) - (a.minute ?? 0));
+        if (commentary.length === 0) return null;
+        return (
+          <div>
+            <p className="text-[9px] font-black uppercase tracking-widest text-zinc-600 mb-1.5">
+              Narração
+            </p>
+            <div className="space-y-1">
+              {commentary.map((e, i) => {
+                const phrase = e.text
+                  .replace(/^\[(?:\d+'|HT)\]\s*\S*\s*/, "")
+                  .trim();
+                if (!phrase) return null;
+                return (
+                  <div
+                    key={i}
+                    className="flex items-start gap-2 px-2 py-1.5 rounded bg-surface-container-high/40 border border-outline-variant/10"
+                  >
+                    <span className="text-zinc-600 font-black text-[10px] w-7 shrink-0 text-right pt-px">
+                      {e.minute != null ? `${e.minute}'` : ""}
+                    </span>
+                    <span className="w-4 shrink-0 text-center text-[11px]">
+                      {e.emoji || ""}
+                    </span>
+                    <span className="flex-1 text-[11px] text-zinc-400 leading-snug">
+                      {phrase}
+                    </span>
+                  </div>
+                );
+              })}
+            </div>
+          </div>
+        );
+      })()}
     </div>
   );
 }
