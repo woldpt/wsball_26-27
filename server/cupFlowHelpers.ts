@@ -554,10 +554,10 @@ export function createCupFlowHelpers(deps: CupFlowDeps) {
         let t1 = (p1 as any)?.tactic || fixture._t1;
         let t2 = (p2 as any)?.tactic || fixture._t2;
         if (!t1) {
-          t1 = await generateAITactic(game.db, fixture.homeTeamId, fixture.awayTeamId);
+          t1 = await generateAITactic(game.db, fixture.homeTeamId, fixture.awayTeamId, game.matchweek);
         }
         if (!t2) {
-          t2 = await generateAITactic(game.db, fixture.awayTeamId, fixture.homeTeamId);
+          t2 = await generateAITactic(game.db, fixture.awayTeamId, fixture.homeTeamId, game.matchweek);
         }
         if (p1) fixture._t1 = t1;
         if (p2) fixture._t2 = t2;

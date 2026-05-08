@@ -1,6 +1,6 @@
 // ── Match calculation utilities extracted from engine.ts ──────────────────────
 
-import { pickBestPlayer } from "./playerUtils";
+import { pickBestPlayer, withJuniorGRs } from "./playerUtils";
 
 type PlayerRow = any;
 
@@ -95,6 +95,7 @@ export async function generateAITactic(
   db: any,
   teamId: number,
   opponentId: number,
+  matchweek: number = 1,
 ): Promise<{ formation: string; style: string; positions: Record<number, string> }> {
   return new Promise<{ formation: string; style: string; positions: Record<number, string> }>((resolve) => {
     db.all(
@@ -105,7 +106,11 @@ export async function generateAITactic(
           return resolve({ formation: "4-4-2", style: "EQUILIBRADO", positions: {} });
         }
 
-        const selfRows = rows.filter((p) => p.team_id === teamId);
+        const selfRows = withJuniorGRs(
+          rows.filter((p) => p.team_id === teamId),
+          teamId,
+          matchweek,
+        );
         const oppRows = rows.filter((p) => p.team_id === opponentId);
 
         const avgSelf = average(selfRows.map((p) => p.skill || 0));

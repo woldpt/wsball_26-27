@@ -171,10 +171,10 @@ export function createWeeklyFlowHelpers(deps: WeeklyFlowDeps) {
         let t1 = p1 ? p1.tactic : fixture._t1;
         let t2 = p2 ? p2.tactic : fixture._t2;
         if (!t1) {
-          t1 = await generateAITactic(game.db, fixture.homeTeamId, fixture.awayTeamId);
+          t1 = await generateAITactic(game.db, fixture.homeTeamId, fixture.awayTeamId, game.matchweek || 1);
         }
         if (!t2) {
-          t2 = await generateAITactic(game.db, fixture.awayTeamId, fixture.homeTeamId);
+          t2 = await generateAITactic(game.db, fixture.awayTeamId, fixture.homeTeamId, game.matchweek || 1);
         }
         if (p1) fixture._t1 = t1;
         if (p2) fixture._t2 = t2;
