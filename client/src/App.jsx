@@ -75,8 +75,8 @@ import { CalendarioTab } from "./views/CalendarioTab.jsx";
 import { ClubTab } from "./views/ClubTab.jsx";
 import { FinancesTab } from "./views/FinancesTab.jsx";
 import { PlayersTab } from "./views/PlayersTab.jsx";
-import { MarketTab } from "./views/MarketTab.jsx";
 import { TeamSquadView } from "./views/TeamSquadView.jsx";
+import { TransferHub } from "./components/ui/TransferHub.jsx";
 // ── App-level constants ────────────────────────────────────────────────────
 const WEATHER_LABELS = {
   "☀️": "Sol",
@@ -5562,14 +5562,22 @@ function App() {
                   )}
 
                   {activeTab === "market" && (
-                    <MarketTab
-                      teamInfo={teamInfo}
-                      filteredMarketPlayers={filteredMarketPlayers}
+                    <TransferHub
+                      players={filteredMarketPlayers}
+                      budget={teamInfo?.budget ?? 0}
+                      me={me}
                       marketPositionFilter={marketPositionFilter}
                       setMarketPositionFilter={setMarketPositionFilter}
                       marketSort={marketSort}
                       setMarketSort={setMarketSort}
-                      matchweekCount={matchweekCount}
+                      isSameTeamId={isSameTeamId}
+                      buyPlayer={buyPlayer}
+                      openAuctionBid={openAuctionBid}
+                      onOpenPlayerHistory={(player) =>
+                        socket.emit("requestPlayerHistory", {
+                          playerId: player.id,
+                        })
+                      }
                     />
                   )}
                 </motion.div>
