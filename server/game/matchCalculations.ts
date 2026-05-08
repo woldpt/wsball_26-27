@@ -138,9 +138,24 @@ export async function generateAITactic(
         const starterIds = new Set(starters.map((p) => p.id));
 
         const positions: Record<number, string> = {};
-        for (const p of selfRows) {
-          positions[p.id] = starterIds.has(p.id) ? "Titular" : "Suplente";
+        for (const p of starters) {
+          positions[p.id] = "Titular";
         }
+
+        // Banco: máx 5 (1 GR suplente + 4 de campo) — igual ao auto-builder humano
+        const nonStarters = selfRows.filter((p) => !starterIds.has(p.id));
+        const grBench = nonStarters
+          .filter((p) => p.position === "GR")
+          .sort((a, b) => (b.skill || 0) - (a.skill || 0))
+          .slice(0, 1);
+        const fieldBench = nonStarters
+          .filter((p) => p.position !== "GR")
+          .sort((a, b) => (b.skill || 0) - (a.skill || 0))
+          .slice(0, 5 - grBench.length);
+        for (const p of [...grBench, ...fieldBench]) {
+          positions[p.id] = "Suplente";
+        }
+        // Restantes jogadores não aparecem no mapa (tratados como excluídos)
 
         resolve({ formation: bestFormation, style, positions });
       },
