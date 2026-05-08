@@ -21,8 +21,23 @@
 - **Sidebar Offsets:** Overlays/modals must track `sidebarCollapsed` with `lg:left-14` (collapsed) / `lg:left-64` (expanded) — see `App.jsx:5331`.
 - **Factory Pattern:** Use `createXxxHelpers(deps)`. Never instantiate helpers directly.
 - **Socket Handlers:** `registerXxxSocketHandlers(socket, deps)` in 7 files under `server/`. Called inside `io.on("connection")` in `index.ts`.
-- **Tactic Familiarity:** `player_tactic_history` table stores coach tactic usage. `game/tacticFamiliarity.ts` exports `getTacticFamiliarity()`. Socket handler `requestTacticFamiliarity` → `tacticFamiliarity`. Engine applies bonus (0–6%) to attack/defense in `getPower()`.
+- **Tactic Familiarity:** `player_tactic_history` table stores coach tactic usage. `game/tacticFamiliarity.ts` exports `getTacticFamiliarity()`. `TIER_THRESHOLDS = [{min:10},{min:8},{min:6},{min:4},{min:2},{min:1}]` → bonus 0–5%. Labels: "5x⭐"/"4x⭐"/"3x⭐"/"2x⭐"/"1x⭐"/"-". Engine applies bonus (0–5%) to attack/defense in `getPower()`. Socket handler `requestTacticFamiliarity` → `tacticFamiliarity`.
 - **Portuguese (PT):** All UI text, messages, and code comments must be in Portuguese (PT).
+
+## Tactic Familiarity UI
+- **Client state:** `tacticFamiliarity` (single tactic) + `allTacticFamiliarity` (map `formation|style` → `{count, bonus, label}`).
+- **Tier labels:** "5x⭐"/"4x⭐"/"3x⭐"/"2x⭐"/"1x⭐"/"-". Server `TIER_THRESHOLDS` at `tacticFamiliarity.ts:22-29`.
+- **Progress bars:** `App.jsx:4488-4512` — each formation row shows a progress bar + tier label. `MAX_COUNT = 21` (line 4437).
+- **Tier colors:** Mestre(amber), Dominante(emerald), Consolidada(emerald), Familiar(sky), "Ganhando rotina"(sky), "A familiarizar"(slate) — `App.jsx:4405-4436`.
+- **Decay:** `applyTacticDecay` removes 1 record per unused tactic after 2 games of inactivity. Called after each league game.
+- **Socket:** `requestTacticFamiliarity` → `tacticFamiliarity`, `requestAllTacticFamiliarity` → `allTacticFamiliarity`.
+
+## Opponent Tab Layout (`TabAdversario`)
+- **Vertical field:** `aspectRatio: "9/16"`, `maxHeight: "420px"`, SVG `viewBox="0 0 315 560"` — `MatchPanel.jsx:409`.
+- **50/50 split:** Field left (50%), bench column right (50%) — `MatchPanel.jsx:408-493`.
+- **Player positions:** GR top 8%, DEF 31%, MED 56%, ATA 81% — `MatchPanel.jsx:428`.
+- **Bench:** Limited to 5 players (1 GR + 4 outfield) — `MatchPanel.jsx:365`.
+- **Craque star:** `*` in amber for MED/ATA only — `MatchPanel.jsx:446-449`.
 
 ## State & Data Flow
 - **Game Truth:** `game.calendarIndex` (0-based, 0–18) is the source of truth for season progress, **not** `game.matchweek`.
@@ -40,6 +55,7 @@
 - **Stadium:** €300,000 per 5,000 seats (max 120,000).
 - **Referee:** Random inclination per game (±15% on cards/penalties). Does NOT affect penalty shootout conversion.
 - **Division 5 (Distritais):** Internal-only AI pool in `gameConstants.ts`. Invisible to players; promotion via simple draw.
+- **Tactic Familiarity Bonus:** 0–5% applied to attack/defense based on `TIER_THRESHOLDS` (2/4/6/8/10 games). Tier labels: "1x⭐" through "5x⭐". Applied in `getPower()`.
 
 ## Cup Final (Taça de Portugal)
 - **Round:** `round === 5` (Final), `calendarIndex === 18` (last entry in `SEASON_CALENDAR`).

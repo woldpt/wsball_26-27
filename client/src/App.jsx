@@ -150,6 +150,7 @@ function App() {
   const [availableSaves, setAvailableSaves] = useState([]);
   const [authSubmitting, setAuthSubmitting] = useState(false);
   const [authError, setAuthError] = useState("");
+  const [isNewAccount, setIsNewAccount] = useState(false);
   const [joining, setJoining] = useState(false);
   const [disconnected, setDisconnected] = useState(false);
   const [sessionDisplaced, setSessionDisplaced] = useState(false);
@@ -739,6 +740,7 @@ function App() {
     setJoinError("");
     setAuthError("");
     setAuthSubmitting(false);
+    setIsNewAccount(false);
   };
 
   const resetGameState = () => {
@@ -849,6 +851,7 @@ function App() {
       setJoinMode(null);
       setRoomCode("");
       setJoinError("");
+      setIsNewAccount(mode === "register");
       setAuthPhase("mode");
     } catch {
       setAuthError("Sem ligação ao servidor. Tenta novamente.");
@@ -1705,6 +1708,17 @@ function App() {
                 {/* ─── MODE PHASE ────────────────────────── */}
                 {authPhase === "mode" && (
                   <div className="p-6 space-y-5">
+                    {/* Banner de boas-vindas para conta recém-criada */}
+                    {isNewAccount && (
+                      <div className="flex items-start gap-2 bg-emerald-500/10 border border-emerald-500/30 rounded px-3 py-2">
+                        <span className="material-symbols-outlined text-emerald-400 text-base leading-tight mt-0.5">
+                          check_circle
+                        </span>
+                        <p className="text-emerald-300 text-xs font-bold leading-snug">
+                          Conta criada com sucesso! Bem-vindo, <span className="text-emerald-200">{name}</span>.
+                        </p>
+                      </div>
+                    )}
                     {/* Header: name + account actions */}
                     <div className="space-y-3">
                       <div className="text-center">
@@ -2117,7 +2131,20 @@ function App() {
   const loanInterestPerWeek = Math.round(loanAmount * 0.025);
   const currentBudget = teamInfo?.budget || 0;
 
-  if (!cacheReady) return null;
+  if (!cacheReady) {
+    return (
+      <div className="min-h-screen bg-surface text-on-surface flex items-center justify-center">
+        <div className="text-center space-y-3">
+          <p className="text-3xl font-headline font-black text-primary tracking-tight">
+            CashBall <span className="text-on-surface">26/27</span>
+          </p>
+          <p className="text-xs text-on-surface-variant uppercase tracking-[0.3em] font-bold animate-pulse">
+            A carregar...
+          </p>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="min-h-dvh bg-surface text-on-surface font-body tracking-tight">

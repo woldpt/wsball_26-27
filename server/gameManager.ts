@@ -8,6 +8,10 @@ const sqlite = sqlite3.verbose();
 
 const activeGames: Record<string, ActiveGame> = {};
 
+// Índice global socketId → roomCode para O(1) lookup no disconnect
+// Mantido em sincronismo com bindSocket/unbindSocket
+const socketRoomIndex: Record<string, string> = {};
+
 type SqliteDb = any;
 type DbRow = { [key: string]: any } | null;
 type OnReady = (game: ActiveGame | null, error?: Error) => void;
@@ -629,28 +633,26 @@ function getGame(roomCode: string, onReady?: OnReady): ActiveGame | null {
                 } catch (_) {}
               }
 
-              // Restore pending match action for crash recovery (stub finalize/timer)
+              // Limpar pendingMatchAction persistida na DB — após reinício do servidor
+              // o jogo já foi reposto para "lobby", por isso qualquer ação pendente
+              // é obsoleta. Criar um stub inerte causaria bloqueios silenciosos.
               if (st["pendingMatchAction"] && st["pendingMatchAction"] !== "null") {
-                try {
-                  const parsed = JSON.parse(st["pendingMatchAction"]);
-                  if (parsed && parsed.actionId && parsed.fallback !== undefined) {
-                    game.pendingMatchAction = {
-                      actionId: parsed.actionId,
-                      type: parsed.type || "unknown",
-                      teamId: parsed.teamId,
-                      timer: null as any,
-                      finalize: (_choice: any, _source: string) => {
-                        console.log(
-                          `[gameManager] ⚠ Stale pendingMatchAction finalize called (actionId=${parsed.actionId})`,
-                        );
-                      },
-                      fallback: () => parsed.fallback,
-                    };
-                    console.log(
-                      `[gameManager] 🔄 Restored pendingMatchAction stub from DB (actionId=${parsed.actionId}, teamId=${parsed.teamId})`,
-                    );
-                  }
-                } catch (_) {}
+                game.pendingMatchAction = null;
+                db.run(
+                  `INSERT OR REPLACE INTO game_state (key, value) VALUES ('pendingMatchAction', 'null')`,
+                  (cleanErr: Error | null) => {
+                    if (cleanErr) {
+                      console.error(
+                        `[gameManager] Erro ao limpar pendingMatchAction na DB (room ${roomCode}):`,
+                        cleanErr.message,
+                      );
+                    } else {
+                      console.log(
+                        `[gameManager] pendingMatchAction obsoleta removida após reinício (room ${roomCode})`,
+                      );
+                    }
+                  },
+                );
               }
 
               // Set currentEvent from calendarIndex
@@ -854,11 +856,13 @@ function bindSocket(
       : null;
   if (oldSocketId) {
     delete game.socketToName[oldSocketId];
+    delete socketRoomIndex[oldSocketId];
   }
   if (game.playersByName[name]) {
     game.playersByName[name].socketId = socketId;
   }
   game.socketToName[socketId] = name;
+  socketRoomIndex[socketId] = game.roomCode;
   return oldSocketId;
 }
 
@@ -868,9 +872,16 @@ function unbindSocket(game: ActiveGame, socketId: string): void {
     game.playersByName[name].socketId = null;
   }
   delete game.socketToName[socketId];
+  delete socketRoomIndex[socketId];
 }
 
 function getGameBySocket(socketId: string): ActiveGame | null {
+  // O(1) lookup via índice global em vez de iterar todos os rooms
+  const roomCode = socketRoomIndex[socketId];
+  if (roomCode && activeGames[roomCode]) {
+    return activeGames[roomCode];
+  }
+  // Fallback: varredura linear (socket ligado antes de bindSocket ser chamado)
   for (const roomCode in activeGames) {
     if (activeGames[roomCode].socketToName[socketId]) {
       return activeGames[roomCode];
