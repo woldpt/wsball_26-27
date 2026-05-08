@@ -196,13 +196,14 @@ export function createWeeklyFlowHelpers(deps: WeeklyFlowDeps) {
     // to the cached squads. fixture._homeSquad/_awaySquad were set during the first half and
     // won't reflect tactic position changes made during the interval otherwise.
     // Helper to create lineup snapshot
-    const lineupSnapshot = (squad: any[]) =>
+    const lineupSnapshot = (squad: any[], tactic: any) =>
       squad.map((p) => ({
         id: p.id,
         name: p.name,
         position: p.position,
         is_star: p.is_star || 0,
         skill: p.skill,
+        is_starter: tactic?.positions?.[p.id] === "Titular",
       }));
 
     // At the start of the second half, apply halftime tactic changes (substitutions/style)
@@ -269,9 +270,9 @@ export function createWeeklyFlowHelpers(deps: WeeklyFlowDeps) {
 
             // Update the lineup snapshot to reflect the new squad composition
             if (teamSide === "home") {
-              fixture.homeLineup = lineupSnapshot(squad);
+              fixture.homeLineup = lineupSnapshot(squad, tactic);
             } else {
-              fixture.awayLineup = lineupSnapshot(squad);
+              fixture.awayLineup = lineupSnapshot(squad, tactic);
             }
 
             // Emit halftime_sub events so the client lineup display reflects the changes
@@ -948,19 +949,29 @@ export function createWeeklyFlowHelpers(deps: WeeklyFlowDeps) {
           // Capture first-half lineups from the squads that actually played.
           // League fixtures don't have homeLineup/awayLineup set before this point.
           // These are needed so applyTrainingBonuses sees all players who participated.
-          const lineupSnapshot = (squad: any[]) =>
+          const lineupSnapshot = (squad: any[], tactic: any) =>
             squad.map((p) => ({
               id: p.id,
               name: p.name,
               position: p.position,
               is_star: p.is_star || 0,
               skill: p.skill,
+              is_starter: tactic?.positions?.[p.id] === "Titular",
             }));
-          for (const fixture of game.currentFixtures) {
-            if (!fixture.homeLineup && fixture._homeSquad)
-              fixture.homeLineup = lineupSnapshot(fixture._homeSquad);
-            if (!fixture.awayLineup && fixture._awaySquad)
-              fixture.awayLineup = lineupSnapshot(fixture._awaySquad);
+          for (let fi = 0; fi < game.currentFixtures.length; fi++) {
+            const fx = game.currentFixtures[fi];
+            const p1 = Object.values(game.playersByName).find(
+              (p) => p.teamId === fx.homeTeamId,
+            );
+            const p2 = Object.values(game.playersByName).find(
+              (p) => p.teamId === fx.awayTeamId,
+            );
+            const t1 = (p1?.tactic as object) || fx._t1 || {};
+            const t2 = (p2?.tactic as object) || fx._t2 || {};
+            if (!fx.homeLineup && fx._homeSquad)
+              fx.homeLineup = lineupSnapshot(fx._homeSquad, t1);
+            if (!fx.awayLineup && fx._awaySquad)
+              fx.awayLineup = lineupSnapshot(fx._awaySquad, t2);
           }
 
           // segmentRunning is now false; safe to auto-advance if all coaches were dismissed.

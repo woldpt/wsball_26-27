@@ -751,17 +751,18 @@ async function simulateMatchSegment(
   }
 
   // Snapshot the lineups for this segment so clients can display "who was on the pitch"
-  const lineupSnapshot = (squad: any[]) =>
+  const lineupSnapshot = (squad: any[], tactic: any) =>
     squad.map((p) => ({
       id: p.id,
       name: p.name,
       position: p.position,
       is_star: p.is_star || 0,
       skill: p.skill,
+      is_starter: tactic?.positions?.[p.id] === "Titular",
     }));
   if (!fixture.homeLineup || fixture.homeLineup.length === 0) {
-    fixture.homeLineup = lineupSnapshot(homeSquad);
-    fixture.awayLineup = lineupSnapshot(awaySquad);
+    fixture.homeLineup = lineupSnapshot(homeSquad, homeTactic);
+    fixture.awayLineup = lineupSnapshot(awaySquad, awayTactic);
   }
 
   // Persistent lineup tracking across all minutes in this segment
