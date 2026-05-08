@@ -20,12 +20,12 @@ type TacticFamiliarityEntry = {
 };
 
 const TIER_THRESHOLDS = [
-  { min: 21, bonus: 0.06, label: "5x⭐" },
-  { min: 16, bonus: 0.05, label: "4x⭐" },
-  { min: 11, bonus: 0.04, label: "3x⭐" },
-  { min: 6, bonus: 0.03, label: "2x⭐" },
-  { min: 3, bonus: 0.02, label: "1x⭐" },
-  { min: 1, bonus: 0.01, label: "-" },
+  { min: 10, bonus: 0.05, label: "5x⭐" },
+  { min: 8, bonus: 0.04, label: "4x⭐" },
+  { min: 6, bonus: 0.03, label: "3x⭐" },
+  { min: 4, bonus: 0.02, label: "2x⭐" },
+  { min: 2, bonus: 0.01, label: "1x⭐" },
+  { min: 1, bonus: 0.00, label: "-" },
 ];
 
 export function insertTacticHistory(
