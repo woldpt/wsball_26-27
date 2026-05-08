@@ -77,3 +77,56 @@ export function average(values: number[] = []) {
   if (!values.length) return 0;
   return values.reduce((sum, value) => sum + value, 0) / values.length;
 }
+
+const FORMATIONS = ["4-4-2", "4-3-3", "3-5-2", "5-3-2", "4-5-1", "3-4-3", "4-2-4", "5-4-1"];
+
+const FORMATION_WEIGHTS: Record<string, { GR: number; DEF: number; MED: number; ATA: number }> = {
+  "4-4-2": { GR: 1, DEF: 4, MED: 4, ATA: 2 },
+  "4-3-3": { GR: 1, DEF: 4, MED: 3, ATA: 3 },
+  "3-5-2": { GR: 1, DEF: 3, MED: 5, ATA: 2 },
+  "5-3-2": { GR: 1, DEF: 5, MED: 3, ATA: 2 },
+  "4-5-1": { GR: 1, DEF: 4, MED: 5, ATA: 1 },
+  "3-4-3": { GR: 1, DEF: 3, MED: 4, ATA: 3 },
+  "4-2-4": { GR: 1, DEF: 4, MED: 2, ATA: 4 },
+  "5-4-1": { GR: 1, DEF: 5, MED: 4, ATA: 1 },
+};
+
+export async function generateAITactic(
+  db: any,
+  teamId: number,
+  opponentId: number,
+): Promise<{ formation: string; style: string }> {
+  return new Promise<{ formation: string; style: string }>((resolve) => {
+    db.all(
+      "SELECT * FROM players WHERE team_id IN (?, ?) AND team_id IS NOT NULL",
+      [teamId, opponentId],
+      (err: any, rows: PlayerRow[] | undefined) => {
+        if (!rows || rows.length === 0) {
+          return resolve({ formation: "4-4-2", style: "EQUILIBRADO" });
+        }
+
+        const selfRows = rows.filter((p) => p.team_id === teamId);
+        const oppRows = rows.filter((p) => p.team_id === opponentId);
+
+        const avgSelf = average(selfRows.map((p) => p.skill || 0));
+        const avgOpp = average(oppRows.map((p) => p.skill || 0));
+
+        const bestFormation = FORMATIONS.reduce((best, form) => {
+          const w = FORMATION_WEIGHTS[form];
+          const score =
+            (average(selfRows.filter((p) => p.position === "GR").map((p) => p.skill || 0)) * w.GR +
+            average(selfRows.filter((p) => p.position === "DEF").map((p) => p.skill || 0)) * w.DEF +
+            average(selfRows.filter((p) => p.position === "MED").map((p) => p.skill || 0)) * w.MED +
+            average(selfRows.filter((p) => p.position === "ATA").map((p) => p.skill || 0)) * w.ATA) /
+            (w.GR + w.DEF + w.MED + w.ATA);
+          return score > best.score ? { score, form } : best;
+        }, { score: -Infinity, form: "4-4-2" }).form;
+
+        const ratio = avgOpp > 0 ? avgSelf / avgOpp : 1;
+        const style = ratio >= 1.10 ? "OFENSIVO" : ratio <= 0.90 ? "DEFENSIVO" : "EQUILIBRADO";
+
+        resolve({ formation: bestFormation, style });
+      },
+    );
+  });
+}

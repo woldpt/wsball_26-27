@@ -8,6 +8,7 @@ import {
   makePhaseToken,
 } from "./matchFlowHelpers";
 import { withJuniorGRs } from "./game/engine";
+import { generateAITactic } from "./game/matchCalculations";
 
 interface WeeklyFlowDeps {
   io: any;
@@ -159,24 +160,27 @@ export function createWeeklyFlowHelpers(deps: WeeklyFlowDeps) {
     }
 
     // Read tactics for all fixtures once at segment start
-    const fixtureTactics: Array<{ t1: any; t2: any }> =
-      game.currentFixtures.map((fixture) => {
+    const fixtureTactics: Array<{ t1: any; t2: any }> = await Promise.all(
+      game.currentFixtures.map(async (fixture) => {
         const p1 = Object.values(game.playersByName).find(
           (p) => p.teamId === fixture.homeTeamId,
         );
         const p2 = Object.values(game.playersByName).find(
           (p) => p.teamId === fixture.awayTeamId,
         );
-        const t1 = p1
-          ? p1.tactic
-          : fixture._t1 || { formation: "4-4-2", style: "Balanced" };
-        const t2 = p2
-          ? p2.tactic
-          : fixture._t2 || { formation: "4-4-2", style: "Balanced" };
+        let t1 = p1 ? p1.tactic : fixture._t1;
+        let t2 = p2 ? p2.tactic : fixture._t2;
+        if (!t1) {
+          t1 = await generateAITactic(game.db, fixture.homeTeamId, fixture.awayTeamId);
+        }
+        if (!t2) {
+          t2 = await generateAITactic(game.db, fixture.awayTeamId, fixture.homeTeamId);
+        }
         if (p1) fixture._t1 = t1;
         if (p2) fixture._t2 = t2;
         return { t1, t2 };
-      });
+      }),
+    );
 
     // Detect if any connected human has a team in the current fixtures
     const humanInFixtures = game.currentFixtures.some((f) =>

@@ -3,6 +3,7 @@ import type { ActiveGame, PlayerSession } from "./types";
 import type { CalendarEntry } from "./gameConstants";
 import { SEASON_CALENDAR, SPONSOR_REVENUE_BY_DIVISION } from "./gameConstants";
 import { clearPhaseTimer } from "./matchFlowHelpers";
+import { generateAITactic } from "./game/matchCalculations";
 
 interface CupFlowDeps {
   io: any;
@@ -542,31 +543,37 @@ export function createCupFlowHelpers(deps: CupFlowDeps) {
       goals90Home: number;
       goals90Away: number;
     };
-    const setups: FixtureSetup[] = fixtures.map((fixture) => {
-      const p1 = Object.values(game.playersByName).find(
-        (p: any) => p.teamId === fixture.homeTeamId,
-      );
-      const p2 = Object.values(game.playersByName).find(
-        (p: any) => p.teamId === fixture.awayTeamId,
-      );
-      const t1 = (p1 as any)?.tactic ||
-        fixture._t1 || { formation: "4-4-2", style: "Balanced" };
-      const t2 = (p2 as any)?.tactic ||
-        fixture._t2 || { formation: "4-4-2", style: "Balanced" };
-      if (p1) fixture._t1 = t1;
-      if (p2) fixture._t2 = t2;
-      console.log(
-        `[${game.roomCode}] 🏆 Cup fixture result: ${fixture.homeTeam?.name ?? fixture.homeTeamId} ${fixture.finalHomeGoals}-${fixture.finalAwayGoals} ${fixture.awayTeam?.name ?? fixture.awayTeamId}`,
-      );
-      return {
-        fixture,
-        t1,
-        t2,
-        ctx: { game, io, matchweek: game.matchweek },
-        goals90Home: fixture.finalHomeGoals,
-        goals90Away: fixture.finalAwayGoals,
-      };
-    });
+    const setups: FixtureSetup[] = await Promise.all(
+      fixtures.map(async (fixture) => {
+        const p1 = Object.values(game.playersByName).find(
+          (p: any) => p.teamId === fixture.homeTeamId,
+        );
+        const p2 = Object.values(game.playersByName).find(
+          (p: any) => p.teamId === fixture.awayTeamId,
+        );
+        let t1 = (p1 as any)?.tactic || fixture._t1;
+        let t2 = (p2 as any)?.tactic || fixture._t2;
+        if (!t1) {
+          t1 = await generateAITactic(game.db, fixture.homeTeamId, fixture.awayTeamId);
+        }
+        if (!t2) {
+          t2 = await generateAITactic(game.db, fixture.awayTeamId, fixture.homeTeamId);
+        }
+        if (p1) fixture._t1 = t1;
+        if (p2) fixture._t2 = t2;
+        console.log(
+          `[${game.roomCode}] 🏆 Cup fixture result: ${fixture.homeTeam?.name ?? fixture.homeTeamId} ${fixture.finalHomeGoals}-${fixture.finalAwayGoals} ${fixture.awayTeam?.name ?? fixture.awayTeamId}`,
+        );
+        return {
+          fixture,
+          t1,
+          t2,
+          ctx: { game, io, matchweek: game.matchweek },
+          goals90Home: fixture.finalHomeGoals,
+          goals90Away: fixture.finalAwayGoals,
+        };
+      }),
+    );
 
     // ── Phase 2: Extra time — all drawn fixtures batched ─────────────────────
     const drawnSetups = setups.filter((s) => s.goals90Home === s.goals90Away);
