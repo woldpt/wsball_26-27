@@ -537,6 +537,76 @@ function applyFatigue(
   }
 }
 
+// Gera os eventos de introdução (weather + táctica) do minuto 1 antes da simulação.
+// Chamada em weeklyFlowHelpers.ts antes de emitir matchSegmentStart, para que os
+// comentários já estejam no payload durante a pausa de 5s.
+// As guards na engine (!fixture._weather / !fixture._firstHalfStartComment) evitam duplicação.
+export function generateIntroEvents(
+  fixture: MatchFixture,
+  homeTactic: any,
+  awayTactic: any,
+): void {
+  // Weather
+  if (!fixture._weather) {
+    const weatherRoll = Math.random();
+    let weatherCondition: string;
+    if (weatherRoll < 0.35) weatherCondition = "sol";
+    else if (weatherRoll < 0.65) weatherCondition = "chuva";
+    else if (weatherRoll < 0.8) weatherCondition = "vento";
+    else if (weatherRoll < 0.88) weatherCondition = "chuva_forte";
+    else if (weatherRoll < 0.95) weatherCondition = "frio";
+    else if (weatherRoll < 0.98) weatherCondition = "nevoeiro";
+    else weatherCondition = "neve";
+
+    const weatherEmojis: Record<string, string> = {
+      sol: "☀️",
+      chuva: "🌧️",
+      chuva_forte: "⛈️",
+      vento: "💨",
+      frio: "🥶",
+      nevoeiro: "🌫️",
+      neve: "❄️",
+    };
+    fixture._weather = weatherCondition;
+    fixture.events.push({
+      minute: 1,
+      type: "weather",
+      team: null,
+      emoji: weatherEmojis[weatherCondition] || "🌤️",
+      text: `[1'] ${weatherEmojis[weatherCondition] || "🌤️"} ${weatherPhrase(weatherCondition)}`,
+    });
+  }
+
+  // Comentário táctico de início
+  if (!fixture._firstHalfStartComment) {
+    const homeName = fixture.homeTeam?.name || fixture.homeTeamId;
+    const awayName = fixture.awayTeam?.name || fixture.awayTeamId;
+    const homeFormation = homeTactic?.formation || "4-4-2";
+    const awayFormation = awayTactic?.formation || "4-4-2";
+    const homeStyle = homeTactic?.style || "EQUILIBRADO";
+    const awayStyle = awayTactic?.style || "EQUILIBRADO";
+
+    if (fixture.round === 5) {
+      fixture.events.push({
+        minute: 1,
+        type: "phase_start",
+        team: null,
+        emoji: "🏟️",
+        text: `[1'] 🏟️ ${finalStartPhrase()}`,
+      });
+    } else {
+      fixture.events.push({
+        minute: 1,
+        type: "phase_start",
+        team: null,
+        emoji: "📋",
+        text: `[1'] 📋 ${tacticStartPhrase(homeName, homeFormation, homeStyle, awayName, awayFormation, awayStyle)}`,
+      });
+    }
+    fixture._firstHalfStartComment = true;
+  }
+}
+
 async function simulateMatchSegment(
   db: Db,
   fixture: MatchFixture,

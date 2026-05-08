@@ -7,7 +7,7 @@ import {
   clearPhaseTimer,
   makePhaseToken,
 } from "./matchFlowHelpers";
-import { withJuniorGRs } from "./game/engine";
+import { withJuniorGRs, generateIntroEvents } from "./game/engine";
 import { generateAITactic } from "./game/matchCalculations";
 
 interface WeeklyFlowDeps {
@@ -345,6 +345,17 @@ export function createWeeklyFlowHelpers(deps: WeeklyFlowDeps) {
           `[${game.roomCode}] Error applying halftime substitutions:`,
           err,
         );
+      }
+    }
+
+    // Pré-gerar eventos de introdução (weather + táctica) do minuto 1 para que
+    // cheguem ao cliente no payload do matchSegmentStart e sejam visíveis durante
+    // a pausa de 5s. A engine ignora-os no loop graças às guards _weather/_firstHalfStartComment.
+    if (startMin === 1) {
+      for (let fi = 0; fi < game.currentFixtures.length; fi++) {
+        const fixture = game.currentFixtures[fi];
+        const { t1, t2 } = fixtureTactics[fi];
+        generateIntroEvents(fixture, t1, t2);
       }
     }
 
