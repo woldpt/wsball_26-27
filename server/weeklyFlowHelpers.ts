@@ -209,7 +209,7 @@ export function createWeeklyFlowHelpers(deps: WeeklyFlowDeps) {
           : true,
       }));
       const bench = (fullRoster || [])
-        .filter((p: any) => !starterIds.has(p.id))
+        .filter((p: any) => !starterIds.has(p.id) && (!tactic?.positions || tactic.positions[p.id] === "Suplente"))
         .map((p: any) => ({
           id: p.id,
           name: p.name,
@@ -985,7 +985,7 @@ export function createWeeklyFlowHelpers(deps: WeeklyFlowDeps) {
                 : true,
             }));
             const bench = (fullRoster || [])
-              .filter((p: any) => !starterIds.has(p.id))
+              .filter((p: any) => !starterIds.has(p.id) && (!tactic?.positions || tactic.positions[p.id] === "Suplente"))
               .map((p: any) => ({
                 id: p.id,
                 name: p.name,
