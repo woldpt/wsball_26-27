@@ -4313,7 +4313,13 @@ function App() {
                                   {hasFamiliarity && (
                                     <div className={`flex flex-col gap-1 px-3 py-2 rounded-md border ${badgeColor}`}>
                                       <div className="flex items-center gap-2">
-                                        <span className="text-sm">📈</span>
+                                        <span className="text-sm">{
+                                          fam.count >= 21 ? "⭐⭐⭐" :
+                                          fam.count >= 16 ? "⭐⭐⭐" :
+                                          fam.count >= 11 ? "⭐⭐" :
+                                          fam.count >= 6  ? "⭐⭐" :
+                                          "⭐"
+                                        }</span>
                                         <span className="text-[10px] font-black uppercase tracking-widest">
                                           {tierLabel}
                                         </span>
@@ -4333,7 +4339,7 @@ function App() {
                                   {!hasFamiliarity && (
                                     <div className={`flex flex-col gap-1 px-3 py-2 rounded-md border ${badgeColor}`}>
                                       <div className="flex items-center gap-2">
-                                        <span className="text-sm">🎯</span>
+                                        <span className="text-sm"> </span>
                                         <span className="text-[10px] font-black uppercase tracking-widest">
                                           Sem rotina
                                         </span>
