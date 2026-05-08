@@ -556,42 +556,6 @@ function TabAdversario({ fixture, myTeamId, teams }) {
           </div>
         </div>
       )}
-
-      {/* Banco de suplentes do adversário */}
-      {bench.length > 0 && (
-        <div>
-          <p className="text-[9px] font-black uppercase tracking-widest text-zinc-600 mb-1.5">
-            Banco
-          </p>
-          <div className="grid grid-cols-2 gap-x-3 gap-y-0.5">
-            {bench.map((player) => (
-              <div
-                key={player.id ?? player.name}
-                className="flex items-center gap-1.5 py-0.5"
-              >
-                <span
-                  className={`text-[9px] font-black w-6 shrink-0 ${POSITION_TEXT_CLASS[player.position] || "text-zinc-500"}`}
-                >
-                  {POSITION_SHORT_LABELS[player.position] || "?"}
-                </span>
-                <span className="flex-1 truncate text-[11px] font-bold text-zinc-400">
-                  <PlayerLink playerId={player.id}>{player.name}</PlayerLink>
-                  {!!player.is_star &&
-                    (player.position === "MED" ||
-                      player.position === "ATA") && (
-                      <span className="ml-0.5 text-amber-400 font-black">
-                        *
-                      </span>
-                    )}
-                </span>
-                <span className="text-[10px] font-black tabular-nums text-zinc-600 shrink-0">
-                  {player.skill ?? "—"}
-                </span>
-              </div>
-            ))}
-          </div>
-        </div>
-      )}
     </div>
   );
 }
