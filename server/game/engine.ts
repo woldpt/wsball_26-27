@@ -26,6 +26,7 @@ import {
   finalStartPhrase,
   finalGoalPhrase,
   finalEndPhrase,
+  tacticStartPhrase,
 } from "./commentary";
 import {
   clampSkill,
@@ -887,6 +888,13 @@ async function simulateMatchSegment(
     fixture._minute = minute;
 
     if (minute === 1 && !fixture._firstHalfStartComment) {
+      const homeName = fixture.homeTeam?.name || fixture.homeTeamId;
+      const awayName = fixture.awayTeam?.name || fixture.awayTeamId;
+      const homeFormation = homeTactic?.formation || "4-4-2";
+      const awayFormation = awayTactic?.formation || "4-4-2";
+      const homeStyle = homeTactic?.style || "EQUILIBRADO";
+      const awayStyle = awayTactic?.style || "EQUILIBRADO";
+
       if (fixture.round === 5) {
         fixture.events.push({
           minute,
@@ -894,6 +902,14 @@ async function simulateMatchSegment(
           team: null,
           emoji: "🏟️",
           text: `[1'] 🏟️ ${finalStartPhrase()}`,
+        });
+      } else {
+        fixture.events.push({
+          minute,
+          type: "phase_start",
+          team: null,
+          emoji: "📋",
+          text: `[1'] 📋 ${tacticStartPhrase(homeName, homeFormation, homeStyle, awayName, awayFormation, awayStyle)}`,
         });
       }
       fixture._firstHalfStartComment = true;

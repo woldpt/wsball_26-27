@@ -636,7 +636,6 @@ function finalGoalPhrase(name: string): string {
 
 function finalEndPhrase(winnerName: string): string {
   return pickPhrase([
-    `Fim de jogo no Jamor! ${winnerName} é o novo campeão da Taça de Portugal!`,
     `Jamor em festa! ${winnerName} levanta a Taça de Portugal!`,
     `Final no Jamor a terminar! ${winnerName} é o rei da Taça!`,
     `Taça de Portugal para ${winnerName}! O Jamor grita o nome do campeão!`,
@@ -646,6 +645,35 @@ function finalEndPhrase(winnerName: string): string {
     `Taça de Portugal 2026: ${winnerName} no Jamor, imponente!`,
     `${winnerName} ergue a Taça! Jamor em pé, a festejar o campeão!`,
     `Fim! ${winnerName} é o campeão da Taça de Portugal no Jamor!`,
+  ]);
+}
+
+function tacticStartPhrase(
+  homeName: string,
+  homeFormation: string,
+  homeStyle: string,
+  awayName: string,
+  awayFormation: string,
+  awayStyle: string,
+): string {
+  const styleLabel = (s: string) => {
+    switch (s) {
+      case "OFENSIVO": return "estilo ofensivo";
+      case "DEFENSIVO": return "estilo defensivo";
+      default: return "equilibrado";
+    }
+  };
+  return pickPhrase([
+    `A ${homeName} estreia-se com um ${homeFormation} ${styleLabel(homeStyle)}, enquanto o ${awayName} opta por um ${awayFormation} ${styleLabel(awayStyle)}.`,
+    `No grande jogo, ${homeName} joga de ${homeFormation} ${styleLabel(homeStyle)} contra o ${awayName} a ${awayFormation} ${styleLabel(awayStyle)}.`,
+    `${homeName} prepara-se para um ${homeFormation} ${styleLabel(homeStyle)} e o ${awayName} responde com um ${awayFormation} ${styleLabel(awayStyle)}.`,
+    `Chegou a hora do confronto. ${homeName} aposta no ${homeFormation} ${styleLabel(homeStyle)} e o ${awayName} no ${awayFormation} ${styleLabel(awayStyle)}.`,
+    `Táticas definidas: ${homeName} de ${homeFormation} ${styleLabel(homeStyle)} e ${awayName} de ${awayFormation} ${styleLabel(awayStyle)}.`,
+    `${homeName} começa com um ${homeFormation} ${styleLabel(homeStyle)} — o ${awayName} responde com um ${awayFormation} ${styleLabel(awayStyle)}.`,
+    `O ${homeName} estreia-se com um ${homeFormation} ${styleLabel(homeStyle)}, ao passo que o ${awayName} opta por um ${awayFormation} ${styleLabel(awayStyle)}.`,
+    `Duas equipas, duas tácticas. ${homeName} de ${homeFormation} ${styleLabel(homeStyle)} contra o ${awayName} ${awayFormation} ${styleLabel(awayStyle)}.`,
+    `As equipas tomam posição. ${homeName} com um ${homeFormation} ${styleLabel(homeStyle)} e o ${awayName} com um ${awayFormation} ${styleLabel(awayStyle)}.`,
+    `${homeName} e ${awayName} fazem as suas escolhas. Primeira: ${homeFormation} ${styleLabel(homeStyle)}. Segunda: ${awayFormation} ${styleLabel(awayStyle)}.`,
   ]);
 }
 
@@ -667,4 +695,5 @@ export {
   finalStartPhrase,
   finalGoalPhrase,
   finalEndPhrase,
+  tacticStartPhrase,
 };

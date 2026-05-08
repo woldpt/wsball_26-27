@@ -370,7 +370,7 @@ function TabAdversario({ fixture, myTeamId, teams }) {
           Sem dados da escalação do adversário
         </p>
       ) : (
-        <div className="relative w-full rounded-md overflow-hidden border border-emerald-900/60 bg-[linear-gradient(180deg,#05430e_0%,#0b5e1a_50%,#05430e_100%)]" style={{ aspectRatio: "16/10" }}>
+        <div className="relative w-full rounded-md overflow-hidden border border-emerald-900/60 bg-[linear-gradient(180deg,#05430e_0%,#0b5e1a_50%,#05430e_100%)]" style={{ aspectRatio: "16/10", maxHeight: "300px" }}>
           <svg
             className="absolute inset-0 w-full h-full"
             viewBox="0 0 560 315"
