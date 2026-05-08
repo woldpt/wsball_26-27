@@ -641,7 +641,10 @@ export function useSocketListeners(handlers, refs) {
       handlers.setIsMatchActionPending(false);
       handlers.setIsLiveSimulation(true);
       refs.matchReplayActiveRef.current = false;
-      handlers.setLiveMinute(data.startMin);
+      // Relógio começa um minuto antes do primeiro update: dá espaço para a pausa de introdução
+      // (5s no servidor antes do loop de minutos) mostrar o relógio em repouso.
+      // Ao chegar o primeiro matchMinuteUpdate, o relógio avança para startMin.
+      handlers.setLiveMinute(data.startMin - 1);
       handlers.setIsPlayingMatch(true);
       handlers.setActiveTab("live");
       // Always sync cup state from the server payload (handles reconnect mid-match)

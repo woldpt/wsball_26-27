@@ -648,6 +648,33 @@ function finalEndPhrase(winnerName: string): string {
   ]);
 }
 
+function secondHalfTacticPhrase(
+  homeName: string,
+  homeFormation: string,
+  homeStyle: string,
+  awayName: string,
+  awayFormation: string,
+  awayStyle: string,
+): string {
+  const styleLabel = (s: string) => {
+    switch (s) {
+      case "OFENSIVO": return "estilo ofensivo";
+      case "DEFENSIVO": return "estilo defensivo";
+      default: return "equilibrado";
+    }
+  };
+  return pickPhrase([
+    `Segunda parte em curso. ${homeName} mantém o ${homeFormation} ${styleLabel(homeStyle)} — o ${awayName} entrou com um ${awayFormation} ${styleLabel(awayStyle)}.`,
+    `As equipas voltam do balneário. ${homeName} de ${homeFormation} ${styleLabel(homeStyle)}, o ${awayName} com um ${awayFormation} ${styleLabel(awayStyle)}.`,
+    `Apito inicial da segunda parte. ${homeName} apostou no ${homeFormation} ${styleLabel(homeStyle)}, enquanto o ${awayName} reajustou para ${awayFormation} ${styleLabel(awayStyle)}.`,
+    `Recomeço decidido nos balneários: ${homeName} com ${homeFormation} ${styleLabel(homeStyle)} e ${awayName} com ${awayFormation} ${styleLabel(awayStyle)}.`,
+    `O intervalo ditou as escolhas. ${homeName} segue com ${homeFormation} ${styleLabel(homeStyle)}, o ${awayName} responde com ${awayFormation} ${styleLabel(awayStyle)}.`,
+    `Segunda parte arrancada. ${homeName} com ${homeFormation} ${styleLabel(homeStyle)}, ${awayName} com ${awayFormation} ${styleLabel(awayStyle)} — as tácticas estão definidas.`,
+    `Bola a rolar novamente. ${homeName} opta por ${homeFormation} ${styleLabel(homeStyle)}, o ${awayName} apresenta-se com ${awayFormation} ${styleLabel(awayStyle)}.`,
+    `Reinício com novidades táticas. ${homeName} em ${homeFormation} ${styleLabel(homeStyle)}, ${awayName} em ${awayFormation} ${styleLabel(awayStyle)}.`,
+  ]);
+}
+
 function tacticStartPhrase(
   homeName: string,
   homeFormation: string,
@@ -696,4 +723,5 @@ export {
   finalGoalPhrase,
   finalEndPhrase,
   tacticStartPhrase,
+  secondHalfTacticPhrase,
 };

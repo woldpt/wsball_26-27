@@ -21,12 +21,12 @@ import {
   nearMissPhrase,
   bigSavePhrase,
   weatherPhrase,
-  secondHalfStartPhrase,
   extraTimeStartPhrase,
   finalStartPhrase,
   finalGoalPhrase,
   finalEndPhrase,
   tacticStartPhrase,
+  secondHalfTacticPhrase,
 } from "./commentary";
 import {
   clampSkill,
@@ -933,12 +933,18 @@ async function simulateMatchSegment(
     }
 
     if (minute === 46 && !fixture._secondHalfStartComment) {
+      const homeName = fixture.homeTeam?.name || fixture.homeTeamId;
+      const awayName = fixture.awayTeam?.name || fixture.awayTeamId;
+      const homeFormation = homeTactic?.formation || "4-4-2";
+      const awayFormation = awayTactic?.formation || "4-4-2";
+      const homeStyle = homeTactic?.style || "EQUILIBRADO";
+      const awayStyle = awayTactic?.style || "EQUILIBRADO";
       fixture.events.push({
         minute,
         type: "phase_start",
         team: null,
         emoji: "🔔",
-        text: `[46'] 🔔 ${secondHalfStartPhrase()}`,
+        text: `[46'] 🔔 ${secondHalfTacticPhrase(homeName, homeFormation, homeStyle, awayName, awayFormation, awayStyle)}`,
       });
       fixture._secondHalfStartComment = true;
     }
