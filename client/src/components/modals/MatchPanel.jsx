@@ -406,104 +406,44 @@ function TabAdversario({ fixture, myTeamId, teams }) {
         </p>
       ) : (
         <div className="flex gap-3 flex-1 min-h-0">
-          <div
-            className="relative flex-1 rounded-md overflow-hidden border border-emerald-900/60 bg-[linear-gradient(180deg,#05430e_0%,#0b5e1a_50%,#05430e_100%)]"
-            style={{ aspectRatio: "9/16" }}
-          >
-            <svg
-              className="absolute inset-0 w-full h-full"
-              viewBox="0 0 315 560"
-              preserveAspectRatio="xMidYMid meet"
-              aria-hidden="true"
-            >
-              <rect
-                x="10"
-                y="10"
-                width="295"
-                height="540"
-                fill="none"
-                stroke="rgba(255,255,255,0.2)"
-                strokeWidth="1.5"
-                rx="2"
-              />
-              <line
-                x1="10"
-                y1="280"
-                x2="305"
-                y2="280"
-                stroke="rgba(255,255,255,0.15)"
-                strokeWidth="1"
-              />
-              <circle
-                cx="157"
-                cy="280"
-                r="50"
-                fill="none"
-                stroke="rgba(255,255,255,0.12)"
-                strokeWidth="1"
-              />
-              <circle cx="157" cy="280" r="3" fill="rgba(255,255,255,0.18)" />
-              <rect
-                x="25"
-                y="10"
-                width="265"
-                height="150"
-                fill="none"
-                stroke="rgba(255,255,255,0.12)"
-                strokeWidth="1"
-              />
-              <rect
-                x="85"
-                y="10"
-                width="145"
-                height="40"
-                fill="none"
-                stroke="rgba(255,255,255,0.1)"
-                strokeWidth="1"
-              />
-              <rect
-                x="25"
-                y="400"
-                width="265"
-                height="150"
-                fill="none"
-                stroke="rgba(255,255,255,0.12)"
-                strokeWidth="1"
-              />
-              <rect
-                x="85"
-                y="510"
-                width="145"
-                height="40"
-                fill="none"
-                stroke="rgba(255,255,255,0.1)"
-                strokeWidth="1"
-              />
+          <div className="flex-1 relative rounded-md overflow-hidden border border-emerald-900/60 bg-[linear-gradient(90deg,#05430e_0%,#0b5e1a_50%,#05430e_100%)]" style={{ aspectRatio: "4/3", maxHeight: "320px" }}>
+            <svg className="absolute inset-0 w-full h-full" viewBox="0 0 400 300" preserveAspectRatio="xMidYMid meet" aria-hidden="true">
+              <rect x="5" y="5" width="390" height="290" fill="none" stroke="rgba(255,255,255,0.2)" strokeWidth="1.5" rx="2" />
+              <line x1="200" y1="5" x2="200" y2="295" stroke="rgba(255,255,255,0.15)" strokeWidth="1" />
+              <circle cx="200" cy="150" r="40" fill="none" stroke="rgba(255,255,255,0.12)" strokeWidth="1" />
+              <circle cx="200" cy="150" r="2.5" fill="rgba(255,255,255,0.18)" />
+              <rect x="320" y="60" width="35" height="180" fill="none" stroke="rgba(255,255,255,0.12)" strokeWidth="1" />
+              <rect x="350" y="110" width="15" height="80" fill="none" stroke="rgba(255,255,255,0.1)" strokeWidth="1" />
+              <rect x="45" y="60" width="35" height="180" fill="none" stroke="rgba(255,255,255,0.12)" strokeWidth="1" />
+              <rect x="35" y="110" width="15" height="80" fill="none" stroke="rgba(255,255,255,0.1)" strokeWidth="1" />
             </svg>
 
-            {rowConfig.map(({ key, top }) => {
+            {["ATA", "MED", "DEF", "GR"].map((key) => {
               const rowPlayers = rows[key] || [];
               if (rowPlayers.length === 0) return null;
               return (
                 <div
                   key={key}
-                  className="absolute w-full flex justify-evenly items-start px-3"
-                  style={{ top }}
+                  className="absolute w-full flex justify-center items-center gap-1"
+                  style={{
+                    top: key === "ATA" ? "8%" : key === "MED" ? "32%" : key === "DEF" ? "56%" : "80%",
+                    height: "14%",
+                  }}
                 >
                   {rowPlayers.map((player) => (
                     <div
                       key={player.id ?? player.name}
-                      className="flex flex-col items-center gap-0.5"
-                      style={{ maxWidth: "90px" }}
+                      className="flex flex-col items-center gap-0.5 shrink-0"
+                      style={{ minWidth: "60px" }}
                     >
                       <div
-                        className={`w-9 h-9 rounded-full flex items-center justify-center font-black text-[10px] border border-white/30 shadow-lg ${posColors[player.position] || "bg-zinc-500 text-white"}`}
+                        className={`w-7 h-7 rounded-full flex items-center justify-center font-black text-[9px] border border-white/30 shadow-lg ${posColors[player.position] || "bg-zinc-500 text-white"}`}
                       >
                         {POSITION_SHORT_LABELS[player.position] || "?"}
                       </div>
                       <div
-                        className="bg-black/65 backdrop-blur-sm px-1.5 py-0.5 rounded text-[9px] font-black text-white text-center truncate"
-                        style={{ maxWidth: "85px" }}
+                        className="bg-black/65 backdrop-blur-sm px-1 py-0.5 rounded text-[8px] font-black text-white text-center truncate"
+                        style={{ maxWidth: "65px" }}
                       >
                         {player.name}
                         {!!player.is_star &&
@@ -512,7 +452,7 @@ function TabAdversario({ fixture, myTeamId, teams }) {
                             <span className="ml-0.5 text-amber-400">*</span>
                           )}
                       </div>
-                      <span className="text-[9px] font-black text-amber-200 drop-shadow-[0_1px_2px_rgba(0,0,0,0.9)]">
+                      <span className="text-[8px] font-black text-amber-200 drop-shadow-[0_1px_2px_rgba(0,0,0,0.9)]">
                         {player.skill ?? "-"}
                       </span>
                     </div>
@@ -521,11 +461,11 @@ function TabAdversario({ fixture, myTeamId, teams }) {
               );
             })}
 
-            <div className="absolute inset-0 pointer-events-none bg-linear-to-t from-black/35 to-transparent" />
+            <div className="absolute inset-0 pointer-events-none bg-linear-to-r from-black/25 via-transparent to-black/25" />
           </div>
 
           {/* Banco de suplentes — coluna lateral direita */}
-          <div className="w-36 shrink-0 flex flex-col">
+          <div className="flex-1 flex flex-col">
             <p className="text-[9px] font-black uppercase tracking-widest text-zinc-600 mb-1.5">
               Banco
             </p>
