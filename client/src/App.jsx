@@ -2708,7 +2708,35 @@ function App() {
                     ))}
                   </div>
                 )}
-                {mobileSubMenu === "competicao" && (
+                {mobileSubMenu === "transferencias" && (
+                  <div className="flex">
+                    {[
+                      { key: "market", label: "Mercado", icon: "swap_horiz" },
+                      { key: "leiloes", label: "Leilões", icon: "gavel" },
+                    ].map(({ key, label, icon }) => (
+                      <button
+                        key={key}
+                        onClick={() => {
+                          setActiveTab(key);
+                          setMobileSubMenu(null);
+                          window.scrollTo(0, 0);
+                        }}
+                        className={`flex-1 flex flex-col items-center justify-center gap-1 py-4 transition-colors ${
+                          activeTab === key
+                            ? "text-primary bg-primary/10"
+                            : "text-on-surface-variant hover:bg-surface-bright"
+                        }`}
+                      >
+                        <span className="material-symbols-outlined text-[24px] leading-none">
+                          {icon}
+                        </span>
+                        <span className="text-[10px] font-black uppercase tracking-wider">
+                          {label}
+                        </span>
+                      </button>
+                    ))}
+                  </div>
+                )}
                   <div className="flex">
                     {[
                       {
@@ -2860,22 +2888,21 @@ function App() {
               );
             })()}
 
-            {/* Mercado */}
+            {/* Transferências (Mercado + Leilões) */}
             {(() => {
-              const isActive = activeTab === "market";
+              const isChildActive = ["market", "leiloes"].includes(activeTab);
+              const isOpen = mobileSubMenu === "transferencias";
               return (
                 <motion.button
                   whileTap={{ scale: 0.88 }}
-                  onClick={() => {
-                    setActiveTab("market");
-                    setMobileSubMenu(null);
-                    window.scrollTo(0, 0);
-                  }}
+                  onClick={() => setMobileSubMenu(isOpen ? null : "transferencias")}
                   className={`flex-1 flex flex-col items-center justify-center gap-0.5 text-[10px] font-bold uppercase tracking-wider transition-colors relative ${
-                    isActive ? "text-primary" : "text-on-surface-variant"
+                    isChildActive || isOpen
+                      ? "text-primary"
+                      : "text-on-surface-variant"
                   }`}
                 >
-                  {isActive && (
+                  {(isChildActive || isOpen) && (
                     <motion.span
                       layoutId="mobileTabIndicator"
                       className="absolute top-0 left-1/2 -translate-x-1/2 w-8 h-0.5 bg-primary rounded-b-full"
@@ -2889,7 +2916,7 @@ function App() {
                   <span className="material-symbols-outlined text-[22px] leading-none">
                     swap_horiz
                   </span>
-                  <span>Mercado</span>
+                  <span>Transfer.</span>
                 </motion.button>
               );
             })()}
