@@ -2737,6 +2737,7 @@ function App() {
                     ))}
                   </div>
                 )}
+                {mobileSubMenu === "competicao" && (
                   <div className="flex">
                     {[
                       {
