@@ -24,7 +24,7 @@ import { PlayerHistoryModal } from "./components/modals/PlayerHistoryModal.jsx";
 import { CupDrawPopup } from "./components/modals/CupDrawPopup.jsx";
 import { PenaltySuspensePopup } from "./components/modals/PenaltySuspensePopup.jsx";
 import { PenaltyShootoutPopup } from "./components/modals/PenaltyShootoutPopup.jsx";
-import { MatchPanel } from "./components/modals/MatchPanel.jsx";
+import { MatchPage } from "./components/match/MatchPage.jsx";
 import { RefereePopup } from "./components/modals/RefereePopup.jsx";
 import { GameDialog } from "./components/shared/GameDialog.jsx";
 import { TransferProposalModal } from "./components/modals/TransferProposalModal.jsx";
@@ -2979,9 +2979,10 @@ function App() {
         </div>
       )}
 
-      <main
-        className={`pt-14 pb-24 lg:pb-12 transition-all duration-200 ${sidebarCollapsed ? "lg:ml-14" : "lg:ml-64"}`}
-      >
+      {panelMode === null && (
+        <main
+          className={`pt-14 pb-24 lg:pb-12 transition-all duration-200 ${sidebarCollapsed ? "lg:ml-14" : "lg:ml-64"}`}
+        >
         <div className="p-4 lg:p-6">
           {/* ─── TACTIC: HORIZONTAL ADVERSARY BANNER ──────────────────── */}
           {activeTab === "tactic" && (
@@ -5641,7 +5642,8 @@ function App() {
             </div>
           </div>
         </div>
-      </main>
+        </main>
+      )}
 
       <TransferProposalModal
         transferProposalModal={transferProposalModal}
@@ -5685,7 +5687,7 @@ function App() {
         setCupPenaltyKickIdx={setCupPenaltyKickIdx}
       />
 
-      <MatchPanel
+      <MatchPage
         mode={panelMode}
         onClose={() => setShowMatchDetail(false)}
         fixture={panelFixture}
