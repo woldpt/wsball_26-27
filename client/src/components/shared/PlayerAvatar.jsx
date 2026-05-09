@@ -405,17 +405,18 @@ function PlayerAvatarInner({ seed, position, teamColor, size = "lg" }) {
     }
 
     if (hairStyle === "classic") {
+      // Cobre o crânio e termina na linha da hairline lateral — não desce abaixo de face.top+18
       return (
         <g fill={hair.base} stroke={hairStroke} strokeWidth="1.8" strokeLinejoin="round">
           <path
-            d={`M${headLeft - 4} ${face.top + 34}
-                C${headLeft - 6} ${face.top + 8} ${headLeft + 8} ${face.top - 1} ${centerX} ${face.top - 1}
-                C${headRight - 8} ${face.top - 1} ${headRight + 6} ${face.top + 8} ${headRight + 4} ${face.top + 34}
-                L${headRight} ${face.top + 38}
-                Q${centerX} ${face.top + 30} ${headLeft} ${face.top + 38} Z`}
+            d={`M${headLeft - 2} ${face.top + 18}
+                C${headLeft - 5} ${face.top + 8} ${headLeft + 8} ${face.top - 1} ${centerX} ${face.top - 1}
+                C${headRight - 8} ${face.top - 1} ${headRight + 5} ${face.top + 8} ${headRight + 2} ${face.top + 18}
+                Q${centerX} ${face.top + 14} ${headLeft - 2} ${face.top + 18} Z`}
           />
-          <path d={`M${headLeft - 2} ${face.top + 28} Q${headLeft - 8} ${face.top + 36} ${headLeft + 2} ${face.top + 42} Q${headLeft + 5} ${face.top + 34} ${headLeft - 2} ${face.top + 28} Z`} />
-          <path d={`M${headRight + 2} ${face.top + 28} Q${headRight + 8} ${face.top + 36} ${headRight - 2} ${face.top + 42} Q${headRight - 5} ${face.top + 34} ${headRight + 2} ${face.top + 28} Z`} />
+          {/* Mechas laterais curtas atrás das orelhas */}
+          <path d={`M${headLeft - 3} ${face.top + 16} Q${headLeft - 7} ${face.earY} ${headLeft - 4} ${face.earY + 14} Q${headLeft + 2} ${face.earY + 10} ${headLeft + 2} ${face.top + 20} Z`} />
+          <path d={`M${headRight + 3} ${face.top + 16} Q${headRight + 7} ${face.earY} ${headRight + 4} ${face.earY + 14} Q${headRight - 2} ${face.earY + 10} ${headRight - 2} ${face.top + 20} Z`} />
         </g>
       );
     }
@@ -424,13 +425,13 @@ function PlayerAvatarInner({ seed, position, teamColor, size = "lg" }) {
       return (
         <g fill={hair.base} stroke={hairStroke} strokeWidth="1.8" strokeLinejoin="round">
           <path
-            d={`M${headLeft - 3} ${face.top + 34}
+            d={`M${headLeft - 2} ${face.top + 18}
                 C${headLeft - 5} ${face.top + 8} ${headLeft + 10} ${face.top - 1} ${centerX + 4} ${face.top - 1}
-                C${headRight - 6} ${face.top - 1} ${headRight + 6} ${face.top + 8} ${headRight + 5} ${face.top + 34}
-                L${headRight} ${face.top + 38}
-                Q${centerX} ${face.top + 30} ${headLeft} ${face.top + 38} Z`}
+                C${headRight - 6} ${face.top - 1} ${headRight + 5} ${face.top + 8} ${headRight + 2} ${face.top + 18}
+                Q${centerX} ${face.top + 14} ${headLeft - 2} ${face.top + 18} Z`}
           />
-          <path d={`M${headRight + 5} ${face.top + 14} Q${headRight + 12} ${face.top + 28} ${headRight + 4} ${face.top + 38} Q${headRight - 2} ${face.top + 32} ${headRight + 5} ${face.top + 14} Z`} />
+          {/* Mecha lateral direita (lado onde o cabelo está varrido) */}
+          <path d={`M${headRight + 3} ${face.top + 16} Q${headRight + 8} ${face.earY} ${headRight + 5} ${face.earY + 14} Q${headRight - 1} ${face.earY + 10} ${headRight - 1} ${face.top + 20} Z`} />
         </g>
       );
     }
@@ -458,19 +459,18 @@ function PlayerAvatarInner({ seed, position, teamColor, size = "lg" }) {
     }
 
     if (hairStyle === "curly") {
-      // Cúpula com silhueta festonada — sem círculos flutuantes
+      // Cúpula festonada — termina na hairline lateral, não desce pela face
       return (
         <path
-          d={`M${headLeft - 5} ${face.top + 32}
-              Q${headLeft - 8} ${face.top + 12} ${headLeft - 2} ${face.top + 4}
+          d={`M${headLeft - 2} ${face.top + 18}
+              Q${headLeft - 6} ${face.top + 6} ${headLeft - 2} ${face.top + 4}
               Q${headLeft - 8} ${face.top - 4} ${headLeft + 8} ${face.top - 6}
               Q${headLeft + 6} ${face.top - 14} ${centerX - 10} ${face.top - 14}
               Q${centerX - 6} ${face.top - 20} ${centerX + 8} ${face.top - 18}
               Q${headRight - 6} ${face.top - 16} ${headRight - 6} ${face.top - 8}
               Q${headRight + 6} ${face.top - 4} ${headRight + 2} ${face.top + 4}
-              Q${headRight + 8} ${face.top + 12} ${headRight + 5} ${face.top + 32}
-              L${headRight - 2} ${face.top + 38}
-              Q${centerX} ${face.top + 30} ${headLeft + 2} ${face.top + 38} Z`}
+              Q${headRight + 6} ${face.top + 6} ${headRight + 2} ${face.top + 18}
+              Q${centerX} ${face.top + 14} ${headLeft - 2} ${face.top + 18} Z`}
           fill={hair.base}
           stroke={hairStroke}
           strokeWidth="1.8"
@@ -480,18 +480,19 @@ function PlayerAvatarInner({ seed, position, teamColor, size = "lg" }) {
     }
 
     if (hairStyle === "afro") {
-      // Cúpula larga com silhueta bumpy integrada — sem círculos
+      // Cúpula larga — termina na hairline, não desce pela face
       return (
         <path
-          d={`M${headLeft - 12} ${face.top + 32}
-              Q${headLeft - 16} ${face.top + 14} ${headLeft - 8} ${face.top + 2}
+          d={`M${headLeft - 6} ${face.top + 20}
+              Q${headLeft - 14} ${face.top + 10} ${headLeft - 8} ${face.top + 2}
               Q${headLeft - 14} ${face.top - 6} ${headLeft - 4} ${face.top - 10}
               Q${headLeft - 2} ${face.top - 18} ${headLeft + 14} ${face.top - 18}
               Q${headLeft + 12} ${face.top - 24} ${centerX} ${face.top - 24}
               Q${headRight - 12} ${face.top - 24} ${headRight - 14} ${face.top - 18}
               Q${headRight + 2} ${face.top - 18} ${headRight + 4} ${face.top - 10}
               Q${headRight + 14} ${face.top - 6} ${headRight + 8} ${face.top + 2}
-              Q${headRight + 16} ${face.top + 14} ${headRight + 12} ${face.top + 32} Z`}
+              Q${headRight + 14} ${face.top + 10} ${headRight + 6} ${face.top + 20}
+              Q${centerX} ${face.top + 16} ${headLeft - 6} ${face.top + 20} Z`}
           fill={hair.base}
           stroke={hairStroke}
           strokeWidth="1.8"
@@ -501,24 +502,30 @@ function PlayerAvatarInner({ seed, position, teamColor, size = "lg" }) {
     }
 
     if (hairStyle === "long") {
+      // Crânio + mechas laterais que descem atrás das orelhas (o rosto pinta por cima do centro)
       return (
         <g fill={hair.base} stroke={hairStroke} strokeWidth="1.8" strokeLinejoin="round">
           <path
-            d={`M${headLeft - 4} ${face.top + 34}
-                C${headLeft - 6} ${face.top + 6} ${centerX - 18} ${face.top - 2} ${centerX} ${face.top - 2}
-                C${centerX + 18} ${face.top - 2} ${headRight + 6} ${face.top + 6} ${headRight + 4} ${face.top + 34} Z`}
+            d={`M${headLeft - 2} ${face.top + 18}
+                C${headLeft - 5} ${face.top + 6} ${centerX - 18} ${face.top - 2} ${centerX} ${face.top - 2}
+                C${centerX + 18} ${face.top - 2} ${headRight + 5} ${face.top + 6} ${headRight + 2} ${face.top + 18}
+                Q${centerX} ${face.top + 14} ${headLeft - 2} ${face.top + 18} Z`}
           />
+          {/* Mecha lateral esquerda — desce atrás da orelha */}
           <path
-            d={`M${headLeft - 6} ${face.top + 22}
-                L${headLeft - 8} ${face.bottom - 18}
-                Q${headLeft + 2} ${face.bottom - 10} ${headLeft + 8} ${face.bottom - 16}
-                L${headLeft + 6} ${face.top + 32} Z`}
+            d={`M${headLeft - 4} ${face.top + 16}
+                L${headLeft - 8} ${face.earY + 10}
+                L${headLeft - 6} ${face.earY + 28}
+                Q${headLeft + 4} ${face.earY + 22} ${headLeft + 6} ${face.earY + 14}
+                L${headLeft + 4} ${face.top + 20} Z`}
           />
+          {/* Mecha lateral direita — desce atrás da orelha */}
           <path
-            d={`M${headRight + 6} ${face.top + 22}
-                L${headRight + 8} ${face.bottom - 18}
-                Q${headRight - 2} ${face.bottom - 10} ${headRight - 8} ${face.bottom - 16}
-                L${headRight - 6} ${face.top + 32} Z`}
+            d={`M${headRight + 4} ${face.top + 16}
+                L${headRight + 8} ${face.earY + 10}
+                L${headRight + 6} ${face.earY + 28}
+                Q${headRight - 4} ${face.earY + 22} ${headRight - 6} ${face.earY + 14}
+                L${headRight - 4} ${face.top + 20} Z`}
           />
         </g>
       );
@@ -1067,12 +1074,7 @@ function PlayerAvatarInner({ seed, position, teamColor, size = "lg" }) {
         <circle cx="60" cy="60" r="58" fill={BACKDROP} />
         <circle cx="60" cy="60" r="56" fill={PANEL} />
 
-        {/* ClipPath: limita o cabelo de trás ao crânio (acima da linha das orelhas) */}
-        <defs>
-          <clipPath id={`back-hair-clip-${seed}`}>
-            <rect x="0" y="0" width="120" height={face.earY + 2} />
-          </clipPath>
-        </defs>
+
 
         {/* Linhas de velocidade radiais (efeito shounen sutil) */}
         <g stroke={hexToRgba(accent, 0.12)} strokeWidth="1" fill="none">
@@ -1108,10 +1110,8 @@ function PlayerAvatarInner({ seed, position, teamColor, size = "lg" }) {
         />
         <path d={`M52 ${shirtTop - 1} L60 ${shirtTop + 7} L68 ${shirtTop - 1}`} fill={shirtLight} opacity="0.4" />
 
-        {/* Cabelo de trás — clipado ao crânio para não sobrepor o rosto */}
-        <g clipPath={`url(#back-hair-clip-${seed})`}>
-          {renderBackHair()}
-        </g>
+        {/* Cabelo de trás */}
+        {renderBackHair()}
 
         {/* Orelhas - traço grosso */}
         <g>
