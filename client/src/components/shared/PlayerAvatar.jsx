@@ -21,118 +21,121 @@ const EYE_WHITE = "#fbfdff";
 
 const FACE_VARIANTS = {
   round: {
-    path: "M60 15 C80 15 95 31 96 54 C97 81 80 106 60 106 C40 106 23 81 24 54 C25 31 40 15 60 15 Z",
-    top: 15,
-    bottom: 106,
-    left: 24,
-    right: 96,
-    eyeY: 58,
-    browY: 44,
-    noseY: 70,
-    mouthY: 85,
-    cheekY: 77,
-    earY: 61,
+    // Anime "round" - still pointy chin but wider cheeks
+    path: "M60 18 C80 18 92 35 92 60 C92 80 82 98 60 108 C38 98 28 80 28 60 C28 35 40 18 60 18 Z",
+    top: 18,
+    bottom: 108,
+    left: 28,
+    right: 92,
+    eyeY: 62,
+    browY: 48,
+    noseY: 78,
+    mouthY: 90,
+    cheekY: 78,
+    earY: 65,
+    leftEyeX: 43,
+    rightEyeX: 77,
+  },
+  oval: {
+    // Classic anime V-shape, sharp chin
+    path: "M60 16 C80 16 90 35 90 60 C90 85 75 102 60 110 C45 102 30 85 30 60 C30 35 40 16 60 16 Z",
+    top: 16,
+    bottom: 110,
+    left: 30,
+    right: 90,
+    eyeY: 62,
+    browY: 48,
+    noseY: 79,
+    mouthY: 91,
+    cheekY: 78,
+    earY: 65,
     leftEyeX: 44,
     rightEyeX: 76,
   },
-  oval: {
-    path: "M60 13 C78 13 93 30 94 56 C95 84 79 108 60 108 C41 108 25 84 26 56 C27 30 42 13 60 13 Z",
-    top: 13,
-    bottom: 108,
+  strong: {
+    // More muscular/mature anime style, flat bottom but still angled
+    path: "M60 18 C82 18 94 35 94 58 C94 80 85 95 72 105 C66 109 64 110 60 110 C56 110 54 109 48 105 C35 95 26 80 26 58 C26 35 38 18 60 18 Z",
+    top: 18,
+    bottom: 110,
     left: 26,
     right: 94,
-    eyeY: 59,
-    browY: 45,
-    noseY: 71,
-    mouthY: 86,
-    cheekY: 78,
-    earY: 62,
-    leftEyeX: 45,
-    rightEyeX: 75,
-  },
-  strong: {
-    path: "M60 15 C82 15 96 30 95 51 C94 73 85 96 75 104 C70 108 65 109 60 109 C55 109 50 108 45 104 C35 96 26 73 25 51 C24 30 38 15 60 15 Z",
-    top: 15,
-    bottom: 109,
-    left: 25,
-    right: 95,
-    eyeY: 57,
-    browY: 43,
-    noseY: 70,
-    mouthY: 85,
-    cheekY: 77,
-    earY: 60,
-    leftEyeX: 43,
-    rightEyeX: 77,
+    eyeY: 60,
+    browY: 46,
+    noseY: 77,
+    mouthY: 89,
+    cheekY: 76,
+    earY: 63,
+    leftEyeX: 42,
+    rightEyeX: 78,
   },
 };
 
 const POSITION_PROFILE = {
   GR: {
-    faceWeights: { round: 2.4, oval: 1.1, strong: 0.9 },
+    faceWeights: { round: 2.4, oval: 1.1, strong: 1.5 },
     expressionWeights: { smile: 0.8, grin: 0.35, neutral: 1.2, serious: 1.8, focused: 3.4 },
     hairWeights: { bald: 0.45, buzz: 1.9, classic: 2.0, sidepart: 1.1, spiky: 0.45, curly: 0.7, afro: 0.45, long: 0.08 },
     eyeWeights: { soft: 0.9, hero: 0.55, sharp: 2.5 },
     browWeights: { soft: 0.8, flat: 1.4, bold: 1.9 },
     headbandChance: 0.55,
-    eyeScale: 0.95,
-    eyeYOffset: 0.5,
+    eyeScale: 1.0,
+    eyeYOffset: 0,
     browYOffset: 0.9,
-    mouthYOffset: 0.9,
+    mouthYOffset: 0.5,
     cheekAlpha: 0.12,
-    browBias: 0.8,
-    lidBoost: 0.8,
+    browBias: 1.0,
+    lidBoost: 1.2,
     hairShineOpacity: 0.55,
     faceShadowAlpha: 0.22,
   },
   DEF: {
-    faceWeights: { round: 0.9, oval: 1.0, strong: 2.8 },
+    faceWeights: { round: 0.9, oval: 1.0, strong: 3.8 },
     expressionWeights: { smile: 0.55, grin: 0.2, neutral: 1.1, serious: 3.0, focused: 1.9 },
     hairWeights: { bald: 0.42, buzz: 2.2, classic: 2.0, sidepart: 1.0, spiky: 0.7, curly: 0.55, afro: 0.4, long: 0.05 },
     eyeWeights: { soft: 0.6, hero: 0.7, sharp: 2.8 },
     browWeights: { soft: 0.5, flat: 1.7, bold: 2.1 },
     headbandChance: 0,
-    eyeScale: 0.93,
-    eyeYOffset: 0.3,
+    eyeScale: 0.95,
+    eyeYOffset: 0,
     browYOffset: 0.7,
     mouthYOffset: 0.5,
     cheekAlpha: 0.1,
-    browBias: 1.0,
-    lidBoost: 1.1,
+    browBias: 1.5,
+    lidBoost: 1.5,
     hairShineOpacity: 0.5,
     faceShadowAlpha: 0.24,
   },
   MED: {
     faceWeights: { round: 1.5, oval: 2.6, strong: 1.0 },
     expressionWeights: { smile: 1.6, grin: 0.65, neutral: 2.7, serious: 0.85, focused: 0.75 },
-    hairWeights: { bald: 0.2, buzz: 0.7, classic: 2.4, sidepart: 2.4, spiky: 0.9, curly: 1.2, afro: 0.8, long: 0.2 },
-    eyeWeights: { soft: 2.3, hero: 0.9, sharp: 1.0 },
+    hairWeights: { bald: 0.2, buzz: 0.7, classic: 2.4, sidepart: 2.4, spiky: 1.9, curly: 1.2, afro: 0.8, long: 0.2 },
+    eyeWeights: { soft: 2.3, hero: 1.5, sharp: 1.0 },
     browWeights: { soft: 1.9, flat: 0.9, bold: 0.9 },
     headbandChance: 0,
-    eyeScale: 1,
-    eyeYOffset: -0.1,
+    eyeScale: 1.15,
+    eyeYOffset: 0,
     browYOffset: -0.2,
     mouthYOffset: -0.25,
     cheekAlpha: 0.18,
     browBias: -0.2,
-    lidBoost: -0.1,
+    lidBoost: 0,
     hairShineOpacity: 0.78,
     faceShadowAlpha: 0.16,
   },
   ATA: {
-    faceWeights: { round: 1.0, oval: 2.8, strong: 1.1 },
+    faceWeights: { round: 1.0, oval: 3.8, strong: 1.1 },
     expressionWeights: { smile: 2.9, grin: 2.2, neutral: 1.2, serious: 0.65, focused: 0.45 },
-    hairWeights: { bald: 0.12, buzz: 0.45, classic: 2.0, sidepart: 1.0, spiky: 2.7, curly: 1.1, afro: 0.8, long: 1.05 },
-    eyeWeights: { soft: 0.9, hero: 2.7, sharp: 0.75 },
+    hairWeights: { bald: 0.12, buzz: 0.45, classic: 2.0, sidepart: 1.0, spiky: 4.7, curly: 1.1, afro: 0.8, long: 1.05 },
+    eyeWeights: { soft: 0.9, hero: 3.7, sharp: 0.75 },
     browWeights: { soft: 1.0, flat: 0.55, bold: 1.7 },
     headbandChance: 0,
-    eyeScale: 1.08,
-    eyeYOffset: -0.45,
+    eyeScale: 1.3,
+    eyeYOffset: -0.5,
     browYOffset: -0.75,
     mouthYOffset: -0.8,
     cheekAlpha: 0.24,
     browBias: -0.55,
-    lidBoost: -0.25,
+    lidBoost: -0.5,
     hairShineOpacity: 0.85,
     faceShadowAlpha: 0.15,
   },
@@ -143,7 +146,7 @@ const POSITION_PROFILE = {
     eyeWeights: { soft: 1.2, hero: 1.2, sharp: 1.1 },
     browWeights: { soft: 1.4, flat: 1.1, bold: 1.2 },
     headbandChance: 0,
-    eyeScale: 1,
+    eyeScale: 1.1,
     eyeYOffset: 0,
     browYOffset: 0,
     mouthYOffset: 0,
@@ -344,11 +347,11 @@ function PlayerAvatarInner({ seed, position, teamColor, size = "lg" }) {
   const cheekAlpha = profile.cheekAlpha;
   const hairShineOpacity = profile.hairShineOpacity;
   const faceShadowAlpha = profile.faceShadowAlpha;
-  const eyeRx = (eyeStyle === "hero" ? 8.6 : eyeStyle === "soft" ? 7.8 : 8.2) * eyeScale;
-  const eyeRy = (eyeStyle === "sharp" ? 3.7 : eyeStyle === "hero" ? 5.0 : 4.4) * eyeScale;
-  const irisR = (eyeStyle === "hero" ? 4.7 : 4.3) * Math.min(1.06, eyeScale + 0.01);
-  const angryTilt = expression === "focused" || expression === "serious" ? 3 : 0;
-  const smileLift = expression === "smile" || expression === "grin" ? -1 : 0;
+  const eyeRx = (eyeStyle === "hero" ? 9.6 : eyeStyle === "soft" ? 8.8 : 9.2) * eyeScale;
+  const eyeRy = (eyeStyle === "sharp" ? 4.7 : eyeStyle === "hero" ? 6.0 : 5.4) * eyeScale;
+  const irisR = (eyeStyle === "hero" ? 5.7 : 5.3) * eyeScale;
+  const angryTilt = expression === "focused" || expression === "serious" ? 4.5 : 0;
+  const smileLift = expression === "smile" || expression === "grin" ? -1.5 : 0;
   const shirtTop = face.bottom - 8;
   const headLeft = face.left;
   const headRight = face.right;
@@ -437,9 +440,9 @@ function PlayerAvatarInner({ seed, position, teamColor, size = "lg" }) {
             stroke={hairStroke}
             strokeWidth="1.1"
           />
-          <path d={`M${centerX - 26} ${face.top + 25} L${centerX - 18} ${face.top - 2} L${centerX - 8} ${face.top + 23} Z`} fill={hair.base} stroke={hairStroke} strokeWidth="1" />
-          <path d={`M${centerX - 5} ${face.top + 20} L${centerX + 1} ${face.top - 6} L${centerX + 8} ${face.top + 20} Z`} fill={hair.base} stroke={hairStroke} strokeWidth="1" />
-          <path d={`M${centerX + 11} ${face.top + 25} L${centerX + 19} ${face.top - 1} L${centerX + 27} ${face.top + 24} Z`} fill={hair.base} stroke={hairStroke} strokeWidth="1" />
+          <path d={`M${centerX - 30} ${face.top + 28} L${centerX - 20} ${face.top - 8} L${centerX - 6} ${face.top + 23} Z`} fill={hair.base} stroke={hairStroke} strokeWidth="1.2" />
+          <path d={`M${centerX - 10} ${face.top + 20} L${centerX} ${face.top - 14} L${centerX + 10} ${face.top + 20} Z`} fill={hair.base} stroke={hairStroke} strokeWidth="1.2" />
+          <path d={`M${centerX + 6} ${face.top + 25} L${centerX + 20} ${face.top - 8} L${centerX + 30} ${face.top + 28} Z`} fill={hair.base} stroke={hairStroke} strokeWidth="1.2" />
         </g>
       );
     }
@@ -553,10 +556,10 @@ function PlayerAvatarInner({ seed, position, teamColor, size = "lg" }) {
 
     if (hairStyle === "spiky") {
       return (
-        <g fill={hair.base} stroke={hairStroke} strokeWidth="1">
-          <path d={`M${centerX - 23} ${face.top + 30} L${centerX - 15} ${face.top + 12} L${centerX - 6} ${face.top + 30} Z`} />
-          <path d={`M${centerX - 4} ${face.top + 25} L${centerX + 2} ${face.top + 7} L${centerX + 9} ${face.top + 26} Z`} />
-          <path d={`M${centerX + 11} ${face.top + 31} L${centerX + 18} ${face.top + 13} L${centerX + 25} ${face.top + 31} Z`} />
+        <g fill={hair.base} stroke={hairStroke} strokeWidth="1.2">
+          <path d={`M${centerX - 28} ${face.top + 34} L${centerX - 18} ${face.top + 8} L${centerX - 4} ${face.top + 30} Z`} />
+          <path d={`M${centerX - 8} ${face.top + 28} L${centerX + 2} ${face.top + 2} L${centerX + 12} ${face.top + 28} Z`} />
+          <path d={`M${centerX + 4} ${face.top + 30} L${centerX + 18} ${face.top + 8} L${centerX + 28} ${face.top + 34} Z`} />
         </g>
       );
     }
@@ -614,102 +617,114 @@ function PlayerAvatarInner({ seed, position, teamColor, size = "lg" }) {
     const leftInnerY = browY + browInnerShift + smileLift;
     const rightInnerY = browY + browInnerShift + smileLift;
     const rightOuterY = browY - angryTilt + smileLift;
-    const strokeWidth = browStyle === "bold" ? 3.6 : browStyle === "flat" ? 2.4 : 2.8;
+    // Sobrancelhas mais angulares e afiadas
+    const strokeWidth = browStyle === "bold" ? 4.5 : browStyle === "flat" ? 2.5 : 3.0;
 
     if (browStyle === "flat") {
       return (
-        <g stroke={hair.base} strokeWidth={strokeWidth} fill="none">
-          <path d={`M${face.leftEyeX - 10} ${leftOuterY} L${face.leftEyeX + 10} ${leftOuterY}`} />
-          <path d={`M${face.rightEyeX - 10} ${rightOuterY} L${face.rightEyeX + 10} ${rightOuterY}`} />
+        <g stroke={hair.base} strokeWidth={strokeWidth} fill="none" strokeLinecap="round">
+          <path d={`M${face.leftEyeX - 12} ${leftOuterY} L${face.leftEyeX + 12} ${leftOuterY}`} />
+          <path d={`M${face.rightEyeX - 12} ${rightOuterY} L${face.rightEyeX + 12} ${rightOuterY}`} />
         </g>
       );
     }
 
     if (browStyle === "bold") {
       return (
-        <g stroke={hair.base} strokeWidth={strokeWidth} fill="none">
-          <path d={`M${face.leftEyeX - 10} ${leftOuterY + 1} C${face.leftEyeX - 3} ${leftInnerY - 4} ${face.leftEyeX + 4} ${leftInnerY - 3} ${face.leftEyeX + 10} ${leftInnerY + 1}`} />
-          <path d={`M${face.rightEyeX - 10} ${rightInnerY + 1} C${face.rightEyeX - 4} ${rightInnerY - 3} ${face.rightEyeX + 3} ${rightOuterY - 4} ${face.rightEyeX + 10} ${rightOuterY + 1}`} />
+        <g fill={hair.base} stroke="none">
+          {/* Sobrancelhas grossas como no Rock Lee/Tsubasa */}
+          <path d={`M${face.leftEyeX - 14} ${leftOuterY + 2} L${face.leftEyeX + 10} ${leftInnerY + 2} L${face.leftEyeX + 10} ${leftInnerY - 2} L${face.leftEyeX - 14} ${leftOuterY - 2} Z`} />
+          <path d={`M${face.rightEyeX - 10} ${rightInnerY + 2} L${face.rightEyeX + 14} ${rightOuterY + 2} L${face.rightEyeX + 14} ${rightOuterY - 2} L${face.rightEyeX - 10} ${rightInnerY - 2} Z`} />
         </g>
       );
     }
 
     return (
-      <g stroke={hair.base} strokeWidth={strokeWidth} fill="none">
-        <path d={`M${face.leftEyeX - 10} ${leftOuterY + 1} C${face.leftEyeX - 2} ${leftInnerY - 5} ${face.leftEyeX + 4} ${leftInnerY - 4} ${face.leftEyeX + 10} ${leftInnerY + 1}`} />
-        <path d={`M${face.rightEyeX - 10} ${rightInnerY + 1} C${face.rightEyeX - 4} ${rightInnerY - 4} ${face.rightEyeX + 2} ${rightOuterY - 5} ${face.rightEyeX + 10} ${rightOuterY + 1}`} />
+      <g stroke={hair.base} strokeWidth={strokeWidth} fill="none" strokeLinecap="round">
+        <path d={`M${face.leftEyeX - 12} ${leftOuterY} L${face.leftEyeX + 10} ${leftInnerY}`} />
+        <path d={`M${face.rightEyeX - 10} ${rightInnerY} L${face.rightEyeX + 12} ${rightOuterY}`} />
       </g>
     );
   };
 
   const renderEye = (x, direction) => {
-    const lidLift = (eyeStyle === "sharp" ? 5 + angryTilt * 0.4 : eyeStyle === "hero" ? 4.5 : 3.8) + profile.lidBoost;
-    const irisShift = direction === "left" ? 0.9 : 1.1;
+    const lidLift = (eyeStyle === "sharp" ? 6 + angryTilt * 0.5 : eyeStyle === "hero" ? 5.5 : 4.8) + profile.lidBoost;
+    const irisShift = direction === "left" ? 1.5 : 1.5; // cross-eyed fix for anime style
+    const shiftDir = direction === "left" ? 1 : -1;
 
     return (
       <g>
+        {/* Eye White */}
         <ellipse cx={x} cy={eyeY} rx={eyeRx} ry={eyeRy} fill={EYE_WHITE} />
-        <circle cx={x + irisShift} cy={eyeY + 0.8} r={irisR} fill={eyes.iris} stroke={OUTLINE} strokeWidth="0.8" />
-        <circle cx={x + irisShift + 0.8} cy={eyeY + 1.1} r="2" fill="#111420" />
-        <circle cx={x - 1.1} cy={eyeY - 1.3} r="1.4" fill="#ffffffd0" />
-        <path d={`M${x - eyeRx - 0.4} ${eyeY - 0.2} C${x - 4} ${eyeY - lidLift} ${x + 4} ${eyeY - lidLift} ${x + eyeRx + 0.4} ${eyeY - 0.2}`} stroke={OUTLINE} strokeWidth="2.3" fill="none" />
-        <path d={`M${x - eyeRx + 1.2} ${eyeY + eyeRy - 0.1} C${x} ${eyeY + eyeRy + 0.8} ${x + eyeRx - 1.2} ${eyeY + eyeRy - 0.1} ${x + eyeRx - 1.2} ${eyeY + eyeRy - 0.1}`} stroke="#00000022" strokeWidth="1" fill="none" />
+        {/* Iris */}
+        <circle cx={x + irisShift * shiftDir} cy={eyeY + 1} r={irisR} fill={eyes.iris} stroke={OUTLINE} strokeWidth="1" />
+        {/* Pupil */}
+        <circle cx={x + irisShift * shiftDir} cy={eyeY + 1.5} r={irisR * 0.45} fill="#111420" />
+        {/* Main Catchlight (Anime large reflection) */}
+        <circle cx={x + irisShift * shiftDir - irisR * 0.35} cy={eyeY - irisR * 0.25} r={irisR * 0.35} fill="#ffffff" opacity="0.9" />
+        {/* Secondary Catchlight (Anime small reflection) */}
+        <circle cx={x + irisShift * shiftDir + irisR * 0.4} cy={eyeY + irisR * 0.35} r={irisR * 0.15} fill="#ffffff" opacity="0.7" />
+        
+        {/* Upper Eyelid (Thick, Anime style) */}
+        <path d={`M${x - eyeRx - 1} ${eyeY + 1} C${x - 4} ${eyeY - lidLift} ${x + 4} ${eyeY - lidLift} ${x + eyeRx + 1} ${eyeY + 1}`} stroke={OUTLINE} strokeWidth="3" strokeLinecap="round" fill="none" />
+        {/* Eyelid crease (Optional detail) */}
+        <path d={`M${x - eyeRx + 2} ${eyeY - lidLift - 2} C${x} ${eyeY - lidLift - 3} ${x + eyeRx - 2} ${eyeY - lidLift - 2}`} stroke={hexToRgba(OUTLINE, 0.4)} strokeWidth="1" fill="none" />
+        {/* Lower Eyelid (Disconnected, thin) */}
+        <path d={`M${x - eyeRx + 2} ${eyeY + eyeRy} L${x + eyeRx - 2} ${eyeY + eyeRy}`} stroke={hexToRgba(OUTLINE, 0.5)} strokeWidth="1.2" strokeLinecap="round" fill="none" />
       </g>
     );
   };
 
   const renderNose = () => {
+    // Simplificar bastante o nariz para o estilo anime: sombra em V ou linha angular.
     if (noseStyle === "button") {
       return (
-        <g stroke={hexToRgba(OUTLINE, 0.55)} fill="none">
-          <path d={`M${centerX - 3} ${face.noseY + 4} C${centerX - 1} ${face.noseY + 7} ${centerX + 1} ${face.noseY + 7} ${centerX + 3} ${face.noseY + 4}`} strokeWidth="1.6" />
-          <path d={`M${centerX} ${face.noseY - 5} C${centerX - 1} ${face.noseY - 1} ${centerX - 1} ${face.noseY + 2} ${centerX} ${face.noseY + 4}`} strokeWidth="1.4" />
-        </g>
+        <path d={`M${centerX} ${face.noseY - 4} L${centerX - 2} ${face.noseY + 4} L${centerX + 1} ${face.noseY + 4}`} stroke={hexToRgba(OUTLINE, 0.4)} strokeWidth="1.5" fill="none" strokeLinecap="round" strokeLinejoin="round" />
       );
     }
 
     if (noseStyle === "bridge") {
       return (
-        <g stroke={hexToRgba(OUTLINE, 0.55)} fill="none">
-          <path d={`M${centerX} ${face.noseY - 6} C${centerX - 1} ${face.noseY} ${centerX - 2} ${face.noseY + 4} ${centerX} ${face.noseY + 7}`} strokeWidth="1.6" />
-          <path d={`M${centerX - 3} ${face.noseY + 7} C${centerX - 1} ${face.noseY + 8.5} ${centerX + 1} ${face.noseY + 8.5} ${centerX + 3} ${face.noseY + 7}`} strokeWidth="1.2" />
+        <g stroke={hexToRgba(OUTLINE, 0.5)} fill="none" strokeLinecap="round">
+          <path d={`M${centerX} ${face.noseY - 8} L${centerX - 3} ${face.noseY + 5}`} strokeWidth="1.5" />
+          <path d={`M${centerX - 3} ${face.noseY + 5} L${centerX + 2} ${face.noseY + 6}`} strokeWidth="1.5" />
         </g>
       );
     }
 
+    // Default (sombra em V característica)
     return (
-      <g stroke={hexToRgba(OUTLINE, 0.55)} fill="none">
-        <path d={`M${centerX} ${face.noseY - 6} C${centerX} ${face.noseY} ${centerX - 3} ${face.noseY + 4} ${centerX - 5} ${face.noseY + 6}`} strokeWidth="1.6" />
-        <path d={`M${centerX - 1} ${face.noseY + 6} C${centerX + 1} ${face.noseY + 7} ${centerX + 3} ${face.noseY + 7} ${centerX + 5} ${face.noseY + 6}`} strokeWidth="1.1" opacity="0.7" />
-      </g>
+      <path d={`M${centerX} ${face.noseY - 5} L${centerX - 4} ${face.noseY + 5} L${centerX} ${face.noseY + 6}`} fill={hexToRgba(skin.shadow, 0.6)} stroke="none" />
     );
   };
 
   const renderMouth = () => {
+    // Bocas mais vincadas e extremas
     if (expression === "smile") {
-      return <path d={`M${centerX - 14} ${mouthY} C${centerX - 8} ${mouthY + 9} ${centerX + 8} ${mouthY + 9} ${centerX + 14} ${mouthY}`} stroke={skin.lip} strokeWidth="2.5" fill="none" />;
+      return <path d={`M${centerX - 16} ${mouthY - 2} C${centerX - 8} ${mouthY + 12} ${centerX + 8} ${mouthY + 12} ${centerX + 16} ${mouthY - 2}`} stroke={skin.lip} strokeWidth="3" fill="none" strokeLinecap="round" />;
     }
 
     if (expression === "grin") {
       return (
         <path
-          d={`M${centerX - 14} ${mouthY - 1} C${centerX - 8} ${mouthY + 8} ${centerX + 8} ${mouthY + 8} ${centerX + 14} ${mouthY - 1} C${centerX + 8} ${mouthY + 4} ${centerX - 8} ${mouthY + 4} ${centerX - 14} ${mouthY - 1} Z`}
+          d={`M${centerX - 18} ${mouthY - 2} C${centerX - 8} ${mouthY + 10} ${centerX + 8} ${mouthY + 10} ${centerX + 18} ${mouthY - 2} L${centerX} ${mouthY + 4} Z`}
           fill="#f6f7fa"
           stroke={skin.lip}
-          strokeWidth="1.8"
+          strokeWidth="2"
+          strokeLinejoin="round"
         />
       );
     }
 
     if (expression === "serious") {
-      return <path d={`M${centerX - 12} ${mouthY + 2} C${centerX - 4} ${mouthY - 2} ${centerX + 4} ${mouthY - 2} ${centerX + 12} ${mouthY + 2}`} stroke={skin.lip} strokeWidth="2" fill="none" />;
+      return <path d={`M${centerX - 12} ${mouthY + 3} L${centerX} ${mouthY} L${centerX + 12} ${mouthY + 3}`} stroke={skin.lip} strokeWidth="2.5" fill="none" strokeLinecap="round" strokeLinejoin="round" />;
     }
 
     if (expression === "focused") {
-      return <path d={`M${centerX - 11} ${mouthY} L${centerX + 11} ${mouthY}`} stroke={skin.lip} strokeWidth="2" fill="none" />;
+      return <path d={`M${centerX - 10} ${mouthY} L${centerX + 10} ${mouthY}`} stroke={skin.lip} strokeWidth="2.5" fill="none" strokeLinecap="round" />;
     }
 
-    return <path d={`M${centerX - 10} ${mouthY} C${centerX - 4} ${mouthY + 2.5} ${centerX + 4} ${mouthY + 2.5} ${centerX + 10} ${mouthY}`} stroke={skin.lip} strokeWidth="1.8" fill="none" />;
+    return <path d={`M${centerX - 12} ${mouthY} C${centerX - 4} ${mouthY + 3} ${centerX + 4} ${mouthY + 3} ${centerX + 12} ${mouthY}`} stroke={skin.lip} strokeWidth="2.5" fill="none" strokeLinecap="round" />;
   };
 
   const renderBeard = () => {
