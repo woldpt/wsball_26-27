@@ -238,7 +238,7 @@ export function createNpcTransferHelpers(deps: NpcTransferDeps) {
         const sellerDivision: number = sellerRow?.division ?? 3;
 
         game.db.all(
-          "SELECT p.position, p.skill, p.value, p.wage, p.is_star FROM players WHERE id = ?",
+          "SELECT position, skill, value, wage, is_star FROM players WHERE id = ?",
           [playerId],
           (errP: any, playerRows: any[]) => {
             const playerInfo = playerRows?.[0] ?? null;

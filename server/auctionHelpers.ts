@@ -528,19 +528,23 @@ export function createAuctionHelpers(deps: AuctionDeps) {
             currentHighBidTeamId: newHighBidTeamId,
           });
 
+          const humanTeamIds = new Set(
+            Object.values(game.playersByName).map((p) => p.teamId).filter(Boolean),
+          );
+
           // Se o líder anterior era um NPC e agora perdeu a liderança,
           // dar-lhe oportunidade de relicitar (máx 1 vez por leilão)
           if (
             prevLeaderTeamId !== null &&
-            prevLeaderTeamId !== newHighBidTeamId
+            prevLeaderTeamId !== newHighBidTeamId &&
+            !humanTeamIds.has(prevLeaderTeamId)
           ) {
-            const humanTeamIds = new Set(
-              Object.values(game.playersByName).map((p) => p.teamId).filter(Boolean),
-            );
-            if (!humanTeamIds.has(prevLeaderTeamId)) {
-              scheduleNpcCounterBid(game, playerId, prevLeaderTeamId);
-            }
+            scheduleNpcCounterBid(game, playerId, prevLeaderTeamId);
           }
+
+          // NPCs que ainda não licitaram neste leilão têm oportunidade de reagir
+          // ao novo lance (o guard interno evita duplicados)
+          scheduleNpcAuctionBids(game, playerId);
 
           resolve({ ok: true, bidAmount: amount });
         },
