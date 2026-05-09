@@ -543,7 +543,6 @@ export function TransferHub({
                 onBid={openAuctionBid}
                 setGameDialog={setGameDialog}
                 matchweekCount={matchweekCount}
-                matchweekCount={matchweekCount}
               />
             ))}
           </div>

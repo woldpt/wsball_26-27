@@ -19,10 +19,11 @@ interface ContractDeps {
   getSeasonEndMatchweek: (matchweek: number) => number;
   runAll: RunAll;
   runGet: RunGet;
+  startAuction: (game: ActiveGame, player: any, startingPrice: number, callback?: (...args: any[]) => void) => void;
 }
 
 export function createContractHelpers(deps: ContractDeps) {
-  const { io, getSeasonEndMatchweek, runAll, runGet } = deps;
+  const { io, getSeasonEndMatchweek, runAll, runGet, startAuction } = deps;
 
   const effectiveValue = (player: any): number => {
     const base = player.value || (player.skill || 0) * 20000;
@@ -177,17 +178,21 @@ export function createContractHelpers(deps: ContractDeps) {
             );
           });
         } else {
-          // Treinador offline e sem orçamento — leiloar jogador em vez de enviar para div 5
+          // Treinador offline e sem orçamento — leiloar jogador
           const newWageFallback = Math.max(Math.round((player.skill || 0) * 40), 500);
           const auctionPrice = Math.max(
             Math.round(effectiveValue(player) * 0.65),
             newWageFallback * 12,
           );
-          await new Promise((resolve) => {
+          await new Promise<void>((resolve) => {
             game.db.run(
-              "UPDATE players SET transfer_status = 'auction', transfer_price = ?, contract_until_matchweek = 0, contract_request_pending = 0 WHERE id = ?",
-              [auctionPrice, player.id],
-              resolve,
+              "UPDATE players SET contract_until_matchweek = 0, contract_request_pending = 0 WHERE id = ?",
+              [player.id],
+              () => {
+                startAuction(game, player, auctionPrice, () => {
+                  resolve();
+                });
+              },
             );
           });
         }

@@ -663,8 +663,24 @@ function getGame(roomCode: string, onReady?: OnReady): ActiveGame | null {
                 "SELECT p.*, COALESCE(t.name, 'Sem clube') as team_name FROM players p LEFT JOIN teams t ON p.team_id = t.id WHERE p.team_id IS NOT NULL AND p.transfer_status != 'none' ORDER BY RANDOM() LIMIT 40",
                 (err7, rows) => {
                   if (!err7 && rows) game.globalMarket = rows;
-                  game.initialized = true;
-                  if (onReady) onReady(game);
+                  // ── Limpar leilões órfãos ─────────────────────────────────
+                  // Após reinício do servidor, game.auctions está vazio. Qualquer
+                  // transfer_status = 'auction' na BD é órfão e nunca poderá ser
+                  // licitado. Resetamos para 'none' e recarregamos o mercado.
+                  db.run(
+                    "UPDATE players SET transfer_status = 'none', transfer_price = 0 WHERE transfer_status = 'auction'",
+                    () => {
+                      db.all(
+                        "SELECT p.*, COALESCE(t.name, 'Sem clube') as team_name FROM players p LEFT JOIN teams t ON p.team_id = t.id WHERE p.team_id IS NOT NULL AND p.transfer_status != 'none' ORDER BY RANDOM() LIMIT 40",
+                        (err8, cleanedRows) => {
+                          if (!err8 && cleanedRows)
+                            game.globalMarket = cleanedRows;
+                          game.initialized = true;
+                          if (onReady) onReady(game);
+                        },
+                      );
+                    },
+                  );
                 },
               );
             },
