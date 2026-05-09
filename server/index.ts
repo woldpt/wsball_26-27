@@ -308,6 +308,8 @@ const auctionHelpers = createAuctionHelpers({
   scheduleNpcAuctionBids,
 });
 
+const startAuction = auctionHelpers.startAuction;
+
 const contractHelpers = createContractHelpers({
   io,
   getSeasonEndMatchweek,
@@ -336,7 +338,6 @@ const persistMatchResults = matchSummaryHelpers.persistMatchResults;
 const refreshMarket = auctionHelpers.refreshMarket;
 const emitSquadForPlayer = auctionHelpers.emitSquadForPlayer;
 const listPlayerOnMarket = auctionHelpers.listPlayerOnMarket;
-const startAuction = auctionHelpers.startAuction;
 const finalizeAuction = auctionHelpers.finalizeAuction;
 const placeAuctionBid = auctionHelpers.placeAuctionBid;
 
