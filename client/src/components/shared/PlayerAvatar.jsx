@@ -1067,6 +1067,13 @@ function PlayerAvatarInner({ seed, position, teamColor, size = "lg" }) {
         <circle cx="60" cy="60" r="58" fill={BACKDROP} />
         <circle cx="60" cy="60" r="56" fill={PANEL} />
 
+        {/* ClipPath: limita o cabelo de trás ao crânio (acima da linha das orelhas) */}
+        <defs>
+          <clipPath id={`back-hair-clip-${seed}`}>
+            <rect x="0" y="0" width="120" height={face.earY + 2} />
+          </clipPath>
+        </defs>
+
         {/* Linhas de velocidade radiais (efeito shounen sutil) */}
         <g stroke={hexToRgba(accent, 0.12)} strokeWidth="1" fill="none">
           <path d="M60 6 L60 14" />
@@ -1101,8 +1108,10 @@ function PlayerAvatarInner({ seed, position, teamColor, size = "lg" }) {
         />
         <path d={`M52 ${shirtTop - 1} L60 ${shirtTop + 7} L68 ${shirtTop - 1}`} fill={shirtLight} opacity="0.4" />
 
-        {/* Cabelo de trás */}
-        {renderBackHair()}
+        {/* Cabelo de trás — clipado ao crânio para não sobrepor o rosto */}
+        <g clipPath={`url(#back-hair-clip-${seed})`}>
+          {renderBackHair()}
+        </g>
 
         {/* Orelhas - traço grosso */}
         <g>
