@@ -318,7 +318,7 @@ function MarketCard({
                       type="button"
                       onClick={(e) => {
                         e.stopPropagation();
-                        onBuy(player);
+                          onBuy(player.id);
                       }}
                       disabled={!affordable}
                       className="w-full py-2.5 bg-primary hover:brightness-110 disabled:opacity-30 text-on-primary font-headline font-black tracking-[0.14em] rounded-md transition-all uppercase text-[10px]"

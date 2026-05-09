@@ -159,20 +159,22 @@ function PlayerAvatarInner({ seed, position, teamColor, size = "lg" }) {
   const rightX = 76;
   const angryTilt = expression === "focused" || expression === "serious" ? 2.5 : 0;
 
-  // Gradient IDs
+  // Gradient / clip IDs
   const skinGradId   = `skin-${reactId}`;
   const hairGradId   = `hair-${reactId}`;
   const irisGradId   = `iris-${reactId}`;
   const jerseyGradId = `jersey-${reactId}`;
   const shadowId     = `shadow-${reactId}`;
   const dropId       = `drop-${reactId}`;
+  const hairClipId   = `hclip-${reactId}`;
 
   // ── Forme da cabeça ──
+  // "square": topo largo mas arredondado (não reto), lados mais verticais, queixo amplo
   const headPath =
     faceShape === "oval"
       ? "M60 16 C84 16 98 34 98 58 C98 87 82 104 60 104 C38 104 22 87 22 58 C22 34 36 16 60 16 Z"
       : faceShape === "square"
-        ? "M34 20 H86 C93 20 98 25 98 32 V75 C98 93 80 104 60 104 C40 104 22 93 22 75 V32 C22 25 27 20 34 20 Z"
+        ? "M60 17 C78 17 97 22 98 38 V76 C98 93 80 104 60 104 C40 104 22 93 22 76 V38 C23 22 42 17 60 17 Z"
         : "M60 17 C84 17 98 35 98 58 C98 86 82 104 60 104 C38 104 22 86 22 58 C22 35 36 17 60 17 Z";
 
   // ── Cabelo ──
@@ -385,6 +387,13 @@ function PlayerAvatarInner({ seed, position, teamColor, size = "lg" }) {
           <filter id={dropId} x="-10%" y="-10%" width="120%" height="130%">
             <feDropShadow dx="0" dy="1.5" stdDeviation="2.5" floodColor="#000000" floodOpacity="0.38" />
           </filter>
+
+          {/* clip para o cabelo não sair fora das laterais/fundo da cabeça
+              — rect cobre a zona acima da testa (cabelo visível no topo) */}
+          <clipPath id={hairClipId}>
+            <rect x="0" y="0" width="120" height="20" />
+            <path d={headPath} />
+          </clipPath>
         </defs>
 
         {/* fundo */}
@@ -422,7 +431,7 @@ function PlayerAvatarInner({ seed, position, teamColor, size = "lg" }) {
         <ellipse cx="41" cy="76" rx="9" ry="6" fill={skin.blush} opacity="0.22" />
         <ellipse cx="79" cy="76" rx="9" ry="6" fill={skin.blush} opacity="0.22" />
 
-        {renderHair()}
+        <g clipPath={`url(#${hairClipId})`}>{renderHair()}</g>
 
         {/* headband GR */}
         {headband && renderHeadband()}
