@@ -103,8 +103,9 @@ function MarketCard({
     player.color_primary ||
     teamColorById.get(Number(player.team_id)) ||
     "#95d4b3";
-  const tintStrong = hexToRgba(teamColor, 0.18);
-  const tintSoft = hexToRgba(teamColor, 0.08);
+  const tintStrong = hexToRgba(teamColor, 0.3);
+  const tintSoft = hexToRgba(teamColor, 0.18);
+  const tintEdge = hexToRgba(teamColor, 0.24);
 
   return (
     <div className="[perspective:1200px]">
@@ -128,10 +129,15 @@ function MarketCard({
           <article
             className={`absolute inset-0 rounded-xl border-2 bg-surface-container-low/95 p-4 shadow-xl ring-2 ${posRingClass(player.position)} [backface-visibility:hidden] overflow-hidden`}
             style={{
-              background: `linear-gradient(165deg, ${tintStrong} 0%, ${tintSoft} 35%, rgba(24,27,40,0.96) 100%)`,
+              background: `linear-gradient(165deg, ${tintStrong} 0%, ${tintSoft} 42%, rgba(35,39,56,0.93) 100%)`,
             }}
           >
-            <div className="absolute inset-0 pointer-events-none bg-[radial-gradient(ellipse_at_top_right,rgba(255,255,255,0.06),transparent_65%)]" />
+            <div
+              className="absolute inset-0 pointer-events-none"
+              style={{
+                background: `radial-gradient(ellipse at top right, rgba(255,255,255,0.1) 0%, transparent 60%), radial-gradient(ellipse at bottom left, ${tintEdge} 0%, transparent 70%)`,
+              }}
+            />
             <div className="relative flex h-full flex-col">
               <div className="flex items-start justify-between gap-2">
                 <span
@@ -213,10 +219,15 @@ function MarketCard({
           <article
             className="absolute inset-0 rounded-xl border-2 border-outline-variant/35 bg-surface-container-low p-4 shadow-xl [transform:rotateY(180deg)] [backface-visibility:hidden] overflow-hidden"
             style={{
-              background: `linear-gradient(15deg, ${tintSoft} 0%, rgba(25,28,41,0.98) 55%, ${hexToRgba(teamColor, 0.12)} 100%)`,
+              background: `linear-gradient(15deg, ${tintSoft} 0%, rgba(36,40,58,0.95) 52%, ${hexToRgba(teamColor, 0.2)} 100%)`,
             }}
           >
-            <div className="absolute inset-0 pointer-events-none bg-[radial-gradient(ellipse_at_bottom_left,rgba(255,255,255,0.05),transparent_65%)]" />
+            <div
+              className="absolute inset-0 pointer-events-none"
+              style={{
+                background: `radial-gradient(ellipse at bottom left, rgba(255,255,255,0.08) 0%, transparent 62%), radial-gradient(ellipse at top right, ${tintEdge} 0%, transparent 72%)`,
+              }}
+            />
             <div className="relative flex h-full flex-col">
               <div className="flex items-start justify-between gap-3">
                 <div className="min-w-0">

@@ -1,120 +1,68 @@
-# CashBall 26/27 — Agent Instructions
+# CashBall 26/27 — Agent Instructions (Compact)
 
-## Essential Commands
+## Quick Commands
 | Action | Command |
-|--------|---------|
-| Backend Dev | `cd server && npm run dev` |
-| Backend Typecheck | `cd server && npm run typecheck` |
-| Backend Build | `cd server && npm run build && npm start` |
-| Backend Seed | `cd server && npm run seed` (real env: `seed:real`) |
-| Frontend Dev | `cd client && npm run dev` |
-| Frontend Lint | `cd client && npm run lint` |
-| Frontend JSDoc Check | `cd client && npm run check:types` |
-| Audit Socket.io | `cd server && npm run audit:socketio` |
-| Audit Game State | `cd server && npm run audit:gamestate <ROOM_CODE>` |
-| Full Stack | `docker compose up --build` |
+|---|---|
+| Backend dev | `cd server && npm run dev` |
+| Backend typecheck | `cd server && npm run typecheck` |
+| Backend build/start | `cd server && npm run build && npm run start` |
+| Backend seed | `cd server && npm run seed` |
+| Frontend dev | `cd client && npm run dev` |
+| Frontend lint | `cd client && npm run lint` |
+| Frontend JSDoc check | `cd client && npm run check:types` |
+| Socket audit | `cd server && npm run audit:socketio` |
+| Game-state audit | `cd server && npm run audit:gamestate <ROOM_CODE>` |
+| Full stack | `docker compose up --build` |
 
-## Architecture Pitfalls
-- **Frontend JS / Backend TS:** Client is **pure JavaScript**. Use JSDoc for types. Never add TS to `client/`.
-- **`game/engine.ts` Mixed Modules:** Starts with ESM `import` but ends with `module.exports = {…}` (line 1487). `index.ts` uses `require("./game/engine")`. Other `game/` files use ESM `export`.
-- **Socket Listeners:** All `socket.on()` live in `client/src/hooks/useSocketListeners.js`. **Crucial:** new listeners that call `handlers.setXxx` need the setter added to the handlers object in `App.jsx:372` or they are silent no-ops.
-- **Sidebar Offsets:** Overlays/modals must track `sidebarCollapsed` with `lg:left-14` (collapsed) / `lg:left-64` (expanded) — see `App.jsx:5331`.
-- **Factory Pattern:** Use `createXxxHelpers(deps)`. Never instantiate helpers directly.
-- **Socket Handlers:** `registerXxxSocketHandlers(socket, deps)` in 7 files under `server/`. Called inside `io.on("connection")` in `index.ts`.
-- **Tactic Familiarity:** `player_tactic_history` table stores coach tactic usage. `game/tacticFamiliarity.ts` exports `getTacticFamiliarity()`. `TIER_THRESHOLDS = [{min:10},{min:8},{min:6},{min:4},{min:2},{min:1}]` → bonus 0–5%. Labels: "5x⭐"/"4x⭐"/"3x⭐"/"2x⭐"/"1x⭐"/"-". Engine applies bonus (0–5%) to attack/defense in `getPower()`. Socket handler `requestTacticFamiliarity` → `tacticFamiliarity`.
-- **Portuguese (PT):** All UI text, messages, and code comments must be in Portuguese (PT).
+## Non-Negotiables
+- Frontend is **JavaScript only** (no TypeScript in `client/`). Use JSDoc hints.
+- Backend is TypeScript; SQLite is the DB (avoid PostgreSQL-specific SQL types).
+- UI/messages/comments in **Portuguese (PT)**.
+- Narration phrases only in `server/game/commentary.ts` (never duplicate elsewhere).
+- Socket listeners live in `client/src/hooks/useSocketListeners.js`; any new `handlers.setXxx` must exist in `handlers` passed from `client/src/App.jsx`.
 
-## Tactic Familiarity UI
-- **Client state:** `tacticFamiliarity` (single tactic) + `allTacticFamiliarity` (map `formation|style` → `{count, bonus, label}`).
-- **Tier labels:** "5x⭐"/"4x⭐"/"3x⭐"/"2x⭐"/"1x⭐"/"-". Server `TIER_THRESHOLDS` at `tacticFamiliarity.ts:22-29`.
-- **Progress bars:** `App.jsx:4488-4512` — each formation row shows a progress bar + tier label. `MAX_COUNT = 21` (line 4437).
-- **Tier colors:** Mestre(amber), Dominante(emerald), Consolidada(emerald), Familiar(sky), "Ganhando rotina"(sky), "A familiarizar"(slate) — `App.jsx:4405-4436`.
-- **Decay:** `applyTacticDecay` removes 1 record per unused tactic after 2 games of inactivity. Called after each league game.
-- **Socket:** `requestTacticFamiliarity` → `tacticFamiliarity`, `requestAllTacticFamiliarity` → `allTacticFamiliarity`.
+## Current Market UX (latest)
+- Market tab uses `TransferHub`, not `MarketTab`:
+  - `client/src/App.jsx`
+  - `client/src/components/ui/TransferHub.jsx`
+- Layout: cards in desktop grid, single column in mobile.
+- Cards support flip interaction and open `PlayerHistoryModal` via `requestPlayerHistory`.
+- Cards use `PlayerAvatar` and show essential stats/actions.
+- Visual tuning applied:
+  - thicker card outlines (`border-2` / `ring-2`)
+  - subtle team-color tint fill (from player/team primary color fallback chain).
 
-## Opponent Tab Layout (`TabAdversario`)
-- **Vertical field:** `aspectRatio: "9/16"`, `maxHeight: "420px"`, SVG `viewBox="0 0 315 560"` — `MatchPanel.jsx:409`.
-- **50/50 split:** Field left (50%), bench column right (50%) — `MatchPanel.jsx:408-493`.
-- **Player positions:** GR top 8%, DEF 31%, MED 56%, ATA 81% — `MatchPanel.jsx:428`.
-- **Bench:** Limited to 5 players (1 GR + 4 outfield) — `MatchPanel.jsx:365`.
-- **Craque star:** `*` in amber for MED/ATA only — `MatchPanel.jsx:446-449`.
+## Game/State Core
+- Source of season truth: `game.calendarIndex` (not `game.matchweek`).
+- Phase machine: `lobby -> match_first_half -> match_halftime -> match_second_half -> [match_et_gate -> match_extra_time] -> match_finalizing -> lobby`.
+- Transitional phases reset to `lobby` after server restart.
+- `activeGames` in memory is primary runtime state; DB sync is selective.
+- `game.lockedCoaches` is never persisted.
+- Sync gates: `phaseToken` + `phaseAcks`.
+- Segment double-run guard: `segmentRunning[roomCode]`.
 
-## State & Data Flow
-- **Game Truth:** `game.calendarIndex` (0-based, 0–18) is the source of truth for season progress, **not** `game.matchweek`.
-- **State Machine:** `gamePhase` (lobby → match_first_half → match_halftime → match_second_half → match_finalizing). Transit phases reset to `lobby` on server restart (prevents permanently locked games).
-- **Memory vs DB:** `activeGames` (in-memory map in `gameManager.ts`) is the primary state. DB sync is selective. `game.lockedCoaches` is **never** persisted — avoids permanent locks after crashes.
-- **Synchronization:** `phaseToken` (UUID per phase) + `phaseAcks` (Set of coach names) coordinate multi-player actions. New token invalidates previous ACKs.
-- **Segment Guard:** `segmentRunning[game.roomCode]` boolean prevents double-execution of `runMatchSegment`.
-- **Cache Versioning:** Server `/api/cache-version` returns `{ version: SERVER_START_TIME }`. Client compares with `localStorage.cashball_cache_version`; on mismatch, full `localStorage` wipe and reload.
+## Important Mechanics
+- Craques: only MED/ATA (`is_star = 1`), never GR/DEF.
+- Squad limits: min 11, max 24; halftime substitutions max 3.
+- Loans: max 5 active, 2.5% weekly interest.
+- Stadium: up to 120,000 seats.
+- Division 5 (Distritais): internal AI-only pool, hidden from players.
+- Cache versioning: `/api/cache-version` mismatch triggers client storage wipe + reload.
 
-## Game Mechanics (Key Facts)
-- **Craques:** ~10% of MED/ATA (`is_star = 1`). +20% decisive goal probability per star in starting XI (cap 60%). 3+ stars → ego conflict (−10% per extra star, cap −30%). GR and DEF never craques.
-- **Moral:** 0–100, starts at 50. Win +10, Draw 0, Loss −15. Attack bonus = `(moral − 50) × 0.005` (±50%). Shared across Liga and Taça, belongs to the club.
-- **Squad:** Min 11 (1 GR mandatory), max 24. Substitutions at halftime: up to 3 total.
-- **Interest:** 2.5% per week on loans (max 5 active).
-- **Stadium:** €300,000 per 5,000 seats (max 120,000).
-- **Referee:** Random inclination per game (±15% on cards/penalties). Does NOT affect penalty shootout conversion.
-- **Division 5 (Distritais):** Internal-only AI pool in `gameConstants.ts`. Invisible to players; promotion via simple draw.
-- **Tactic Familiarity Bonus:** 0–5% applied to attack/defense based on `TIER_THRESHOLDS` (2/4/6/8/10 games). Tier labels: "1x⭐" through "5x⭐". Applied in `getPower()`.
+## Architecture Pointers
+- `server/index.ts`: Express + Socket.io entry.
+- `server/gameManager.ts`: room and state lifecycle (`activeGames`).
+- `server/game/engine.ts`: simulation core (mixed module style for compatibility).
+- `server/socket*Handlers.ts`: Socket domains registration.
+- `server/*Helpers.ts`: domain helpers via factory pattern (`createXxxHelpers(deps)`).
+- `client/src/App.jsx`: root state orchestration.
+- `client/src/hooks/useSocketListeners.js`: centralized socket listeners.
 
-## Cup Final (Taça de Portugal)
-- **Round:** `round === 5` (Final), `calendarIndex === 18` (last entry in `SEASON_CALENDAR`).
-- **Venue:** Always "Jamor" (neutral ground). Set in `matchSummaryHelpers.ts:190` (history) and `matchSummaryHelpers.ts:296` (next match).
-- **No home advantage:** `fixture.round !== 5` guard at `engine.ts:935` disables 1.08/0.92 multiplier for finals.
-- **Commentary:** Dedicated functions in `commentary.ts`: `finalStartPhrase` (minute 1), `finalGoalPhrase` (goals), `finalEndPhrase` (match end). All in Portuguese.
-- **Victory message:** Includes "no Estádio do Jamor" — `cupFlowHelpers.ts:949`.
-- **Badge styling:** `App.jsx:2903/2908` uses `bg-amber-500/20 text-amber-400` for Jamor venue. `CupTab.jsx:90` uses `bg-amber-500/30 text-amber-300 border border-amber-500/30` for isFinal label.
-- **Draw skip:** Final draw is silent (no animation) — `cupFlowHelpers.ts:490`.
-- **fixture.round:** Added to enriched fixtures in `cupFlowHelpers.ts:470` so engine can detect finals.
+## UI/Design Guidelines
+- Keep existing dark visual language and position accents:
+  - GR `#eab308`, DEF `#3b82f6`, MED `#10b981`, ATA `#f43f5e`
+- Keep sidebar overlay offsets compatible with `sidebarCollapsed` (`lg:left-14` / `lg:left-64`).
+- Icons: Material Symbols Outlined.
 
-## Weekly Flow (`checkAllReady` in `weeklyFlowHelpers.ts`)
-Central dispatch point. On all-coach confirmation:
-1. Advance `calendarIndex`, apply weekly income by division, deduct wages
-2. Generate fixtures, call `runMatchSegment(game, 1, 45)`
-3. Pause at `match_halftime`; await re-confirmation
-4. Call `runMatchSegment(game, 46, 90)`
-5. For tied cups: pause at `match_et_gate`, then `runMatchSegment(game, 91, 120)`
-6. Penalties if needed, then `match_finalizing` → `lobby`
-
-**Halftime safety timeout:** 120s. If no coaches connected, auto-advance. If coaches connected, wait indefinitely (no forced advance while they adjust subs).
-**Cup draw:** Prepared at end of previous event (not start of cup match).
-
-## Design & Style
-- **Dark palette:** Base `#0d0d14` / `#13131f`; surfaces `#18181f`; borders `#26263a`
-- **Position accents:** GR: `#eab308`; DEF: `#3b82f6`; MED: `#10b981`; ATA: `#f43f5e`
-- **Gold accent:** `#d4af37` / `#f0c330` — auctions, prices, premium elements
-- **Auction shutter:** Fixed horizontal bar with gold gradient + shimmer animation (`index.css`)
-- **Icons:** Material Symbols Outlined (`className="material-symbols-outlined"`)
-- **Framer Motion:** Page transitions via `PageTransition.jsx`
-
-## Key Files
-- `server/index.ts`: Entry point, Express + Socket.io, CORS, rate limiting
-- `server/gameManager.ts`: Room and state management (`activeGames`, DB per room)
-- `server/game/engine.ts`: Match simulation (mixed ESM/CommonJS)
-- `server/game/commentary.ts`: 16 narration functions (*Phrase) — never duplicate phrases
-- `client/src/App.jsx`: Root component (auth, 60+ state vars, match animation)
-- `client/src/hooks/useSocketListeners.js`: 40+ socket.on() centralized
-- `server/*Helpers.ts`: 12 domain-specific helper files
-- `server/socket*Handlers.ts`: 7 Socket handler files by domain
-
-## Existing Instruction Sources
-- `CLAUDE.md` — Detailed architecture guide (same content as this file but longer)
-- `SKILLS.md` — Full documentation of 3 auditing/validation tools
-- `.skillsrc` — Quick reference for audit commands
-- `README.md` — Game rules, mechanics, and full stack overview
-
-## Rules for Assistente
-1. **Português de Portugal** em UI, mensagens e comentários de código
-2. **Frontend é JS, nunca TS** — usar JSDoc para type hints
-3. **`game/engine.ts`** usa CommonJS (`module.exports`); ficheiros auxiliares usam ES modules
-4. **Narração** só em `game/commentary.ts` — nunca duplicar frases
-5. **Socket listeners** só em `hooks/useSocketListeners.js` — verificar setters no objecto `handlers` em `App.jsx`
-6. **SQLite** — sem tipos PostgreSQL-específicos (`SERIAL`, `JSONB`, etc.)
-7. **Divisão 5 (Distritais)** existe só internamente como pool IA
-8. **Craques** apenas MED e ATA — nunca atribuir a GR ou DEF
-9. **Árbitro** — inclinação aleatória por jogo, não se aplica a penalties
-10. **Empréstimos** — máx 5 activos, 2,5% juros/semana
-11. **Plantel** — mín 11, máx 24
-12. **Estádio** — máx 120.000 lugares
-13. **Sem Distritais com simulação** — sorteio simples de promoção
-14. **Em caso de dúvida sobre mecânica não descrita, perguntar antes de inventar**
+## If Unsure
+- Do not invent mechanics; ask before changing game rules.
