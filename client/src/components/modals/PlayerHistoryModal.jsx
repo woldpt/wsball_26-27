@@ -182,7 +182,7 @@ export function PlayerHistoryModal({
             }}
           />
           <div className="relative flex items-start gap-4 px-6 pt-6 pb-5">
-            <PlayerAvatar seed={player.id} position={pos} />
+            <PlayerAvatar seed={player.id} position={pos} teamColor={player.team_color_primary || player.color_primary || null} size="xl" />
             <div className="shrink-0 mt-1">
               <div
                 className={`px-2.5 py-1 rounded-sm bg-surface-bright border-l-2 ${POS_BORDER[pos] || "border-zinc-500"} ${POS_TEXT[pos] || "text-zinc-300"} text-xs font-black uppercase tracking-wider`}
