@@ -130,12 +130,29 @@ function MarketCard({
             className={`absolute inset-0 rounded-xl border-2 bg-surface-container-low/95 p-4 shadow-xl ring-2 ${posRingClass(player.position)} [backface-visibility:hidden] overflow-hidden`}
             style={{
               background: `linear-gradient(165deg, ${tintStrong} 0%, ${tintSoft} 42%, rgba(35,39,56,0.93) 100%)`,
+              boxShadow: `0 20px 25px -5px rgba(0,0,0,0.1), 0 8px 10px -6px rgba(0,0,0,0.1), 0 0 24px 0 ${hexToRgba(teamColor, 0.15)}`,
             }}
           >
+            {/* Orb de brilho atrás do avatar */}
+            <div
+              className="absolute -top-6 -left-6 w-32 h-32 pointer-events-none"
+              style={{
+                background: `radial-gradient(circle, ${hexToRgba(teamColor, 0.12)} 0%, transparent 70%)`,
+              }}
+            />
             <div
               className="absolute inset-0 pointer-events-none"
               style={{
                 background: `radial-gradient(ellipse at top right, rgba(255,255,255,0.1) 0%, transparent 60%), radial-gradient(ellipse at bottom left, ${tintEdge} 0%, transparent 70%)`,
+              }}
+            />
+            {/* Shimmer animado */}
+            <div
+              className="absolute inset-0 pointer-events-none overflow-hidden"
+              style={{
+                background: "linear-gradient(105deg, transparent 30%, rgba(255,255,255,0.05) 50%, transparent 70%)",
+                backgroundSize: "200% 100%",
+                animation: "shimmer 4s infinite linear",
               }}
             />
             <div className="relative flex h-full flex-col">
@@ -220,12 +237,22 @@ function MarketCard({
             className="absolute inset-0 rounded-xl border-2 border-outline-variant/35 bg-surface-container-low p-4 shadow-xl [transform:rotateY(180deg)] [backface-visibility:hidden] overflow-hidden"
             style={{
               background: `linear-gradient(15deg, ${tintSoft} 0%, rgba(36,40,58,0.95) 52%, ${hexToRgba(teamColor, 0.2)} 100%)`,
+              boxShadow: `0 20px 25px -5px rgba(0,0,0,0.1), 0 8px 10px -6px rgba(0,0,0,0.1), 0 0 24px 0 ${hexToRgba(teamColor, 0.12)}`,
             }}
           >
             <div
               className="absolute inset-0 pointer-events-none"
               style={{
                 background: `radial-gradient(ellipse at bottom left, rgba(255,255,255,0.08) 0%, transparent 62%), radial-gradient(ellipse at top right, ${tintEdge} 0%, transparent 72%)`,
+              }}
+            />
+            {/* Shimmer animado */}
+            <div
+              className="absolute inset-0 pointer-events-none overflow-hidden"
+              style={{
+                background: "linear-gradient(105deg, transparent 30%, rgba(255,255,255,0.04) 50%, transparent 70%)",
+                backgroundSize: "200% 100%",
+                animation: "shimmer 4s infinite linear",
               }}
             />
             <div className="relative flex h-full flex-col">
