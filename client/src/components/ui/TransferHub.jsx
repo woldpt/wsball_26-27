@@ -166,9 +166,22 @@ function MarketCard({
                 >
                   {status.label}
                 </span>
-                <span className="text-[10px] text-zinc-400 font-black uppercase tracking-wider">
-                  {player.position}
-                </span>
+                <div className="flex items-center gap-1.5 shrink-0 min-w-0">
+                  {(isSuspended || isInjured) && (
+                    <span
+                      className={`text-[9px] font-black uppercase px-1.5 py-0.5 rounded-sm tracking-widest whitespace-nowrap border ${
+                        isSuspended
+                          ? "bg-error-container/40 text-error border-error/30"
+                          : "bg-error-container/20 text-error border-error/20"
+                      }`}
+                    >
+                      {isSuspended ? "🟥 Susp." : "🩹 Les."}
+                    </span>
+                  )}
+                  <span className="text-[10px] text-zinc-400 font-black uppercase tracking-wider">
+                    {player.position}
+                  </span>
+                </div>
               </div>
 
               <div className="mt-3 flex items-center justify-between gap-3">
@@ -276,35 +289,35 @@ function MarketCard({
                 </span>
               </div>
 
-              <div className="mt-4 grid grid-cols-2 gap-2 text-xs">
-                <div className="rounded-md bg-surface-container p-2 border border-outline-variant/20">
-                  <p className="text-[9px] uppercase tracking-widest text-zinc-500 font-black">
-                    Qualidade
-                  </p>
-                  <p className="font-headline font-black text-lg text-primary">
-                    {player.skill ?? 0}
-                  </p>
+              <div className="mt-3 grid grid-cols-3 gap-1.5 text-xs">
+                <div className="rounded-md bg-surface-container p-1.5 border border-outline-variant/20 text-center">
+                  <p className="text-[8px] uppercase tracking-widest text-zinc-500 font-black">Qual.</p>
+                  <p className="font-headline font-black text-base text-primary">{player.skill ?? 0}</p>
                 </div>
-                <div className="rounded-md bg-surface-container p-2 border border-outline-variant/20">
-                  <p className="text-[9px] uppercase tracking-widest text-zinc-500 font-black">
-                    Agressividade
-                  </p>
-                  <div className="mt-1">
-                    <AggBadge value={player.aggressiveness} />
-                  </div>
+                <div className="rounded-md bg-surface-container p-1.5 border border-outline-variant/20 text-center">
+                  <p className="text-[8px] uppercase tracking-widest text-zinc-500 font-black">Forma</p>
+                  <p className={`font-black text-sm ${(player.form ?? 100) >= 115 ? "text-emerald-400" : (player.form ?? 100) <= 85 ? "text-rose-400" : "text-zinc-200"}`}>{player.form ?? 100}%</p>
                 </div>
-                <div className="rounded-md bg-surface-container p-2 border border-outline-variant/20">
-                  <p className="text-[9px] uppercase tracking-widest text-zinc-500 font-black">
-                    Golos
-                  </p>
-                  <p className="font-black text-emerald-400">{player.goals ?? 0}</p>
+                <div className="rounded-md bg-surface-container p-1.5 border border-outline-variant/20 text-center">
+                  <p className="text-[8px] uppercase tracking-widest text-zinc-500 font-black">Resist.</p>
+                  <p className="font-black text-sm text-cyan-400">{player.resistance ?? 0}</p>
                 </div>
-                <div className="rounded-md bg-surface-container p-2 border border-outline-variant/20">
-                  <p className="text-[9px] uppercase tracking-widest text-zinc-500 font-black">
-                    Carreira
-                  </p>
-                  <p className="font-black text-zinc-200">{player.career_goals ?? 0} G</p>
+                <div className="rounded-md bg-surface-container p-1.5 border border-outline-variant/20 text-center">
+                  <p className="text-[8px] uppercase tracking-widest text-zinc-500 font-black">Jogos</p>
+                  <p className="font-black text-sm text-zinc-200">{player.games_played ?? 0}</p>
                 </div>
+                <div className="rounded-md bg-surface-container p-1.5 border border-outline-variant/20 text-center">
+                  <p className="text-[8px] uppercase tracking-widest text-zinc-500 font-black">Golos</p>
+                  <p className="font-black text-sm text-emerald-400">{player.goals ?? 0}</p>
+                </div>
+                <div className="rounded-md bg-surface-container p-1.5 border border-outline-variant/20 text-center">
+                  <p className="text-[8px] uppercase tracking-widest text-zinc-500 font-black">Verm.</p>
+                  <p className={`font-black text-sm ${(player.red_cards ?? 0) > 0 ? "text-rose-400" : "text-zinc-300"}`}>{player.red_cards ?? 0}</p>
+                </div>
+              </div>
+              <div className="mt-2 flex items-center justify-between gap-2">
+                <span className="text-[9px] text-zinc-500 font-black uppercase tracking-widest">Agressividade</span>
+                <AggBadge value={player.aggressiveness} />
               </div>
 
               <div className="mt-4 rounded-md bg-surface-container p-3 border border-outline-variant/20">
@@ -404,6 +417,7 @@ function MarketCard({
  *   openAuctionBid: function,
  *   onOpenPlayerHistory: function,
  *   setGameDialog: function,
+ *   matchweekCount: number,
  * }} props
  */
 export function TransferHub({
@@ -420,6 +434,7 @@ export function TransferHub({
   openAuctionBid,
   onOpenPlayerHistory,
   setGameDialog,
+  matchweekCount = 0,
 }) {
   const [search, setSearch] = useState("");
   const [flippedId, setFlippedId] = useState(null);
@@ -527,6 +542,8 @@ export function TransferHub({
                 onBuy={buyPlayer}
                 onBid={openAuctionBid}
                 setGameDialog={setGameDialog}
+                matchweekCount={matchweekCount}
+                matchweekCount={matchweekCount}
               />
             ))}
           </div>
