@@ -38,7 +38,7 @@ const SHIMMER_STYLE = {
   animation: "shimmer 3s linear infinite",
 };
 
-function SquadRow({ player, matchweekCount }) {
+function SquadRow({ player, matchweekCount, onOpenPlayerHistory }) {
   const star =
     !!player.is_star &&
     (player.position === "MED" || player.position === "ATA");
@@ -83,7 +83,8 @@ function SquadRow({ player, matchweekCount }) {
 
   return (
     <div
-      className={`relative group flex items-stretch rounded-lg overflow-hidden border border-outline-variant/25 bg-gradient-to-r ${bgGrad} via-surface-container/70 to-surface/30 transition-all duration-200 hover:-translate-y-px hover:shadow-lg ${glow} ${dim} shadow-sm shadow-black/30`}
+      onClick={() => onOpenPlayerHistory && onOpenPlayerHistory(player)}
+      className={`relative group flex items-stretch rounded-lg overflow-hidden border border-outline-variant/25 bg-gradient-to-r ${bgGrad} via-surface-container/70 to-surface/30 transition-all duration-200 hover:-translate-y-px hover:shadow-lg ${glow} ${dim} shadow-sm shadow-black/30 cursor-pointer`}
     >
       {/* Faixa lateral da posição */}
       <div className={`shrink-0 w-1 bg-gradient-to-b ${bar}`} />
@@ -320,6 +321,7 @@ function SquadRow({ player, matchweekCount }) {
  *   listPlayerAuction: (player: object) => void,
  *   listPlayerFixed: (player: object) => void,
  *   removeFromTransferList: (player: object) => void,
+ *   onOpenPlayerHistory: (player: object) => void,
  * }} props
  */
 export function PlayersTab({
@@ -341,6 +343,7 @@ export function PlayersTab({
   listPlayerFixed,
   // eslint-disable-next-line no-unused-vars
   removeFromTransferList,
+  onOpenPlayerHistory,
 }) {
   const wageByPos = { GR: 0, DEF: 0, MED: 0, ATA: 0 };
   mySquad.forEach((p) => {
@@ -441,6 +444,7 @@ export function PlayersTab({
                   key={player.id}
                   player={player}
                   matchweekCount={matchweekCount}
+                  onOpenPlayerHistory={onOpenPlayerHistory}
                 />
               ))}
             </div>

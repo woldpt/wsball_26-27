@@ -4255,6 +4255,11 @@ function App() {
                       listPlayerAuction={listPlayerAuction}
                       listPlayerFixed={listPlayerFixed}
                       removeFromTransferList={removeFromTransferList}
+                      onOpenPlayerHistory={(player) =>
+                        socket.emit("requestPlayerHistory", {
+                          playerId: player.id,
+                        })
+                      }
                     />
                   )}
 
