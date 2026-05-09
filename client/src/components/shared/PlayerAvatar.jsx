@@ -80,7 +80,7 @@ const POSITION_PROFILE = {
   GR: {
     faceWeights: { round: 1.6, oval: 1.0, strong: 2.4 },
     expressionWeights: { smile: 0.7, grin: 0.3, neutral: 1.0, serious: 2.0, focused: 3.6 },
-    hairWeights: { bald: 0.45, buzz: 1.9, classic: 1.8, sidepart: 1.0, spiky: 0.7, curly: 0.6, afro: 0.4, long: 0.4 },
+    hairWeights: { bald: 0.18, buzz: 1.4, classic: 2.4, sidepart: 1.6, spiky: 0.9, curly: 0.7, afro: 0.5, long: 0.5 },
     eyeWeights: { soft: 0.6, hero: 0.7, sharp: 3.0 },
     browWeights: { soft: 0.5, flat: 1.4, bold: 2.4 },
     headbandChance: 0.4,
@@ -97,7 +97,7 @@ const POSITION_PROFILE = {
   DEF: {
     faceWeights: { round: 0.7, oval: 0.9, strong: 4.2 },
     expressionWeights: { smile: 0.45, grin: 0.2, neutral: 1.0, serious: 3.4, focused: 2.0 },
-    hairWeights: { bald: 0.4, buzz: 2.2, classic: 1.8, sidepart: 0.9, spiky: 1.2, curly: 0.5, afro: 0.4, long: 0.3 },
+    hairWeights: { bald: 0.12, buzz: 1.6, classic: 2.0, sidepart: 1.4, spiky: 1.6, curly: 0.6, afro: 0.5, long: 0.5 },
     eyeWeights: { soft: 0.4, hero: 0.6, sharp: 3.4 },
     browWeights: { soft: 0.3, flat: 1.7, bold: 2.6 },
     headbandChance: 0,
@@ -114,7 +114,7 @@ const POSITION_PROFILE = {
   MED: {
     faceWeights: { round: 1.5, oval: 3.0, strong: 0.8 },
     expressionWeights: { smile: 1.7, grin: 0.7, neutral: 2.6, serious: 0.9, focused: 0.85 },
-    hairWeights: { bald: 0.15, buzz: 0.6, classic: 2.4, sidepart: 2.6, spiky: 1.8, curly: 1.1, afro: 0.7, long: 0.7 },
+    hairWeights: { bald: 0.04, buzz: 0.5, classic: 2.6, sidepart: 2.8, spiky: 2.0, curly: 1.2, afro: 0.8, long: 0.9 },
     eyeWeights: { soft: 2.4, hero: 1.7, sharp: 1.0 },
     browWeights: { soft: 1.9, flat: 0.9, bold: 0.9 },
     headbandChance: 0,
@@ -131,7 +131,7 @@ const POSITION_PROFILE = {
   ATA: {
     faceWeights: { round: 0.9, oval: 4.0, strong: 1.0 },
     expressionWeights: { smile: 3.0, grin: 2.4, neutral: 1.1, serious: 0.6, focused: 0.45 },
-    hairWeights: { bald: 0.1, buzz: 0.4, classic: 1.8, sidepart: 1.0, spiky: 5.2, curly: 1.0, afro: 0.7, long: 1.4 },
+    hairWeights: { bald: 0.02, buzz: 0.3, classic: 2.0, sidepart: 1.2, spiky: 5.5, curly: 1.0, afro: 0.7, long: 1.6 },
     eyeWeights: { soft: 0.8, hero: 4.0, sharp: 0.7 },
     browWeights: { soft: 1.0, flat: 0.5, bold: 1.9 },
     headbandChance: 0,
@@ -148,7 +148,7 @@ const POSITION_PROFILE = {
   default: {
     faceWeights: { round: 1.4, oval: 1.6, strong: 1.3 },
     expressionWeights: { smile: 1.5, grin: 1.0, neutral: 1.5, serious: 1.2, focused: 1.0 },
-    hairWeights: { bald: 0.3, buzz: 1.0, classic: 2.2, sidepart: 1.4, spiky: 1.5, curly: 0.9, afro: 0.7, long: 0.6 },
+    hairWeights: { bald: 0.08, buzz: 0.9, classic: 2.4, sidepart: 1.6, spiky: 1.6, curly: 1.0, afro: 0.7, long: 0.8 },
     eyeWeights: { soft: 1.2, hero: 1.4, sharp: 1.2 },
     browWeights: { soft: 1.3, flat: 1.1, bold: 1.4 },
     headbandChance: 0,
@@ -388,113 +388,183 @@ function PlayerAvatarInner({ seed, position, teamColor, size = "lg" }) {
     if (hairStyle === "bald") return null;
 
     if (hairStyle === "buzz") {
+      // Corte rente que abraça o crânio com textura subtil
       return (
-        <path
-          d={`M${headLeft - 1} ${face.top + 30} C${headLeft - 1} ${face.top + 8} ${headRight + 1} ${face.top + 8} ${headRight + 1} ${face.top + 30}`}
-          fill={hair.base}
-          stroke={hairStroke}
-          strokeWidth="2"
-          strokeLinejoin="round"
-        />
+        <g>
+          <path
+            d={`M${headLeft - 1} ${face.top + 32}
+                Q${headLeft - 2} ${face.top + 6} ${centerX} ${face.top + 2}
+                Q${headRight + 2} ${face.top + 6} ${headRight + 1} ${face.top + 32}
+                L${headRight - 4} ${face.top + 30}
+                Q${centerX} ${face.top + 24} ${headLeft + 4} ${face.top + 30} Z`}
+            fill={hair.base}
+            stroke={hairStroke}
+            strokeWidth="1.8"
+            strokeLinejoin="round"
+          />
+          {/* Marcas curtas a sugerir cabelo rapado */}
+          <g
+            stroke={hair.shine}
+            strokeWidth="0.9"
+            fill="none"
+            opacity={Math.min(0.5, hairShineOpacity)}
+            strokeLinecap="round"
+          >
+            <path d={`M${headLeft + 6} ${face.top + 12} L${headLeft + 10} ${face.top + 8}`} />
+            <path d={`M${centerX - 6} ${face.top + 8} L${centerX - 2} ${face.top + 4}`} />
+            <path d={`M${centerX + 4} ${face.top + 8} L${centerX + 8} ${face.top + 4}`} />
+            <path d={`M${headRight - 10} ${face.top + 12} L${headRight - 6} ${face.top + 8}`} />
+          </g>
+        </g>
       );
     }
 
     if (hairStyle === "classic") {
-      // Volume com mechas pontiagudas a sair pelas laterais
+      // Volume médio coeso com mechinhas suaves nos lados
       return (
         <g fill={hair.base} stroke={hairStroke} strokeWidth="1.8" strokeLinejoin="round">
           <path
-            d={`M${headLeft - 4} ${face.top + 32}
-                C${headLeft - 4} ${face.top + 4} ${headRight + 4} ${face.top + 4} ${headRight + 4} ${face.top + 32}
-                L${headRight - 2} ${face.top + 36}
-                L${headRight - 8} ${face.top + 32}
-                L${headLeft + 8} ${face.top + 32}
-                L${headLeft + 2} ${face.top + 36} Z`}
+            d={`M${headLeft - 4} ${face.top + 34}
+                C${headLeft - 6} ${face.top + 8} ${headLeft + 8} ${face.top - 2} ${centerX} ${face.top - 2}
+                C${headRight - 8} ${face.top - 2} ${headRight + 6} ${face.top + 8} ${headRight + 4} ${face.top + 34}
+                L${headRight - 2} ${face.top + 38}
+                Q${centerX} ${face.top + 30} ${headLeft + 2} ${face.top + 38} Z`}
           />
-          {/* Mechas exteriores */}
-          <path d={spike(headLeft - 4, face.top + 22, headLeft - 10, face.top + 30, headLeft + 2, face.top + 36)} />
-          <path d={spike(headRight + 4, face.top + 22, headRight + 10, face.top + 30, headRight - 2, face.top + 36)} />
+          {/* Mechinha junto à orelha esquerda */}
+          <path
+            d={`M${headLeft - 2} ${face.top + 28}
+                Q${headLeft - 8} ${face.top + 36} ${headLeft + 2} ${face.top + 40}
+                Q${headLeft + 4} ${face.top + 34} ${headLeft - 2} ${face.top + 28} Z`}
+          />
+          {/* Mechinha junto à orelha direita */}
+          <path
+            d={`M${headRight + 2} ${face.top + 28}
+                Q${headRight + 8} ${face.top + 36} ${headRight - 2} ${face.top + 40}
+                Q${headRight - 4} ${face.top + 34} ${headRight + 2} ${face.top + 28} Z`}
+          />
         </g>
       );
     }
 
     if (hairStyle === "sidepart") {
+      // Cabelo com volume desviado para a direita
       return (
         <g fill={hair.base} stroke={hairStroke} strokeWidth="1.8" strokeLinejoin="round">
           <path
-            d={`M${headLeft - 3} ${face.top + 33}
-                C${headLeft - 3} ${face.top + 8} ${headRight + 5} ${face.top + 4} ${headRight + 5} ${face.top + 30}
-                L${headRight - 4} ${face.top + 36}
-                L${headLeft + 6} ${face.top + 36} Z`}
+            d={`M${headLeft - 3} ${face.top + 34}
+                C${headLeft - 5} ${face.top + 12} ${headLeft + 12} ${face.top + 0} ${centerX + 4} ${face.top - 2}
+                C${headRight - 4} ${face.top + 0} ${headRight + 6} ${face.top + 8} ${headRight + 5} ${face.top + 34}
+                L${headRight - 4} ${face.top + 38}
+                Q${centerX} ${face.top + 32} ${headLeft + 4} ${face.top + 38} Z`}
           />
-          <path d={spike(headRight + 5, face.top + 16, headRight + 12, face.top + 24, headRight - 2, face.top + 32)} />
+          {/* Mecha lateral comprida */}
+          <path
+            d={`M${headRight + 5} ${face.top + 14}
+                Q${headRight + 12} ${face.top + 26} ${headRight + 4} ${face.top + 36}
+                Q${headRight - 2} ${face.top + 30} ${headRight + 5} ${face.top + 14} Z`}
+          />
         </g>
       );
     }
 
     if (hairStyle === "spiky") {
-      // Espinhos esvoaçantes ao vento - assinatura Tsubasa
+      // Base coesa do cabelo + 3 tufos triangulares grandes a apontar para cima
       return (
         <g fill={hair.base} stroke={hairStroke} strokeWidth="1.8" strokeLinejoin="round">
           <path
             d={`M${headLeft - 2} ${face.top + 32}
-                C${headLeft - 2} ${face.top + 14} ${headRight + 2} ${face.top + 14} ${headRight + 2} ${face.top + 32} Z`}
+                Q${headLeft + 2} ${face.top + 14} ${centerX} ${face.top + 12}
+                Q${headRight - 2} ${face.top + 14} ${headRight + 2} ${face.top + 32} Z`}
           />
-          <path d={spike(headLeft - 6, face.top + 28, headLeft - 14, face.top + 6, headLeft + 6, face.top + 24)} />
-          <path d={spike(headLeft + 4, face.top + 22, headLeft + 14, face.top - 6, headLeft + 22, face.top + 26)} />
-          <path d={spike(centerX - 8, face.top + 18, centerX, face.top - 12, centerX + 8, face.top + 18)} />
-          <path d={spike(headRight - 22, face.top + 26, headRight - 14, face.top - 6, headRight - 4, face.top + 22)} />
-          <path d={spike(headRight - 6, face.top + 24, headRight + 14, face.top + 6, headRight + 6, face.top + 28)} />
+          <path
+            d={`M${headLeft + 2} ${face.top + 18}
+                L${headLeft + 8} ${face.top - 6}
+                L${headLeft + 22} ${face.top + 22} Z`}
+          />
+          <path
+            d={`M${centerX - 12} ${face.top + 14}
+                L${centerX - 2} ${face.top - 14}
+                L${centerX + 14} ${face.top + 16} Z`}
+          />
+          <path
+            d={`M${headRight - 22} ${face.top + 22}
+                L${headRight - 8} ${face.top - 6}
+                L${headRight - 2} ${face.top + 18} Z`}
+          />
         </g>
       );
     }
 
     if (hairStyle === "curly") {
+      // Massa única ondulada com caracois proeminentes nas pontas
       return (
         <g fill={hair.base} stroke={hairStroke} strokeWidth="1.8" strokeLinejoin="round">
-          <circle cx={headLeft + 6} cy={face.top + 18} r="11" />
-          <circle cx={headLeft + 22} cy={face.top + 8} r="12" />
-          <circle cx={centerX} cy={face.top + 4} r="13" />
-          <circle cx={headRight - 22} cy={face.top + 8} r="12" />
-          <circle cx={headRight - 6} cy={face.top + 18} r="11" />
-          <circle cx={centerX - 12} cy={face.top + 22} r="11" />
-          <circle cx={centerX + 12} cy={face.top + 22} r="11" />
+          <path
+            d={`M${headLeft - 5} ${face.top + 32}
+                Q${headLeft - 8} ${face.top + 0} ${centerX - 14} ${face.top - 4}
+                Q${centerX} ${face.top - 8} ${centerX + 14} ${face.top - 4}
+                Q${headRight + 8} ${face.top + 0} ${headRight + 5} ${face.top + 32}
+                L${headRight - 2} ${face.top + 38}
+                Q${centerX} ${face.top + 30} ${headLeft + 2} ${face.top + 38} Z`}
+          />
+          {/* Caracois ao longo do contorno */}
+          <circle cx={headLeft - 4} cy={face.top + 18} r="6" />
+          <circle cx={headLeft + 4} cy={face.top + 4} r="7" />
+          <circle cx={centerX - 10} cy={face.top - 2} r="7.5" />
+          <circle cx={centerX + 8} cy={face.top - 4} r="7.5" />
+          <circle cx={headRight - 4} cy={face.top + 4} r="7" />
+          <circle cx={headRight + 4} cy={face.top + 18} r="6" />
         </g>
       );
     }
 
     if (hairStyle === "afro") {
+      // Volume gigante com bumps a marcar contorno
       return (
         <g fill={hair.base} stroke={hairStroke} strokeWidth="1.8" strokeLinejoin="round">
           <path
-            d={`M${headLeft - 12} ${face.top + 30}
-                C${headLeft - 14} ${face.top - 6} ${headRight + 14} ${face.top - 6} ${headRight + 12} ${face.top + 30} Z`}
+            d={`M${headLeft - 12} ${face.top + 32}
+                Q${headLeft - 16} ${face.top - 4} ${headLeft - 4} ${face.top - 14}
+                Q${centerX} ${face.top - 22} ${headRight + 4} ${face.top - 14}
+                Q${headRight + 16} ${face.top - 4} ${headRight + 12} ${face.top + 32} Z`}
           />
+          {/* Pequenos bumps na borda para textura crespa */}
+          <circle cx={headLeft - 12} cy={face.top + 18} r="4" />
+          <circle cx={headLeft - 8} cy={face.top + 2} r="4.5" />
+          <circle cx={headLeft + 4} cy={face.top - 12} r="4.5" />
+          <circle cx={centerX - 4} cy={face.top - 18} r="4.5" />
+          <circle cx={centerX + 6} cy={face.top - 18} r="4.5" />
+          <circle cx={headRight - 4} cy={face.top - 12} r="4.5" />
+          <circle cx={headRight + 8} cy={face.top + 2} r="4.5" />
+          <circle cx={headRight + 12} cy={face.top + 18} r="4" />
         </g>
       );
     }
 
     if (hairStyle === "long") {
-      // Cabelo comprido tipo Hyuga - mechas a cair pelos lados
+      // Tipo Hyuga - cascata até aos ombros
       return (
         <g fill={hair.base} stroke={hairStroke} strokeWidth="1.8" strokeLinejoin="round">
+          {/* Topo do crânio */}
           <path
-            d={`M${headLeft - 4} ${face.top + 32}
-                C${headLeft - 4} ${face.top + 4} ${headRight + 4} ${face.top + 4} ${headRight + 4} ${face.top + 32} Z`}
+            d={`M${headLeft - 4} ${face.top + 34}
+                C${headLeft - 6} ${face.top + 6} ${centerX - 18} ${face.top - 6} ${centerX} ${face.top - 4}
+                C${centerX + 18} ${face.top - 6} ${headRight + 6} ${face.top + 6} ${headRight + 4} ${face.top + 34} Z`}
           />
+          {/* Cascata esquerda */}
           <path
-            d={`M${headLeft - 6} ${face.top + 24}
-                L${headLeft - 10} ${face.bottom - 12}
-                L${headLeft + 6} ${face.bottom - 18}
-                L${headLeft + 4} ${face.top + 30} Z`}
+            d={`M${headLeft - 6} ${face.top + 22}
+                L${headLeft - 8} ${face.bottom - 16}
+                Q${headLeft + 2} ${face.bottom - 12} ${headLeft + 8} ${face.bottom - 18}
+                L${headLeft + 6} ${face.top + 32} Z`}
           />
+          {/* Cascata direita */}
           <path
-            d={`M${headRight + 6} ${face.top + 24}
-                L${headRight + 10} ${face.bottom - 12}
-                L${headRight - 6} ${face.bottom - 18}
-                L${headRight - 4} ${face.top + 30} Z`}
+            d={`M${headRight + 6} ${face.top + 22}
+                L${headRight + 8} ${face.bottom - 16}
+                Q${headRight - 2} ${face.bottom - 12} ${headRight - 8} ${face.bottom - 18}
+                L${headRight - 6} ${face.top + 32} Z`}
           />
-          <path d={spike(centerX - 10, face.top + 16, centerX, face.top - 10, centerX + 10, face.top + 16)} />
         </g>
       );
     }
@@ -502,13 +572,23 @@ function PlayerAvatarInner({ seed, position, teamColor, size = "lg" }) {
     return null;
   };
 
-  // Brilho do cabelo - tracinhos rectos (cell-shading)
+  // Brilho do cabelo - traços curvos a seguir a curvatura (cell-shading)
   const renderHairShine = () => {
     if (hairStyle === "bald" || hairStyle === "buzz") return null;
     return (
-      <g stroke={hair.shine} strokeWidth="2.4" fill="none" strokeLinecap="round" opacity={hairShineOpacity}>
-        <path d={`M${centerX - 14} ${face.top + 14} L${centerX - 4} ${face.top + 8}`} />
-        <path d={`M${centerX + 4} ${face.top + 14} L${centerX + 14} ${face.top + 8}`} />
+      <g
+        stroke={hair.shine}
+        strokeWidth="2.4"
+        fill="none"
+        strokeLinecap="round"
+        opacity={hairShineOpacity}
+      >
+        <path
+          d={`M${centerX - 16} ${face.top + 12} Q${centerX - 8} ${face.top + 4} ${centerX - 2} ${face.top + 8}`}
+        />
+        <path
+          d={`M${centerX + 4} ${face.top + 8} Q${centerX + 10} ${face.top + 4} ${centerX + 16} ${face.top + 12}`}
+        />
       </g>
     );
   };
@@ -517,10 +597,12 @@ function PlayerAvatarInner({ seed, position, teamColor, size = "lg" }) {
     if (hairStyle === "bald") return null;
 
     if (hairStyle === "buzz") {
+      // Linha de implantação subtil - sem dar volume extra
       return (
         <path
-          d={`M${headLeft + 8} ${face.top + 28} C${headLeft + 18} ${face.top + 18} ${headRight - 18} ${face.top + 18} ${headRight - 8} ${face.top + 28}`}
-          stroke={hexToRgba(hair.base, 0.55)}
+          d={`M${headLeft + 6} ${face.top + 30}
+              Q${centerX} ${face.top + 22} ${headRight - 6} ${face.top + 30}`}
+          stroke={hexToRgba(hair.base, 0.65)}
           strokeWidth="2.4"
           fill="none"
         />
@@ -528,89 +610,113 @@ function PlayerAvatarInner({ seed, position, teamColor, size = "lg" }) {
     }
 
     if (hairStyle === "classic") {
-      // Franja dividida com mechas pontiagudas para baixo
+      // Franja em M com curvas suaves (ondas, não picos serrilhados)
       return (
-        <g fill={hair.base} stroke={hairStroke} strokeWidth="1.8" strokeLinejoin="round">
+        <g
+          fill={hair.base}
+          stroke={hairStroke}
+          strokeWidth="1.8"
+          strokeLinejoin="round"
+          strokeLinecap="round"
+        >
           <path
-            d={`M${headLeft + 6} ${face.top + 32}
-                L${headLeft + 12} ${face.top + 18}
-                L${headLeft + 22} ${face.top + 30}
-                L${centerX - 6} ${face.top + 22}
-                L${centerX} ${face.top + 36}
-                L${centerX + 6} ${face.top + 22}
-                L${headRight - 22} ${face.top + 30}
-                L${headRight - 12} ${face.top + 18}
-                L${headRight - 6} ${face.top + 32}
-                C${headRight - 16} ${face.top + 26} ${headLeft + 16} ${face.top + 26} ${headLeft + 6} ${face.top + 32} Z`}
+            d={`M${headLeft + 4} ${face.top + 32}
+                Q${headLeft + 14} ${face.top + 14} ${centerX - 10} ${face.top + 28}
+                Q${centerX - 4} ${face.top + 22} ${centerX} ${face.top + 30}
+                Q${centerX + 4} ${face.top + 22} ${centerX + 10} ${face.top + 28}
+                Q${headRight - 14} ${face.top + 14} ${headRight - 4} ${face.top + 32}
+                Q${centerX} ${face.top + 26} ${headLeft + 4} ${face.top + 32} Z`}
           />
         </g>
       );
     }
 
     if (hairStyle === "sidepart") {
-      // Franja varrida para um lado com mecha pontiaguda de leitura
+      // Franja varrida para a esquerda com curva limpa + brilho a seguir o sweep
       return (
-        <g fill={hair.base} stroke={hairStroke} strokeWidth="1.8" strokeLinejoin="round">
+        <g
+          fill={hair.base}
+          stroke={hairStroke}
+          strokeWidth="1.8"
+          strokeLinejoin="round"
+          strokeLinecap="round"
+        >
           <path
-            d={`M${headLeft + 4} ${face.top + 34}
-                L${headLeft + 14} ${face.top + 18}
-                L${headRight - 6} ${face.top + 14}
-                L${headRight - 4} ${face.top + 28}
-                L${centerX + 6} ${face.top + 26}
-                L${centerX - 4} ${face.top + 36}
-                L${centerX - 16} ${face.top + 30}
-                L${headLeft + 10} ${face.top + 36} Z`}
+            d={`M${headLeft + 4} ${face.top + 36}
+                Q${headLeft + 10} ${face.top + 20} ${headRight - 8} ${face.top + 14}
+                Q${headRight - 2} ${face.top + 18} ${headRight - 4} ${face.top + 28}
+                Q${centerX + 8} ${face.top + 22} ${centerX - 6} ${face.top + 36}
+                Q${centerX - 14} ${face.top + 32} ${headLeft + 4} ${face.top + 36} Z`}
+          />
+          <path
+            d={`M${centerX + 8} ${face.top + 18}
+                Q${centerX} ${face.top + 26} ${centerX - 10} ${face.top + 32}`}
+            stroke={hair.shine}
+            strokeWidth="2"
+            fill="none"
+            opacity={hairShineOpacity}
+            strokeLinecap="round"
           />
         </g>
       );
     }
 
     if (hairStyle === "spiky") {
-      // Mechas pontiagudas a apontar para baixo na testa
+      // 3 tufos triangulares limpos a cair sobre a testa
       return (
         <g fill={hair.base} stroke={hairStroke} strokeWidth="1.8" strokeLinejoin="round">
-          <path d={spike(centerX - 24, face.top + 12, centerX - 18, face.top + 36, centerX - 8, face.top + 18)} />
-          <path d={spike(centerX - 10, face.top + 14, centerX - 2, face.top + 38, centerX + 6, face.top + 16)} />
-          <path d={spike(centerX + 4, face.top + 16, centerX + 12, face.top + 36, centerX + 22, face.top + 14)} />
+          <path d={spike(centerX - 22, face.top + 18, centerX - 14, face.top + 36, centerX - 6, face.top + 16)} />
+          <path d={spike(centerX - 8, face.top + 14, centerX, face.top + 38, centerX + 8, face.top + 14)} />
+          <path d={spike(centerX + 6, face.top + 16, centerX + 14, face.top + 36, centerX + 22, face.top + 18)} />
         </g>
       );
     }
 
     if (hairStyle === "curly") {
+      // Caracois sobre a testa, em arco
       return (
-        <g fill={hair.base} stroke={hairStroke} strokeWidth="1.5" strokeLinejoin="round">
-          <circle cx={centerX - 16} cy={face.top + 28} r="6.5" />
-          <circle cx={centerX - 5} cy={face.top + 22} r="7.5" />
-          <circle cx={centerX + 6} cy={face.top + 22} r="7.5" />
-          <circle cx={centerX + 17} cy={face.top + 28} r="6.5" />
+        <g fill={hair.base} stroke={hairStroke} strokeWidth="1.6" strokeLinejoin="round">
+          <circle cx={centerX - 18} cy={face.top + 28} r="6" />
+          <circle cx={centerX - 8} cy={face.top + 24} r="7" />
+          <circle cx={centerX + 2} cy={face.top + 22} r="7" />
+          <circle cx={centerX + 12} cy={face.top + 26} r="6.5" />
+          <circle cx={centerX + 20} cy={face.top + 30} r="5.5" />
         </g>
       );
     }
 
     if (hairStyle === "afro") {
+      // Hairline com onda + bumps na testa para coerência com o volume crespo
       return (
-        <path
-          d={`M${headLeft + 10} ${face.top + 28} C${headLeft + 22} ${face.top + 18} ${headRight - 22} ${face.top + 18} ${headRight - 10} ${face.top + 28}`}
-          stroke={hexToRgba(hair.shine, 0.6)}
-          strokeWidth="2.4"
-          fill="none"
-        />
+        <g fill={hair.base} stroke={hairStroke} strokeWidth="1.6" strokeLinejoin="round">
+          <path
+            d={`M${headLeft + 8} ${face.top + 32}
+                Q${headLeft + 16} ${face.top + 22} ${centerX - 8} ${face.top + 26}
+                Q${centerX} ${face.top + 22} ${centerX + 8} ${face.top + 26}
+                Q${headRight - 16} ${face.top + 22} ${headRight - 8} ${face.top + 32}
+                Q${centerX} ${face.top + 28} ${headLeft + 8} ${face.top + 32} Z`}
+          />
+        </g>
       );
     }
 
     if (hairStyle === "long") {
-      // Franja densa em V com mecha central
+      // Franja densa em ondas, ligeiramente varrida
       return (
-        <g fill={hair.base} stroke={hairStroke} strokeWidth="1.8" strokeLinejoin="round">
+        <g
+          fill={hair.base}
+          stroke={hairStroke}
+          strokeWidth="1.8"
+          strokeLinejoin="round"
+          strokeLinecap="round"
+        >
           <path
             d={`M${headLeft + 4} ${face.top + 36}
-                L${headLeft + 10} ${face.top + 16}
-                L${centerX - 12} ${face.top + 24}
-                L${centerX} ${face.top + 38}
-                L${centerX + 12} ${face.top + 24}
-                L${headRight - 10} ${face.top + 16}
-                L${headRight - 4} ${face.top + 36}
-                C${headRight - 14} ${face.top + 30} ${headLeft + 14} ${face.top + 30} ${headLeft + 4} ${face.top + 36} Z`}
+                Q${headLeft + 10} ${face.top + 14} ${centerX - 14} ${face.top + 22}
+                Q${centerX - 6} ${face.top + 26} ${centerX - 2} ${face.top + 38}
+                Q${centerX + 4} ${face.top + 28} ${centerX + 10} ${face.top + 22}
+                Q${headRight - 8} ${face.top + 14} ${headRight - 4} ${face.top + 36}
+                Q${centerX} ${face.top + 30} ${headLeft + 4} ${face.top + 36} Z`}
           />
         </g>
       );
