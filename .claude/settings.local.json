@@ -73,7 +73,8 @@
       "Bash(grep *)",
       "Bash(npm run *)",
       "Bash(echo \"PID: $!\")",
-      "Bash(curl -s http://localhost:5174/)"
+      "Bash(curl -s http://localhost:5174/)",
+      "Bash(git push *)"
     ]
   },
   "outputStyle": "default"

@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { TabJogo, TabLineup, TabAdversario, TabIntervencao } from "./MatchTabs.jsx";
 
 export function MatchPage({
@@ -37,11 +37,11 @@ export function MatchPage({
 }) {
   const [activeTab, setActiveTab] = useState(mode === "action" ? "intervencao" : "jogo");
 
-React.useEffect(() => {
-  if (mode === "action" || mode === "halftime") {
-    setActiveTab("intervencao");
-  }
-}, [mode]);
+  useEffect(() => {
+    if (mode === "action" || mode === "halftime") {
+      setActiveTab("intervencao");
+    }
+  }, [mode]);
 
   const tabs = [
     { key: "jogo", label: "Jogo" },
