@@ -81,7 +81,7 @@ export function AuctionNotification({
 
   return (
     <div
-      className="fixed bottom-6 right-6 z-[200] max-w-sm w-full pointer-events-auto"
+      className="fixed bottom-4 left-3 right-3 sm:left-auto sm:right-4 sm:bottom-6 sm:w-80 z-[200] pointer-events-auto"
     >
       <div
         className="rounded-xl overflow-hidden shadow-2xl"

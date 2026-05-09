@@ -2,6 +2,7 @@ import { useState, useEffect, useCallback } from "react";
 import { formatCurrency } from "../utils/formatters.js";
 import { FLAG_TO_COUNTRY } from "../constants/index.js";
 import { AggBadge } from "../components/shared/AggBadge.jsx";
+import { PlayerAvatar } from "../components/shared/PlayerAvatar.jsx";
 
 /* ── Position accent colours ─────────────────────────────────────────────── */
 const POS_ACCENT = {
@@ -133,13 +134,20 @@ function AuctionCard({ auction, me, teams, teamInfo, matchweekCount, socket }) {
         >
           {/* Header */}
           <div
-            className="px-4 pt-4 pb-3 flex items-start justify-between gap-2"
+            className="px-4 pt-4 pb-3 flex items-start gap-3"
             style={{
               background: `linear-gradient(135deg, ${accent}18 0%, transparent 100%)`,
               borderBottom: `1px solid ${accent}22`,
             }}
           >
-            <div className="min-w-0">
+            {/* Avatar */}
+            <PlayerAvatar
+              seed={auction.playerId}
+              position={auction.position}
+              teamColor={accent}
+              size="md"
+            />
+            <div className="min-w-0 flex-1">
               <div className="flex items-center gap-2 mb-1 flex-wrap">
                 <span
                   className="text-[9px] font-black uppercase tracking-widest px-1.5 py-0.5 rounded-sm"
@@ -340,13 +348,19 @@ function AuctionCard({ auction, me, teams, teamInfo, matchweekCount, socket }) {
           }}
         >
           <div
-            className="px-4 pt-4 pb-3 flex items-center justify-between"
+            className="px-4 pt-4 pb-3 flex items-center gap-3"
             style={{
               background: `linear-gradient(135deg, ${accent}18 0%, transparent 100%)`,
               borderBottom: `1px solid ${accent}22`,
             }}
           >
-            <div>
+            <PlayerAvatar
+              seed={auction.playerId}
+              position={auction.position}
+              teamColor={accent}
+              size="sm"
+            />
+            <div className="min-w-0 flex-1">
               <p className="font-headline font-black text-white text-base leading-tight truncate">
                 {auction.name}
               </p>
