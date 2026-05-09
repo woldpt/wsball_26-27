@@ -90,6 +90,7 @@ function MarketCard({
   onOpenDetails,
   onBuy,
   onBid,
+  setGameDialog,
 }) {
   const price = player.marketPrice ?? 0;
   const affordable = budget >= price;
@@ -345,7 +346,14 @@ function MarketCard({
                       type="button"
                       onClick={(e) => {
                         e.stopPropagation();
-                          onBuy(player.id);
+                        setGameDialog({
+                          mode: "confirm",
+                          title: `Comprar ${player.name}`,
+                          description: `${player.position} · Qualidade ${player.skill} · Preço: ${fmt(price)}`,
+                          confirmLabel: "Confirmar Compra",
+                          onConfirm: () => onBuy(player.id),
+                          onCancel: () => {},
+                        });
                       }}
                       disabled={!affordable}
                       className="w-full py-2.5 bg-primary hover:brightness-110 disabled:opacity-30 text-on-primary font-headline font-black tracking-[0.14em] rounded-md transition-all uppercase text-[10px]"
@@ -392,6 +400,7 @@ function MarketCard({
  *   buyPlayer: function,
  *   openAuctionBid: function,
  *   onOpenPlayerHistory: function,
+ *   setGameDialog: function,
  * }} props
  */
 export function TransferHub({
@@ -407,6 +416,7 @@ export function TransferHub({
   buyPlayer,
   openAuctionBid,
   onOpenPlayerHistory,
+  setGameDialog,
 }) {
   const [search, setSearch] = useState("");
   const [flippedId, setFlippedId] = useState(null);
@@ -513,6 +523,7 @@ export function TransferHub({
                 onOpenDetails={onOpenPlayerHistory}
                 onBuy={buyPlayer}
                 onBid={openAuctionBid}
+                setGameDialog={setGameDialog}
               />
             ))}
           </div>

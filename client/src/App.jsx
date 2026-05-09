@@ -5579,6 +5579,7 @@ function App() {
                           playerId: player.id,
                         })
                       }
+                      setGameDialog={setGameDialog}
                     />
                   )}
                 </motion.div>
