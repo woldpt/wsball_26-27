@@ -70,7 +70,10 @@
       "Read(//tmp/**)",
       "Bash(node *)",
       "Bash(grep -B 2 -A 2 \"\\\\${\" /home/woldpt/git/wsball_26-27/server/coreHelpers.ts)",
-      "Bash(grep *)"
+      "Bash(grep *)",
+      "Bash(npm run *)",
+      "Bash(echo \"PID: $!\")",
+      "Bash(curl -s http://localhost:5174/)"
     ]
   },
   "outputStyle": "default"
