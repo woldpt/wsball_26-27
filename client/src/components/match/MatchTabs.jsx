@@ -1,3 +1,4 @@
+import { motion } from "framer-motion";
 import { getEffectiveLineup } from "../../utils/playerHelpers.js";
 import {
   POSITION_TEXT_CLASS,
