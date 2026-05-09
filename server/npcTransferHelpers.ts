@@ -43,7 +43,8 @@ export function createNpcTransferHelpers(deps: NpcTransferDeps) {
 
     const marketPlayers = await runAll(
       game.db,
-      "SELECT * FROM players WHERE team_id IS NOT NULL AND transfer_status = 'fixed' ORDER BY skill DESC, value ASC",
+      "SELECT * FROM players WHERE team_id IS NOT NULL AND transfer_status = 'fixed' AND (signed_season IS NULL OR signed_season != ?) ORDER BY skill DESC, value ASC",
+      [Math.ceil(Math.max(1, game.matchweek) / 14)],
     );
 
     for (const npcTeam of npcTeams) {
@@ -88,13 +89,15 @@ export function createNpcTransferHelpers(deps: NpcTransferDeps) {
         // This prevents a double-sale when two NPC teams share the same marketPlayers snapshot.
         const changes = await new Promise<number>((resolve) => {
           game.db.run(
-            "UPDATE players SET team_id = ?, transfer_status = 'none', transfer_price = 0, contract_until_matchweek = ?, joined_matchweek = ?, transfer_cooldown_until_matchweek = ?, contract_request_pending = 0, contract_requested_wage = 0 WHERE id = ? AND transfer_status = 'fixed'",
+            "UPDATE players SET team_id = ?, transfer_status = 'none', transfer_price = 0, contract_until_matchweek = ?, signed_season = ?, joined_matchweek = ?, transfer_cooldown_until_matchweek = ?, contract_request_pending = 0, contract_requested_wage = 0 WHERE id = ? AND transfer_status = 'fixed' AND (signed_season IS NULL OR signed_season != ?)",
             [
               npcTeam.id,
               getSeasonEndMatchweek(game.matchweek),
+              Math.ceil(Math.max(1, game.matchweek) / 14),
               game.matchweek,
               game.matchweek,
               player.id,
+              Math.ceil(Math.max(1, game.matchweek) / 14),
             ],
             function (this: any) {
               resolve(this.changes ?? 0);
@@ -167,8 +170,8 @@ export function createNpcTransferHelpers(deps: NpcTransferDeps) {
     for (const npcTeam of allNpcTeams) {
       const squad = await runAll(
         game.db,
-        "SELECT * FROM players WHERE team_id = ? AND transfer_status = 'none' AND contract_request_pending = 0 ORDER BY skill ASC",
-        [npcTeam.id],
+        "SELECT * FROM players WHERE team_id = ? AND transfer_status = 'none' AND contract_request_pending = 0 AND (signed_season IS NULL OR signed_season != ?) ORDER BY skill ASC",
+        [npcTeam.id, Math.ceil(Math.max(1, game.matchweek) / 14)],
       );
 
       const listChance = squad.length > 16 ? 0.4 : squad.length > 12 ? 0.15 : 0;

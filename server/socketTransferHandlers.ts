@@ -81,6 +81,12 @@ export function registerTransferSocketHandlers(
       );
       if (!player) return;
 
+      const currentSeason = Math.ceil(Math.max(1, game.matchweek) / 14);
+      if (player.signed_season === currentSeason) {
+        socket.emit("systemMessage", "Este jogador já foi transferido nesta época.");
+        return;
+      }
+
       const team = await runGet<any>(
         game.db,
         "SELECT budget FROM teams WHERE id = ?",
@@ -214,6 +220,14 @@ export function registerTransferSocketHandlers(
         [playerId, playerState.teamId],
         (err, player) => {
           if (!player) return;
+          const currentSeason = Math.ceil(Math.max(1, game.matchweek) / 14);
+          if (player.signed_season === currentSeason) {
+            socket.emit(
+              "systemMessage",
+              "Este jogador já foi transferido nesta época — não pode ser listado.",
+            );
+            return;
+          }
           const finalPrice = Math.max(
             0,
             Math.round(
@@ -490,6 +504,14 @@ export function registerTransferSocketHandlers(
           socket.emit("transferProposalResult", {
             ok: false,
             message: "Jogador não encontrado.",
+          });
+          return;
+        }
+        const currentSeason = Math.ceil(Math.max(1, game.matchweek) / 14);
+        if (player.signed_season === currentSeason) {
+          socket.emit("transferProposalResult", {
+            ok: false,
+            message: "Este jogador já foi transferido nesta época.",
           });
           return;
         }

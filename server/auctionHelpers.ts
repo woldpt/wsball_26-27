@@ -198,6 +198,34 @@ export function createAuctionHelpers(deps: AuctionDeps) {
         const buyerTeamId = winnerTeamId;
         const finalBid = winnerBid;
 
+        const currentSeason = Math.ceil(Math.max(1, game.matchweek) / 14);
+        if (player.signed_season === currentSeason) {
+          game.db.run(
+            "UPDATE players SET transfer_status = 'none', transfer_price = 0, last_auctioned_matchweek = ? WHERE id = ?",
+            [game.matchweek || 0, playerId],
+            () => {
+              const seller = (
+                Object.values(game.playersByName) as PlayerSession[]
+              ).find((p) => p.teamId === auction.sellerTeamId && p.socketId);
+              if (seller) {
+                io.to(seller.socketId as string).emit(
+                  "systemMessage",
+                  `${player.name} não foi vendido em leilão — já transferido nesta época.`,
+                );
+              }
+              delete game.auctions![playerId];
+              delete game.auctionTimers?.[playerId];
+              refreshMarket(game);
+              io.to(game.roomCode).emit("auctionClosed", {
+                playerId,
+                playerName: player.name,
+                sold: false,
+              });
+            },
+          );
+          return;
+        }
+
         game.db.get(
           "SELECT name FROM teams WHERE id = ?",
           [buyerTeamId],

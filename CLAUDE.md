@@ -235,6 +235,28 @@ Por cada jornada (campeonato ou taça), em `checkAllReady()` antes da simulaçã
 
 Após despedimento, a equipa fica disponível via `acceptJobOffer` / `declineJobOffer`. Se recusada por todos, a equipa joga com gestor NPC na jornada seguinte.
 
+## Sistema de Leilões (Auctions)
+
+- Sistema completo de leilões: pausas, retomas, NPCs a licitar, cards flip, notificações mobile.
+- `client/src/pages/AuctionsPage.jsx` — flip cards com `PlayerAvatar` (`seed={auction.playerId}`).
+- `client/src/components/ui/AuctionNotification.jsx` — mobile: `left-3 right-3 bottom-4`; desktop: `sm:left-auto sm:right-4 sm:w-80`.
+- Servidor: `server/auctionHelpers.ts` — `startAuction`, `placeAuctionBid`, `scheduleNpcAuctionBids`.
+- `scheduleNpcAuctionBids` chamada em cada lance para NPCs reagirem; guard interna `bids[npcTeam.id] != null` evita duplicados.
+- Correção query SQL: removido prefixo `p.` das colunas em `playerRows[0]` (era `null` sem JOIN).
+
+## Linhas do Plantel → PlayerHistoryModal
+
+- `client/src/views/PlayersTab.jsx` — `SquadRow` recebe agora prop `onOpenPlayerHistory`.
+- `div` raiz do `SquadRow` tem `onClick={() => onOpenPlayerHistory && onOpenPlayerHistory(player)}` + `cursor-pointer`.
+- `PlayersTab` recebe `onOpenPlayerHistory` de `App.jsx` e passa a cada `SquadRow`.
+- Fluxo Socket: `socket.emit("requestPlayerHistory", { playerId })` → `playerHistoryData` → `setPlayerHistoryModal(data)`.
+
+## Avatar Procedural (PlayerAvatar)
+
+- `client/src/components/shared/PlayerAvatar.jsx` — removido `clipPath` com IDs colidentes (múltiplos SVGs inline).
+- Correções geométricas puras nos paths; `renderBackHair` limitado à zona do crânio (`face.top + 18`).
+- Mechas laterais adicionadas aos estilos `classic`, `sidepart`, `long`; desenhados atrás das orelhas (rosto desenhado depois cobre o centro).
+
 ## Efeitos Visuais e UI
 
 - **Paleta escura** — fundo base `#0d0d14` / `#13131f`; superfícies em `#18181f`; bordas subtis em `#26263a`

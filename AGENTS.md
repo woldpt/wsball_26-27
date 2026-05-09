@@ -32,6 +32,25 @@
   - thicker card outlines (`border-2` / `ring-2`)
   - subtle team-color tint fill (from player/team primary color fallback chain).
 
+## Auction System (Leilões)
+- Full auction system: pauses, resumes, NPC bidding, flip cards, mobile notifications.
+- `client/src/pages/AuctionsPage.jsx` — flip cards with `PlayerAvatar` (`seed={auction.playerId}`).
+- `client/src/components/ui/AuctionNotification.jsx` — mobile: `left-3 right-3 bottom-4`; desktop: `sm:left-auto sm:right-4 sm:w-80`.
+- Server: `server/auctionHelpers.ts` — `startAuction`, `placeAuctionBid`, `scheduleNpcAuctionBids`.
+- `scheduleNpcAuctionBids` called on every bid so NPCs can react; guard `bids[npcTeam.id] != null` prevents duplicates.
+- SQL query fix: removed `p.` prefix from `playerRows[0]` columns (was `null` without JOIN).
+
+## Squad Row Click → PlayerHistoryModal
+- `client/src/views/PlayersTab.jsx` — `SquadRow` now receives `onOpenPlayerHistory` prop.
+- `SquadRow` div has `onClick={() => onOpenPlayerHistory && onOpenPlayerHistory(player)}` + `cursor-pointer`.
+- `PlayersTab` receives `onOpenPlayerHistory` from `App.jsx` and passes to each `SquadRow`.
+- Socket flow: `socket.emit("requestPlayerHistory", { playerId })` → `playerHistoryData` → `setPlayerHistoryModal(data)`.
+
+## PlayerAvatar Procedural Fixes
+- `client/src/components/shared/PlayerAvatar.jsx` — removed `clipPath` with colliding IDs (multiple inline SVGs).
+- Pure geometric corrections on paths; `renderBackHair` limited to crown zone (`face.top + 18`).
+- Side meches added to `classic`, `sidepart`, `long` styles; drawn behind ears (face drawn after covers center).
+
 ## Game/State Core
 - Source of season truth: `game.calendarIndex` (not `game.matchweek`).
 - Phase machine: `lobby -> match_first_half -> match_halftime -> match_second_half -> [match_et_gate -> match_extra_time] -> match_finalizing -> lobby`.
