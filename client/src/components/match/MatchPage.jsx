@@ -37,6 +37,12 @@ export function MatchPage({
 }) {
   const [activeTab, setActiveTab] = useState(mode === "action" ? "intervencao" : "jogo");
 
+React.useEffect(() => {
+  if (mode === "action" || mode === "halftime") {
+    setActiveTab("intervencao");
+  }
+}, [mode]);
+
   const tabs = [
     { key: "jogo", label: "Jogo" },
     { key: "lineup", label: "Lineup" },
