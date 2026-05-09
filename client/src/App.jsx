@@ -5580,6 +5580,7 @@ function App() {
                         })
                       }
                       setGameDialog={setGameDialog}
+                      matchweekCount={matchweekCount}
                     />
                   )}
                 </motion.div>
