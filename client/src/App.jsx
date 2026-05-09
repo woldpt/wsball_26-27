@@ -1051,16 +1051,23 @@ function App() {
       playerIdOrChoice !== null
     ) {
       const { playerOut, playerIn } = playerIdOrChoice;
-      setTactic((prev) => {
-        const newPositions = { ...prev.positions };
+      setTactic((prevTactic) => {
+        const newPositions = { ...prevTactic.positions };
         delete newPositions[playerOut];
         newPositions[playerIn] = "Titular";
-        const next = { ...prev, positions: newPositions };
+        const next = { ...prevTactic, positions: newPositions };
         socket.emit("setTactic", next);
         return next;
       });
     }
   };
+
+  const handleCloseMatch = useCallback(() => {
+    setMatchAction(null);
+    setShowHalftimePanel(false);
+    setShowMatchDetail(false);
+    setMatchDetailFixture(null);
+  }, []);
 
   // ── TACTIC ────────────────────────────────────────────────────────────────
   const updateTactic = useCallback((patch) => {
@@ -2112,7 +2119,13 @@ function App() {
       : showMatchDetail
         ? "detail"
         : null;
-  const panelFixture = showMatchDetail ? matchDetailFixture : myMatch || null;
+  const panelFixture = matchAction
+    ? null
+    : showHalftimePanel
+    ? myMatch || null
+    : showMatchDetail
+    ? matchDetailFixture
+    : null;
   const panelIsReady = !!players.find((p) => p.name === me?.name)?.ready;
 
   const titulares = mySquad.filter((p) => tactic.positions[p.id] === "Titular");
@@ -5691,7 +5704,7 @@ function App() {
         <MatchPage
           key={panelMode}
           mode={panelMode}
-          onClose={() => setShowMatchDetail(false)}
+           onClose={handleCloseMatch}
           fixture={panelFixture}
           liveMinute={liveMinute}
           teams={teams}
