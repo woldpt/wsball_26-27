@@ -73,7 +73,13 @@ export function useSocketListeners(handlers, refs) {
       handlers.setMarketPairs(data);
     });
     socket.on("auctionStarted", (auctionData) => {
-      // Never open auction notification during match flow or cup draw
+      // Add to activeAuctions list (used by AuctionsPage and toast)
+      handlers.setActiveAuctions((prev) => {
+        const exists = prev.find((a) => a.playerId === auctionData.playerId);
+        if (exists) return prev;
+        return [...prev, { ...auctionData, currentHighBid: auctionData.currentHighBid ?? 0, currentHighBidTeamId: auctionData.currentHighBidTeamId ?? null }];
+      });
+      // Legacy: keep selectedAuctionPlayer for any remaining compatibility
       if (
         refs.isPlayingMatchRef.current ||
         refs.showHalftimePanelRef?.current ||
@@ -82,17 +88,24 @@ export function useSocketListeners(handlers, refs) {
       ) {
         return;
       }
-      // Skip if starting price exceeds our available budget
       const myTeamId = refs.meRef.current?.teamId;
       const myTeamBudget =
         refs.teamsRef.current.find((t) => t.id == myTeamId)?.budget ?? 0;
       if (auctionData.startingPrice > myTeamBudget) return;
-      // Auto-open auction notification for all eligible coaches
       handlers.setSelectedAuctionPlayer(auctionData);
       handlers.setIsAuctionExpanded(false);
       handlers.setAuctionBid("");
       handlers.setMyAuctionBid(null);
       handlers.setAuctionResult(null);
+    });
+    socket.on("auctionBidPlaced", ({ playerId, currentHighBid, currentHighBidTeamId }) => {
+      handlers.setActiveAuctions((prev) =>
+        prev.map((a) =>
+          a.playerId === playerId
+            ? { ...a, currentHighBid, currentHighBidTeamId }
+            : a
+        )
+      );
     });
     socket.on("auctionBidConfirmed", ({ playerId, bidAmount }) => {
       handlers.setSelectedAuctionPlayer((prev) => {
@@ -118,6 +131,18 @@ export function useSocketListeners(handlers, refs) {
           null,
         );
       }
+      // Mark auction with result in activeAuctions, remove after 60s
+      handlers.setActiveAuctions((prev) =>
+        prev.map((a) =>
+          a.playerId === result.playerId ? { ...a, result, closed: true } : a
+        )
+      );
+      setTimeout(() => {
+        handlers.setActiveAuctions((prev) =>
+          prev.filter((a) => a.playerId !== result.playerId)
+        );
+      }, 60000);
+      // Legacy cleanup
       handlers.setSelectedAuctionPlayer((prev) => {
         if (prev && prev.playerId === result.playerId) {
           handlers.setAuctionResult(result);
@@ -130,7 +155,6 @@ export function useSocketListeners(handlers, refs) {
           }, 5000);
           return prev;
         }
-        // Not viewing this auction — just clear if it was stale
         return prev?.playerId === result.playerId ? null : prev;
       });
     });
@@ -1250,6 +1274,7 @@ export function useSocketListeners(handlers, refs) {
       socket.off("marketUpdate");
       socket.off("auctionStarted");
       socket.off("auctionBidConfirmed");
+      socket.off("auctionBidPlaced");
       socket.off("auctionClosed");
       socket.off("systemMessage");
       socket.off("transferProposalResult");

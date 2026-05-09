@@ -28,15 +28,25 @@ export function createAuctionHelpers(deps: AuctionDeps) {
         if (!err && rows) {
           const decorated = rows.map((row) => {
             const auction = game.auctions?.[row.id] as any;
-            return auction
-              ? {
-                  ...row,
-                  auction_active: true,
-                  auction_seller_team_id: auction.sellerTeamId,
-                  auction_ends_at: auction.endsAt,
-                  auction_starting_price: auction.startingPrice,
-                }
-              : row;
+            if (!auction) return row;
+            let currentHighBid = 0;
+            let currentHighBidTeamId: number | null = null;
+            for (const [tid, amt] of Object.entries(auction.bids || {})) {
+              const b = Number(amt || 0);
+              if (b > currentHighBid) {
+                currentHighBid = b;
+                currentHighBidTeamId = parseInt(tid, 10);
+              }
+            }
+            return {
+              ...row,
+              auction_active: true,
+              auction_seller_team_id: auction.sellerTeamId,
+              auction_ends_at: auction.endsAt,
+              auction_starting_price: auction.startingPrice,
+              auction_high_bid: currentHighBid,
+              auction_high_bid_team_id: currentHighBidTeamId,
+            };
           });
           game.globalMarket = decorated;
           if (emitToRoom) io.to(game.roomCode).emit("marketUpdate", decorated);
@@ -266,12 +276,8 @@ export function createAuctionHelpers(deps: AuctionDeps) {
     startingPrice: number,
     callback?: (...args: any[]) => void,
   ) => {
-    const otherHumans = Object.values(game.playersByName).filter(
-      (p: any) => p.socketId && p.teamId !== player.team_id,
-    );
-    const durationMs = otherHumans.length > 0 ? 30000 : 15000;
     const now = Date.now();
-    const actualDurationMs = durationMs;
+    const actualDurationMs = 120000;
 
     const existingTimer = game.auctionTimers?.[player.id];
     if (existingTimer) clearTimeout(existingTimer as any);
@@ -315,6 +321,8 @@ export function createAuctionHelpers(deps: AuctionDeps) {
           is_star: player.is_star || 0,
           startingPrice,
           endsAt: now + actualDurationMs,
+          currentHighBid: 0,
+          currentHighBidTeamId: null,
         });
 
         scheduleNpcAuctionBids(game, player.id);
@@ -403,18 +411,35 @@ export function createAuctionHelpers(deps: AuctionDeps) {
         error: "Não podes licitar no teu próprio jogador.",
       });
     }
-    if (auction.bids[teamId] != null) {
+
+    // Calculate current high bid
+    let currentHighBid = 0;
+    let currentHighBidTeamId: number | null = null;
+    for (const [tid, amount] of Object.entries(auction.bids || {})) {
+      const bid = Number(amount || 0);
+      if (bid > currentHighBid) {
+        currentHighBid = bid;
+        currentHighBidTeamId = parseInt(tid, 10);
+      }
+    }
+
+    // Leader cannot rebid
+    if (currentHighBidTeamId === teamId) {
       return Promise.resolve({
         ok: false,
-        error: "Já licitaste neste leilão.",
+        error: "Já és o maior licitador deste leilão.",
       });
     }
 
     const amount = Math.round(bidAmount || 0);
-    if (amount < auction.startingPrice) {
+    const minBid = currentHighBid > 0
+      ? currentHighBid + 50000
+      : auction.startingPrice;
+
+    if (amount < minBid) {
       return Promise.resolve({
         ok: false,
-        error: `Lance mínimo: €${auction.startingPrice}.`,
+        error: `Lance mínimo: €${minBid}.`,
       });
     }
 
@@ -428,6 +453,24 @@ export function createAuctionHelpers(deps: AuctionDeps) {
             return;
           }
           auction.bids[teamId] = amount;
+
+          // Recalculate high bid after placing
+          let newHighBid = 0;
+          let newHighBidTeamId: number | null = null;
+          for (const [tid, amt] of Object.entries(auction.bids || {})) {
+            const b = Number(amt || 0);
+            if (b > newHighBid) {
+              newHighBid = b;
+              newHighBidTeamId = parseInt(tid, 10);
+            }
+          }
+
+          io.to(game.roomCode).emit("auctionBidPlaced", {
+            playerId,
+            currentHighBid: newHighBid,
+            currentHighBidTeamId: newHighBidTeamId,
+          });
+
           resolve({ ok: true, bidAmount: amount });
         },
       );

@@ -29,6 +29,7 @@ import { RefereePopup } from "./components/modals/RefereePopup.jsx";
 import { GameDialog } from "./components/shared/GameDialog.jsx";
 import { TransferProposalModal } from "./components/modals/TransferProposalModal.jsx";
 import { AuctionNotification } from "./components/ui/AuctionNotification.jsx";
+import { AuctionsPage } from "./pages/AuctionsPage.jsx";
 import { NewsTicker } from "./components/ui/NewsTicker.jsx";
 import { ChatWidget } from "./components/chat/ChatWidget.jsx";
 // ── Utils & Constants ──────────────────────────────────────────────────────
@@ -195,7 +196,10 @@ function App() {
   const [isAuctionExpanded, setIsAuctionExpanded] = useState(false);
   const [auctionBid, setAuctionBid] = useState("");
   const [myAuctionBid, setMyAuctionBid] = useState(null); // sealed bid confirmation
-  const [auctionResult, setAuctionResult] = useState(null); // result after auction closes
+  // eslint-disable-next-line no-unused-vars
+  const [auctionResult, setAuctionResult] = useState(null); // result after auction closes (legacy, managed in listeners)
+  /** @type {[Array, function]} activeAuctions: list of all live auctions + recent results */
+  const [activeAuctions, setActiveAuctions] = useState([]);
   const [nextMatchSummary, setNextMatchSummary] = useState(null);
   const [nextMatchSummaryLoading, setNextMatchSummaryLoading] = useState(false);
   const [refereePopup, setRefereePopup] = useState(null);
@@ -388,6 +392,7 @@ function App() {
       setAuctionBid,
       setMyAuctionBid,
       setAuctionResult,
+      setActiveAuctions,
       setNewsTickerItems,
       setTopScorers,
       setSeasonEndModal,
@@ -1333,12 +1338,9 @@ function App() {
 
   // ── AUCTION BID ───────────────────────────────────────────────────────────
   const openAuctionBid = useCallback((player) => {
-    if (!player) return;
-    setSelectedAuctionPlayer(player);
-    setIsAuctionExpanded(false);
-    setAuctionBid("");
-    setMyAuctionBid(null);
-    setAuctionResult(null);
+    // Navigate to Leilões page; the player context is available there
+    setActiveTab("leiloes");
+    window.scrollTo(0, 0);
   }, []);
 
   const closeAuctionBid = useCallback(() => {
@@ -2567,6 +2569,7 @@ function App() {
                 icon: "emoji_events",
               },
               { key: "market", label: "Mercado", icon: "swap_horiz" },
+              { key: "leiloes", label: "Leilões", icon: "gavel" },
             ].map(({ key, label, icon }) => (
               <motion.button
                 key={key}
@@ -5583,6 +5586,17 @@ function App() {
                       matchweekCount={matchweekCount}
                     />
                   )}
+
+                  {activeTab === "leiloes" && (
+                    <AuctionsPage
+                      activeAuctions={activeAuctions}
+                      me={me}
+                      teams={teams}
+                      teamInfo={teamInfo}
+                      matchweekCount={matchweekCount}
+                      socket={socket}
+                    />
+                  )}
                 </motion.div>
               </AnimatePresence>
             </div>
@@ -5595,30 +5609,15 @@ function App() {
         setTransferProposalModal={setTransferProposalModal}
       />
 
-      {/* ── Auction notification (persiana) ───────────────────────────────── */}
-      <div
-        className={`fixed top-14 left-0 right-0 z-130 transition-all duration-300 ${
-          selectedAuctionPlayer && !isMatchInProgress
-            ? "translate-y-0"
-            : "-translate-y-full"
-        } ${sidebarCollapsed ? "lg:left-14" : "lg:left-64"}`}
-      >
-        <AuctionNotification
-          selectedAuctionPlayer={selectedAuctionPlayer}
-          isAuctionExpanded={isAuctionExpanded}
-          setIsAuctionExpanded={setIsAuctionExpanded}
-          auctionResult={auctionResult}
-          myAuctionBid={myAuctionBid}
-          auctionBid={auctionBid}
-          setAuctionBid={setAuctionBid}
-          closeAuctionBid={closeAuctionBid}
-          submitAuctionBid={submitAuctionBid}
-          teams={teams}
-          me={me}
-          teamInfo={teamInfo}
-          matchweekCount={matchweekCount}
-        />
-      </div>
+      {/* ── Auction toast notification ─────────────────────────────────── */}
+      <AuctionNotification
+        activeAuctions={activeAuctions}
+        currentPage={activeTab}
+        onNavigateToAuctions={() => {
+          setActiveTab("leiloes");
+          window.scrollTo(0, 0);
+        }}
+      />
       <RefereePopup
         refereePopup={refereePopup}
         closeRefereePopup={closeRefereePopup}
