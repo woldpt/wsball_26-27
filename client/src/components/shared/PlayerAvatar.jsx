@@ -575,10 +575,10 @@ function PlayerAvatarInner({ seed, position, teamColor, size = "lg" }) {
       // Franja em arco natural — banda sobre a raiz do cabelo
       return (
         <path
-          d={`M${headLeft + 2} ${face.top + 18}
-              Q${headLeft + 8} ${face.top + 2} ${centerX} ${face.top + 6}
-              Q${headRight - 8} ${face.top + 2} ${headRight - 2} ${face.top + 18}
-              Q${centerX} ${face.top + 12} ${headLeft + 2} ${face.top + 18} Z`}
+          d={`M${headLeft + 2} ${face.top + 4}
+              Q${headLeft + 8} ${face.top - 4} ${centerX} ${face.top}
+              Q${headRight - 8} ${face.top - 4} ${headRight - 2} ${face.top + 4}
+              Q${centerX} ${face.top + 8} ${headLeft + 2} ${face.top + 4} Z`}
           fill={hair.base}
           stroke={hairStroke}
           strokeWidth="1.8"
@@ -592,10 +592,10 @@ function PlayerAvatarInner({ seed, position, teamColor, size = "lg" }) {
       // Franja varrida da esquerda para a direita
       return (
         <path
-          d={`M${headLeft + 2} ${face.top + 18}
-              Q${headLeft + 6} ${face.top + 4} ${headRight - 8} ${face.top + 2}
-              Q${headRight - 2} ${face.top + 6} ${headRight - 4} ${face.top + 16}
-              Q${centerX + 4} ${face.top + 10} ${headLeft + 2} ${face.top + 18} Z`}
+          d={`M${headLeft + 2} ${face.top + 4}
+              Q${headLeft + 6} ${face.top - 4} ${headRight - 8} ${face.top}
+              Q${headRight - 2} ${face.top + 2} ${headRight - 4} ${face.top + 4}
+              Q${centerX + 4} ${face.top + 8} ${headLeft + 2} ${face.top + 4} Z`}
           fill={hair.base}
           stroke={hairStroke}
           strokeWidth="1.8"
@@ -609,9 +609,9 @@ function PlayerAvatarInner({ seed, position, teamColor, size = "lg" }) {
       // 3 mechas ponteagudas na raiz — base larga, ponta fina a descer
       return (
         <g fill={hair.base} stroke={hairStroke} strokeWidth="1.8" strokeLinejoin="round">
-          <path d={`M${headLeft + 4} ${face.top + 8} Q${headLeft + 14} ${face.top + 0} ${headLeft + 22} ${face.top + 8} L${headLeft + 12} ${face.top + 24} Z`} />
-          <path d={`M${centerX - 8} ${face.top + 6} Q${centerX} ${face.top - 2} ${centerX + 8} ${face.top + 6} L${centerX} ${face.top + 24} Z`} />
-          <path d={`M${headRight - 22} ${face.top + 8} Q${headRight - 14} ${face.top + 0} ${headRight - 4} ${face.top + 8} L${headRight - 12} ${face.top + 24} Z`} />
+          <path d={`M${headLeft + 4} ${face.top + 2} Q${headLeft + 14} ${face.top - 4} ${headLeft + 22} ${face.top + 2} L${headLeft + 12} ${face.top + 24} Z`} />
+          <path d={`M${centerX - 8} ${face.top} Q${centerX} ${face.top - 8} ${centerX + 8} ${face.top} L${centerX} ${face.top + 24} Z`} />
+          <path d={`M${headRight - 22} ${face.top + 2} Q${headRight - 14} ${face.top - 4} ${headRight - 4} ${face.top + 2} L${headRight - 12} ${face.top + 24} Z`} />
         </g>
       );
     }
@@ -620,12 +620,12 @@ function PlayerAvatarInner({ seed, position, teamColor, size = "lg" }) {
       // Franja com 3 festões na borda inferior — caracóis integrados
       return (
         <path
-          d={`M${headLeft + 2} ${face.top + 8}
-              Q${centerX} ${face.top + 2} ${headRight - 2} ${face.top + 8}
-              L${headRight - 2} ${face.top + 10}
-              Q${headRight - 14} ${face.top + 22} ${centerX + 10} ${face.top + 10}
-              Q${centerX} ${face.top + 22} ${centerX - 10} ${face.top + 10}
-              Q${headLeft + 14} ${face.top + 22} ${headLeft + 2} ${face.top + 10} Z`}
+          d={`M${headLeft + 2} ${face.top + 2}
+              Q${centerX} ${face.top - 4} ${headRight - 2} ${face.top + 2}
+              L${headRight - 2} ${face.top + 4}
+              Q${headRight - 14} ${face.top + 16} ${centerX + 10} ${face.top + 4}
+              Q${centerX} ${face.top + 16} ${centerX - 10} ${face.top + 4}
+              Q${headLeft + 14} ${face.top + 16} ${headLeft + 2} ${face.top + 4} Z`}
           fill={hair.base}
           stroke={hairStroke}
           strokeWidth="1.8"
@@ -638,11 +638,11 @@ function PlayerAvatarInner({ seed, position, teamColor, size = "lg" }) {
       // Linha de implantação ondulada — raiz do afro na testa
       return (
         <path
-          d={`M${headLeft + 6} ${face.top + 16}
-              Q${headLeft + 12} ${face.top + 8} ${centerX - 4} ${face.top + 10}
-              Q${centerX + 2} ${face.top + 6} ${centerX + 8} ${face.top + 10}
-              Q${headRight - 12} ${face.top + 8} ${headRight - 6} ${face.top + 16}
-              Q${centerX} ${face.top + 12} ${headLeft + 6} ${face.top + 16} Z`}
+          d={`M${headLeft + 6} ${face.top + 4}
+              Q${headLeft + 12} ${face.top - 2} ${centerX - 4} ${face.top}
+              Q${centerX + 2} ${face.top + 2} ${centerX + 8} ${face.top}
+              Q${headRight - 12} ${face.top - 2} ${headRight - 6} ${face.top + 4}
+              Q${centerX} ${face.top + 8} ${headLeft + 6} ${face.top + 4} Z`}
           fill={hair.base}
           stroke={hairStroke}
           strokeWidth="1.6"
@@ -655,12 +655,12 @@ function PlayerAvatarInner({ seed, position, teamColor, size = "lg" }) {
       // Franja em dois picos suaves — estilo Hyuga
       return (
         <path
-          d={`M${headLeft + 2} ${face.top + 18}
-              Q${headLeft + 8} ${face.top + 2} ${centerX - 10} ${face.top + 8}
-              Q${centerX - 4} ${face.top + 12} ${centerX} ${face.top + 8}
-              Q${centerX + 6} ${face.top + 12} ${centerX + 12} ${face.top + 8}
-              Q${headRight - 8} ${face.top + 2} ${headRight - 2} ${face.top + 18}
-              Q${centerX} ${face.top + 12} ${headLeft + 2} ${face.top + 18} Z`}
+          d={`M${headLeft + 2} ${face.top + 4}
+              Q${headLeft + 8} ${face.top - 4} ${centerX - 10} ${face.top}
+              Q${centerX - 4} ${face.top + 8} ${centerX} ${face.top}
+              Q${centerX + 6} ${face.top + 8} ${centerX + 12} ${face.top}
+              Q${headRight - 8} ${face.top - 4} ${headRight - 2} ${face.top + 4}
+              Q${centerX} ${face.top + 8} ${headLeft + 2} ${face.top + 4} Z`}
           fill={hair.base}
           stroke={hairStroke}
           strokeWidth="1.8"
