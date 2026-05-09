@@ -995,6 +995,12 @@ function App() {
     socket.emit("requestFinanceData", { teamId: me.teamId });
   }, [activeTab, me?.teamId, matchweekCount]);
 
+  // Limpar leilões encerrados quando a jornada avança
+  useEffect(() => {
+    if (!matchweekCount) return;
+    setActiveAuctions((prev) => prev.filter((a) => !a.closed));
+  }, [matchweekCount]);
+
   // Refresh calendar whenever the tab is opened or a matchweek advances
   useEffect(() => {
     if (activeTab !== "calendario") return;

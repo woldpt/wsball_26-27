@@ -131,17 +131,12 @@ export function useSocketListeners(handlers, refs) {
           null,
         );
       }
-      // Mark auction with result in activeAuctions, remove after 60s
+      // Mark auction with result in activeAuctions; removal happens when matchweek advances
       handlers.setActiveAuctions((prev) =>
         prev.map((a) =>
           a.playerId === result.playerId ? { ...a, result, closed: true } : a
         )
       );
-      setTimeout(() => {
-        handlers.setActiveAuctions((prev) =>
-          prev.filter((a) => a.playerId !== result.playerId)
-        );
-      }, 60000);
       // Legacy cleanup
       handlers.setSelectedAuctionPlayer((prev) => {
         if (prev && prev.playerId === result.playerId) {
