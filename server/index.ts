@@ -54,7 +54,7 @@ const {
 } = require("./coreHelpers") as typeof import("./coreHelpers");
 const { DIVISION_NAMES, CUP_ROUND_NAMES, CUP_TEAMS_BY_ROUND, SEASON_CALENDAR } =
   require("./gameConstants") as typeof import("./gameConstants");
-const { isMatchInProgress, finalizeAllRunningAuctions } =
+const { isMatchInProgress, finalizeAllRunningAuctions, pauseAllRunningAuctions } =
   require("./matchFlowHelpers") as typeof import("./matchFlowHelpers");
 const { createAuctionHelpers } =
   require("./auctionHelpers") as typeof import("./auctionHelpers");
@@ -306,6 +306,7 @@ const auctionHelpers = createAuctionHelpers({
   isMatchInProgress,
   getSeasonEndMatchweek,
   scheduleNpcAuctionBids,
+  scheduleNpcCounterBid,
 });
 
 const startAuction = auctionHelpers.startAuction;
@@ -340,6 +341,7 @@ const emitSquadForPlayer = auctionHelpers.emitSquadForPlayer;
 const listPlayerOnMarket = auctionHelpers.listPlayerOnMarket;
 const finalizeAuction = auctionHelpers.finalizeAuction;
 const placeAuctionBid = auctionHelpers.placeAuctionBid;
+const resumeAllPausedAuctions = auctionHelpers.resumeAllPausedAuctions;
 
 const processContractExpiries = contractHelpers.processContractExpiries;
 const processAgentRenegotiations = contractHelpers.processAgentRenegotiations;
@@ -350,6 +352,15 @@ function scheduleNpcAuctionBids(game, playerId) {
   return npcTransferHelpers.scheduleNpcAuctionBids(
     game,
     playerId,
+    placeAuctionBid,
+  );
+}
+
+function scheduleNpcCounterBid(game, playerId, npcTeamId) {
+  return npcTransferHelpers.scheduleNpcCounterBid(
+    game,
+    playerId,
+    npcTeamId,
     placeAuctionBid,
   );
 }
@@ -383,6 +394,7 @@ const cupFlowHelpers = createCupFlowHelpers({
   getPlayerList,
   emitPresence,
   applyTrainingBonuses,
+  resumeAllPausedAuctions,
 });
 
 const applySeasonEnd = cupFlowHelpers.applySeasonEnd;
@@ -409,6 +421,8 @@ const weeklyFlowHelpers = createWeeklyFlowHelpers({
   emitPresence,
   generateFixturesForDivision,
   finalizeAuction,
+  pauseAllRunningAuctions,
+  resumeAllPausedAuctions,
   simulateMatchSegment,
   calculateMatchAttendance,
   pickRefereeSummary,

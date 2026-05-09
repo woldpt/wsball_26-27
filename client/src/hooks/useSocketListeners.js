@@ -153,6 +153,20 @@ export function useSocketListeners(handlers, refs) {
         return prev?.playerId === result.playerId ? null : prev;
       });
     });
+    socket.on("auctionPaused", ({ playerId }) => {
+      handlers.setActiveAuctions((prev) =>
+        prev.map((a) => a.playerId === playerId ? { ...a, paused: true } : a)
+      );
+    });
+    socket.on("auctionResumed", ({ playerId, endsAt, currentHighBid, currentHighBidTeamId }) => {
+      handlers.setActiveAuctions((prev) =>
+        prev.map((a) =>
+          a.playerId === playerId
+            ? { ...a, paused: false, endsAt, currentHighBid, currentHighBidTeamId }
+            : a
+        )
+      );
+    });
     socket.on("topScorers", (data) => {
       if (!inRoom()) return;
       handlers.setTopScorers(data);
@@ -1271,6 +1285,8 @@ export function useSocketListeners(handlers, refs) {
       socket.off("auctionBidConfirmed");
       socket.off("auctionBidPlaced");
       socket.off("auctionClosed");
+      socket.off("auctionPaused");
+      socket.off("auctionResumed");
       socket.off("systemMessage");
       socket.off("transferProposalResult");
       socket.off("renewContractCounterOffer");

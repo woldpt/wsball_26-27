@@ -7,6 +7,7 @@ interface AuctionDeps {
   isMatchInProgress: (game: ActiveGame) => boolean;
   getSeasonEndMatchweek: (matchweek: number) => number;
   scheduleNpcAuctionBids: (game: ActiveGame, playerId: number) => void;
+  scheduleNpcCounterBid: (game: ActiveGame, playerId: number, npcTeamId: number) => void;
 }
 
 export function createAuctionHelpers(deps: AuctionDeps) {
@@ -15,6 +16,7 @@ export function createAuctionHelpers(deps: AuctionDeps) {
     isMatchInProgress,
     getSeasonEndMatchweek,
     scheduleNpcAuctionBids,
+    scheduleNpcCounterBid,
   } = deps;
 
   const refreshMarket = (game: ActiveGame, emitToRoom = true) => {
@@ -53,6 +55,54 @@ export function createAuctionHelpers(deps: AuctionDeps) {
         }
       },
     );
+  };
+
+  const resumeAllPausedAuctions = (game: ActiveGame) => {
+    if (!game.auctions) return;
+    const playerIds = Object.keys(game.auctions);
+    if (playerIds.length === 0) return;
+
+    for (const playerIdStr of playerIds) {
+      const playerId = Number(playerIdStr);
+      const auction = game.auctions[playerId] as any;
+      if (!auction || auction.status !== "paused") continue;
+
+      // Clear any stale timer
+      if (game.auctionTimers?.[playerId]) {
+        clearTimeout(game.auctionTimers[playerId] as any);
+      }
+
+      const now = Date.now();
+      auction.status = "open";
+      auction.endsAt = now + 120000;
+      // Garantir que o contador de relicitações existe (pode estar ausente em leilões restaurados da BD)
+      if (!auction.npcRelicitationCount) auction.npcRelicitationCount = {};
+
+      if (!game.auctionTimers) game.auctionTimers = {};
+      game.auctionTimers[playerId] = setTimeout(() => {
+        finalizeAuction(game, playerId);
+      }, 120000);
+
+      // Recalculate current high bid
+      let currentHighBid = 0;
+      let currentHighBidTeamId: number | null = null;
+      for (const [tid, amt] of Object.entries(auction.bids || {})) {
+        const b = Number(amt || 0);
+        if (b > currentHighBid) {
+          currentHighBid = b;
+          currentHighBidTeamId = parseInt(tid, 10);
+        }
+      }
+
+      io.to(game.roomCode).emit("auctionResumed", {
+        playerId,
+        endsAt: auction.endsAt,
+        currentHighBid,
+        currentHighBidTeamId,
+      });
+
+      scheduleNpcAuctionBids(game, playerId);
+    }
   };
 
   const emitSquadForPlayer = (game: ActiveGame, teamId: number) => {
@@ -294,6 +344,7 @@ export function createAuctionHelpers(deps: AuctionDeps) {
           sellerTeamId: player.team_id,
           startingPrice,
           bids: {},
+          npcRelicitationCount: {},
           endsAt: now + actualDurationMs,
           status: "open",
         };
@@ -402,6 +453,9 @@ export function createAuctionHelpers(deps: AuctionDeps) {
       return Promise.resolve({ ok: false, error: "Leilão indisponível." });
     }
     const auction = game.auctions[playerId] as any;
+    if (auction.status === "paused") {
+      return Promise.resolve({ ok: false, error: "Leilão temporariamente pausado durante o jogo." });
+    }
     if (auction.status !== "open") {
       return Promise.resolve({ ok: false, error: "Leilão já encerrado." });
     }
@@ -452,6 +506,9 @@ export function createAuctionHelpers(deps: AuctionDeps) {
             resolve({ ok: false, error: "Não tens orçamento suficiente." });
             return;
           }
+          // Guardar quem liderava ANTES deste lance (pode ser NPC)
+          const prevLeaderTeamId = currentHighBidTeamId;
+
           auction.bids[teamId] = amount;
 
           // Recalculate high bid after placing
@@ -471,6 +528,20 @@ export function createAuctionHelpers(deps: AuctionDeps) {
             currentHighBidTeamId: newHighBidTeamId,
           });
 
+          // Se o líder anterior era um NPC e agora perdeu a liderança,
+          // dar-lhe oportunidade de relicitar (máx 1 vez por leilão)
+          if (
+            prevLeaderTeamId !== null &&
+            prevLeaderTeamId !== newHighBidTeamId
+          ) {
+            const humanTeamIds = new Set(
+              Object.values(game.playersByName).map((p) => p.teamId).filter(Boolean),
+            );
+            if (!humanTeamIds.has(prevLeaderTeamId)) {
+              scheduleNpcCounterBid(game, playerId, prevLeaderTeamId);
+            }
+          }
+
           resolve({ ok: true, bidAmount: amount });
         },
       );
@@ -484,5 +555,6 @@ export function createAuctionHelpers(deps: AuctionDeps) {
     startAuction,
     finalizeAuction,
     placeAuctionBid,
+    resumeAllPausedAuctions,
   };
 }

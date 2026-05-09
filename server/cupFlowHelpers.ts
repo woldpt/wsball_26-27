@@ -43,6 +43,7 @@ interface CupFlowDeps {
     fixtures: any[],
     completedCalendarIndex: number,
   ) => Promise<void>;
+  resumeAllPausedAuctions: (game: ActiveGame) => void;
 }
 
 export function createCupFlowHelpers(deps: CupFlowDeps) {
@@ -62,6 +63,7 @@ export function createCupFlowHelpers(deps: CupFlowDeps) {
     getPlayerList,
     emitPresence,
     applyTrainingBonuses,
+    resumeAllPausedAuctions,
   } = deps;
 
   // ─── SEASON END ────────────────────────────────────────────────────────────
@@ -1018,6 +1020,8 @@ export function createCupFlowHelpers(deps: CupFlowDeps) {
       `[${game.roomCode}] ↩ Cup round ${round} finalized → lobby | calendarIndex=${game.calendarIndex} | nextEvent=${game.currentEvent?.type ?? "none"}`,
     );
     saveGameState(game);
+    // Retomar leilões pausados durante o jogo de Taça
+    resumeAllPausedAuctions(game);
 
     // Season end if past calendar
     if (game.calendarIndex >= SEASON_CALENDAR.length) {

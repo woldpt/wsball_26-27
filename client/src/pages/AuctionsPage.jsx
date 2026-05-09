@@ -67,13 +67,14 @@ function AuctionCard({ auction, me, teams, teamInfo, matchweekCount, socket }) {
   const [bidError, setBidError] = useState("");
   const [bidSuccess, setBidSuccess] = useState(false);
 
-  const secs = useCountdown(auction.closed ? null : auction.endsAt);
+  const secs = useCountdown(auction.closed || auction.paused ? null : auction.endsAt);
   const accent = posAccent(auction.position);
   const countryName = FLAG_TO_COUNTRY?.[auction.nationality] || auction.nationality || "—";
 
   const isSeller = auction.sellerTeamId === me?.teamId;
   const isLeader = auction.currentHighBidTeamId === me?.teamId;
   const isClosed = !!auction.closed;
+  const isPaused = !isClosed && !!auction.paused;
 
   const highBidTeam = auction.currentHighBidTeamId
     ? teams.find((t) => t.id === auction.currentHighBidTeamId)
@@ -126,8 +127,8 @@ function AuctionCard({ auction, me, teams, teamInfo, matchweekCount, socket }) {
             backfaceVisibility: "hidden",
             WebkitBackfaceVisibility: "hidden",
             background: "#0d0d14",
-            border: `2px solid ${isClosed ? "#333" : accent}`,
-            boxShadow: isClosed ? "none" : `0 0 24px 0 ${accent}33`,
+            border: `2px solid ${isClosed || isPaused ? "#333" : accent}`,
+            boxShadow: isClosed || isPaused ? "none" : `0 0 24px 0 ${accent}33`,
           }}
         >
           {/* Header */}
@@ -189,6 +190,11 @@ function AuctionCard({ auction, me, teams, teamInfo, matchweekCount, socket }) {
           <div className="px-4 py-3 flex items-center gap-3" style={{ borderBottom: "1px solid #1e1e2e" }}>
             {isClosed ? (
               <span className="text-[10px] font-black uppercase text-zinc-500">Leilão encerrado</span>
+            ) : isPaused ? (
+              <span className="text-[10px] font-black uppercase text-zinc-500 flex items-center gap-1">
+                <span className="material-symbols-outlined text-xs leading-none">pause_circle</span>
+                Em Pausa
+              </span>
             ) : (
               <>
                 <span
@@ -243,6 +249,17 @@ function AuctionCard({ auction, me, teams, teamInfo, matchweekCount, socket }) {
                     Sem licitações
                   </p>
                 )}
+              </div>
+            ) : isPaused ? (
+              <div
+                className="rounded-lg py-3 text-center"
+                style={{ background: "#1a1a2333", border: "1px solid #3f3f5533" }}
+              >
+                <span className="material-symbols-outlined text-zinc-500 text-xl">pause_circle</span>
+                <p className="text-[10px] font-black uppercase tracking-widest text-zinc-500 mt-1">
+                  Pausado durante o jogo
+                </p>
+                <p className="text-[9px] text-zinc-600 mt-0.5">Retoma após o apito final</p>
               </div>
             ) : isSeller ? (
               <div

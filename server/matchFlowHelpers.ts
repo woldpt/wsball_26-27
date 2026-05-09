@@ -10,6 +10,7 @@ export function isMatchInProgress(game: ActiveGame) {
     game.gamePhase === "match_first_half" ||
     game.gamePhase === "match_halftime" ||
     game.gamePhase === "match_second_half" ||
+    game.gamePhase === "match_et_gate" ||
     game.gamePhase === "match_extra_time" ||
     game.gamePhase === "match_finalizing"
   );
@@ -29,6 +30,29 @@ export function finalizeAllRunningAuctions(
       delete game.auctionTimers[playerId];
     }
     finalizeAuction(game, Number(playerId));
+  }
+}
+
+/**
+ * Pausa todos os leilões em curso: cancela os timers mas preserva game.auctions.
+ * Emite "auctionPaused" para a sala para cada leilão pausado.
+ */
+export function pauseAllRunningAuctions(game: ActiveGame, io: any) {
+  if (!game.auctions) return;
+  const playerIds = Object.keys(game.auctions);
+  if (playerIds.length === 0) return;
+
+  for (const playerId of playerIds) {
+    const auction = game.auctions[playerId] as any;
+    if (!auction || auction.status !== "open") continue;
+
+    if (game.auctionTimers?.[playerId]) {
+      clearTimeout(game.auctionTimers[playerId] as any);
+      delete game.auctionTimers[playerId];
+    }
+
+    auction.status = "paused";
+    io.to(game.roomCode).emit("auctionPaused", { playerId: Number(playerId) });
   }
 }
 

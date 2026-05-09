@@ -663,12 +663,41 @@ function getGame(roomCode: string, onReady?: OnReady): ActiveGame | null {
                 "SELECT p.*, COALESCE(t.name, 'Sem clube') as team_name FROM players p LEFT JOIN teams t ON p.team_id = t.id WHERE p.team_id IS NOT NULL AND p.transfer_status != 'none' ORDER BY RANDOM() LIMIT 40",
                 (err7, rows) => {
                   if (!err7 && rows) game.globalMarket = rows;
-                  // ── Limpar leilões órfãos ─────────────────────────────────
-                  // Após reinício do servidor, game.auctions está vazio. Qualquer
-                  // transfer_status = 'auction' na BD é órfão e nunca poderá ser
-                  // licitado. Resetamos para 'none' e recarregamos o mercado.
+                  // ── Restaurar leilões pausados ────────────────────────────
+                  // Se existem leilões pausados guardados, restauramos o estado
+                  // em memória (sem timer). Os restantes leilões órfãos (open)
+                  // são limpos da BD.
+                  let pausedPlayerIds: number[] = [];
+                  if (st["pausedAuctions"]) {
+                    try {
+                      const parsedPaused = JSON.parse(st["pausedAuctions"]);
+                      if (Array.isArray(parsedPaused) && parsedPaused.length > 0) {
+                        for (const a of parsedPaused) {
+                          if (!a.playerId) continue;
+                          game.auctions[String(a.playerId)] = {
+                            playerId: a.playerId,
+                            sellerTeamId: a.sellerTeamId ?? null,
+                            startingPrice: a.startingPrice ?? 0,
+                            status: "paused",
+                            bids: (a.bids && !Array.isArray(a.bids)) ? a.bids : {},
+                            timer: null,
+                            endsAt: null,
+                          };
+                          pausedPlayerIds.push(Number(a.playerId));
+                        }
+                        console.log(
+                          `[gameManager] ${parsedPaused.length} leilão(ões) pausado(s) restaurado(s) (room ${roomCode})`,
+                        );
+                      }
+                    } catch (_) {}
+                  }
+                  // Limpar leilões abertos órfãos (não pausados)
+                  const placeholders = pausedPlayerIds.length > 0
+                    ? `AND id NOT IN (${pausedPlayerIds.map(() => "?").join(",")})`
+                    : "";
                   db.run(
-                    "UPDATE players SET transfer_status = 'none', transfer_price = 0 WHERE transfer_status = 'auction'",
+                    `UPDATE players SET transfer_status = 'none', transfer_price = 0 WHERE transfer_status = 'auction' ${placeholders}`,
+                    pausedPlayerIds,
                     () => {
                       db.all(
                         "SELECT p.*, COALESCE(t.name, 'Sem clube') as team_name FROM players p LEFT JOIN teams t ON p.team_id = t.id WHERE p.team_id IS NOT NULL AND p.transfer_status != 'none' ORDER BY RANDOM() LIMIT 40",
@@ -816,6 +845,17 @@ function saveGameState(game: ActiveGame): void {
   } else {
     upsert("currentFixtures", "[]");
   }
+
+  // Persistir leilões pausados para recuperação após reinício
+  const pausedAuctions = Object.values(game.auctions || {})
+    .filter((a: any) => a.status === "paused")
+    .map((a: any) => ({
+      playerId: a.playerId,
+      sellerTeamId: a.sellerTeamId,
+      startingPrice: a.startingPrice,
+      bids: a.bids || {},
+    }));
+  upsert("pausedAuctions", JSON.stringify(pausedAuctions));
 
   // ── Legacy keys (backward compat — kept so old clients/DBs still work) ──
   // Derive legacy values from new state

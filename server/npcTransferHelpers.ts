@@ -228,44 +228,200 @@ export function createNpcTransferHelpers(deps: NpcTransferDeps) {
         .filter(Boolean),
     );
 
-    game.db.all(
-      "SELECT * FROM teams WHERE budget > ?",
-      [auction.startingPrice],
-      (err: any, teams: any[]) => {
-        if (err || !teams) return;
-        const npcTeams = teams.filter(
-          (team) =>
-            !humanTeamIds.has(team.id) && team.id !== auction.sellerTeamId,
-        );
+    // Buscar todos os dados necessários numa só query:
+    // equipas com orçamento acima do preço base, divisão da equipa vendedora, e
+    // composição do plantel de cada candidata (para avaliar necessidades por posição).
+    game.db.get(
+      "SELECT division FROM teams WHERE id = ?",
+      [auction.sellerTeamId],
+      (errDiv: any, sellerRow: any) => {
+        const sellerDivision: number = sellerRow?.division ?? 3;
 
-        for (const npcTeam of npcTeams) {
-          if (Math.random() > 0.5) continue;
+        game.db.all(
+          "SELECT p.position, p.skill, p.value, p.wage, p.is_star FROM players WHERE id = ?",
+          [playerId],
+          (errP: any, playerRows: any[]) => {
+            const playerInfo = playerRows?.[0] ?? null;
+            if (!playerInfo) return;
 
-          const bidDelay = 2000 + Math.floor(Math.random() * 10000);
-          setTimeout(() => {
-            const currentAuction = game.auctions?.[playerId] as any;
-            if (!currentAuction || currentAuction.status !== "open") return;
-            if (currentAuction.bids[npcTeam.id] != null) return;
+            const playerValue = playerInfo.value || 0;
+            const playerPosition: string = playerInfo.position || "MED";
+            const playerSkill: number = playerInfo.skill || 50;
 
-            const maxBid = Math.min(
-              Math.round(auction.startingPrice * 1.5),
-              Math.round(npcTeam.budget * 0.4),
+            game.db.all(
+              "SELECT * FROM teams WHERE budget > ?",
+              [auction.startingPrice],
+              (err: any, teams: any[]) => {
+                if (err || !teams) return;
+                const npcTeams = teams.filter(
+                  (team) =>
+                    !humanTeamIds.has(team.id) &&
+                    team.id !== auction.sellerTeamId &&
+                    Math.abs((team.division ?? 3) - sellerDivision) <= 1,
+                );
+                if (npcTeams.length === 0) return;
+
+                // Para cada equipa NPC elegível, verificar necessidades de plantel
+                // e calcular probabilidade de interesse
+                let processed = 0;
+                for (const npcTeam of npcTeams) {
+                  game.db.all(
+                    "SELECT position, skill FROM players WHERE team_id = ?",
+                    [npcTeam.id],
+                    (errS: any, squadRows: any[]) => {
+                      processed++;
+                      if (errS || !squadRows) {
+                        if (processed === npcTeams.length) return;
+                        return;
+                      }
+
+                      // Contar jogadores por posição
+                      const posCounts: Record<string, number> = { GR: 0, DEF: 0, MED: 0, ATA: 0 };
+                      for (const p of squadRows) {
+                        if (posCounts[p.position] !== undefined) posCounts[p.position]++;
+                      }
+
+                      // Mínimos recomendados por posição para um plantel funcional
+                      const POS_MIN: Record<string, number> = { GR: 2, DEF: 4, MED: 4, ATA: 3 };
+                      const posMin = POS_MIN[playerPosition] ?? 3;
+                      const posCount = posCounts[playerPosition] ?? 0;
+                      const hasUrgentNeed = posCount < posMin;
+                      const hasModerateNeed = posCount >= posMin && squadRows.length < 20;
+
+                      // Calcular nível médio do plantel — NPC só compra se o jogador
+                      // for compatível com o nível da equipa (±15 skill)
+                      const avgSkill = squadRows.length > 0
+                        ? squadRows.reduce((s, p) => s + (p.skill || 0), 0) / squadRows.length
+                        : playerSkill;
+                      const skillCompatible = Math.abs(playerSkill - avgSkill) <= 15;
+                      if (!skillCompatible) return;
+
+                      // Probabilidade de participação
+                      let interestProb = 0.0;
+                      if (hasUrgentNeed) interestProb += 0.55;
+                      else if (hasModerateNeed) interestProb += 0.25;
+                      else interestProb += 0.10; // pode reforçar mesmo sem necessidade urgente
+
+                      // NPC de divisão mais forte → mais confiante/agressivo
+                      const npcDiv = npcTeam.division ?? 3;
+                      if (npcDiv < sellerDivision) interestProb *= 1.3;
+                      else if (npcDiv > sellerDivision) interestProb *= 0.7;
+
+                      // Cap a 85%
+                      interestProb = Math.min(interestProb, 0.85);
+
+                      if (Math.random() > interestProb) return;
+
+                      // Orçamento máximo que este NPC está disposto a pagar
+                      const budgetCap = Math.round(npcTeam.budget * 0.4);
+                      const valueCap = Math.round(playerValue * 1.8);
+                      const maxBid = Math.min(budgetCap, valueCap);
+                      if (maxBid < auction.startingPrice) return;
+
+                      // Valor de interesse — urgência e divisão influenciam o topo
+                      const interestMultMin = hasUrgentNeed ? 1.0 : 0.85;
+                      const interestMultMax = hasUrgentNeed
+                        ? (npcDiv < sellerDivision ? 1.45 : 1.25)
+                        : (npcDiv < sellerDivision ? 1.15 : 1.0);
+                      const interestMult =
+                        interestMultMin + Math.random() * (interestMultMax - interestMultMin);
+                      let bidAmount = Math.round(playerValue * interestMult);
+
+                      // Garantir mínimo e máximo
+                      bidAmount = Math.max(auction.startingPrice, Math.min(bidAmount, maxBid));
+
+                      // Delay humano realista: equipas de divisão superior respondem mais rápido
+                      const delayMin = npcDiv < sellerDivision ? 2000 : 4000;
+                      const delayMax = npcDiv < sellerDivision ? 9000 : 16000;
+                      const bidDelay = delayMin + Math.floor(Math.random() * (delayMax - delayMin));
+
+                      setTimeout(() => {
+                        const currentAuction = game.auctions?.[playerId] as any;
+                        if (!currentAuction || currentAuction.status !== "open") return;
+                        // Não relicitar aqui — só o mecanismo de counter-bid faz isso
+                        if (currentAuction.bids[npcTeam.id] != null) return;
+
+                        placeAuctionBid(game, npcTeam.id, playerId, bidAmount);
+                      }, bidDelay);
+                    },
+                  );
+                }
+              },
             );
-            if (maxBid < auction.startingPrice) return;
-
-            const bidAmount =
-              auction.startingPrice +
-              Math.floor(Math.random() * (maxBid - auction.startingPrice + 1));
-
-            placeAuctionBid(game, npcTeam.id, playerId, bidAmount);
-          }, bidDelay);
-        }
+          },
+        );
       },
     );
+  };
+
+  /**
+   * Agendado quando um NPC perde a liderança de um leilão.
+   * Dá ao NPC uma oportunidade de relicitar (máximo 1 vez por leilão).
+   */
+  const scheduleNpcCounterBid = (
+    game: ActiveGame,
+    playerId: number,
+    npcTeamId: number,
+    placeAuctionBid: (
+      game: ActiveGame,
+      teamId: number,
+      playerId: number,
+      bidAmount: number,
+    ) => Promise<any>,
+  ) => {
+    const auction = game.auctions?.[playerId] as any;
+    if (!auction) return;
+
+    // Inicializar contador de relicitações se necessário
+    if (!auction.npcRelicitationCount) auction.npcRelicitationCount = {};
+    if ((auction.npcRelicitationCount[npcTeamId] ?? 0) >= 1) return; // já relicitou
+
+    // Delay realista de ponderação: o NPC "pensa" se vale a pena
+    const counterDelay = 4000 + Math.floor(Math.random() * 14000); // 4s a 18s
+
+    setTimeout(() => {
+      const currentAuction = game.auctions?.[playerId] as any;
+      if (!currentAuction || currentAuction.status !== "open") return;
+
+      // 60% de hipótese de realmente contra-atacar (40% desiste)
+      if (Math.random() > 0.60) return;
+
+      // Recalcular o lance mais alto actual
+      let currentHighBid = 0;
+      for (const amt of Object.values(currentAuction.bids || {})) {
+        const b = Number(amt || 0);
+        if (b > currentHighBid) currentHighBid = b;
+      }
+
+      // Superar por uma margem realista
+      const marginMin = 50000;
+      const marginMax = 200000;
+      const margin = marginMin + Math.floor(Math.random() * (marginMax - marginMin));
+      const counterBid = currentHighBid + margin;
+
+      // Verificar se o NPC tem orçamento para este lance
+      game.db.get(
+        "SELECT budget FROM teams WHERE id = ?",
+        [npcTeamId],
+        (err: any, teamRow: any) => {
+          if (err || !teamRow) return;
+          const maxAffordable = Math.round(teamRow.budget * 0.4);
+          if (counterBid > maxAffordable) return; // demasiado caro, desiste
+
+          // Registar relicitação antes de colocar o lance
+          if (!currentAuction.npcRelicitationCount) currentAuction.npcRelicitationCount = {};
+          currentAuction.npcRelicitationCount[npcTeamId] =
+            (currentAuction.npcRelicitationCount[npcTeamId] ?? 0) + 1;
+
+          placeAuctionBid(game, npcTeamId, playerId, counterBid);
+        },
+      );
+    }, counterDelay);
   };
 
   return {
     processNpcTransferActivity,
     scheduleNpcAuctionBids,
+    scheduleNpcCounterBid,
   };
 }

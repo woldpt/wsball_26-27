@@ -4,6 +4,7 @@ import { SEASON_CALENDAR } from "./gameConstants";
 import { getAllTeamForms } from "./coreHelpers";
 import {
   finalizeAllRunningAuctions,
+  pauseAllRunningAuctions,
   clearPhaseTimer,
   makePhaseToken,
 } from "./matchFlowHelpers";
@@ -21,6 +22,8 @@ interface WeeklyFlowDeps {
     seeds: number[],
   ) => Promise<any[]>;
   finalizeAuction: (game: ActiveGame, playerId: number) => void;
+  pauseAllRunningAuctions: (game: ActiveGame, io: any) => void;
+  resumeAllPausedAuctions: (game: ActiveGame) => void;
   simulateMatchSegment: (...args: any[]) => Promise<void>;
   calculateMatchAttendance: (db: any, homeTeamId: number) => Promise<number>;
   pickRefereeSummary: (
@@ -70,6 +73,8 @@ export function createWeeklyFlowHelpers(deps: WeeklyFlowDeps) {
     emitPresence,
     generateFixturesForDivision,
     finalizeAuction,
+    pauseAllRunningAuctions,
+    resumeAllPausedAuctions,
     simulateMatchSegment,
     calculateMatchAttendance,
     pickRefereeSummary,
@@ -707,6 +712,9 @@ export function createWeeklyFlowHelpers(deps: WeeklyFlowDeps) {
                 try {
                   await processNpcTransferActivity(game);
                 } catch (_) {}
+                // Retomar leilões pausados durante o jogo (antes de refreshMarket
+                // para que o mercado emitido já reflicta os leilões como "open")
+                resumeAllPausedAuctions(game);
                 refreshMarket(game);
                 try {
                   await processCoachEvents(game);
@@ -868,7 +876,7 @@ export function createWeeklyFlowHelpers(deps: WeeklyFlowDeps) {
         for (const tid of game.pendingAuctionQueueTimers) clearTimeout(tid);
         game.pendingAuctionQueueTimers = [];
       }
-      finalizeAllRunningAuctions(game, finalizeAuction);
+      pauseAllRunningAuctions(game, io);
 
       segmentRunning[game.roomCode] = true;
       game.gamePhase = "match_first_half";
@@ -1070,7 +1078,7 @@ export function createWeeklyFlowHelpers(deps: WeeklyFlowDeps) {
               );
               // Cancel halftime safety timeout
               clearPhaseTimer(game);
-              finalizeAllRunningAuctions(game, finalizeAuction);
+              pauseAllRunningAuctions(game, io);
               game.gamePhase = "match_second_half";
               game.phaseToken = makePhaseToken(game);
               saveGameState(game);
@@ -1139,7 +1147,7 @@ export function createWeeklyFlowHelpers(deps: WeeklyFlowDeps) {
         `[${game.roomCode}] ▶ Halftime → second half | type=${entry?.type ?? "unknown"}`,
       );
 
-      finalizeAllRunningAuctions(game, finalizeAuction);
+      pauseAllRunningAuctions(game, io);
       game.gamePhase = "match_second_half";
       game.phaseToken = makePhaseToken(game);
       saveGameState(game);
