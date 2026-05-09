@@ -5687,44 +5687,47 @@ function App() {
         setCupPenaltyKickIdx={setCupPenaltyKickIdx}
       />
 
-      <MatchPage
-        mode={panelMode}
-        onClose={() => setShowMatchDetail(false)}
-        fixture={panelFixture}
-        liveMinute={liveMinute}
-        teams={teams}
-        isCupMatch={isCupMatch}
-        cupMatchRoundName={cupMatchRoundName}
-        currentJornada={currentJornada}
-        isPlayingMatch={isPlayingMatch}
-        tactic={tactic}
-        onUpdateTactic={updateTactic}
-        annotatedSquad={annotatedSquad}
-        subbedOut={subbedOut}
-        confirmedSubs={confirmedSubs}
-        subsMade={subsMade}
-        swapSource={swapSource}
-        swapTarget={swapTarget}
-        onSelectOut={
-          matchAction ? (player) => setSwapSource(player) : handleSelectOut
-        }
-        onSelectIn={
-          matchAction ? (player) => setSwapTarget(player) : handleSelectIn
-        }
-        onConfirmSub={handleConfirmSub}
-        onResetSub={handleResetSub}
-        onResetAllSubs={handleResetAllSubs}
-        onReady={handleHalftimeReady}
-        isReady={panelIsReady}
-        cupPreMatch={cupPreMatch}
-        myTeamInCup={myTeamInCup}
-        myTeamId={me?.teamId}
-        redCardedHalftimeIds={redCardedHalftimeIds}
-        injuredHalftimeIds={injuredHalftimeIds}
-        matchAction={matchAction}
-        injuryCountdown={injuryCountdown}
-        onResolveAction={handleResolveMatchAction}
-      />
+      {panelMode !== null && (
+        <MatchPage
+          key={panelMode}
+          mode={panelMode}
+          onClose={() => setShowMatchDetail(false)}
+          fixture={panelFixture}
+          liveMinute={liveMinute}
+          teams={teams}
+          isCupMatch={isCupMatch}
+          cupMatchRoundName={cupMatchRoundName}
+          currentJornada={currentJornada}
+          isPlayingMatch={isPlayingMatch}
+          tactic={tactic}
+          onUpdateTactic={updateTactic}
+          annotatedSquad={annotatedSquad}
+          subbedOut={subbedOut}
+          confirmedSubs={confirmedSubs}
+          subsMade={subsMade}
+          swapSource={swapSource}
+          swapTarget={swapTarget}
+          onSelectOut={
+            matchAction ? (player) => setSwapSource(player) : handleSelectOut
+          }
+          onSelectIn={
+            matchAction ? (player) => setSwapTarget(player) : handleSelectIn
+          }
+          onConfirmSub={handleConfirmSub}
+          onResetSub={handleResetSub}
+          onResetAllSubs={handleResetAllSubs}
+          onReady={handleHalftimeReady}
+          isReady={panelIsReady}
+          cupPreMatch={cupPreMatch}
+          myTeamInCup={myTeamInCup}
+          myTeamId={me?.teamId}
+          redCardedHalftimeIds={redCardedHalftimeIds}
+          injuredHalftimeIds={injuredHalftimeIds}
+          matchAction={matchAction}
+          injuryCountdown={injuryCountdown}
+          onResolveAction={handleResolveMatchAction}
+        />
+      )}
 
       <DismissalModal
         dismissalModal={dismissalModal}
