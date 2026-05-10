@@ -53,6 +53,9 @@ export function MatchPage({
     { key: "intervencao", label: "Intervenção" },
   ];
 
+  const isCupContext = isCupMatch || cupPreMatch;
+  const canContinue = !isCupContext || myTeamInCup;
+
   if (!fixture && mode !== "action" && mode !== "halftime") {
     return (
       <div className="fixed inset-0 z-120 flex flex-col bg-[#0d0d14]">
@@ -127,10 +130,14 @@ export function MatchPage({
           <TabJogo fixture={fixture} liveMinute={liveMinute} teams={teams} />
         )}
         {activeTab === "lineup" && (
-          <TabLineup fixture={fixture} liveMinute={liveMinute} teams={teams} />
+          mode === "detail"
+            ? <TabAdversario fixture={fixture} myTeamId={fixture?.homeTeamId} teams={teams} />
+            : <TabLineup fixture={fixture} liveMinute={liveMinute} teams={teams} />
         )}
         {activeTab === "adversario" && (
-          <TabAdversario fixture={fixture} myTeamId={myTeamId} teams={teams} />
+          mode === "detail"
+            ? <TabAdversario fixture={fixture} myTeamId={fixture?.awayTeamId} teams={teams} />
+            : <TabAdversario fixture={fixture} myTeamId={myTeamId} teams={teams} />
         )}
         {activeTab === "intervencao" && mode !== "detail" && (
           <TabIntervencao
@@ -153,11 +160,6 @@ export function MatchPage({
             redCardedHalftimeIds={redCardedHalftimeIds}
             injuredHalftimeIds={injuredHalftimeIds}
             onResolveAction={onResolveAction}
-            onReady={onReady}
-            isReady={isReady}
-            cupPreMatch={cupPreMatch}
-            myTeamInCup={myTeamInCup}
-            isCupMatch={isCupMatch}
           />
         )}
         {activeTab === "intervencao" && mode === "detail" && (
@@ -166,6 +168,49 @@ export function MatchPage({
           </div>
         )}
       </div>
+
+      {/* ── Footer ── */}
+      {mode === "halftime" && (
+        <button
+          onClick={canContinue ? onReady : undefined}
+          disabled={!canContinue || isReady}
+          className={`shrink-0 w-full py-3.5 text-sm font-black uppercase tracking-widest transition-all border-t border-zinc-800 ${
+            !canContinue
+              ? "bg-zinc-800 text-zinc-500 cursor-not-allowed"
+              : isReady
+                ? "bg-zinc-800 text-zinc-500"
+                : cupPreMatch
+                  ? "bg-green-600 hover:bg-green-500 text-zinc-950"
+                  : "bg-primary hover:brightness-110 text-on-primary"
+          }`}
+        >
+          {!canContinue
+            ? "⏳ A AGUARDAR JOGO DA TAÇA..."
+            : isReady
+              ? "⏳ A AGUARDAR..."
+              : cupPreMatch
+                ? "▶ INICIAR JOGO — TAÇA"
+                : isCupMatch
+                  ? "▶ 2ª PARTE — TAÇA"
+                  : "▶ INICIAR 2ª PARTE"}
+        </button>
+      )}
+      {mode === "action" && matchAction?.type === "user_substitution" && (
+        <button
+          onClick={() => onResolveAction(null)}
+          className="shrink-0 w-full py-3.5 text-sm font-black uppercase tracking-widest bg-primary hover:brightness-110 text-on-primary transition-all border-t border-zinc-800"
+        >
+          ▶ CONTINUAR
+        </button>
+      )}
+      {mode === "detail" && (
+        <button
+          onClick={onClose}
+          className="shrink-0 w-full py-3 text-sm font-black uppercase tracking-widest bg-zinc-900 hover:bg-zinc-800 text-zinc-300 transition-all border-t border-zinc-800"
+        >
+          Fechar
+        </button>
+      )}
     </div>
   );
 }
