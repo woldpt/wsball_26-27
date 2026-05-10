@@ -2111,8 +2111,13 @@ function App() {
       return a.name.localeCompare(b.name);
     });
 
-  // ── MATCH PANEL ──────────────────────────────────────────────────────────
+ // ── MATCH PANEL ──────────────────────────────────────────────────────────
+  // DEBUG: log panelMode computation
+  if (showHalftimePanel || matchAction || showMatchDetail) {
+    console.log("[DEBUG panelMode]", { matchAction: !!matchAction, showHalftimePanel, showMatchDetail, myMatch: !!myMatch });
+  }
   const panelMode = matchAction
+
     ? "action"
     : showHalftimePanel
       ? "halftime"

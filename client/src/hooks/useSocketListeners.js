@@ -244,6 +244,7 @@ export function useSocketListeners(handlers, refs) {
     });
     socket.on("cupHalfTimeResults", (data) => {
       try {
+        console.log("[DEBUG cupHalfTimeResults] received", data);
         handlers.setIsMatchActionPending(false);
         handlers.setMatchAction(null);
         handlers.setIsLiveSimulation(false);
@@ -956,6 +957,7 @@ export function useSocketListeners(handlers, refs) {
 
     socket.on("halfTimeResults", (data) => {
       if (!inRoom()) return;
+      console.log("[DEBUG halfTimeResults] received", data);
       handlers.setIsMatchActionPending(false);
       handlers.setMatchAction(null);
       handlers.setIsLiveSimulation(false);
