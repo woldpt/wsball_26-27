@@ -24,10 +24,10 @@ export function MatchPage({
   onConfirmSub,
   onResetSub,
   onResetAllSubs,
-  _onReady,
-  _isReady,
-  _cupPreMatch,
-  _myTeamInCup,
+  onReady,
+  isReady,
+  cupPreMatch,
+  myTeamInCup,
   myTeamId,
   redCardedHalftimeIds,
   injuredHalftimeIds,
@@ -153,6 +153,11 @@ export function MatchPage({
             redCardedHalftimeIds={redCardedHalftimeIds}
             injuredHalftimeIds={injuredHalftimeIds}
             onResolveAction={onResolveAction}
+            onReady={onReady}
+            isReady={isReady}
+            cupPreMatch={cupPreMatch}
+            myTeamInCup={myTeamInCup}
+            isCupMatch={isCupMatch}
           />
         )}
         {activeTab === "intervencao" && mode === "detail" && (

@@ -494,6 +494,11 @@ export function TabIntervencao({
   redCardedHalftimeIds,
   injuredHalftimeIds,
   onResolveAction,
+  onReady,
+  isReady,
+  cupPreMatch,
+  myTeamInCup,
+  isCupMatch,
 }) {
   const shouldReduceMotion = false;
   const actionType = matchAction?.type || null;
@@ -577,6 +582,9 @@ export function TabIntervencao({
     !!effectiveOutId &&
     !!selectedInId &&
     (!isHalftime || subsMade < MAX_MATCH_SUBS);
+
+  const isCupContext = isCupMatch || cupPreMatch;
+  const canContinue = !isCupContext || myTeamInCup;
 
   const actionTheme = isPenalty
     ? "from-amber-600/20 via-amber-500/5 to-transparent"
@@ -938,6 +946,42 @@ export function TabIntervencao({
           </button>
         </div>
       )}
+
+      <div className="shrink-0 px-3 py-2 border-t border-zinc-800/80 bg-zinc-950/90">
+        {isHalftime && (
+          <button
+            onClick={canContinue ? onReady : undefined}
+            disabled={!canContinue || isReady}
+            className={`w-full py-3 text-sm font-black uppercase tracking-widest transition-all ${
+              !canContinue
+                ? "bg-zinc-800 text-zinc-500 cursor-not-allowed"
+                : isReady
+                  ? "bg-zinc-800 text-zinc-500"
+                  : cupPreMatch
+                    ? "bg-green-600 hover:bg-green-500 text-zinc-950"
+                    : "bg-primary hover:brightness-110 text-on-primary"
+            }`}
+          >
+            {!canContinue
+              ? "⏳ A AGUARDAR JOGO DA TAÇA..."
+              : isReady
+                ? "⏳ A AGUARDAR..."
+                : cupPreMatch
+                  ? "▶ INICIAR JOGO — TAÇA"
+                  : isCupMatch
+                    ? "▶ 2ª PARTE — TAÇA"
+                    : "▶ INICIAR 2ª PARTE"}
+          </button>
+        )}
+        {isActionMode && matchAction?.type === "user_substitution" && (
+          <button
+            onClick={() => onResolveAction(null)}
+            className="w-full py-3 text-sm font-black uppercase tracking-widest bg-primary hover:brightness-110 text-on-primary transition-all"
+          >
+            ▶ CONTINUAR
+          </button>
+        )}
+      </div>
     </div>
   );
 }
