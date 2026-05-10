@@ -569,11 +569,13 @@ function App() {
   // Catches sync errors, async errors, and promise rejections
   useEffect(() => {
     const syncHandler = (event) => {
+      console.error("[GLOBAL ERROR]", event.error || event.reason || event.message);
       const error = event.error || event.reason || new Error(event.message || "Unknown error");
       setRenderError(error);
       event.preventDefault();
     };
     const asyncHandler = (event) => {
+      console.error("[UNHANDLED REJECTION]", event.reason);
       const error = event.reason || new Error("Unhandled promise rejection");
       setRenderError(error);
       event.preventDefault();
@@ -2210,7 +2212,13 @@ function App() {
           <p className="text-4xl">💥</p>
           <h2 className="text-xl font-bold text-red-400">Erro de Renderização</h2>
           <pre className="text-xs text-zinc-400 max-w-xl overflow-auto p-3 bg-zinc-900 rounded whitespace-pre-wrap">
-            {renderError?.stack || String(renderError)}
+            {(() => {
+              try {
+                return renderError?.stack || String(renderError);
+              } catch (e) {
+                return `[ERROR DISPLAY] ${String(e)}`;
+              }
+            })()}
           </pre>
           <button
             onClick={() => window.location.reload()}
