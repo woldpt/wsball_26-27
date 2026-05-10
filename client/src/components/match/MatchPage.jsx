@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState } from "react";
 import { TabJogo, TabLineup, TabAdversario, TabIntervencao } from "./MatchTabs.jsx";
 
 export function MatchPage({
@@ -35,13 +35,16 @@ export function MatchPage({
   injuryCountdown,
   onResolveAction,
 }) {
-  const [activeTab, setActiveTab] = useState(mode === "action" ? "intervencao" : "jogo");
-
-  useEffect(() => {
-    if (mode === "action" || mode === "halftime") {
-      setActiveTab("intervencao");
-    }
-  }, [mode]);
+  const getDefaultTab = (m) =>
+    m === "action" || m === "halftime" ? "intervencao" : "jogo";
+  const [activeTab, setActiveTab] = useState(() => getDefaultTab(mode));
+  // Padrão React: setState durante o render quando a prop muda — evita o
+  // cascading render do useEffect.
+  const [prevMode, setPrevMode] = useState(mode);
+  if (mode !== prevMode) {
+    setPrevMode(mode);
+    setActiveTab(getDefaultTab(mode));
+  }
 
   const tabs = [
     { key: "jogo", label: "Jogo" },

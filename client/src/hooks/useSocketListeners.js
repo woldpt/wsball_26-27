@@ -245,6 +245,7 @@ export function useSocketListeners(handlers, refs) {
     socket.on("cupHalfTimeResults", (data) => {
       try {
         handlers.setIsMatchActionPending(false);
+        handlers.setMatchAction(null);
         handlers.setIsLiveSimulation(false);
         // Treat the cup halftime exactly like a league halftime:
         // reuse matchResults state so the live tab renders events and score.

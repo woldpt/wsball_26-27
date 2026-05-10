@@ -1042,11 +1042,14 @@ export function MatchPanel({
     m === "halftime" || m === "action" ? "intervencao" : "adversario";
 
   const [activeTab, setActiveTab] = useState(() => getDefaultTab(mode));
-
-  // Repor tab por omissão sempre que o mode muda (ex: null → "action")
-  useEffect(() => {
+  // Padrão React recomendado para derivar/repor estado quando uma prop muda:
+  // setState durante o render (em vez de useEffect, que provoca cascading render).
+  // https://react.dev/reference/react/useState#storing-information-from-previous-renders
+  const [prevMode, setPrevMode] = useState(mode);
+  if (mode !== prevMode) {
+    setPrevMode(mode);
     setActiveTab(getDefaultTab(mode));
-  }, [mode]);
+  }
 
   const isOpen = !!mode;
 

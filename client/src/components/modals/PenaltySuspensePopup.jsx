@@ -4,19 +4,20 @@ import { useState, useEffect } from "react";
  * @param {{ penaltySuspense: object|null }} props
  */
 export function PenaltySuspensePopup({ penaltySuspense }) {
-  const [showResult, setShowResult] = useState(false);
+  // Em vez de reset síncrono dentro do useEffect (cascading render), comparamos
+  // a referência para a qual o timer já disparou. Quando `penaltySuspense` muda,
+  // `revealedFor` ainda aponta para o valor antigo → showResult fica false até
+  // o timer do novo valor disparar.
+  const [revealedFor, setRevealedFor] = useState(null);
 
   useEffect(() => {
-    if (!penaltySuspense) {
-      setShowResult(false);
-      return;
-    }
-    setShowResult(false);
-    const timer = setTimeout(() => setShowResult(true), 2000);
+    if (!penaltySuspense) return;
+    const timer = setTimeout(() => setRevealedFor(penaltySuspense), 2000);
     return () => clearTimeout(timer);
   }, [penaltySuspense]);
 
   if (!penaltySuspense) return null;
+  const showResult = revealedFor === penaltySuspense;
 
   return (
     <div className="fixed inset-0 z-200 flex items-center justify-center pointer-events-none">

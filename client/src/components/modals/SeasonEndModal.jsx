@@ -36,15 +36,18 @@ function TeamBadge({ teamId, teamName, teams }) {
  * @param {{ data: object|null, teams: array, me: object, onClose: function }} props
  */
 export function SeasonEndModal({ data, teams, me, onClose }) {
-  const [revealed, setRevealed] = useState(false);
+  // Identidade do `data` para o qual o reveal já disparou — evita o reset
+  // síncrono dentro do useEffect (cascading render). Quando `data` muda,
+  // revealedFor ainda aponta para o valor anterior → revealed fica false.
+  const [revealedFor, setRevealedFor] = useState(null);
 
   useEffect(() => {
-    if (data) {
-      setRevealed(false);
-      const t = setTimeout(() => setRevealed(true), 250);
-      return () => clearTimeout(t);
-    }
+    if (!data) return;
+    const t = setTimeout(() => setRevealedFor(data), 250);
+    return () => clearTimeout(t);
   }, [data]);
+
+  const revealed = revealedFor === data;
 
   const myTeamId = me?.teamId;
 

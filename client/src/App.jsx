@@ -628,7 +628,7 @@ function App() {
           setLiveMinute((m) => m + 1);
         }, 1000);
         return () => clearTimeout(timer);
-      } else if (liveMinute === 45 && !isSecondHalfReplay) {
+      } else if (liveMinute === 45 && !isSecondHalfReplay && !showHalftimePanel) {
         setIsPlayingMatch(false);
       } else if (liveMinute >= 120 && isCupExtraTime) {
         // Extra time animation finished — notify server
@@ -2070,7 +2070,7 @@ function App() {
 
   const teamInfo = teams.find((t) => t.id == me.teamId);
   const myMatch = matchResults?.results.find(
-    (r) => r.homeTeamId === me.teamId || r.awayTeamId === me.teamId,
+    (r) => Number(r.homeTeamId) === Number(me.teamId) || Number(r.awayTeamId) === Number(me.teamId),
   );
   // Jogadores expulsos no meu jogo (para filtrar do painel de intervalo)
   const mySideInHalftime = myMatch?.homeTeamId === me.teamId ? "home" : "away";

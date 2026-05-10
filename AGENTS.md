@@ -83,5 +83,9 @@
 - Keep sidebar overlay offsets compatible with `sidebarCollapsed` (`lg:left-14` / `lg:left-64`).
 - Icons: Material Symbols Outlined.
 
+## Commit & Push Workflow
+- After completing all corrections in a session, commit and push to remote.
+- Use a concise, descriptive message focused on the "why" rather than the "what".
+
 ## If Unsure
 - Do not invent mechanics; ask before changing game rules.
