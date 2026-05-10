@@ -53,7 +53,7 @@ export function MatchPage({
     { key: "intervencao", label: "Intervenção" },
   ];
 
-  if (!fixture && mode !== "action") {
+  if (!fixture && mode !== "action" && mode !== "halftime") {
     return (
       <div className="fixed inset-0 z-120 flex flex-col bg-[#0d0d14]">
         <div className="flex-1 flex items-center justify-center">
@@ -78,12 +78,12 @@ export function MatchPage({
         <div className="flex-1 flex items-center gap-2">
           <span className="text-sm font-black text-white truncate">
             {fixture?.homeTeamId === myTeamId
-              ? teams.find((t) => t.id === fixture.homeTeamId)?.name || "Casa"
-              : teams.find((t) => t.id === fixture.awayTeamId)?.name || "Fora"}
+              ? teams.find((t) => t.id === fixture?.homeTeamId)?.name || "Casa"
+              : teams.find((t) => t.id === fixture?.awayTeamId)?.name || "Fora"}
             {" vs "}
             {fixture?.awayTeamId === myTeamId
-              ? teams.find((t) => t.id === fixture.awayTeamId)?.name || "Fora"
-              : teams.find((t) => t.id === fixture.homeTeamId)?.name || "Casa"}
+              ? teams.find((t) => t.id === fixture?.awayTeamId)?.name || "Fora"
+              : teams.find((t) => t.id === fixture?.homeTeamId)?.name || "Casa"}
           </span>
           {isCupMatch && (
             <span className="text-[10px] font-black uppercase px-2 py-0.5 rounded bg-amber-500/20 text-amber-400">

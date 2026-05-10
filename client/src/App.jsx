@@ -2093,7 +2093,7 @@ function App() {
   }
 
   const teamInfo = teams.find((t) => t.id == me.teamId);
-  const myMatch = matchResults?.results.find(
+  const myMatch = matchResults?.results?.find(
     (r) => Number(r.homeTeamId) === Number(me.teamId) || Number(r.awayTeamId) === Number(me.teamId),
   );
   // Jogadores expulsos no meu jogo (para filtrar do painel de intervalo)

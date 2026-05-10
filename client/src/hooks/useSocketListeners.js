@@ -976,14 +976,6 @@ export function useSocketListeners(handlers, refs) {
     socket.on("matchActionRequired", (data) => {
       try {
         console.warn("[MATCH ACTION REQUIRED]", data);
-        // Ignorar apenas se não houver qualquer contexto de jogo ativo
-        const hasMatchContext =
-          refs.isPlayingMatchRef.current ||
-          refs.showHalftimePanelRef?.current ||
-          !!refs.matchActionRef?.current;
-        if (!hasMatchContext) return;
-
-        console.warn("[MATCH ACTION] hasMatchContext=true, isTargetCoach=", isSameTeamId(data?.teamId, refs.meRef.current?.teamId));
         handlers.setIsMatchActionPending(true);
 
         const isTargetCoach = isSameTeamId(data?.teamId, refs.meRef.current?.teamId);
