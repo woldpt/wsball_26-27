@@ -2145,7 +2145,15 @@ function App() {
         ? "detail"
         : null;
   const panelFixture = matchAction
-    ? null
+    ? (() => {
+        const fd = matchAction?.fixtureData;
+        if (fd) return fd;
+        const actionTeamId = matchAction?.teamId;
+        if (!actionTeamId) return null;
+        return matchResults?.results?.find(
+          (r) => Number(r.homeTeamId) === Number(actionTeamId) || Number(r.awayTeamId) === Number(actionTeamId),
+        ) || null;
+      })()
     : showHalftimePanel
     ? myMatch || null
     : showMatchDetail

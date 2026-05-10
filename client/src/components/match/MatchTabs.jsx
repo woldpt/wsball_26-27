@@ -316,7 +316,9 @@ export function TabLineup({ fixture, liveMinute, teams }) {
 }
 
 export function TabAdversario({ fixture, myTeamId, teams }) {
-  if (!fixture?.homeLineup || !fixture?.awayLineup) return null;
+  if (!fixture) return null;
+
+  const hasLineups = fixture?.homeLineup && fixture?.awayLineup;
 
   const isHome = fixture.homeTeamId === myTeamId;
   const oppLineup = isHome ? fixture.awayLineup : fixture.homeLineup;
@@ -371,7 +373,11 @@ export function TabAdversario({ fixture, myTeamId, teams }) {
         )}
       </div>
 
-      {starters.length === 0 ? (
+      {!hasLineups ? (
+        <p className="text-center text-zinc-500 text-xs font-bold py-6">
+          Escalações indisponíveis durante a simulação
+        </p>
+      ) : starters.length === 0 ? (
         <p className="text-center text-zinc-500 text-xs font-bold py-6">
           Sem dados da escalação do adversário
         </p>
