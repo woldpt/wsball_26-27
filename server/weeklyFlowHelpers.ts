@@ -827,7 +827,12 @@ export function createWeeklyFlowHelpers(deps: WeeklyFlowDeps) {
         ready: !!game.playersByName[name]?.ready,
       }));
       const allReady = readyStatus.every((s) => s.connected && s.ready);
-      if (!allReady) return;
+      if (!allReady) {
+        console.warn(
+          `[${game.roomCode}] ⏸ checkAllReady blocked: locked coaches not all ready: ${readyStatus.map((s) => `${s.name}(C:${s.connected} R:${s.ready})`).join(", ")}`,
+        );
+        return;
+      }
       console.log(
         `[${game.roomCode}] ✅ All locked coaches ready: ${readyStatus.map((s) => `${s.name}(${s.ready ? "R" : "-"})`).join(", ")}`,
       );
@@ -843,6 +848,10 @@ export function createWeeklyFlowHelpers(deps: WeeklyFlowDeps) {
         );
         // Fall through to advance the lobby
       } else if (!connectedPlayers.every((player) => player.ready)) {
+        const notReady = connectedPlayers.filter((p) => !p.ready).map((p) => p.name);
+        console.warn(
+          `[${game.roomCode}] ⏸ checkAllReady blocked: ${notReady.length} connected player(s) not ready: ${notReady.join(", ")}`,
+        );
         return;
       } else {
         console.log(

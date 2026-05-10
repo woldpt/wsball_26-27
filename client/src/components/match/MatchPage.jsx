@@ -187,7 +187,7 @@ export function MatchPage({
           {!canContinue
             ? "⏳ A AGUARDAR JOGO DA TAÇA..."
             : isReady
-              ? "⏳ A AGUARDAR..."
+              ? "⏳ A AGUARDAR OUTRO TREINADOR..."
               : cupPreMatch
                 ? "▶ INICIAR JOGO — TAÇA"
                 : isCupMatch
