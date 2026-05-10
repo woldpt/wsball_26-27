@@ -244,7 +244,6 @@ export function useSocketListeners(handlers, refs) {
     });
     socket.on("cupHalfTimeResults", (data) => {
       try {
-        console.log("[DEBUG cupHalfTimeResults] received", data);
         handlers.setIsMatchActionPending(false);
         handlers.setMatchAction(null);
         handlers.setIsLiveSimulation(false);
@@ -957,7 +956,6 @@ export function useSocketListeners(handlers, refs) {
 
     socket.on("halfTimeResults", (data) => {
       if (!inRoom()) return;
-      console.log("[DEBUG halfTimeResults] received", data);
       handlers.setIsMatchActionPending(false);
       handlers.setMatchAction(null);
       handlers.setIsLiveSimulation(false);
@@ -974,115 +972,119 @@ export function useSocketListeners(handlers, refs) {
     });
 
     socket.on("matchActionRequired", (data) => {
-      // Ignorar apenas se não houver qualquer contexto de jogo ativo
-      const hasMatchContext =
-        refs.isPlayingMatchRef.current ||
-        refs.showHalftimePanelRef?.current ||
-        !!refs.matchActionRef?.current;
-      if (!hasMatchContext) return;
+      try {
+        // Ignorar apenas se não houver qualquer contexto de jogo ativo
+        const hasMatchContext =
+          refs.isPlayingMatchRef.current ||
+          refs.showHalftimePanelRef?.current ||
+          !!refs.matchActionRef?.current;
+        if (!hasMatchContext) return;
 
-      handlers.setIsMatchActionPending(true);
+        handlers.setIsMatchActionPending(true);
 
-      const isTargetCoach = isSameTeamId(data?.teamId, refs.meRef.current?.teamId);
-      if (!isTargetCoach) {
-        return;
-      }
-
-      const currentSquad = Array.isArray(refs.mySquadRef.current)
-        ? refs.mySquadRef.current
-        : [];
-      const currentPositions = refs.tacticRef.current?.positions || {};
-      const squadById = new Map(currentSquad.map((p) => [Number(p.id), p]));
-
-      const normalizedAction = { ...(data || {}) };
-
-      const toCandidate = (player) => {
-        if (!player || player.id === undefined || player.id === null) {
-          return null;
+        const isTargetCoach = isSameTeamId(data?.teamId, refs.meRef.current?.teamId);
+        if (!isTargetCoach) {
+          return;
         }
-        const id = Number(player.id);
-        const squadPlayer = squadById.get(id);
-        return {
-          id,
-          name: player.name || squadPlayer?.name || "Jogador",
-          position: player.position || squadPlayer?.position || "MED",
-          skill: Number(player.skill ?? squadPlayer?.skill ?? 0),
-          resistance: Number(player.resistance ?? squadPlayer?.resistance ?? 0),
-          form: Number(player.form ?? squadPlayer?.form ?? 100),
-          is_star: Boolean(player.is_star ?? squadPlayer?.is_star),
+
+        const currentSquad = Array.isArray(refs.mySquadRef.current)
+          ? refs.mySquadRef.current
+          : [];
+        const currentPositions = refs.tacticRef.current?.positions || {};
+        const squadById = new Map(currentSquad.map((p) => [Number(p.id), p]));
+
+        const normalizedAction = { ...(data || {}) };
+
+        const toCandidate = (player) => {
+          if (!player || player.id === undefined || player.id === null) {
+            return null;
+          }
+          const id = Number(player.id);
+          const squadPlayer = squadById.get(id);
+          return {
+            id,
+            name: player.name || squadPlayer?.name || "Jogador",
+            position: player.position || squadPlayer?.position || "MED",
+            skill: Number(player.skill ?? squadPlayer?.skill ?? 0),
+            resistance: Number(player.resistance ?? squadPlayer?.resistance ?? 0),
+            form: Number(player.form ?? squadPlayer?.form ?? 100),
+            is_star: Boolean(player.is_star ?? squadPlayer?.is_star),
+          };
         };
-      };
 
-      if (normalizedAction.type === "penalty") {
-        const incomingCandidates = (normalizedAction.takerCandidates || [])
-          .map(toCandidate)
-          .filter(Boolean);
-
-        const titulares = currentSquad.filter(
-          (player) => currentPositions[player.id] === "Titular",
-        );
-        const fallbackBase = titulares.length > 0 ? titulares : currentSquad;
-        const fallbackCandidates = fallbackBase
-          .map(toCandidate)
-          .filter(Boolean);
-
-        normalizedAction.takerCandidates =
-          incomingCandidates.length > 0
-            ? incomingCandidates
-            : fallbackCandidates;
-      }
-
-      if (normalizedAction.type === "injury") {
-        const incomingBench = (normalizedAction.benchPlayers || [])
-          .map(toCandidate)
-          .filter(Boolean);
-
-        if (incomingBench.length > 0) {
-          normalizedAction.benchPlayers = incomingBench;
-        } else {
-          // Fallback: use players on the bench in the current tactic
-          const suplentes = currentSquad
-            .filter((player) => currentPositions[player.id] === "Suplente")
+        if (normalizedAction.type === "penalty") {
+          const incomingCandidates = (normalizedAction.takerCandidates || [])
             .map(toCandidate)
             .filter(Boolean);
-          normalizedAction.benchPlayers =
-            suplentes.length > 0
-              ? suplentes
-              : currentSquad.map(toCandidate).filter(Boolean);
+
+          const titulares = currentSquad.filter(
+            (player) => currentPositions[player.id] === "Titular",
+          );
+          const fallbackBase = titulares.length > 0 ? titulares : currentSquad;
+          const fallbackCandidates = fallbackBase
+            .map(toCandidate)
+            .filter(Boolean);
+
+          normalizedAction.takerCandidates =
+            incomingCandidates.length > 0
+              ? incomingCandidates
+              : fallbackCandidates;
         }
-      }
 
-      if (normalizedAction.type === "user_substitution") {
-        normalizedAction.benchPlayers = (normalizedAction.benchPlayers || [])
-          .map(toCandidate)
-          .filter(Boolean);
-        normalizedAction.onPitch = (normalizedAction.onPitch || [])
-          .map(toCandidate)
-          .filter(Boolean);
-      }
+        if (normalizedAction.type === "injury") {
+          const incomingBench = (normalizedAction.benchPlayers || [])
+            .map(toCandidate)
+            .filter(Boolean);
 
-      handlers.setMatchAction(normalizedAction);
-      handlers.setActiveTab("live");
+          if (incomingBench.length > 0) {
+            normalizedAction.benchPlayers = incomingBench;
+          } else {
+            // Fallback: use players on the bench in the current tactic
+            const suplentes = currentSquad
+              .filter((player) => currentPositions[player.id] === "Suplente")
+              .map(toCandidate)
+              .filter(Boolean);
+            normalizedAction.benchPlayers =
+              suplentes.length > 0
+                ? suplentes
+                : currentSquad.map(toCandidate).filter(Boolean);
+          }
+        }
 
-      clearInterval(refs.injuryCountdownRef.current);
-      refs.injuryCountdownRef.current = null;
-      handlers.setInjuryCountdown(null);
+        if (normalizedAction.type === "user_substitution") {
+          normalizedAction.benchPlayers = (normalizedAction.benchPlayers || [])
+            .map(toCandidate)
+            .filter(Boolean);
+          normalizedAction.onPitch = (normalizedAction.onPitch || [])
+            .map(toCandidate)
+            .filter(Boolean);
+        }
 
-      if (
-        normalizedAction.type === "injury" ||
-        normalizedAction.type === "user_substitution"
-      ) {
-        handlers.setInjuryCountdown(60);
-        refs.injuryCountdownRef.current = setInterval(() => {
-          handlers.setInjuryCountdown((prev) => {
-            if (prev <= 1) {
-              clearInterval(refs.injuryCountdownRef.current);
-              refs.injuryCountdownRef.current = null;
-              return 0;
-            }
-            return prev - 1;
-          });
-        }, 1000);
+        handlers.setMatchAction(normalizedAction);
+        handlers.setActiveTab("live");
+
+        clearInterval(refs.injuryCountdownRef.current);
+        refs.injuryCountdownRef.current = null;
+        handlers.setInjuryCountdown(null);
+
+        if (
+          normalizedAction.type === "injury" ||
+          normalizedAction.type === "user_substitution"
+        ) {
+          handlers.setInjuryCountdown(60);
+          refs.injuryCountdownRef.current = setInterval(() => {
+            handlers.setInjuryCountdown((prev) => {
+              if (prev <= 1) {
+                clearInterval(refs.injuryCountdownRef.current);
+                refs.injuryCountdownRef.current = null;
+                return 0;
+              }
+              return prev - 1;
+            });
+          }, 1000);
+        }
+      } catch (err) {
+        console.error("Error handling matchActionRequired:", err, "data:", data);
       }
     });
 

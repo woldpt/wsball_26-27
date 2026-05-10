@@ -256,6 +256,7 @@ function App() {
   const [subsMade, setSubsMade] = useState(0);
   const [, forceGoalFlashRender] = useState(0);
   const [substitutionPause, setSubstitutionPause] = useState(null);
+  const [renderError, setRenderError] = useState(null);
   const [swapSource, setSwapSource] = useState(null);
   const [swapTarget, setSwapTarget] = useState(null); // player coming IN (Suplente)
   const [subbedOut, setSubbedOut] = useState([]); // Track players who left the pitch
@@ -563,6 +564,18 @@ function App() {
       if (joinTimerRef.current) clearTimeout(joinTimerRef.current);
     };
   }, [savedSession, me?.teamId]);
+
+  // Global error handler — prevents white screen crashes
+  useEffect(() => {
+    const handler = (event) => {
+      if (event && event.error) {
+        setRenderError(event.error);
+        event.preventDefault();
+      }
+    };
+    window.addEventListener("error", handler);
+    return () => window.removeEventListener("error", handler);
+  }, []);
 
   useEffect(() => {
     if (activeTab !== "tactic" || !me?.teamId) return;
@@ -2112,10 +2125,6 @@ function App() {
     });
 
  // ── MATCH PANEL ──────────────────────────────────────────────────────────
-  // DEBUG: log panelMode computation
-  if (showHalftimePanel || matchAction || showMatchDetail) {
-    console.log("[DEBUG panelMode]", { matchAction: !!matchAction, showHalftimePanel, showMatchDetail, myMatch: !!myMatch });
-  }
   const panelMode = matchAction
 
     ? "action"
@@ -2184,6 +2193,24 @@ function App() {
 
   return (
     <div className="min-h-dvh bg-surface text-on-surface font-body tracking-tight">
+      {renderError && (
+        <div
+          style={{ position: "fixed", inset: 0, zIndex: 99999 }}
+          className="flex flex-col items-center justify-center bg-black/95 gap-4 p-8 overflow-auto"
+        >
+          <p className="text-4xl">💥</p>
+          <h2 className="text-xl font-bold text-red-400">Erro de Renderização</h2>
+          <pre className="text-xs text-zinc-400 max-w-xl overflow-auto p-3 bg-zinc-900 rounded whitespace-pre-wrap">
+            {renderError?.stack || String(renderError)}
+          </pre>
+          <button
+            onClick={() => window.location.reload()}
+            className="mt-2 px-6 py-2 rounded-lg bg-red-500 text-white font-bold text-sm"
+          >
+            Recarregar
+          </button>
+        </div>
+      )}
       {sessionDisplaced && (
         <div
           style={{ position: "fixed", inset: 0, zIndex: 9999 }}
