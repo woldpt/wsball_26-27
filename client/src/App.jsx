@@ -566,15 +566,24 @@ function App() {
   }, [savedSession, me?.teamId]);
 
   // Global error handler — prevents white screen crashes
+  // Catches sync errors, async errors, and promise rejections
   useEffect(() => {
-    const handler = (event) => {
-      if (event && event.error) {
-        setRenderError(event.error);
-        event.preventDefault();
-      }
+    const syncHandler = (event) => {
+      const error = event.error || event.reason || new Error(event.message || "Unknown error");
+      setRenderError(error);
+      event.preventDefault();
     };
-    window.addEventListener("error", handler);
-    return () => window.removeEventListener("error", handler);
+    const asyncHandler = (event) => {
+      const error = event.reason || new Error("Unhandled promise rejection");
+      setRenderError(error);
+      event.preventDefault();
+    };
+    window.addEventListener("error", syncHandler);
+    window.addEventListener("unhandledrejection", asyncHandler);
+    return () => {
+      window.removeEventListener("error", syncHandler);
+      window.removeEventListener("unhandledrejection", asyncHandler);
+    };
   }, []);
 
   useEffect(() => {

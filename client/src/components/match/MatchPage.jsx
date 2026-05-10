@@ -53,6 +53,18 @@ export function MatchPage({
     { key: "intervencao", label: "Intervenção" },
   ];
 
+  if (!fixture && mode !== "action") {
+    return (
+      <div className="fixed inset-0 z-120 flex flex-col bg-[#0d0d14]">
+        <div className="flex-1 flex items-center justify-center">
+          <p className="text-sm font-bold text-zinc-500">
+            Sem dados do jogo disponíveis
+          </p>
+        </div>
+      </div>
+    );
+  }
+
   return (
     <div className="fixed inset-0 z-120 flex flex-col bg-[#0d0d14]">
       {/* Header */}
