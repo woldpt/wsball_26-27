@@ -968,34 +968,39 @@ async function simulateMatchSegment(
   };
 
   // Calcula familiaridade para cada equipa
-  const calcFamiliarity = (teamId, tacticLocal) => {
+  // db.get é assíncrono; encapsulamos num Promise para poder await
+  const calcFamiliarity = async (teamId: number, tacticLocal: any) => {
     if (!tacticLocal?.formation) return 0;
     const playerState = (Object.values(game.playersByName).find(
       (p) => (p as any).teamId === teamId && (p as any).socketId,
     )) as any;
     if (!playerState) return 0;
-    let count = 0;
     try {
-      game.db.get(
-        "SELECT COUNT(*) AS cnt FROM player_tactic_history WHERE team_id = ? AND player_name = ? AND formation = ? AND style = ?",
-        [teamId, playerState.name, tacticLocal.formation, normaliseStyle(tacticLocal.style)],
-        (err, row) => {
-          if (!err && row) count = row.cnt;
-        },
+      const count = await new Promise<number>((resolve) =>
+        game.db.get(
+          "SELECT COUNT(*) AS cnt FROM player_tactic_history WHERE team_id = ? AND player_name = ? AND formation = ? AND style = ?",
+          [teamId, playerState.name, tacticLocal.formation, normaliseStyle(tacticLocal.style)],
+          (err, row) => {
+            if (err || !row) return resolve(0);
+            resolve(row.cnt);
+          },
+        ),
       );
+      const thresholds = [
+        { min: 21, b: 0.06 }, { min: 16, b: 0.05 }, { min: 11, b: 0.04 },
+        { min: 6, b: 0.03 }, { min: 3, b: 0.02 }, { min: 1, b: 0.01 },
+      ];
+      const tier = thresholds.find((t) => count >= t.min);
+      return tier ? tier.b : 0;
     } catch {
       return 0;
     }
-    const thresholds = [
-      { min: 21, b: 0.06 }, { min: 16, b: 0.05 }, { min: 11, b: 0.04 },
-      { min: 6, b: 0.03 }, { min: 3, b: 0.02 }, { min: 1, b: 0.01 },
-    ];
-    const tier = thresholds.find((t) => count >= t.min);
-    return tier ? tier.b : 0;
   };
 
-  const homeFam = calcFamiliarity(fixture.homeTeamId, homeTactic);
-  const awayFam = calcFamiliarity(fixture.awayTeamId, awayTactic);
+  const [homeFam, awayFam] = await Promise.all([
+    calcFamiliarity(fixture.homeTeamId, homeTactic),
+    calcFamiliarity(fixture.awayTeamId, awayTactic),
+  ]);
 
   const home = getPower(homeSquad, homeTactic, homeMorale, homeFam);
   const away = getPower(awaySquad, awayTactic, awayMorale, awayFam);

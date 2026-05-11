@@ -80,71 +80,69 @@ export function getTacticFamiliarity(
   });
 }
 
-export function getBestTacticFamiliarity(
+export async function getBestTacticFamiliarity(
   db: any,
   teamId: number,
   playerName: string,
   allFormations: string[],
-): {
+): Promise<{
   bonus: number;
   count: number;
   formation: string;
   style: string;
   isMostUsed: boolean;
   totalGames: number;
-} {
-  let totalGames = 0;
-  let bestBonus = 0;
-  let bestCount = 0;
-  let bestFormation = "";
-  let bestStyle = "";
+}> {
+  // Helper: wrap db.get in a Promise
+  const getRow = (sql: string, params: any[]) =>
+    new Promise<any>((resolve) =>
+      db.get(sql, params, (err: any, row: any) =>
+        err ? resolve(null) : resolve(row),
+      ),
+    );
 
   try {
-    db.get(
+    const totalRow = await getRow(
       "SELECT COUNT(*) AS cnt FROM player_tactic_history WHERE team_id = ? AND player_name = ?",
       [teamId, playerName],
-      (err: any, row: any) => {
-        if (!err && row) totalGames = row.cnt;
-      },
     );
+    const totalGames = totalRow?.cnt ?? 0;
+
+    let bestBonus = 0;
+    let bestCount = 0;
+    let bestFormation = "";
+    let bestStyle = "";
 
     for (const formation of allFormations) {
       for (const style of ["Balanced", "Defensive", "Offensive"]) {
-        let cnt = 0;
-        db.get(
+        const row = await getRow(
           "SELECT COUNT(*) AS cnt FROM player_tactic_history WHERE team_id = ? AND player_name = ? AND formation = ? AND style = ?",
           [teamId, playerName, formation, style],
-          (err: any, row: any) => {
-            if (!err && row) {
-              cnt = row.cnt;
-              const tier = TIER_THRESHOLDS.find((t) => cnt >= t.min);
-              const bonus = tier ? tier.bonus : 0;
-              if (
-                bonus > bestBonus ||
-                (bonus === bestBonus && cnt > bestCount)
-              ) {
-                bestBonus = bonus;
-                bestCount = cnt;
-                bestFormation = formation;
-                bestStyle = style;
-              }
-            }
-          },
         );
+        const cnt = row?.cnt ?? 0;
+        const tier = TIER_THRESHOLDS.find((t) => cnt >= t.min);
+        const bonus = tier ? tier.bonus : 0;
+        if (bonus > bestBonus || (bonus === bestBonus && cnt > bestCount)) {
+          bestBonus = bonus;
+          bestCount = cnt;
+          bestFormation = formation;
+          bestStyle = style;
+        }
       }
     }
+
+    return {
+      bonus: bestBonus,
+      count: bestCount,
+      formation: bestFormation,
+      style: bestStyle,
+      isMostUsed: true,
+      totalGames,
+    };
   } catch {
     // Table may not exist yet
+    return { bonus: 0, count: 0, formation: "", style: "", isMostUsed: true, totalGames: 0 };
   }
-
-  return {
-    bonus: bestBonus,
-    count: bestCount,
-    formation: bestFormation,
-    style: bestStyle,
-    isMostUsed: true,
-    totalGames,
-  };
 }
 
 // Apaga 1 registo (o mais antigo) de cada táctica não usada há mais de 2 jornadas.
