@@ -98,11 +98,11 @@ export function useSocketListeners(handlers, refs) {
       handlers.setMyAuctionBid(null);
       handlers.setAuctionResult(null);
     });
-    socket.on("auctionBidPlaced", ({ playerId, currentHighBid, currentHighBidTeamId }) => {
+    socket.on("auctionBidPlaced", ({ playerId, currentHighBid, currentHighBidTeamId, bidHistory }) => {
       handlers.setActiveAuctions((prev) =>
         prev.map((a) =>
           a.playerId === playerId
-            ? { ...a, currentHighBid, currentHighBidTeamId }
+            ? { ...a, currentHighBid, currentHighBidTeamId, auction_bid_history: bidHistory || a.auction_bid_history }
             : a
         )
       );

@@ -33,13 +33,24 @@ export function createAuctionHelpers(deps: AuctionDeps) {
             if (!auction) return row;
             let currentHighBid = 0;
             let currentHighBidTeamId: number | null = null;
-            for (const [tid, amt] of Object.entries(auction.bids || {})) {
-              const b = Number(amt || 0);
+            for (const [tid, val] of Object.entries(auction.bids || {})) {
+              const b = Number((typeof val === 'object' ? (val as any).amount : val) || 0);
               if (b > currentHighBid) {
                 currentHighBid = b;
                 currentHighBidTeamId = parseInt(tid, 10);
               }
             }
+            // Construir histórico de licitações com nomes das equipas
+            const bidHistory = Object.entries(auction.bids || {}).map(([tid, val]: [string, any]) => {
+              const bidVal = typeof val === 'object' ? (val as any).amount : val;
+              const ts = typeof val === 'object' ? (val as any).timestamp : undefined;
+              const t = game.db ? null : null; // teams resolved client-side
+              return {
+                teamId: parseInt(tid, 10),
+                amount: Number(bidVal || 0),
+                timestamp: ts || 0,
+              };
+            });
             return {
               ...row,
               auction_active: true,
@@ -48,6 +59,7 @@ export function createAuctionHelpers(deps: AuctionDeps) {
               auction_starting_price: auction.startingPrice,
               auction_high_bid: currentHighBid,
               auction_high_bid_team_id: currentHighBidTeamId,
+              auction_bid_history: bidHistory,
             };
           });
           game.globalMarket = decorated;
@@ -77,6 +89,12 @@ export function createAuctionHelpers(deps: AuctionDeps) {
       auction.endsAt = now + 120000;
       // Garantir que o contador de relicitações existe (pode estar ausente em leilões restaurados da BD)
       if (!auction.npcRelicitationCount) auction.npcRelicitationCount = {};
+      // Migrar bids antigos (numéricos) para novo formato com timestamp
+      for (const [tid, val] of Object.entries(auction.bids || {})) {
+        if (typeof val !== 'object') {
+          auction.bids[tid] = { amount: val, timestamp: now };
+        }
+      }
 
       if (!game.auctionTimers) game.auctionTimers = {};
       game.auctionTimers[playerId] = setTimeout(() => {
@@ -86,8 +104,8 @@ export function createAuctionHelpers(deps: AuctionDeps) {
       // Recalculate current high bid
       let currentHighBid = 0;
       let currentHighBidTeamId: number | null = null;
-      for (const [tid, amt] of Object.entries(auction.bids || {})) {
-        const b = Number(amt || 0);
+      for (const [tid, val] of Object.entries(auction.bids || {})) {
+        const b = Number((typeof val === 'object' ? (val as any).amount : val) || 0);
         if (b > currentHighBid) {
           currentHighBid = b;
           currentHighBidTeamId = parseInt(tid, 10);
@@ -134,7 +152,8 @@ export function createAuctionHelpers(deps: AuctionDeps) {
     let winnerBid = 0;
     for (const [teamId, amount] of bidEntries) {
       const bid = Number(amount || 0);
-      if (bid > winnerBid || (bid === winnerBid && Math.random() < 0.5)) {
+      // Só substitui se for estritamente superior — em caso de empate, fica quem já liderava
+      if (bid > winnerBid) {
         winnerBid = bid;
         winnerTeamId = parseInt(teamId, 10);
       }
@@ -537,23 +556,31 @@ export function createAuctionHelpers(deps: AuctionDeps) {
           // Guardar quem liderava ANTES deste lance (pode ser NPC)
           const prevLeaderTeamId = currentHighBidTeamId;
 
-          auction.bids[teamId] = amount;
+          auction.bids[teamId] = { amount, timestamp: Date.now() };
 
           // Recalculate high bid after placing
           let newHighBid = 0;
           let newHighBidTeamId: number | null = null;
-          for (const [tid, amt] of Object.entries(auction.bids || {})) {
-            const b = Number(amt || 0);
+          for (const [tid, val] of Object.entries(auction.bids || {})) {
+            const b = Number((typeof val === 'object' ? (val as any).amount : val) || 0);
             if (b > newHighBid) {
               newHighBid = b;
               newHighBidTeamId = parseInt(tid, 10);
             }
           }
 
+          // Construir histórico atualizado de licitações
+          const bidHistory = Object.entries(auction.bids).map(([tid, val]: [string, any]) => ({
+            teamId: parseInt(tid, 10),
+            amount: Number(typeof val === 'object' ? (val as any).amount : val || 0),
+            timestamp: typeof val === 'object' ? (val as any).timestamp : 0,
+          }));
+
           io.to(game.roomCode).emit("auctionBidPlaced", {
             playerId,
             currentHighBid: newHighBid,
             currentHighBidTeamId: newHighBidTeamId,
+            bidHistory,
           });
 
           const humanTeamIds = new Set(

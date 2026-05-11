@@ -30,6 +30,14 @@ function useCountdown(endsAt) {
   return secs;
 }
 
+/* ── Time ago helper ──────────────────────────────────────────────────────── */
+function getTimeAgo(ts) {
+  const diff = Date.now() - ts;
+  if (diff < 60000) return `${Math.floor(diff / 1000)}s`;
+  if (diff < 3600000) return `${Math.floor(diff / 60000)}m`;
+  return `${Math.floor(diff / 3600000)}h`;
+}
+
 /* ── Small stat block ─────────────────────────────────────────────────────── */
 function StatBlock({ icon, label, value }) {
   return (
@@ -243,6 +251,45 @@ function AuctionCard({ auction, me, teams, teamInfo, matchweekCount, socket }) {
               )}
             </div>
           </div>
+
+          {/* Bid history */}
+          {!isClosed && !isPaused && auction.auction_bid_history && auction.auction_bid_history.length > 1 && (
+            <div
+              className="px-4 py-2 border-y"
+              style={{ borderBottom: "1px solid #1e1e2e", borderTop: "1px solid #1e1e2e" }}
+            >
+              <p className="text-[8px] font-black uppercase tracking-widest text-zinc-600 mb-1.5">
+                Lances ({auction.auction_bid_history.length})
+              </p>
+              <div className="space-y-1 max-h-24 overflow-y-auto">
+                {auction.auction_bid_history
+                  .sort((a, b) => b.amount - a.amount)
+                  .map((bid, i) => {
+                    const isLeader = bid.teamId === auction.auction_high_bid_team_id;
+                    const teamName = teams.find(t => t.id == bid.teamId)?.name || `Equipa ${bid.teamId}`;
+                    const timeAgo = bid.timestamp ? getTimeAgo(bid.timestamp) : "";
+                    return (
+                      <div
+                        key={i}
+                        className={`flex items-center justify-between text-[10px] py-1 rounded px-1.5 ${isLeader ? "bg-emerald-400/10" : ""}`}
+                      >
+                        <span className={`font-semibold truncate ${isLeader ? "text-emerald-400" : "text-on-surface-variant"}`}>
+                          {teamName}
+                        </span>
+                        <span className="font-mono font-black text-white tabular-nums ml-2">
+                          {formatCurrency(bid.amount)}
+                        </span>
+                        {timeAgo && (
+                          <span className="text-[8px] text-zinc-600 ml-1.5 shrink-0">
+                            {timeAgo}
+                          </span>
+                        )}
+                      </div>
+                    );
+                  })}
+              </div>
+            </div>
+          )}
 
           {/* Bid area */}
           <div className="px-4 py-3 flex-1 flex flex-col justify-end">
