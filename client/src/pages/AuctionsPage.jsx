@@ -372,12 +372,6 @@ function AuctionCard({ auction, me, teams, teamInfo, matchweekCount, socket }) {
                 >
                   Licitar
                 </button>
-                <div className="flex items-center justify-between text-[9px] font-medium mt-0.5">
-                  <span className="text-zinc-600">Caixa disponível</span>
-                  <span className="font-black text-zinc-400 font-mono tabular-nums">
-                    {formatCurrency(teamInfo?.budget || 0)}
-                  </span>
-                </div>
               </div>
             )}
           </div>
@@ -492,6 +486,12 @@ export function AuctionsPage({ activeAuctions = [], me, teams, teamInfo, matchwe
             {live.length === 0
               ? "Sem leilões a decorrer"
               : `${live.length} leilão${live.length !== 1 ? "s" : ""} a decorrer`}
+          </p>
+        </div>
+        <div className="ml-auto text-right">
+          <p className="text-[9px] text-zinc-600 uppercase font-bold tracking-wide">Caixa disponível</p>
+          <p className="font-mono font-black text-lg text-white tabular-nums">
+            {formatCurrency(teamInfo?.budget || 0)}
           </p>
         </div>
       </div>
