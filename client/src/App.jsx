@@ -280,6 +280,9 @@ function App() {
   const [chatInput, setChatInput] = useState("");
   const chatMessagesRef = React.useRef(null);
   const roomHubRef = React.useRef(null);
+  // Chat visibility + active tab — mirrors RoomHub state for unread logic
+  const chatOpenRef = React.useRef(false);
+  const activeChatTabRef = React.useRef("room");
   const [mobileSubMenu, setMobileSubMenu] = React.useState(null); // null | "gestao" | "competicao"
   // Sidebar collapsed state — persisted in localStorage, auto-collapses during Live matches
   const [sidebarCollapsed, setSidebarCollapsed] = React.useState(
@@ -484,6 +487,8 @@ function App() {
       forceGoalFlashRender,
       joinTimerRef,
       players,
+      chatOpenRef,
+      activeChatTabRef,
     },
   );
 
@@ -5685,6 +5690,8 @@ function App() {
         chatMessagesRef={chatMessagesRef}
         addToast={addToast}
         awaitingCoaches={awaitingCoaches}
+        chatOpenRef={chatOpenRef}
+        activeChatTabRef={activeChatTabRef}
       />
     </div>
   );

@@ -23,6 +23,8 @@ const QUICK_MESSAGES = ["👍", "🔥", "Vamos!", "Boa sorte", "⚽", "😂"];
  *   chatMessagesRef: object,
  *   addToast: function,
  *   awaitingCoaches: Array,
+ *   chatOpenRef: object,
+ *   activeChatTabRef: object,
  * }} props
  */
 export function RoomHub({
@@ -44,9 +46,17 @@ export function RoomHub({
   chatMessagesRef,
   addToast,
   awaitingCoaches,
+  chatOpenRef,
+  activeChatTabRef,
 }) {
   const [chatSubTab, setChatSubTab] = useState("room");
   const [systemMessages, setSystemMessages] = useState([]);
+
+  // Sync RoomHub state → parent refs for unread logic
+  useEffect(() => {
+    chatOpenRef && (chatOpenRef.current = roomHubOpen);
+    activeChatTabRef && (activeChatTabRef.current = chatSubTab);
+  }, [roomHubOpen, chatSubTab, chatOpenRef, activeChatTabRef]);
 
   useEffect(() => {
     const onSystemMessage = (data) => {
