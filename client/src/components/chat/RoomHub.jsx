@@ -35,6 +35,8 @@ export function RoomHub({
   teams,
   roomCreator,
   matchweekCount,
+  unreadRoom,
+  unreadGlobal,
   chatInput,
   setChatInput,
   chatMessagesRef,
