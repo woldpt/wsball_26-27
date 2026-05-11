@@ -144,11 +144,11 @@ export function RoomHub({
               )}
             </div>
             <button
-              onClick={() => setRoomHubOpen(false)}
+              onClick={() => setRoomHubOpen(!roomHubOpen)}
               className="text-on-surface-variant hover:text-on-surface transition-colors"
             >
               <span className="material-symbols-outlined text-[18px] leading-none">
-                close
+                {roomHubOpen ? "close" : "expand_more"}
               </span>
             </button>
           </div>

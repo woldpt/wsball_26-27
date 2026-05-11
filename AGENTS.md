@@ -25,12 +25,14 @@
 - Market tab uses `TransferHub`, not `MarketTab`:
   - `client/src/App.jsx`
   - `client/src/components/ui/TransferHub.jsx`
+- **TransferHub filters out auctions** (`p.transfer_status !== "auction"` in `visible` useMemo). Leilões só aparecem em `AuctionsPage.jsx`.
 - Layout: cards in desktop grid, single column in mobile.
 - Cards support flip interaction and open `PlayerHistoryModal` via `requestPlayerHistory`.
 - Cards use `PlayerAvatar` and show essential stats/actions.
 - Visual tuning applied:
   - thicker card outlines (`border-2` / `ring-2`)
-  - subtle team-color tint fill (from player/team primary color fallback chain).
+  - subtle team-color tint fill (from player/team primary color fallback chain)
+  - hover scale: `1.04` on MarketCard and AuctionCard (not `1.02`).
 
 ## Auction System (Leilões)
 - Full auction system: pauses, resumes, NPC bidding, flip cards, mobile notifications.
