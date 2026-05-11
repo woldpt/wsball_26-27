@@ -272,7 +272,6 @@ function App() {
 
   // Chat state
   const [roomHubOpen, setRoomHubOpen] = useState(false);
-  const [activeChatTab, setActiveChatTab] = useState("room");
   const [roomMessages, setRoomMessages] = useState([]);
   const [globalMessages, setGlobalMessages] = useState([]);
   const [globalPlayers, setGlobalPlayers] = useState([]);
@@ -502,14 +501,14 @@ function App() {
     if (chatMessagesRef.current) {
       chatMessagesRef.current.scrollTop = chatMessagesRef.current.scrollHeight;
     }
-  }, [roomMessages, globalMessages, roomHubOpen, activeChatTab]);
+  }, [roomMessages, globalMessages, roomHubOpen]);
 
-  // Clear unread when tab is active and chat is open
+  // Clear unread when RoomHub is open
   useEffect(() => {
     if (!roomHubOpen) return;
-    if (activeChatTab === "room") setUnreadRoom(0);
-    else if (activeChatTab === "global") setUnreadGlobal(0);
-  }, [roomHubOpen, activeChatTab]);
+    setUnreadRoom(0);
+    setUnreadGlobal(0);
+  }, [roomHubOpen]);
 
   useEffect(() => {
     mySquadRef.current = mySquad;
@@ -2364,35 +2363,10 @@ function App() {
               </span>
             </div>
 
-            {/* Sala button → opens RoomHub with Sala tab */}
+            {/* RoomHub button — unified: Coaches + Chat */}
             <button
-              onClick={() => {
-                setRoomHubOpen((v) => !v);
-                setActiveChatTab("sala");
-              }}
-              title="Sala"
-              className="relative flex items-center justify-center w-9 h-9 rounded-lg hover:bg-white/10 transition-colors"
-            >
-              <span
-                className="material-symbols-outlined text-[20px] leading-none"
-                style={{ color: teamInfo?.color_secondary || "#e5e2e1" }}
-              >
-                groups
-              </span>
-              {players.length > 0 && (
-                <span className="absolute -top-0.5 -right-0.5 min-w-4 h-4 rounded-full bg-emerald-500 text-white text-[9px] font-black leading-none flex items-center justify-center px-1">
-                  {players.length}
-                </span>
-              )}
-            </button>
-
-            {/* Chat button → opens RoomHub with Chat tab */}
-            <button
-              onClick={() => {
-                setRoomHubOpen((v) => !v);
-                setActiveChatTab("room");
-              }}
-              title="Chat"
+              onClick={() => setRoomHubOpen((v) => !v)}
+              title="Sala e Chat"
               className="relative flex items-center justify-center w-9 h-9 rounded-lg hover:bg-white/10 transition-colors"
             >
               <span
@@ -2401,17 +2375,14 @@ function App() {
               >
                 chat
               </span>
-              {unreadRoom + unreadGlobal > 0 && (
-                <span className="absolute -top-0.5 -right-0.5 min-w-4 h-4 rounded-full bg-rose-500 text-white text-[9px] font-black leading-none flex items-center justify-center px-1">
+              {(unreadRoom + unreadGlobal > 0 || players.length > 0) && (
+                <span className="absolute -top-0.5 -right-0.5 min-w-4 h-4 rounded-full bg-emerald-500 text-white text-[9px] font-black leading-none flex items-center justify-center px-1">
                   {unreadRoom + unreadGlobal > 9
                     ? "9+"
-                    : unreadRoom + unreadGlobal}
+                    : unreadRoom + unreadGlobal || players.length}
                 </span>
               )}
             </button>
-
-            {/* Divider */}
-            <div className="w-px h-5 bg-white/15 mx-1" />
 
             {/* SAIR */}
             <button
@@ -5699,8 +5670,6 @@ function App() {
         me={me}
         roomHubOpen={roomHubOpen}
         setRoomHubOpen={setRoomHubOpen}
-        activeChatTab={activeChatTab}
-        setActiveChatTab={setActiveChatTab}
         roomMessages={roomMessages}
         globalMessages={globalMessages}
         globalPlayers={globalPlayers}
