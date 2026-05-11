@@ -46,18 +46,24 @@ export function MatchPage({
     setActiveTab(getDefaultTab(mode));
   }
 
-  const tabs = mode === "halftime"
+  const tabs = mode === "detail"
     ? [
         { key: "jogo", label: "Jogo" },
-        { key: "adversario", label: "Adversário" },
-        { key: "intervencao", label: "Intervenção" },
+        { key: "locais", label: "Locais" },
+        { key: "visitantes", label: "Visitantes" },
       ]
-    : [
-        { key: "jogo", label: "Jogo" },
-        { key: "lineup", label: "Lineup" },
-        { key: "adversario", label: "Adversário" },
-        { key: "intervencao", label: "Intervenção" },
-      ];
+    : mode === "halftime"
+      ? [
+          { key: "jogo", label: "Jogo" },
+          { key: "adversario", label: "Adversário" },
+          { key: "intervencao", label: "Intervenção" },
+        ]
+      : [
+          { key: "jogo", label: "Jogo" },
+          { key: "lineup", label: "Lineup" },
+          { key: "adversario", label: "Adversário" },
+          { key: "intervencao", label: "Intervenção" },
+        ];
 
   const isCupContext = isCupMatch || cupPreMatch;
   const canContinue = !isCupContext || myTeamInCup;
@@ -135,15 +141,17 @@ export function MatchPage({
         {activeTab === "jogo" && (
           <TabJogo fixture={fixture} liveMinute={liveMinute} teams={teams} />
         )}
-        {activeTab === "lineup" && (
-          mode === "detail"
-            ? <TabAdversario fixture={fixture} myTeamId={fixture?.homeTeamId} teams={teams} />
-            : <TabLineup fixture={fixture} liveMinute={liveMinute} teams={teams} />
+        {activeTab === "locais" && (
+          <TabAdversario fixture={fixture} myTeamId={fixture?.homeTeamId} teams={teams} />
         )}
-        {activeTab === "adversario" && (
-          mode === "detail"
-            ? <TabAdversario fixture={fixture} myTeamId={fixture?.awayTeamId} teams={teams} />
-            : <TabAdversario fixture={fixture} myTeamId={myTeamId} teams={teams} />
+        {activeTab === "visitantes" && (
+          <TabAdversario fixture={fixture} myTeamId={fixture?.awayTeamId} teams={teams} />
+        )}
+        {activeTab === "lineup" && (
+          <TabLineup fixture={fixture} liveMinute={liveMinute} teams={teams} />
+        )}
+        {activeTab === "adversario" && mode !== "detail" && (
+          <TabAdversario fixture={fixture} myTeamId={myTeamId} teams={teams} />
         )}
         {activeTab === "intervencao" && mode !== "detail" && (
           <TabIntervencao
@@ -167,11 +175,6 @@ export function MatchPage({
             injuredHalftimeIds={injuredHalftimeIds}
             onResolveAction={onResolveAction}
           />
-        )}
-        {activeTab === "intervencao" && mode === "detail" && (
-          <div className="flex-1 flex items-center justify-center text-zinc-600 text-sm font-bold">
-            Sem intervenção disponível neste modo
-          </div>
         )}
       </div>
 
