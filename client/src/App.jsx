@@ -31,7 +31,7 @@ import { TransferProposalModal } from "./components/modals/TransferProposalModal
 import { AuctionNotification } from "./components/ui/AuctionNotification.jsx";
 import { AuctionsPage } from "./pages/AuctionsPage.jsx";
 import { NewsTicker } from "./components/ui/NewsTicker.jsx";
-import { ChatWidget } from "./components/chat/ChatWidget.jsx";
+import { RoomHub } from "./components/chat/RoomHub.jsx";
 // ── Utils & Constants ──────────────────────────────────────────────────────
 import {
   DIVISION_NAMES,
@@ -271,7 +271,7 @@ function App() {
   const [matchDetailFixture, setMatchDetailFixture] = useState(null);
 
   // Chat state
-  const [chatOpen, setChatOpen] = useState(false);
+  const [roomHubOpen, setRoomHubOpen] = useState(false);
   const [activeChatTab, setActiveChatTab] = useState("room");
   const [roomMessages, setRoomMessages] = useState([]);
   const [globalMessages, setGlobalMessages] = useState([]);
@@ -280,9 +280,7 @@ function App() {
   const [unreadGlobal, setUnreadGlobal] = useState(0);
   const [chatInput, setChatInput] = useState("");
   const chatMessagesRef = React.useRef(null);
-  // Online players dropdown (header widget)
-  const [showOnlineDropdown, setShowOnlineDropdown] = useState(false);
-  const onlineDropdownRef = React.useRef(null);
+  const roomHubRef = React.useRef(null);
   const [mobileSubMenu, setMobileSubMenu] = React.useState(null); // null | "gestao" | "competicao"
   // Sidebar collapsed state — persisted in localStorage, auto-collapses during Live matches
   const [sidebarCollapsed, setSidebarCollapsed] = React.useState(
@@ -504,14 +502,14 @@ function App() {
     if (chatMessagesRef.current) {
       chatMessagesRef.current.scrollTop = chatMessagesRef.current.scrollHeight;
     }
-  }, [roomMessages, globalMessages, chatOpen, activeChatTab]);
+  }, [roomMessages, globalMessages, roomHubOpen, activeChatTab]);
 
   // Clear unread when tab is active and chat is open
   useEffect(() => {
-    if (!chatOpen) return;
+    if (!roomHubOpen) return;
     if (activeChatTab === "room") setUnreadRoom(0);
     else if (activeChatTab === "global") setUnreadGlobal(0);
-  }, [chatOpen, activeChatTab]);
+  }, [roomHubOpen, activeChatTab]);
 
   useEffect(() => {
     mySquadRef.current = mySquad;
@@ -1039,20 +1037,20 @@ function App() {
     return () => document.removeEventListener("click", close);
   }, [openStatusPickerId]);
 
-  // Close online dropdown when clicking outside
+  // Close RoomHub when clicking outside
   useEffect(() => {
-    if (!showOnlineDropdown) return;
+    if (!roomHubOpen) return;
     const close = (e) => {
       if (
-        onlineDropdownRef.current &&
-        !onlineDropdownRef.current.contains(e.target)
+        roomHubRef.current &&
+        !roomHubRef.current.contains(e.target)
       ) {
-        setShowOnlineDropdown(false);
+        setRoomHubOpen(false);
       }
     };
     document.addEventListener("mousedown", close);
     return () => document.removeEventListener("mousedown", close);
-  }, [showOnlineDropdown]);
+  }, [roomHubOpen]);
 
   const handleResolveMatchAction = (playerIdOrChoice) => {
     if (!matchAction) return;
@@ -2349,7 +2347,7 @@ function App() {
           )}
 
           {/* Right: unified widget — sala + chat + sair */}
-          <div className="flex items-center gap-1" ref={onlineDropdownRef}>
+          <div className="flex items-center gap-1" ref={roomHubRef}>
             {/* Manager identity (lg only) */}
             <div className="hidden lg:flex flex-col items-end mr-2">
               <span
@@ -2366,180 +2364,33 @@ function App() {
               </span>
             </div>
 
-            {/* Online players button */}
-            <div className="relative">
-              <button
-                onClick={() => {
-                  setChatOpen(false);
-                  setShowOnlineDropdown((v) => !v);
-                }}
-                title="Jogadores online"
-                className="relative flex items-center justify-center w-9 h-9 rounded-lg hover:bg-white/10 transition-colors"
-              >
-                <span
-                  className="material-symbols-outlined text-[20px] leading-none"
-                  style={{ color: teamInfo?.color_secondary || "#e5e2e1" }}
-                >
-                  groups
-                </span>
-                {players.length > 0 && (
-                  <span className="absolute -top-0.5 -right-0.5 min-w-4 h-4 rounded-full bg-emerald-500 text-white text-[9px] font-black leading-none flex items-center justify-center px-1">
-                    {players.length}
-                  </span>
-                )}
-              </button>
-
-              {/* Dropdown panel */}
-              {showOnlineDropdown && (
-                <div
-                  className="absolute top-full right-0 mt-2 w-80 rounded-xl shadow-2xl border border-outline-variant/30 overflow-hidden z-50"
-                  style={{ background: "#1a1a1a" }}
-                >
-                  <div
-                    className="px-4 py-2.5 flex flex-col gap-1.5 border-b border-outline-variant/20"
-                    style={{ background: "#111" }}
-                  >
-                    <div className="flex items-center justify-between">
-                      <span className="text-[10px] uppercase tracking-widest font-black text-on-surface-variant truncate">
-                        {me.roomName || me.roomCode}
-                      </span>
-                      <span className="text-[10px] font-black text-emerald-400 uppercase tracking-widest shrink-0 ml-2">
-                        {players.length} online
-                      </span>
-                    </div>
-                    <div className="flex items-center gap-1.5">
-                      <span className="font-mono text-xs font-black text-primary tracking-widest">
-                        {me.roomCode?.toUpperCase()}
-                      </span>
-                      <button
-                        onClick={() => {
-                          navigator.clipboard
-                            .writeText(me.roomCode?.toUpperCase() || "")
-                            .then(() => addToast("Código copiado!"))
-                            .catch(() => {});
-                        }}
-                        className="text-[9px] font-black uppercase tracking-widest text-zinc-500 hover:text-primary transition-colors px-1.5 py-0.5 rounded bg-zinc-800 hover:bg-zinc-700"
-                        title="Copiar código de convite"
-                      >
-                        Copiar
-                      </button>
-                    </div>
-                  </div>
-                  <div className="divide-y divide-outline-variant/10 max-h-80 overflow-y-auto">
-                    {[
-                      ...players.map((p) => ({
-                        name: p.name,
-                        teamId: p.teamId,
-                        online: true,
-                        submitted: p.ready,
-                      })),
-                      ...awaitingCoaches
-                        .filter((n) => !players.some((p) => p.name === n))
-                        .map((n) => ({
-                          name: n,
-                          teamId: null,
-                          online: false,
-                          submitted: false,
-                        })),
-                    ].map((coach, i) => {
-                      const coachTeam = coach.teamId
-                        ? teams.find((t) => t.id == coach.teamId)
-                        : null;
-                      const statusLabel = !coach.online
-                        ? "Offline"
-                        : coach.submitted
-                          ? "Vamos! ⚡"
-                          : "Queimando neurónios 🧠";
-                      const statusColor = !coach.online
-                        ? "text-on-surface-variant/40"
-                        : coach.submitted
-                          ? "text-emerald-400"
-                          : "text-amber-400";
-                      return (
-                        <div
-                          key={coach.name || i}
-                          className="flex items-center gap-3 px-4 py-2.5"
-                        >
-                          <span
-                            className={`w-2 h-2 rounded-full shrink-0 ${
-                              coach.online
-                                ? coach.submitted
-                                  ? "bg-emerald-400"
-                                  : "bg-amber-400"
-                                : "bg-surface-bright"
-                            }`}
-                          />
-                          <div className="flex-1 min-w-0">
-                            <p
-                              className={`text-xs font-black truncate ${
-                                coach.online
-                                  ? "text-on-surface"
-                                  : "text-on-surface-variant"
-                              }`}
-                            >
-                              {coach.name}
-                              {coach.name === me.name && (
-                                <span className="ml-1.5 text-[9px] font-bold text-on-surface-variant">
-                                  (tu)
-                                </span>
-                              )}
-                              {coach.name === roomCreator && (
-                                <span className="ml-1.5 text-[9px] font-black uppercase tracking-widest text-amber-400 bg-amber-400/10 px-2 py-0.5 rounded shrink-0">
-                                  Admin
-                                </span>
-                              )}
-                            </p>
-                            {coachTeam && (
-                              <p
-                                className="text-[10px] truncate"
-                                style={{
-                                  color: coachTeam.color_primary || "#71717a",
-                                }}
-                              >
-                                {coachTeam.name}
-                              </p>
-                            )}
-                          </div>
-                          {/* Botão kick: só Admin no lobby, não se pode expulsar a si mesmo */}
-                          {me.name === roomCreator &&
-                            coach.name !== me.name &&
-                            matchweekCount === 0 && (
-                              <button
-                                onClick={() => {
-                                  socket.emit("kickCoach", {
-                                    targetName: coach.name,
-                                  });
-                                }}
-                                className="shrink-0 text-[9px] font-black uppercase tracking-widest text-rose-400 hover:text-rose-300 bg-rose-400/10 hover:bg-rose-400/20 px-1.5 py-0.5 rounded transition-colors"
-                                title={`Expulsar ${coach.name}`}
-                              >
-                                Kick
-                              </button>
-                            )}
-                          {!(
-                            me.name === roomCreator &&
-                            coach.name !== me.name &&
-                            matchweekCount === 0
-                          ) && (
-                            <span
-                              className={`shrink-0 text-[10px] font-black ${statusColor}`}
-                            >
-                              {statusLabel}
-                            </span>
-                          )}
-                        </div>
-                      );
-                    })}
-                  </div>
-                </div>
-              )}
-            </div>
-
-            {/* Chat button */}
+            {/* Sala button → opens RoomHub with Sala tab */}
             <button
               onClick={() => {
-                setShowOnlineDropdown(false);
-                setChatOpen((v) => !v);
+                setRoomHubOpen((v) => !v);
+                setActiveChatTab("sala");
+              }}
+              title="Sala"
+              className="relative flex items-center justify-center w-9 h-9 rounded-lg hover:bg-white/10 transition-colors"
+            >
+              <span
+                className="material-symbols-outlined text-[20px] leading-none"
+                style={{ color: teamInfo?.color_secondary || "#e5e2e1" }}
+              >
+                groups
+              </span>
+              {players.length > 0 && (
+                <span className="absolute -top-0.5 -right-0.5 min-w-4 h-4 rounded-full bg-emerald-500 text-white text-[9px] font-black leading-none flex items-center justify-center px-1">
+                  {players.length}
+                </span>
+              )}
+            </button>
+
+            {/* Chat button → opens RoomHub with Chat tab */}
+            <button
+              onClick={() => {
+                setRoomHubOpen((v) => !v);
+                setActiveChatTab("room");
               }}
               title="Chat"
               className="relative flex items-center justify-center w-9 h-9 rounded-lg hover:bg-white/10 transition-colors"
@@ -5844,20 +5695,26 @@ function App() {
         setGameDialog={setGameDialog}
       />
 
-      <ChatWidget
+      <RoomHub
         me={me}
-        chatOpen={chatOpen}
-        setChatOpen={setChatOpen}
+        roomHubOpen={roomHubOpen}
+        setRoomHubOpen={setRoomHubOpen}
         activeChatTab={activeChatTab}
         setActiveChatTab={setActiveChatTab}
         roomMessages={roomMessages}
         globalMessages={globalMessages}
         globalPlayers={globalPlayers}
+        players={players}
+        teams={teams}
+        roomCreator={roomCreator}
+        matchweekCount={matchweekCount}
         unreadRoom={unreadRoom}
         unreadGlobal={unreadGlobal}
         chatInput={chatInput}
         setChatInput={setChatInput}
         chatMessagesRef={chatMessagesRef}
+        addToast={addToast}
+        awaitingCoaches={awaitingCoaches}
       />
     </div>
   );
