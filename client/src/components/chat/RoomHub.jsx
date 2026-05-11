@@ -1,11 +1,12 @@
 import { socket } from "../../socket.js";
-import { useState, useEffect, useRef, useLayoutEffect } from "react";
+import { useState, useEffect, useLayoutEffect } from "react";
 
 const QUICK_MESSAGES = ["👍", "🔥", "Vamos!", "Boa sorte", "⚽", "😂"];
 
 /**
  * @param {{
  *   me: object|null,
+ *   hubRef: object,
  *   roomHubOpen: boolean,
  *   setRoomHubOpen: function,
  *   roomMessages: Array,
@@ -26,6 +27,7 @@ const QUICK_MESSAGES = ["👍", "🔥", "Vamos!", "Boa sorte", "⚽", "😂"];
  */
 export function RoomHub({
   me,
+  hubRef,
   roomHubOpen,
   setRoomHubOpen,
   roomMessages,
@@ -43,8 +45,6 @@ export function RoomHub({
   addToast,
   awaitingCoaches,
 }) {
-  const hubRef = useRef(null);
-
   // Internal tab state — not passed from parent
   const [activeTab, setActiveTab] = useState("coaches");
   const [chatSubTab, setChatSubTab] = useState("room");

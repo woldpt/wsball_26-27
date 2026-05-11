@@ -2346,7 +2346,7 @@ function App() {
           )}
 
           {/* Right: unified widget — sala + chat + sair */}
-          <div className="flex items-center gap-1" ref={roomHubRef}>
+          <div className="flex items-center gap-1">
             {/* Manager identity (lg only) */}
             <div className="hidden lg:flex flex-col items-end mr-2">
               <span
@@ -5668,6 +5668,7 @@ function App() {
 
       <RoomHub
         me={me}
+        hubRef={roomHubRef}
         roomHubOpen={roomHubOpen}
         setRoomHubOpen={setRoomHubOpen}
         roomMessages={roomMessages}
