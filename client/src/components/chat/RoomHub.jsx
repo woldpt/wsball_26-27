@@ -329,21 +329,22 @@ export function RoomHub({
             </div>
           )}
 
-          {/* Quick messages */}
-          <div
-            className="shrink-0 flex items-center gap-1.5 px-3 py-2 overflow-x-auto border-b border-outline-variant/20"
-            style={{ background: "#111" }}
-          >
-            {QUICK_MESSAGES.map((msg) => (
-              <button
-                key={msg}
-                onClick={() => sendQuickMessage(msg)}
-                className="shrink-0 px-2.5 py-1 rounded-full text-xs bg-surface-container hover:bg-surface-container-high text-on-surface border border-outline-variant/20 transition-colors"
-              >
-                {msg}
-              </button>
-            ))}
-          </div>
+          {chatSubTab === "room" && (
+            <div
+              className="shrink-0 flex items-center gap-1.5 px-3 py-2 overflow-x-auto border-b border-outline-variant/20"
+              style={{ background: "#111" }}
+            >
+              {QUICK_MESSAGES.map((msg) => (
+                <button
+                  key={msg}
+                  onClick={() => sendQuickMessage(msg)}
+                  className="shrink-0 px-2.5 py-1 rounded-full text-xs bg-surface-container hover:bg-surface-container-high text-on-surface border border-outline-variant/20 transition-colors"
+                >
+                  {msg}
+                </button>
+              ))}
+            </div>
+          )}
 
           {/* Messages */}
           <div
