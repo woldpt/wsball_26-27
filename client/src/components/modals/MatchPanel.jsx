@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState } from "react";
 // eslint-disable-next-line no-unused-vars
 import { motion, AnimatePresence, useReducedMotion } from "framer-motion";
 import { getEffectiveLineup } from "../../utils/playerHelpers.js";
@@ -370,13 +370,6 @@ function TabAdversario({ fixture, myTeamId, teams }) {
     DEF: starters.filter((p) => p.position === "DEF"),
     GR: starters.filter((p) => p.position === "GR"),
   };
-  const rowConfig = [
-    { key: "GR", top: "8%" },
-    { key: "DEF", top: "31%" },
-    { key: "MED", top: "56%" },
-    { key: "ATA", top: "81%" },
-  ];
-
   const posColors = {
     GR: "bg-amber-500 text-zinc-950",
     DEF: "bg-sky-500 text-zinc-950",

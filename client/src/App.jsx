@@ -7,10 +7,6 @@ import React, {
   useRef,
 } from "react";
 import { socket } from "./socket";
-import estadio5000 from "./assets/estadio5000.jpg";
-import estadio15000 from "./assets/estadio15000.jpg";
-import estadio30000 from "./assets/estadio30000.jpg";
-import estadio50000 from "./assets/estadio50000.jpg";
 import { COUNTRY_FLAGS } from "./countryFlags.js";
 // ── Extracted components ───────────────────────────────────────────────────
 import { PlayerLink } from "./components/shared/PlayerLink.jsx";
@@ -46,25 +42,20 @@ import {
   playGoalSound,
   playVarSound,
 } from "./utils/audio.js";
-import { formatCurrency } from "./utils/formatters.js";
 import {
   loadSavedSession,
-  hasSeenWelcome,
-  hasSeenWelcomeThisSession,
   markWelcomeSeen as _markWelcomeSeen,
   markWelcomeSeenThisSession as _markWelcomeSeenThisSession,
 } from "./utils/localStorage.js";
 import {
-  getPlayerStat,
   isPlayerAvailable,
   buildAutoPositions,
   getEffectiveLineup as _getEffectiveLineup,
   getMatchLastEventText,
-  getFormationRequirements,
   getAvailablePositionCounts,
   isFormationAvailable,
 } from "./utils/playerHelpers.js";
-import { normalizeTeamId, isSameTeamId } from "./utils/teamHelpers.js";
+import { isSameTeamId } from "./utils/teamHelpers.js";
 import { useSocketListeners } from "./hooks/useSocketListeners.js";
 import { checkCacheVersion } from "./utils/cacheVersion.js";
 // ── Extracted views ────────────────────────────────────────────────────────
@@ -192,10 +183,10 @@ function App() {
   const [marketPairs, setMarketPairs] = useState([]);
   const [marketPositionFilter, setMarketPositionFilter] = useState("all");
   const [marketSort, setMarketSort] = useState("quality-desc");
-  const [selectedAuctionPlayer, setSelectedAuctionPlayer] = useState(null);
-  const [isAuctionExpanded, setIsAuctionExpanded] = useState(false);
-  const [auctionBid, setAuctionBid] = useState("");
-  const [myAuctionBid, setMyAuctionBid] = useState(null); // sealed bid confirmation
+  const [_auctionBid, setAuctionBid] = useState("");
+  const [_selectedAuctionPlayer, setSelectedAuctionPlayer] = useState(null);
+  const [_isAuctionExpanded, setIsAuctionExpanded] = useState(false);
+  const [_myAuctionBid, setMyAuctionBid] = useState(null); // sealed bid confirmation
   // eslint-disable-next-line no-unused-vars
   const [auctionResult, setAuctionResult] = useState(null); // result after auction closes (legacy, managed in listeners)
   /** @type {[Array, function]} activeAuctions: list of all live auctions + recent results */
@@ -1376,32 +1367,11 @@ function App() {
   }, []);
 
   // ── AUCTION BID ───────────────────────────────────────────────────────────
-  const openAuctionBid = useCallback((player) => {
+  const openAuctionBid = useCallback(() => {
     // Navigate to Leilões page; the player context is available there
     setActiveTab("leiloes");
     window.scrollTo(0, 0);
   }, []);
-
-  const closeAuctionBid = useCallback(() => {
-    setSelectedAuctionPlayer(null);
-    setIsAuctionExpanded(false);
-    setAuctionBid("");
-    setMyAuctionBid(null);
-    setAuctionResult(null);
-  }, []);
-
-  const submitAuctionBid = useCallback(() => {
-    setSelectedAuctionPlayer((prev) => {
-      if (!prev) return prev;
-      const amount = Number(auctionBid);
-      if (!Number.isFinite(amount) || amount <= 0) return prev;
-      socket.emit("placeAuctionBid", {
-        playerId: prev.playerId || prev.id,
-        bidAmount: amount,
-      });
-      return prev;
-    });
-  }, [auctionBid]);
 
   const filteredMarketPlayers = useMemo(() => {
     const marketTeamId = me?.teamId;
@@ -1440,7 +1410,7 @@ function App() {
         marketPrice: getPlayerPrice(player),
       }))
       .sort(comparePlayers);
-  }, [marketPairs, marketPositionFilter, marketSort, me?.teamId, teams]);
+  }, [marketPairs, marketPositionFilter, marketSort, me?.teamId]);
 
   const isMatchInProgress =
     isPlayingMatch || showHalftimePanel || !!matchAction;

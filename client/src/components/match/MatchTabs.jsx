@@ -1,3 +1,4 @@
+// eslint-disable-next-line no-unused-vars
 import { motion } from "framer-motion";
 import { getEffectiveLineup } from "../../utils/playerHelpers.js";
 import {
@@ -678,7 +679,7 @@ export function TabIntervencao({
               Em Campo
             </span>
           </div>
-          <div className="flex-1 overflow-y-auto">
+          <div className="min-w-0 flex-1 overflow-y-auto">
             {onPitchPlayers.map((p, i) => {
               const grAvailableOnBench = benchPlayers.some(
                 (bp) => bp.position === "GR" && !subbedOut.includes(bp.id),
@@ -777,7 +778,7 @@ export function TabIntervencao({
               {isPenalty ? "Escolha" : "Banco"}
             </span>
           </div>
-          <div className="flex-1 overflow-y-auto">
+          <div className="min-w-0 flex-1 overflow-y-auto">
             {isPenalty ? (
               <p className="text-center text-zinc-500 text-xs font-bold py-8 px-4">
                 Seleciona o marcador na coluna "Em Campo".

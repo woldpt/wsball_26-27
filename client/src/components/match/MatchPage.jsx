@@ -9,7 +9,6 @@ export function MatchPage({
   teams,
   isCupMatch,
   cupMatchRoundName,
-  _currentJornada,
   isPlayingMatch,
   tactic,
   onUpdateTactic,

@@ -1116,7 +1116,7 @@ export function useSocketListeners(handlers, refs) {
       );
     });
 
-    socket.on("matchActionExpired", ({ actionId, type, reason }) => {
+    socket.on("matchActionExpired", ({ type }) => {
       handlers.setIsMatchActionPending(false);
       clearInterval(refs.injuryCountdownRef.current);
       refs.injuryCountdownRef.current = null;

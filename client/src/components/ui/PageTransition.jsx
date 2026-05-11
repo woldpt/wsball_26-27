@@ -35,8 +35,8 @@ export function StaggerList({ children, className = "" }) {
       },
     },
   };
+  // eslint-disable-next-line no-unused-vars
   const itemVariants = {
-    // eslint-disable-line no-unused-vars
     hidden: { opacity: 0, y: 10 },
     visible: { opacity: 1, y: 0, transition: { duration: 0.2 } },
   };

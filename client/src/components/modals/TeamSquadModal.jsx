@@ -55,13 +55,6 @@ export function TeamSquadModal({
   const showProposalCol = isNpcTeam;
   const colCount = showProposalCol ? 10 : 9;
 
-  const myTeamId = me?.teamId;
-  const myTeam = teams.find((t) => t.id === myTeamId);
-  const myDivision = myTeam?.division;
-  const myDivTeams = teams
-    .filter((t) => t.division === myDivision)
-    .sort((a, b) => a.id - b.id);
-
   const selectedTeamDivision = selectedTeam?.division;
   const selectedDivTeams = teams
     .filter((t) => t.division === selectedTeamDivision)
@@ -71,11 +64,7 @@ export function TeamSquadModal({
     const curIdx = calendarData?.calendarIndex ?? 0;
     const cal = calendarData;
 
-    const getStatus = (entry) => {
-      if (entry.calendarIndex < curIdx) return "done";
-      if (entry.calendarIndex === curIdx) return "current";
-      return "future";
-    };
+
 
     const calEntries = (calendarData?.leagueMatches ?? [])
       .filter((m) =>

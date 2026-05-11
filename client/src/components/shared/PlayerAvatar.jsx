@@ -380,10 +380,6 @@ function PlayerAvatarInner({ seed, position, teamColor, size = "lg" }) {
   const cheekY = face.cheekY + mouthYOffset * 0.3;
 
   // ---------- CABELOS estilo Tsubasa ----------
-  // Mecha pontiaguda reutilizável (bandeira shounen)
-  const spike = (x1, y1, x2, y2, x3, y3) =>
-    `M${x1} ${y1} L${x2} ${y2} L${x3} ${y3} Z`;
-
   const renderBackHair = () => {
     if (hairStyle === "bald") return null;
 

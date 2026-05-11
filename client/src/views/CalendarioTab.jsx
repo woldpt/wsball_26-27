@@ -1,7 +1,7 @@
 import { SEASON_CALENDAR } from "../constants/index.js";
 import { generateLeagueFixtures } from "../utils/fixtures.js";
 
-export function CalendarioTab({ calendarData, me, teams, seasonYear, calFilter, setCalFilter, matchweekCount, handleOpenTeamSquad }) {
+export function CalendarioTab({ calendarData, me, teams, seasonYear, calFilter, setCalFilter, handleOpenTeamSquad }) {
   const cal = calendarData;
   const curIdx = cal?.calendarIndex ?? 0;
   const calYear = cal?.year ?? seasonYear;
