@@ -5668,7 +5668,7 @@ function App() {
 
       <RoomHub
         me={me}
-        hubRef={roomHubRef}
+        roomHubRef={roomHubRef}
         roomHubOpen={roomHubOpen}
         setRoomHubOpen={setRoomHubOpen}
         roomMessages={roomMessages}
