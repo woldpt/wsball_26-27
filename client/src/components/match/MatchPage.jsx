@@ -46,12 +46,18 @@ export function MatchPage({
     setActiveTab(getDefaultTab(mode));
   }
 
-  const tabs = [
-    { key: "jogo", label: "Jogo" },
-    { key: "lineup", label: "Lineup" },
-    { key: "adversario", label: "Adversário" },
-    { key: "intervencao", label: "Intervenção" },
-  ];
+  const tabs = mode === "halftime"
+    ? [
+        { key: "jogo", label: "Jogo" },
+        { key: "adversario", label: "Adversário" },
+        { key: "intervencao", label: "Intervenção" },
+      ]
+    : [
+        { key: "jogo", label: "Jogo" },
+        { key: "lineup", label: "Lineup" },
+        { key: "adversario", label: "Adversário" },
+        { key: "intervencao", label: "Intervenção" },
+      ];
 
   const isCupContext = isCupMatch || cupPreMatch;
   const canContinue = !isCupContext || myTeamInCup;
