@@ -1052,8 +1052,8 @@ function App() {
         setRoomHubOpen(false);
       }
     };
-    document.addEventListener("mousedown", close);
-    return () => document.removeEventListener("mousedown", close);
+    document.addEventListener("mouseup", close);
+    return () => document.removeEventListener("mouseup", close);
   }, [roomHubOpen]);
 
   const handleResolveMatchAction = (playerIdOrChoice) => {

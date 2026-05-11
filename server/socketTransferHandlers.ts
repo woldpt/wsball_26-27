@@ -469,19 +469,9 @@ export function registerTransferSocketHandlers(
             bidAmount: bidResult.bidAmount,
           });
 
-          // In single-player (only 1 human), finalize the auction immediately
-          // after the human bids — no need to wait for the timeout.
-          const humanCount = Object.values(game.playersByName).filter(
-            (p: any) => p.socketId,
-          ).length;
-          if (humanCount <= 1) {
-            const timer = game.auctionTimers?.[validPlayerId];
-            if (timer) {
-              clearTimeout(timer as any);
-              delete game.auctionTimers![validPlayerId];
-            }
-            finalizeAuction(game, validPlayerId);
-          }
+          // O leilão só termina quando o tempo acabar — NPCs podem licitar
+          // por cima até ao timeout (finalizeAuction é chamado pelo timer).
+          // Não finalizamos aqui mesmo com 1 humano.
         }
       })
       .catch((err) => {

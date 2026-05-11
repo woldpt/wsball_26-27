@@ -1,7 +1,7 @@
 import { socket } from "../../socket.js";
 import { useState, useEffect } from "react";
 
-const QUICK_MESSAGES = ["👍", "🔥", "Vamos!", "Boa sorte", "⚽", "😂"];
+const QUICK_MESSAGES = ["👍", "🖕", "Vamos!", "Boa sorte", "⚽", "😂"];
 
 /**
  * @param {{
