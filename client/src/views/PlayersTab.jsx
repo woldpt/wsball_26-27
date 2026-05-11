@@ -31,13 +31,6 @@ const POSITION_BG_GRADIENT = {
   ATA: "from-rose-500/8",
 };
 
-const SHIMMER_STYLE = {
-  background:
-    "linear-gradient(110deg, transparent 30%, rgba(240, 195, 48, 0.32) 48%, rgba(255, 232, 142, 0.5) 50%, rgba(240, 195, 48, 0.32) 52%, transparent 70%)",
-  backgroundSize: "220% 100%",
-  animation: "shimmer 3s linear infinite",
-};
-
 function SquadRow({ player, matchweekCount, onOpenPlayerHistory }) {
   const star =
     !!player.is_star &&
@@ -264,34 +257,17 @@ function SquadRow({ player, matchweekCount, onOpenPlayerHistory }) {
         </span>
       </div>
 
-      {/* Ordenado + Valor (rodapé direito brilhante para renovados) */}
+      {/* Ordenado + Valor */}
       <div
-        className={`relative shrink-0 self-stretch flex items-center px-3 border-l overflow-hidden ${
-          renewedShine
-            ? "border-amber-500/40 bg-gradient-to-r from-amber-900/50 via-amber-700/40 to-amber-900/50"
-            : isListed
-              ? "border-emerald-500/30 bg-gradient-to-r from-emerald-900/40 via-emerald-700/20 to-emerald-900/40"
-              : "border-outline-variant/20 bg-surface/40"
+        className={`shrink-0 self-stretch flex items-center px-3 border-l ${
+          isListed
+            ? "border-emerald-500/30 bg-gradient-to-r from-emerald-900/40 via-emerald-700/20 to-emerald-900/40"
+            : "border-outline-variant/20 bg-surface/40"
         }`}
       >
-        {renewedShine && (
-          <div
-            className="pointer-events-none absolute inset-0"
-            style={SHIMMER_STYLE}
-          />
-        )}
         <div className="relative flex flex-col items-end justify-center gap-0.5 min-w-22">
           <div className="flex items-baseline gap-1">
-            <span
-              className={`font-headline font-black text-sm tabular-nums ${
-                renewedShine ? "text-amber-200" : "text-on-surface"
-              }`}
-              style={
-                renewedShine
-                  ? { textShadow: "0 0 8px rgba(240, 195, 48, 0.7)" }
-                  : undefined
-              }
-            >
+            <span className="font-headline font-black text-sm tabular-nums text-on-surface">
               {formatCurrency(player.wage || 0)}
             </span>
             <span className="text-[8px] text-zinc-500 font-black uppercase tracking-widest">
