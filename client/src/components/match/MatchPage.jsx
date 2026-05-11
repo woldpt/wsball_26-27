@@ -34,6 +34,7 @@ export function MatchPage({
   matchAction,
   injuryCountdown,
   onResolveAction,
+  sidebarCollapsed,
 }) {
   const getDefaultTab = (m) =>
     m === "action" || m === "halftime" ? "intervencao" : "jogo";
@@ -46,6 +47,7 @@ export function MatchPage({
     setActiveTab(getDefaultTab(mode));
   }
 
+  const sidebarLeft = sidebarCollapsed ? "lg:left-14" : "lg:left-64";
   const tabs = mode === "detail"
     ? [
         { key: "jogo", label: "Jogo" },
@@ -70,7 +72,7 @@ export function MatchPage({
 
   if (!fixture && mode !== "action" && mode !== "halftime") {
     return (
-      <div className="fixed inset-y-0 lg:left-64 z-120 flex flex-col bg-[#0d0d14]">
+      <div className={`fixed inset-y-0 ${sidebarLeft} z-120 flex flex-col bg-[#0d0d14]`}>
         <div className="flex-1 flex items-center justify-center">
           <p className="text-sm font-bold text-zinc-500">
             Sem dados do jogo disponíveis
@@ -81,7 +83,7 @@ export function MatchPage({
   }
 
   return (
-    <div className="fixed inset-y-0 lg:left-64 z-120 flex flex-col bg-[#0d0d14]">
+    <div className={`fixed inset-y-0 ${sidebarLeft} z-120 flex flex-col bg-[#0d0d14]`}>
       {/* Header */}
       <div className="shrink-0 flex items-center gap-3 px-4 py-3 border-b border-zinc-800 bg-zinc-950/80">
         <button

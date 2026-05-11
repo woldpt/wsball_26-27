@@ -5613,6 +5613,7 @@ function App() {
           onConfirmSub={handleConfirmSub}
           onResetSub={handleResetSub}
           onResetAllSubs={handleResetAllSubs}
+          sidebarCollapsed={sidebarCollapsed}
           onReady={handleHalftimeReady}
           isReady={panelIsReady}
           cupPreMatch={cupPreMatch}
