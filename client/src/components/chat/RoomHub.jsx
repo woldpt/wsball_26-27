@@ -1,32 +1,9 @@
 import { socket } from "../../socket.js";
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef, useLayoutEffect } from "react";
 
 const QUICK_MESSAGES = ["👍", "🔥", "Vamos!", "Boa sorte", "⚽", "😂"];
 
-/**
- * @param {{
- *   me: object|null,
- *   roomHubOpen: boolean,
- *   setRoomHubOpen: function,
- *   activeChatTab: string,
- *   setActiveChatTab: function,
- *   roomMessages: Array,
- *   globalMessages: Array,
- *   globalPlayers: Array,
- *   players: Array,
- *   teams: Array,
- *   roomCreator: string,
- *   matchweekCount: number,
- *   unreadRoom: number,
- *   unreadGlobal: number,
- *   chatInput: string,
- *   setChatInput: function,
- *   chatMessagesRef: object,
- *   addToast: function,
- *   awaitingCoaches: Array,
- * }} props
- */
-export function RoomHub({
+function RoomHubBody({
   me,
   roomHubOpen,
   setRoomHubOpen,
@@ -34,7 +11,6 @@ export function RoomHub({
   setActiveChatTab,
   roomMessages,
   globalMessages,
-   // eslint-disable-next-line no-unused-vars
   globalPlayers,
   players,
   teams,
@@ -48,7 +24,20 @@ export function RoomHub({
   addToast,
   awaitingCoaches,
 }) {
+  // All hooks at top — order must be identical on every render
+  const subTabRef = useRef("room");
+  const [activeChatSubTab, setActiveChatSubTab] = useState("room");
   const [systemMessages, setSystemMessages] = useState([]);
+
+  // Sync sub-tab when parent switches to "chat" tab
+  // Using useLayoutEffect to sync before paint — prevents visual flicker
+  useLayoutEffect(() => {
+    if (activeChatTab === "chat" && subTabRef.current !== "room") {
+      subTabRef.current = "room";
+      // eslint-disable-next-line react-hooks/set-state-in-effect
+      setActiveChatSubTab("room");
+    }
+  }, [activeChatTab]);
 
   useEffect(() => {
     const onSystemMessage = (data) => {
@@ -65,14 +54,15 @@ export function RoomHub({
     };
   }, []);
 
+  // Bug 1 fix: use activeChatSubTab for message selection
   const activeMessages =
-    activeChatTab === "room" ? roomMessages : globalMessages;
+    activeChatSubTab === "room" ? roomMessages : globalMessages;
 
   const sendChat = () => {
     const trimmed = chatInput.trim();
     if (!trimmed) return;
     socket.emit("sendChatMessage", {
-      channel: activeChatTab,
+      channel: activeChatSubTab,
       message: trimmed,
     });
     setChatInput("");
@@ -80,7 +70,7 @@ export function RoomHub({
 
   const sendQuickMessage = (text) => {
     socket.emit("sendChatMessage", {
-      channel: activeChatTab,
+      channel: activeChatSubTab,
       message: text,
     });
   };
@@ -106,8 +96,6 @@ export function RoomHub({
     if (coach.submitted) return { label: "Vamos! ⚡", color: "text-emerald-400", dotColor: "bg-emerald-400" };
     return { label: "Queimando neurónios 🧠", color: "text-amber-400", dotColor: "bg-amber-400" };
   };
-
-  if (!me) return null;
 
   return (
     <div className="fixed top-14 right-4 z-50 flex flex-col items-end gap-2">
@@ -145,7 +133,7 @@ export function RoomHub({
             </button>
           </div>
 
-          {/* Tabs */}
+          {/* Tabs — Bug 1+3 fix: no unread on Chat tab, handler sets "chat" */}
           <div
             className="flex shrink-0 border-b border-outline-variant/20"
             style={{ background: "#111" }}
@@ -157,10 +145,7 @@ export function RoomHub({
               <button
                 key={key}
                 onClick={() => {
-                  if (key === "chat") {
-                    setActiveChatTab("room");
-                  }
-                  setActiveChatTab(key === "chat" ? "room" : "sala");
+                  setActiveChatTab(key === "chat" ? "chat" : "sala");
                 }}
                 className={`flex-1 py-2.5 text-xs font-black uppercase tracking-widest transition-colors relative ${
                   activeChatTab === key
@@ -169,7 +154,8 @@ export function RoomHub({
                 }`}
               >
                 {label}
-                {unread > 0 && (
+                {/* Bug 3 fix: only show unread on Sala tab */}
+                {key === "sala" && unread > 0 && (
                   <span className="ml-1.5 inline-flex items-center justify-center rounded-full bg-rose-500 text-white text-[9px] font-black leading-none px-1.5 py-0.5">
                     {unread > 9 ? "9+" : unread}
                   </span>
@@ -178,10 +164,10 @@ export function RoomHub({
             ))}
           </div>
 
-          {/* Chat Tab */}
-          {activeChatTab === "room" || activeChatTab === "global" ? (
+          {/* Chat content — Bug 1 fix: use activeChatTab === "chat" */}
+          {activeChatTab === "chat" ? (
             <>
-              {/* Room/Global sub-tabs */}
+              {/* Room/Global sub-tabs — Bug 1 fix: set activeChatSubTab */}
               <div
                 className="flex shrink-0 border-b border-outline-variant/20"
                 style={{ background: "#111" }}
@@ -192,9 +178,9 @@ export function RoomHub({
                 ].map(({ key, label }) => (
                   <button
                     key={key}
-                    onClick={() => setActiveChatTab(key)}
+                    onClick={() => setActiveChatSubTab(key)}
                     className={`flex-1 py-1.5 text-[10px] font-black uppercase tracking-widest transition-colors ${
-                      activeChatTab === key
+                      activeChatSubTab === key
                         ? "text-primary"
                         : "text-on-surface-variant hover:text-on-surface"
                     }`}
@@ -203,6 +189,34 @@ export function RoomHub({
                   </button>
                 ))}
               </div>
+
+              {/* Bug 4 fix: globalPlayers list (was in old ChatWidget global tab) */}
+              {activeChatSubTab === "global" && globalPlayers.length > 0 && (
+                <div
+                  className="shrink-0 border-b border-outline-variant/20"
+                  style={{ background: "#111" }}
+                >
+                  <div className="flex items-center gap-1.5 px-3 py-1.5">
+                    <span className="inline-block w-2 h-2 rounded-full bg-emerald-500 shrink-0" />
+                    <span className="text-[10px] font-black uppercase tracking-widest text-on-surface-variant">
+                      {globalPlayers.length} online
+                    </span>
+                  </div>
+                  <div
+                    className="flex flex-wrap gap-1.5 px-3 pb-2 overflow-y-auto"
+                    style={{ maxHeight: 72 }}
+                  >
+                    {globalPlayers.map((p) => (
+                      <span
+                        key={p.name}
+                        className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-semibold bg-surface-container text-on-surface border border-outline-variant/30"
+                      >
+                        {p.name}
+                      </span>
+                    ))}
+                  </div>
+                </div>
+              )}
 
               {/* Quick messages */}
               <div
@@ -236,7 +250,7 @@ export function RoomHub({
                 ))}
                 {activeMessages.length === 0 && systemMessages.length === 0 ? (
                   <p className="text-center text-on-surface-variant text-xs italic mt-8">
-                    {activeChatTab === "room"
+                    {activeChatSubTab === "room"
                       ? "Nenhuma mensagem nesta sala ainda."
                       : "Nenhuma mensagem global ainda."}
                   </p>
@@ -431,4 +445,38 @@ export function RoomHub({
       )}
     </div>
   );
+}
+
+/**
+ * @param {{
+ *   me: object|null,
+ *   roomHubOpen: boolean,
+ *   setRoomHubOpen: function,
+ *   activeChatTab: string,
+ *   setActiveChatTab: function,
+ *   roomMessages: Array,
+ *   globalMessages: Array,
+ *   globalPlayers: Array,
+ *   players: Array,
+ *   teams: Array,
+ *   roomCreator: string,
+ *   matchweekCount: number,
+ *   unreadRoom: number,
+ *   unreadGlobal: number,
+ *   chatInput: string,
+ *   setChatInput: function,
+ *   chatMessagesRef: object,
+ *   addToast: function,
+ *   awaitingCoaches: Array,
+ * }} props
+ */
+export function RoomHub({
+  me,
+  ...rest
+}) {
+  // Bug 5 fix: guard BEFORE any hooks — eslint-disable because this is a valid guard pattern
+  // eslint is detecting `if` before hooks but hooks are in RoomHubBody (different function)
+  if (!me) return null;
+
+  return <RoomHubBody me={me} {...rest} />;
 }
