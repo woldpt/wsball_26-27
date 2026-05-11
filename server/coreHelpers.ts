@@ -194,7 +194,11 @@ export function pickRefereeSummary(
   };
 }
 
-export async function calculateMatchAttendance(db: Db, homeTeamId: number) {
+export async function calculateMatchAttendance(
+  db: Db,
+  homeTeamId: number,
+  opponentTeamId?: number,
+) {
   const team = await runGet<{
     stadium_capacity?: number;
     division?: number;
@@ -224,7 +228,7 @@ export async function calculateMatchAttendance(db: Db, homeTeamId: number) {
   );
 
   // Calcular índice de forma (0.0 a 1.0) com base nos últimos 5 jogos
-  // W=1.0, D=0.4, L=0 (conforme README)
+  // W=1.0, E=0.4, D=0 (conforme README)
   let formPoints = recentMatches.length === 0 ? 0.5 : 0;
   for (const m of recentMatches) {
     const isHome = m.home_team_id === homeTeamId;
@@ -242,10 +246,29 @@ export async function calculateMatchAttendance(db: Db, homeTeamId: number) {
 
   // Se existe média histórica, blendá-la com a previsão baseada em forma
   const prevAvg = team?.avg_attendance || 0;
-  if (prevAvg > 0) {
-    return Math.min(capacity, Math.round((prevAvg + formAttendance) / 2));
+  let attendance = prevAvg > 0
+    ? Math.min(capacity, Math.round((prevAvg + formAttendance) / 2))
+    : formAttendance;
+
+  // ── Multiplicador de qualidade do adversário ──────────────────────
+  // Equipas mais fortes atraem mais público: 0% a +20% de bonus
+  if (opponentTeamId) {
+    const opp = await runGet<{ avg_skill?: number }>(
+      db,
+      `SELECT ROUND(AVG(COALESCE(p.skill, 0))) as avg_skill
+       FROM players p
+       WHERE p.team_id = ? AND p.team_id IS NOT NULL`,
+      [opponentTeamId],
+    );
+    const oppSkill = opp?.avg_skill || 0;
+    const OPPONENT_MAX_SKILL = 50;
+    const OPPONENT_BONUS_MAX = 0.20; // +20% para adversário de skill 50
+    const opponentQuality = Math.min(oppSkill / OPPONENT_MAX_SKILL, 1);
+    const opponentMultiplier = 1 + opponentQuality * OPPONENT_BONUS_MAX;
+    attendance = Math.min(capacity, Math.round(attendance * opponentMultiplier));
   }
-  return formAttendance;
+
+  return attendance;
 }
 
 export function logClubNews(

@@ -25,7 +25,7 @@ interface WeeklyFlowDeps {
   pauseAllRunningAuctions: (game: ActiveGame, io: any) => void;
   resumeAllPausedAuctions: (game: ActiveGame) => void;
   simulateMatchSegment: (...args: any[]) => Promise<void>;
-  calculateMatchAttendance: (db: any, homeTeamId: number) => Promise<number>;
+  calculateMatchAttendance: (db: any, homeTeamId: number, opponentTeamId?: number) => Promise<number>;
   pickRefereeSummary: (
     roomCode: string,
     teamId: number,
@@ -160,6 +160,7 @@ export function createWeeklyFlowHelpers(deps: WeeklyFlowDeps) {
         fixture.attendance = await calculateMatchAttendance(
           game.db,
           fixture.homeTeamId,
+          fixture.awayTeamId,
         );
       }
     }
