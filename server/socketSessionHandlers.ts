@@ -819,7 +819,11 @@ export function registerSessionSocketHandlers(
       try {
         const homeMatches = await runAll(
           game.db,
-          "SELECT attendance, matchweek FROM matches WHERE home_team_id = ? AND played = 1 AND season = ? ORDER BY matchweek ASC",
+          `SELECT m.attendance, m.matchweek, m.away_team_id, COALESCE(t.name, '?') as away_team_name
+           FROM matches m
+           LEFT JOIN teams t ON t.id = m.away_team_id
+           WHERE m.home_team_id = ? AND m.played = 1 AND m.season = ?
+           ORDER BY m.matchweek ASC`,
           [teamId, game.season],
         );
         const totalTicketRevenue = homeMatches.reduce(
@@ -830,6 +834,7 @@ export function registerSessionSocketHandlers(
           matchweek: m.matchweek,
           attendance: m.attendance || 0,
           revenue: (m.attendance || 0) * 15,
+          away_team_name: m.away_team_name || "—",
         }));
 
         const transferInList = await runAll(

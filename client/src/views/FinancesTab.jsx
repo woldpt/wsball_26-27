@@ -240,8 +240,7 @@ export function FinancesTab({
                                 J{t.matchweek}
                               </p>
                               <p className="text-[10px] opacity-30 uppercase">
-                                {t.attendance.toLocaleString("pt-PT")}{" "}
-                                esp.
+                                vs {t.away_team_name || "—"} · {t.attendance.toLocaleString("pt-PT")} esp.
                               </p>
                             </div>
                             <span className="text-xs font-bold">
