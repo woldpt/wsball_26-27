@@ -112,7 +112,7 @@ function MarketCard({
   const tintEdge = hexToRgba(teamColor, 0.24);
 
   return (
-    <div className="[perspective:1200px]">
+    <div className="[perspective:1200px] hover:scale-[1.02] transition-transform duration-300">
       <div
         className="block w-full text-left"
         onClick={onFlip}
@@ -128,7 +128,7 @@ function MarketCard({
         aria-expanded={isFlipped}
       >
         <div
-          className={`relative h-[360px] w-full transition-transform duration-500 [transform-style:preserve-3d] ${isFlipped ? "[transform:rotateY(180deg)]" : ""}`}
+          className={`relative h-[360px] w-full transition-transform duration-300 hover:scale-[1.02] [transform-style:preserve-3d] ${isFlipped ? "[transform:rotateY(180deg)]" : ""}`}
         >
           <article
             className={`absolute inset-0 rounded-xl border-2 bg-surface-container-low/95 p-4 shadow-xl ring-2 ${posRingClass(player.position)} [backface-visibility:hidden] overflow-hidden`}

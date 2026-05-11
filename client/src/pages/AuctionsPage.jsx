@@ -116,8 +116,9 @@ function AuctionCard({ auction, me, teams, teamInfo, matchweekCount, socket }) {
 
   return (
     <div
-      className="relative select-none"
+      className="relative select-none cursor-pointer hover:scale-[1.02] transition-transform duration-300"
       style={{ perspective: "1000px", minHeight: 380 }}
+      onClick={() => setFlipped(!flipped)}
     >
       {/* Card wrapper with flip transform */}
       <div
@@ -193,7 +194,10 @@ function AuctionCard({ auction, me, teams, teamInfo, matchweekCount, socket }) {
               </span>
               <button
                 type="button"
-                onClick={() => setFlipped(true)}
+                onClick={(e) => {
+                  e.stopPropagation();
+                  setFlipped(true);
+                }}
                 className="text-[9px] font-bold uppercase tracking-wide text-zinc-500 hover:text-zinc-300 transition-colors flex items-center gap-1"
               >
                 <span className="material-symbols-outlined text-xs leading-none">info</span>
@@ -355,6 +359,7 @@ function AuctionCard({ auction, me, teams, teamInfo, matchweekCount, socket }) {
                       setBidError("");
                     }}
                     onKeyDown={(e) => e.key === "Enter" && handleBid()}
+                    onClick={(e) => e.stopPropagation()}
                     className="flex-1 min-w-0 bg-transparent py-2.5 pr-3 text-white font-mono text-sm outline-none"
                   />
                 </div>
@@ -366,7 +371,10 @@ function AuctionCard({ auction, me, teams, teamInfo, matchweekCount, socket }) {
                 )}
                 <button
                   type="button"
-                  onClick={handleBid}
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    handleBid();
+                  }}
                   className="w-full py-2.5 rounded-lg font-headline font-black uppercase text-sm tracking-wide transition-all active:scale-95 hover:brightness-110"
                   style={{ background: accent, color: "#0d0d14" }}
                 >
