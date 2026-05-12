@@ -112,10 +112,15 @@ export function createCupFlowHelpers(deps: CupFlowDeps) {
 
     const iLigaWinner = byDiv[1] && byDiv[1][0];
     if (iLigaWinner) {
+      const coachInfo = await runGet(
+        game.db,
+        "SELECT m.name as coach_name, m.is_human as is_human FROM teams t JOIN managers m ON t.manager_id = m.id WHERE t.id = ?",
+        [iLigaWinner.id],
+      );
       await new Promise((resolve) => {
         game.db.run(
-          "INSERT INTO palmares (team_id, season, achievement) VALUES (?, ?, ?)",
-          [iLigaWinner.id, year, "Campeão Nacional"],
+          "INSERT INTO palmares (team_id, season, achievement, coach_name, is_human_coach) VALUES (?, ?, ?, ?, ?)",
+          [iLigaWinner.id, year, "Campeão Nacional", coachInfo?.coach_name || null, coachInfo?.is_human || 0],
           resolve,
         );
       });
@@ -135,10 +140,15 @@ export function createCupFlowHelpers(deps: CupFlowDeps) {
     for (const div of [2, 3, 4]) {
       const winner = byDiv[div] && byDiv[div][0];
       if (winner) {
+        const coachInfo = await runGet(
+          game.db,
+          "SELECT m.name as coach_name, m.is_human as is_human FROM teams t JOIN managers m ON t.manager_id = m.id WHERE t.id = ?",
+          [winner.id],
+        );
         await new Promise((resolve) => {
           game.db.run(
-            "INSERT INTO palmares (team_id, season, achievement) VALUES (?, ?, ?)",
-            [winner.id, year, `Campeão ${DIVISION_NAMES[div]}`],
+            "INSERT INTO palmares (team_id, season, achievement, coach_name, is_human_coach) VALUES (?, ?, ?, ?, ?)",
+            [winner.id, year, `Campeão ${DIVISION_NAMES[div]}`, coachInfo?.coach_name || null, coachInfo?.is_human || 0],
             resolve,
           );
         });
@@ -191,6 +201,13 @@ export function createCupFlowHelpers(deps: CupFlowDeps) {
         game.db.run(
           "UPDATE teams SET budget = budget + 500000 WHERE id = ?",
           [topScorer.team_id],
+          resolve,
+        );
+      });
+      await new Promise((resolve) => {
+        game.db.run(
+          "INSERT INTO palmares (team_id, season, achievement, coach_name, is_human_coach) VALUES (?, ?, ?, ?, ?)",
+          [topScorer.team_id, year, `Melhor Marcador (${topScorer.goals} golos)`, topScorer.name, 1],
           resolve,
         );
       });
@@ -950,10 +967,15 @@ export function createCupFlowHelpers(deps: CupFlowDeps) {
           "SELECT name FROM teams WHERE id = ?",
           [winnerId],
         );
+        const coachInfo = await runGet(
+          game.db,
+          "SELECT m.name as coach_name, m.is_human as is_human FROM teams t JOIN managers m ON t.manager_id = m.id WHERE t.id = ?",
+          [winnerId],
+        );
         await new Promise((resolve) => {
           game.db.run(
-            "INSERT INTO palmares (team_id, season, achievement) VALUES (?, ?, ?)",
-            [winnerId, game.year, "Vencedor da Taça de Portugal"],
+            "INSERT INTO palmares (team_id, season, achievement, coach_name, is_human_coach) VALUES (?, ?, ?, ?, ?)",
+            [winnerId, game.year, "Vencedor da Taça de Portugal", coachInfo?.coach_name || null, coachInfo?.is_human || 0],
             resolve,
           );
         });

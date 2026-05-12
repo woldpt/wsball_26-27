@@ -107,6 +107,8 @@ CREATE TABLE IF NOT EXISTS palmares (
   team_id INTEGER NOT NULL,
   season INTEGER NOT NULL,
   achievement TEXT NOT NULL,
+  coach_name TEXT DEFAULT NULL,
+  is_human_coach INTEGER DEFAULT 0,
   FOREIGN KEY(team_id) REFERENCES teams(id)
 );
 

@@ -417,7 +417,9 @@ function getGame(roomCode: string, onReady?: OnReady): ActiveGame | null {
             id INTEGER PRIMARY KEY AUTOINCREMENT,
             team_id INTEGER NOT NULL,
             season INTEGER NOT NULL,
-            achievement TEXT NOT NULL
+            achievement TEXT NOT NULL,
+            coach_name TEXT DEFAULT NULL,
+            is_human_coach INTEGER DEFAULT 0
           )`);
           db.run(`CREATE TABLE IF NOT EXISTS chat_messages (
             id INTEGER PRIMARY KEY AUTOINCREMENT,

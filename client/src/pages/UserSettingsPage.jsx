@@ -156,7 +156,7 @@ export function UserSettingsPage({
   const trophies = palmares?.trophies || [];
 
   return (
-    <div className="max-w-xl mx-auto px-4 py-8 space-y-8">
+    <div className="max-w-4xl mx-auto px-4 py-8 space-y-8">
       {/* Back */}
       <button
         onClick={onBack}
@@ -166,7 +166,7 @@ export function UserSettingsPage({
         Voltar
       </button>
 
-      {/* Profile */}
+      {/* Profile (full width) */}
       <div className="bg-surface-container-low border border-outline-variant/20 rounded-xl p-6 flex flex-col sm:flex-row items-center gap-5">
         <div className="relative group shrink-0">
           <PlayerAvatar seed={`${me?.name || "?"}|${avatarSeed}`} size="xl" />
@@ -186,7 +186,7 @@ export function UserSettingsPage({
             <span className="material-symbols-outlined text-[16px] leading-none">refresh</span>
           </button>
         </div>
-        <div className="text-center sm:text-left">
+        <div className="text-center sm:text-left flex-1">
           <h2 className="text-xl font-headline font-black tracking-tight">{me?.name}</h2>
           <p className="text-sm text-on-surface-variant font-bold mt-1">
             {teamInfo?.name || "Sem equipa"}
@@ -194,20 +194,20 @@ export function UserSettingsPage({
           <p className="text-xs text-on-surface-variant/60 font-medium mt-0.5">
             Sala: {me?.roomName || me?.roomCode || "—"}
           </p>
-          <div className="flex flex-col sm:flex-row gap-2 mt-3">
+          <div className="flex flex-wrap gap-3 mt-3">
             <input
               type="email"
               value={email}
               onChange={(e) => setEmail(e.target.value)}
               placeholder="Email (opcional)"
-              className="flex-1 bg-surface border border-outline-variant/30 rounded-lg px-3 py-2 text-sm font-medium text-on-surface placeholder:text-on-surface-variant/40 focus:outline-none focus:border-primary/60 transition-colors"
+              className="flex-1 min-w-[200px] bg-surface border border-outline-variant/30 rounded-lg px-3 py-2 text-sm font-medium text-on-surface placeholder:text-on-surface-variant/40 focus:outline-none focus:border-primary/60 transition-colors"
             />
             <select
               value={birthYear}
               onChange={(e) => setBirthYear(e.target.value)}
-              className="bg-surface border border-outline-variant/30 rounded-lg px-3 py-2 text-sm font-medium text-on-surface focus:outline-none focus:border-primary/60 transition-colors"
+              className="w-28 bg-surface border border-outline-variant/30 rounded-lg px-3 py-2 text-sm font-medium text-on-surface focus:outline-none focus:border-primary/60 transition-colors"
             >
-              <option value="">Ano nascimento</option>
+              <option value="">Ano</option>
               {Array.from({ length: 71 }, (_, i) => 1940 + i).reverse().map((y) => (
                 <option key={y} value={y}>{y}</option>
               ))}
@@ -230,216 +230,219 @@ export function UserSettingsPage({
         </div>
       </div>
 
-      {/* Palmarés */}
-      <section>
-        <h3 className="text-sm font-black uppercase tracking-widest text-on-surface-variant mb-3 flex items-center gap-2">
-          <span className="material-symbols-outlined text-[18px]">emoji_events</span>
-          Conquistas / Palmarés
-        </h3>
-        <div className="bg-surface-container-low border border-outline-variant/20 rounded-xl p-5">
-          {trophies.length === 0 ? (
-            <p className="text-sm text-on-surface-variant/60 font-medium text-center py-4">
-              Ainda sem conquistas nesta sala.
-            </p>
-          ) : (
-            <div className="space-y-3">
-              {trophies.map((t, i) => (
-                <div
-                  key={i}
-                  className="flex items-center gap-3 py-2 px-3 rounded-lg bg-surface/40 border border-outline-variant/10"
-                >
-                  <span className="text-xl">🏆</span>
-                  <div>
-                    <p className="text-sm font-bold">{t.achievement}</p>
-                    <p className="text-xs text-on-surface-variant/60 font-medium">
-                      Temporada {t.season} · {t.team_name}
-                    </p>
-                  </div>
-                </div>
-              ))}
-            </div>
-          )}
-        </div>
-      </section>
-
-      {/* My Rooms */}
-      <section>
-        <h3 className="text-sm font-black uppercase tracking-widest text-on-surface-variant mb-3 flex items-center gap-2">
-          <span className="material-symbols-outlined text-[18px]">meeting_room</span>
-          As Minhas Salas
-        </h3>
-        <div className="bg-surface-container-low border border-outline-variant/20 rounded-xl p-5 space-y-2">
-          {roomsLoading ? (
-            <p className="text-sm text-on-surface-variant/60 font-medium">A carregar...</p>
-          ) : rooms.length === 0 ? (
-            <p className="text-sm text-on-surface-variant/60 font-medium">Nenhuma sala encontrada.</p>
-          ) : (
-            rooms.map((r) => {
-              const isActive = r.roomCode === me?.roomCode;
-              return (
-                <div
-                  key={r.roomCode}
-                  className="flex items-center justify-between py-2.5 px-3 rounded-lg bg-surface/50 border border-outline-variant/10"
-                >
-                  <div className="flex items-center gap-3 min-w-0">
-                    <span className="material-symbols-outlined text-[18px] text-on-surface-variant shrink-0">
-                      meeting_room
-                    </span>
-                    <div className="min-w-0">
-                      <p className="text-sm font-bold truncate">{r.roomName}</p>
-                      <p className="text-xs text-on-surface-variant/50 font-medium truncate">
-                        {r.roomCode}
+      {/* 2-column grid on md+ */}
+      <div className="md:grid md:grid-cols-2 md:gap-6 space-y-8 md:space-y-0">
+        {/* Palmarés */}
+        <section>
+          <h3 className="text-sm font-black uppercase tracking-widest text-on-surface-variant mb-3 flex items-center gap-2">
+            <span className="material-symbols-outlined text-[18px]">emoji_events</span>
+            Conquistas / Palmarés
+          </h3>
+          <div className="bg-surface-container-low border border-outline-variant/20 rounded-xl p-5">
+            {trophies.length === 0 ? (
+              <p className="text-sm text-on-surface-variant/60 font-medium text-center py-4">
+                Ainda sem conquistas nesta sala.
+              </p>
+            ) : (
+              <div className="space-y-3">
+                {trophies.map((t, i) => (
+                  <div
+                    key={i}
+                    className="flex items-center gap-3 py-2 px-3 rounded-lg bg-surface/40 border border-outline-variant/10"
+                  >
+                    <span className="text-xl">🏆</span>
+                    <div>
+                      <p className="text-sm font-bold">{t.achievement}</p>
+                      <p className="text-xs text-on-surface-variant/60 font-medium">
+                        Temporada {t.season} · {t.team_name}
                       </p>
                     </div>
-                    {isActive && (
-                      <span className="text-[10px] font-black uppercase tracking-wider text-emerald-400 bg-emerald-500/10 px-2 py-0.5 rounded-full shrink-0">
-                        Sala Actual
-                      </span>
-                    )}
                   </div>
-                  <div className="flex items-center gap-3 shrink-0">
-                    {r.teamName && (
-                      <span className="text-xs font-bold text-on-surface-variant/80 hidden sm:block">
-                        {r.teamName}
-                      </span>
-                    )}
-                    <button
-                      onClick={() => handleSwitchRoom(r.roomCode)}
-                      disabled={isActive}
-                      className={`text-xs font-black uppercase tracking-widest px-3 py-1.5 rounded-lg transition-colors ${
-                        isActive
-                          ? "text-on-surface-variant/30 bg-surface-container cursor-not-allowed"
-                          : "text-primary bg-primary/10 hover:bg-primary/20"
-                      }`}
-                    >
-                      {isActive ? "Actual" : "Entrar"}
-                    </button>
-                  </div>
-                </div>
-              );
-            })
-          )}
-        </div>
-      </section>
-
-      {/* Change Password */}
-      <section>
-        <h3 className="text-sm font-black uppercase tracking-widest text-on-surface-variant mb-3 flex items-center gap-2">
-          <span className="material-symbols-outlined text-[18px]">lock</span>
-          Alterar Palavra-Passe
-        </h3>
-        <form
-          onSubmit={handleChangePassword}
-          className="bg-surface-container-low border border-outline-variant/20 rounded-xl p-5 space-y-4"
-        >
-          <div>
-            <label className="text-xs font-bold text-on-surface-variant block mb-1">
-              Palavra-passe actual
-            </label>
-            <input
-              type="password"
-              value={currentPassword}
-              onChange={(e) => setCurrentPassword(e.target.value)}
-              className="w-full bg-surface border border-outline-variant/30 rounded-lg px-4 py-2.5 text-sm font-bold text-on-surface placeholder:text-on-surface-variant/40 focus:outline-none focus:border-primary/60 transition-colors"
-              placeholder="••••••••"
-            />
-          </div>
-          <div>
-            <label className="text-xs font-bold text-on-surface-variant block mb-1">
-              Nova palavra-passe
-            </label>
-            <input
-              type="password"
-              value={newPassword}
-              onChange={(e) => setNewPassword(e.target.value)}
-              className="w-full bg-surface border border-outline-variant/30 rounded-lg px-4 py-2.5 text-sm font-bold text-on-surface placeholder:text-on-surface-variant/40 focus:outline-none focus:border-primary/60 transition-colors"
-              placeholder="••••••••"
-            />
-          </div>
-          <div>
-            <label className="text-xs font-bold text-on-surface-variant block mb-1">
-              Confirmar nova palavra-passe
-            </label>
-            <input
-              type="password"
-              value={confirmPassword}
-              onChange={(e) => setConfirmPassword(e.target.value)}
-              className="w-full bg-surface border border-outline-variant/30 rounded-lg px-4 py-2.5 text-sm font-bold text-on-surface placeholder:text-on-surface-variant/40 focus:outline-none focus:border-primary/60 transition-colors"
-              placeholder="••••••••"
-            />
-          </div>
-
-          {passwordMsg && (
-            <div
-              className={`text-xs font-bold px-4 py-2 rounded-lg ${
-                passwordMsg.type === "success"
-                  ? "bg-emerald-500/10 text-emerald-400 border border-emerald-500/20"
-                  : "bg-red-500/10 text-red-400 border border-red-500/20"
-              }`}
-            >
-              <span className="material-symbols-outlined text-[14px] align-text-bottom mr-1">
-                {passwordMsg.type === "success" ? "check_circle" : "error"}
-              </span>
-              {passwordMsg.text}
-            </div>
-          )}
-
-          <button
-            type="submit"
-            disabled={changingPassword}
-            className="w-full bg-primary text-on-primary font-black text-sm uppercase tracking-widest rounded-lg px-5 py-3 hover:bg-primary/90 transition-colors disabled:opacity-50"
-          >
-            {changingPassword ? "A guardar..." : "Guardar"}
-          </button>
-        </form>
-      </section>
-
-      {/* Actions */}
-      <section>
-        <h3 className="text-sm font-black uppercase tracking-widest text-on-surface-variant mb-3 flex items-center gap-2">
-          <span className="material-symbols-outlined text-[18px]">settings</span>
-          Acções
-        </h3>
-        <div className="flex flex-col gap-3">
-          <button
-            onClick={onLeaveRoom}
-            className="w-full flex items-center justify-center gap-2 bg-surface-container-low border border-outline-variant/20 text-on-surface font-black text-xs uppercase tracking-widest rounded-xl px-5 py-3 hover:bg-surface-bright transition-colors"
-          >
-            <span className="material-symbols-outlined text-[18px]">logout</span>
-            Sair da Sala
-          </button>
-          {deletingAccount !== "confirm" ? (
-            <button
-              onClick={() => setDeletingAccount("confirm")}
-              className="w-full flex items-center justify-center gap-2 bg-transparent border border-red-500/15 text-red-400/60 font-black text-xs uppercase tracking-widest rounded-xl px-5 py-3 hover:bg-red-500/5 hover:text-red-400 transition-colors"
-            >
-              <span className="material-symbols-outlined text-[18px]">delete_forever</span>
-              Apagar Conta
-            </button>
-          ) : (
-            <div className="bg-red-500/5 border border-red-500/20 rounded-xl p-4 space-y-3">
-              <p className="text-xs font-bold text-red-400 text-center">
-                Tens a certeza? Esta acção é irreversível.
-              </p>
-              <div className="flex gap-2">
-                <button
-                  onClick={() => setDeletingAccount(false)}
-                  className="flex-1 bg-surface-container-low border border-outline-variant/20 text-on-surface font-black text-xs uppercase tracking-widest rounded-lg px-4 py-2.5 hover:bg-surface-bright transition-colors"
-                >
-                  Cancelar
-                </button>
-                <button
-                  onClick={handleDeleteAccount}
-                  disabled={deletingAccount === "loading"}
-                  className="flex-1 bg-red-500/20 border border-red-500/30 text-red-400 font-black text-xs uppercase tracking-widest rounded-lg px-4 py-2.5 hover:bg-red-500/30 transition-colors disabled:opacity-50"
-                >
-                  {deletingAccount === "loading" ? "A apagar..." : "Sim, Apagar"}
-                </button>
+                ))}
               </div>
+            )}
+          </div>
+        </section>
+
+        {/* My Rooms */}
+        <section>
+          <h3 className="text-sm font-black uppercase tracking-widest text-on-surface-variant mb-3 flex items-center gap-2">
+            <span className="material-symbols-outlined text-[18px]">meeting_room</span>
+            As Minhas Salas
+          </h3>
+          <div className="bg-surface-container-low border border-outline-variant/20 rounded-xl p-5 space-y-2">
+            {roomsLoading ? (
+              <p className="text-sm text-on-surface-variant/60 font-medium">A carregar...</p>
+            ) : rooms.length === 0 ? (
+              <p className="text-sm text-on-surface-variant/60 font-medium">Nenhuma sala encontrada.</p>
+            ) : (
+              rooms.map((r) => {
+                const isActive = r.roomCode === me?.roomCode;
+                return (
+                  <div
+                    key={r.roomCode}
+                    className="flex items-center justify-between py-2.5 px-3 rounded-lg bg-surface/50 border border-outline-variant/10"
+                  >
+                    <div className="flex items-center gap-3 min-w-0">
+                      <span className="material-symbols-outlined text-[18px] text-on-surface-variant shrink-0">
+                        meeting_room
+                      </span>
+                      <div className="min-w-0">
+                        <p className="text-sm font-bold truncate">{r.roomName}</p>
+                        <p className="text-xs text-on-surface-variant/50 font-medium truncate">
+                          {r.roomCode}
+                        </p>
+                      </div>
+                      {isActive && (
+                        <span className="text-[10px] font-black uppercase tracking-wider text-emerald-400 bg-emerald-500/10 px-2 py-0.5 rounded-full shrink-0">
+                          Sala Actual
+                        </span>
+                      )}
+                    </div>
+                    <div className="flex items-center gap-3 shrink-0">
+                      {r.teamName && (
+                        <span className="text-xs font-bold text-on-surface-variant/80 hidden sm:block">
+                          {r.teamName}
+                        </span>
+                      )}
+                      <button
+                        onClick={() => handleSwitchRoom(r.roomCode)}
+                        disabled={isActive}
+                        className={`text-xs font-black uppercase tracking-widest px-3 py-1.5 rounded-lg transition-colors ${
+                          isActive
+                            ? "text-on-surface-variant/30 bg-surface-container cursor-not-allowed"
+                            : "text-primary bg-primary/10 hover:bg-primary/20"
+                        }`}
+                      >
+                        {isActive ? "Actual" : "Entrar"}
+                      </button>
+                    </div>
+                  </div>
+                );
+              })
+            )}
+          </div>
+        </section>
+
+        {/* Change Password */}
+        <section>
+          <h3 className="text-sm font-black uppercase tracking-widest text-on-surface-variant mb-3 flex items-center gap-2">
+            <span className="material-symbols-outlined text-[18px]">lock</span>
+            Alterar Palavra-Passe
+          </h3>
+          <form
+            onSubmit={handleChangePassword}
+            className="bg-surface-container-low border border-outline-variant/20 rounded-xl p-5 space-y-4"
+          >
+            <div>
+              <label className="text-xs font-bold text-on-surface-variant block mb-1">
+                Palavra-passe actual
+              </label>
+              <input
+                type="password"
+                value={currentPassword}
+                onChange={(e) => setCurrentPassword(e.target.value)}
+                className="w-full bg-surface border border-outline-variant/30 rounded-lg px-4 py-2.5 text-sm font-bold text-on-surface placeholder:text-on-surface-variant/40 focus:outline-none focus:border-primary/60 transition-colors"
+                placeholder="••••••••"
+              />
             </div>
-          )}
-        </div>
-      </section>
+            <div>
+              <label className="text-xs font-bold text-on-surface-variant block mb-1">
+                Nova palavra-passe
+              </label>
+              <input
+                type="password"
+                value={newPassword}
+                onChange={(e) => setNewPassword(e.target.value)}
+                className="w-full bg-surface border border-outline-variant/30 rounded-lg px-4 py-2.5 text-sm font-bold text-on-surface placeholder:text-on-surface-variant/40 focus:outline-none focus:border-primary/60 transition-colors"
+                placeholder="••••••••"
+              />
+            </div>
+            <div>
+              <label className="text-xs font-bold text-on-surface-variant block mb-1">
+                Confirmar nova palavra-passe
+              </label>
+              <input
+                type="password"
+                value={confirmPassword}
+                onChange={(e) => setConfirmPassword(e.target.value)}
+                className="w-full bg-surface border border-outline-variant/30 rounded-lg px-4 py-2.5 text-sm font-bold text-on-surface placeholder:text-on-surface-variant/40 focus:outline-none focus:border-primary/60 transition-colors"
+                placeholder="••••••••"
+              />
+            </div>
+
+            {passwordMsg && (
+              <div
+                className={`text-xs font-bold px-4 py-2 rounded-lg ${
+                  passwordMsg.type === "success"
+                    ? "bg-emerald-500/10 text-emerald-400 border border-emerald-500/20"
+                    : "bg-red-500/10 text-red-400 border border-red-500/20"
+                }`}
+              >
+                <span className="material-symbols-outlined text-[14px] align-text-bottom mr-1">
+                  {passwordMsg.type === "success" ? "check_circle" : "error"}
+                </span>
+                {passwordMsg.text}
+              </div>
+            )}
+
+            <button
+              type="submit"
+              disabled={changingPassword}
+              className="w-full bg-primary text-on-primary font-black text-sm uppercase tracking-widest rounded-lg px-5 py-3 hover:bg-primary/90 transition-colors disabled:opacity-50"
+            >
+              {changingPassword ? "A guardar..." : "Guardar"}
+            </button>
+          </form>
+        </section>
+
+        {/* Actions */}
+        <section>
+          <h3 className="text-sm font-black uppercase tracking-widest text-on-surface-variant mb-3 flex items-center gap-2">
+            <span className="material-symbols-outlined text-[18px]">settings</span>
+            Acções
+          </h3>
+          <div className="flex flex-col gap-3">
+            <button
+              onClick={onLeaveRoom}
+              className="w-full flex items-center justify-center gap-2 bg-surface-container-low border border-outline-variant/20 text-on-surface font-black text-xs uppercase tracking-widest rounded-xl px-5 py-3 hover:bg-surface-bright transition-colors"
+            >
+              <span className="material-symbols-outlined text-[18px]">logout</span>
+              Sair da Sala
+            </button>
+            {deletingAccount !== "confirm" ? (
+              <button
+                onClick={() => setDeletingAccount("confirm")}
+                className="w-full flex items-center justify-center gap-2 bg-transparent border border-red-500/15 text-red-400/60 font-black text-xs uppercase tracking-widest rounded-xl px-5 py-3 hover:bg-red-500/5 hover:text-red-400 transition-colors"
+              >
+                <span className="material-symbols-outlined text-[18px]">delete_forever</span>
+                Apagar Conta
+              </button>
+            ) : (
+              <div className="bg-red-500/5 border border-red-500/20 rounded-xl p-4 space-y-3">
+                <p className="text-xs font-bold text-red-400 text-center">
+                  Tens a certeza? Esta acção é irreversível.
+                </p>
+                <div className="flex gap-2">
+                  <button
+                    onClick={() => setDeletingAccount(false)}
+                    className="flex-1 bg-surface-container-low border border-outline-variant/20 text-on-surface font-black text-xs uppercase tracking-widest rounded-lg px-4 py-2.5 hover:bg-surface-bright transition-colors"
+                  >
+                    Cancelar
+                  </button>
+                  <button
+                    onClick={handleDeleteAccount}
+                    disabled={deletingAccount === "loading"}
+                    className="flex-1 bg-red-500/20 border border-red-500/30 text-red-400 font-black text-xs uppercase tracking-widest rounded-lg px-4 py-2.5 hover:bg-red-500/30 transition-colors disabled:opacity-50"
+                  >
+                    {deletingAccount === "loading" ? "A apagar..." : "Sim, Apagar"}
+                  </button>
+                </div>
+              </div>
+            )}
+          </div>
+        </section>
+      </div>
     </div>
   );
 }
