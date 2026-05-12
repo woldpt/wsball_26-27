@@ -71,7 +71,7 @@ export function MatchPage({
 
   if (!fixture && mode !== "action" && mode !== "halftime") {
     return (
-    <div className={`fixed inset-y-0 right-0 ${sidebarLeft} z-120 flex flex-col bg-[#0d0d14]`}>
+    <div className={`fixed inset-y-0 left-0 right-0 ${sidebarLeft} z-120 flex flex-col bg-[#0d0d14]`}>
         <div className="flex-1 flex items-center justify-center">
           <p className="text-sm font-bold text-zinc-500">
             Sem dados do jogo disponíveis
@@ -82,7 +82,7 @@ export function MatchPage({
   }
 
   return (
-    <div className={`fixed inset-y-0 right-0 ${sidebarLeft} z-120 flex flex-col bg-[#0d0d14]`}>
+    <div className={`fixed inset-y-0 left-0 right-0 ${sidebarLeft} z-120 flex flex-col bg-[#0d0d14]`}>
       {/* Header */}
       <div className="shrink-0 flex items-center gap-3 px-4 py-3 border-b border-zinc-800 bg-zinc-950/80">
         <button
@@ -115,7 +115,7 @@ export function MatchPage({
       </div>
 
       {/* Tab navigation */}
-      <div className="shrink-0 flex border-b border-zinc-800 bg-zinc-950/60">
+      <div className="shrink-0 flex w-full border-b border-zinc-800 bg-zinc-950/60">
         {tabs.map((tab) => {
           const disabled = tab.key === "intervencao" && mode !== "action" && mode !== "halftime";
           return (
@@ -123,7 +123,7 @@ export function MatchPage({
               key={tab.key}
               onClick={() => !disabled && setActiveTab(tab.key)}
               disabled={disabled}
-              className={`flex-1 py-2 text-[10px] font-black uppercase tracking-widest transition-colors border-b-2 ${
+              className={`flex-1 min-w-0 py-2 px-1 text-[10px] font-black uppercase tracking-widest transition-colors border-b-2 whitespace-nowrap ${
                 activeTab === tab.key
                   ? "text-white border-primary bg-primary/5"
                   : disabled
