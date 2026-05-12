@@ -747,10 +747,10 @@ export function registerSessionSocketHandlers(
         // Skill history — last 19 weeks (all rounds of current season)
         const skillHistory = await runAll(
           game.db,
-          `SELECT year, matchweek, skill
+          `SELECT matchweek, skill
            FROM players
            WHERE id = ?
-           ORDER BY year ASC, matchweek ASC
+           ORDER BY matchweek ASC
            LIMIT 19`,
           [playerId],
         );

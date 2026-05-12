@@ -2,17 +2,14 @@ import { POS_BAR } from "./positionConstants.js";
 
 /**
  * Gráfico de linhas mostrando a evolução da skill do jogador nas últimas 19 semanas.
- * @param {{ skillHistory: Array<{year: number, matchweek: number, skill: number}>, skill: number, position: string }} props
+ * @param {{ skillHistory: Array<{matchweek: number, skill: number}>, skill: number, position: string }} props
  */
 export function SkillLineChart({ skillHistory = [], skill = 0, position = "MED" }) {
   const barColor = POS_BAR[position] || "#95d4b3";
   const maxSkill = 50;
 
   // Ordenar histórico por matchweek
-  const sortedHistory = [...skillHistory].sort((a, b) => {
-    if (a.year !== b.year) return a.year - b.year;
-    return a.matchweek - b.matchweek;
-  });
+  const sortedHistory = [...skillHistory].sort((a, b) => a.matchweek - b.matchweek);
 
   // Encontrar o matchweek atual (último da temporada)
   const currentMatchweek = sortedHistory.length > 0 ? sortedHistory[sortedHistory.length - 1].matchweek : 0;
@@ -25,7 +22,7 @@ export function SkillLineChart({ skillHistory = [], skill = 0, position = "MED" 
   const chartData = [...sortedHistory];
   // Adicionar pontos vazios para preencher até 19 semanas
   for (let i = 0; i < weeksOffset; i++) {
-    chartData.push({ year: sortedHistory[0]?.year || 2026, matchweek: 0, skill: null });
+    chartData.push({ matchweek: 0, skill: null });
   }
 
   // Calcular coordenadas
