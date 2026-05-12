@@ -321,6 +321,19 @@ function App() {
       import.meta.env?.VITE_APP_COMMIT_COUNT) ||
     "0";
 
+  const [avatarSeed, setAvatarSeed] = useState("");
+
+  // Fetch avatar seed from server when manager is known
+  useEffect(() => {
+    if (!me?.name) return;
+    fetch(`${backendUrl}/auth/avatar-seed?name=${encodeURIComponent(me.name)}`)
+      .then((r) => r.json())
+      .then((data) => {
+        if (data?.seed) setAvatarSeed(data.seed);
+      })
+      .catch(() => { /* ignorar */ });
+  }, [me?.name, backendUrl]);
+
   // Re-fetch this coach's saved rooms whenever the name changes while in "saved-game" mode.
   useEffect(() => {
     if (joinMode === "saved-game" && name) {
@@ -2375,7 +2388,7 @@ function App() {
               title="Definições do Utilizador"
               className="flex items-center gap-2 hover:bg-white/10 transition-colors rounded-lg px-2 py-1"
             >
-              <PlayerAvatar seed={me.name} size="sm" />
+              <PlayerAvatar seed={`${me.name}|${avatarSeed}`} size="sm" />
               <div className="hidden lg:flex flex-col items-start">
                 <span
                   className="text-sm font-bold leading-tight"
@@ -5518,6 +5531,8 @@ function App() {
                       teamInfo={teamInfo}
                       palmares={palmares}
                       backendUrl={backendUrl}
+                      avatarSeed={avatarSeed}
+                      onAvatarSeedChange={setAvatarSeed}
                       onBack={() => setActiveTab("club")}
                       onLogout={handleLogout}
                       onLeaveRoom={() => {

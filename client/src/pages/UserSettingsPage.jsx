@@ -6,6 +6,8 @@ export function UserSettingsPage({
   teamInfo,
   palmares,
   backendUrl,
+  avatarSeed,
+  onAvatarSeedChange,
   onBack,
   onLogout,
   onLeaveRoom,
@@ -17,8 +19,6 @@ export function UserSettingsPage({
   const [passwordMsg, setPasswordMsg] = useState(null);
   const [rooms, setRooms] = useState([]);
   const [roomsLoading, setRoomsLoading] = useState(true);
-  const [avatarSeed, setAvatarSeed] = useState("");
-  const [avatarSeedLoaded, setAvatarSeedLoaded] = useState(false);
   const [deletingAccount, setDeletingAccount] = useState(false);
 
   useEffect(() => {
@@ -31,17 +31,6 @@ export function UserSettingsPage({
       .catch(() => { /* ignorar */ })
       .finally(() => setRoomsLoading(false));
   }, [me?.name, backendUrl]);
-
-  useEffect(() => {
-    if (!me?.name || avatarSeedLoaded) return;
-    fetch(`${backendUrl}/auth/avatar-seed?name=${encodeURIComponent(me.name)}`)
-      .then((r) => r.json())
-      .then((data) => {
-        if (data?.seed) setAvatarSeed(data.seed);
-      })
-      .catch(() => { /* ignorar */ })
-      .finally(() => setAvatarSeedLoaded(true));
-  }, [me?.name, backendUrl, avatarSeedLoaded]);
 
   const handleChangePassword = async (e) => {
     e.preventDefault();
@@ -153,7 +142,7 @@ export function UserSettingsPage({
           <button
             onClick={() => {
               const newSeed = Math.random().toString(36).slice(2, 10);
-              setAvatarSeed(newSeed);
+              onAvatarSeedChange(newSeed);
               fetch(`${backendUrl}/auth/avatar-seed`, {
                 method: "POST",
                 headers: { "Content-Type": "application/json" },
