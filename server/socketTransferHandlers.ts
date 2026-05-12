@@ -445,22 +445,22 @@ export function registerTransferSocketHandlers(
     }
   });
 
-  socket.on("placeAuctionBid", ({ playerId, bidAmount }) => {
+  socket.on("placeAuctionBid", ({ playerId, bidAmount }, ack) => {
     const game = getGameBySocket(socket.id);
-    if (!game) return;
+    if (!game) return ack?.({ ok: false, error: "Jogo não encontrado." });
     const playerState = getPlayerBySocket(game, socket.id);
-    if (!playerState) return;
+    if (!playerState) return ack?.({ ok: false, error: "Jogador não encontrado." });
 
     const validPlayerId = validatePositiveInt(playerId);
     const validBidAmount = validatePositiveInt(bidAmount);
     if (!validPlayerId || !validBidAmount) {
-      socket.emit("systemMessage", "Lance inválido.");
-      return;
+      return ack?.({ ok: false, error: "Lance inválido." });
     }
 
     placeAuctionBid(game, playerState.teamId, validPlayerId, validBidAmount)
       .then((result) => {
         const bidResult: any = result;
+        ack?.(bidResult);
         if (!bidResult.ok) {
           socket.emit("systemMessage", bidResult.error);
         } else {
@@ -468,14 +468,11 @@ export function registerTransferSocketHandlers(
             playerId: validPlayerId,
             bidAmount: bidResult.bidAmount,
           });
-
-          // O leilão só termina quando o tempo acabar — NPCs podem licitar
-          // por cima até ao timeout (finalizeAuction é chamado pelo timer).
-          // Não finalizamos aqui mesmo com 1 humano.
         }
       })
       .catch((err) => {
         console.error("[placeAuctionBid] Error:", err);
+        ack?.({ ok: false, error: "Erro ao processar o lance." });
         socket.emit("systemMessage", "Erro ao processar o lance.");
       });
   });

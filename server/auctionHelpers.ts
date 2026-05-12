@@ -44,8 +44,7 @@ export function createAuctionHelpers(deps: AuctionDeps) {
             const bidHistory = Object.entries(auction.bids || {}).map(([tid, val]: [string, any]) => {
               const bidVal = typeof val === 'object' ? (val as any).amount : val;
               const ts = typeof val === 'object' ? (val as any).timestamp : undefined;
-              const t = game.db ? null : null; // teams resolved client-side
-              return {
+            return {
                 teamId: parseInt(tid, 10),
                 amount: Number(bidVal || 0),
                 timestamp: ts || 0,
@@ -151,7 +150,7 @@ export function createAuctionHelpers(deps: AuctionDeps) {
     let winnerTeamId: number | null = null;
     let winnerBid = 0;
     for (const [teamId, amount] of bidEntries) {
-      const bid = Number(amount || 0);
+      const bid = Number((typeof amount === 'object' ? (amount as any).amount : amount) || 0);
       // Só substitui se for estritamente superior — em caso de empate, fica quem já liderava
       if (bid > winnerBid) {
         winnerBid = bid;
@@ -517,7 +516,7 @@ export function createAuctionHelpers(deps: AuctionDeps) {
     let currentHighBid = 0;
     let currentHighBidTeamId: number | null = null;
     for (const [tid, amount] of Object.entries(auction.bids || {})) {
-      const bid = Number(amount || 0);
+      const bid = Number((typeof amount === 'object' ? (amount as any).amount : amount) || 0);
       if (bid > currentHighBid) {
         currentHighBid = bid;
         currentHighBidTeamId = parseInt(tid, 10);
