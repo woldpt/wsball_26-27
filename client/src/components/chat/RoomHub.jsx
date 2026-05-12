@@ -128,13 +128,6 @@ export function RoomHub({
             className="flex items-center justify-between px-4 py-2.5 shrink-0"
             style={{ background: "#111" }}
           >
-            <div className="flex items-center gap-2">
-              {me.roomName && (
-                <span className="text-[10px] text-on-surface-variant font-semibold truncate max-w-[120px]">
-                  · {me.roomName}
-                </span>
-              )}
-            </div>
             <button
               onClick={() => setRoomHubOpen(!roomHubOpen)}
               className="text-on-surface-variant hover:text-on-surface transition-colors"
