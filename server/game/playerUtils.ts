@@ -62,7 +62,7 @@ export function generateJuniorGR(
       5;
   return {
     id: -(teamId * 10 + slotIndex + 1),
-    name: `${JUNIOR_FIRST_NAMES[firstIdx]} ${JUNIOR_LAST_NAMES[lastIdx]} (Junior)`,
+    name: `${JUNIOR_FIRST_NAMES[firstIdx]} ${JUNIOR_LAST_NAMES[lastIdx]}`,
     position: "GR",
     skill: juniorSkill,
     aggressiveness: 3,
@@ -136,7 +136,7 @@ export function generateJuniorFieldPlayer(
       5;
   return {
     id: -(teamId * 1000 + slotIndex + 1),
-    name: `${JUNIOR_FIRST_NAMES[firstIdx]} ${JUNIOR_LAST_NAMES[lastIdx]} (Junior)`,
+    name: `${JUNIOR_FIRST_NAMES[firstIdx]} ${JUNIOR_LAST_NAMES[lastIdx]}`,
     position,
     skill: juniorSkill,
     aggressiveness: 3,
