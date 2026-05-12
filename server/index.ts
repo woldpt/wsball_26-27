@@ -47,6 +47,7 @@ const {
   getManagerInfo,
   getAvatarSeed,
   setAvatarSeed,
+  deleteManager,
 } = require("./auth");
 const {
   getSeasonEndMatchweek,
@@ -408,6 +409,22 @@ app.post("/auth/avatar-seed", async (req, res) => {
     return res.json({ ok: true });
   } catch (error) {
     console.error("[/auth/avatar-seed] Error:", error.message);
+    return res.status(500).json({ error: "Erro interno." });
+  }
+});
+
+app.post("/auth/delete-account", async (req, res) => {
+  try {
+    const name =
+      typeof req.body?.name === "string" ? req.body.name.trim() : "";
+    if (!name)
+      return res.status(400).json({ error: "Nome de treinador inválido." });
+    const result = await deleteManager(name);
+    if (!result.ok)
+      return res.status(500).json({ error: result.error });
+    return res.json({ ok: true });
+  } catch (error) {
+    console.error("[/auth/delete-account] Error:", error.message);
     return res.status(500).json({ error: "Erro interno." });
   }
 });

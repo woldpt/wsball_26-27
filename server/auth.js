@@ -425,6 +425,39 @@ function setAvatarSeed(name, seed) {
   });
 }
 
+/**
+ * Delete a manager account and all associated room access records.
+ *
+ * @param {string} name
+ * @returns {Promise<{ok: boolean, error?: string}>}
+ */
+function deleteManager(name) {
+  const normalizedName = typeof name === "string" ? name.trim() : "";
+  if (!normalizedName) {
+    return Promise.resolve({ ok: false, error: "Nome inválido." });
+  }
+
+  return new Promise((resolve) => {
+    db.serialize(() => {
+      db.run(
+        "DELETE FROM room_managers WHERE manager_name = ? COLLATE NOCASE",
+        [normalizedName],
+      );
+      db.run(
+        "DELETE FROM managers WHERE name = ? COLLATE NOCASE",
+        [normalizedName],
+        (err) => {
+          if (err) {
+            console.error("[auth] deleteManager error:", err.message);
+            return resolve({ ok: false, error: "Erro ao apagar conta." });
+          }
+          resolve({ ok: true });
+        },
+      );
+    });
+  });
+}
+
 module.exports = {
   verifyOrCreateManager,
   verifyManager,
@@ -436,4 +469,5 @@ module.exports = {
   getManagerInfo,
   getAvatarSeed,
   setAvatarSeed,
+  deleteManager,
 };
