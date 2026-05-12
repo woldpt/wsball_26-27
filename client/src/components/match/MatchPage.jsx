@@ -71,7 +71,7 @@ export function MatchPage({
 
   if (!fixture && mode !== "action" && mode !== "halftime") {
     return (
-      <div className={`fixed inset-y-0 ${sidebarLeft} z-120 flex flex-col bg-[#0d0d14]`}>
+    <div className={`fixed inset-y-0 right-0 ${sidebarLeft} z-120 flex flex-col bg-[#0d0d14]`}>
         <div className="flex-1 flex items-center justify-center">
           <p className="text-sm font-bold text-zinc-500">
             Sem dados do jogo disponíveis
@@ -82,7 +82,7 @@ export function MatchPage({
   }
 
   return (
-    <div className={`fixed inset-y-0 ${sidebarLeft} z-120 flex flex-col bg-[#0d0d14]`}>
+    <div className={`fixed inset-y-0 right-0 ${sidebarLeft} z-120 flex flex-col bg-[#0d0d14]`}>
       {/* Header */}
       <div className="shrink-0 flex items-center gap-3 px-4 py-3 border-b border-zinc-800 bg-zinc-950/80">
         <button
