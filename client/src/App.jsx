@@ -2343,14 +2343,36 @@ function App() {
             </div>
           )}
 
-          {/* Right: user menu + chat + sair */}
+          {/* Right: user menu + chat */}
           <div className="flex items-center gap-1">
+            {/* RoomHub button — unified: Coaches + Chat */}
+            <button
+              onClick={() => setRoomHubOpen((v) => !v)}
+              title="Sala e Chat"
+              className="relative flex items-center justify-center w-9 h-9 rounded-lg hover:bg-white/10 transition-colors"
+            >
+              <span
+                className="material-symbols-outlined text-[20px] leading-none"
+                style={{ color: teamInfo?.color_secondary || "#e5e2e1" }}
+              >
+                chat
+              </span>
+              {(unreadRoom + unreadGlobal > 0 || players.length > 0) && (
+                <span className="absolute -top-0.5 -right-0.5 min-w-4 h-4 rounded-full bg-emerald-500 text-white text-[9px] font-black leading-none flex items-center justify-center px-1">
+                  {unreadRoom + unreadGlobal > 9
+                    ? "9+"
+                    : unreadRoom + unreadGlobal || players.length}
+                </span>
+              )}
+            </button>
+
             {/* User button — opens settings page */}
             <button
               onClick={() => {
                 setActiveTab("user_settings");
                 window.scrollTo(0, 0);
               }}
+              title="Definições do Utilizador"
               className="flex items-center gap-2 hover:bg-white/10 transition-colors rounded-lg px-2 py-1"
             >
               <PlayerAvatar seed={me.name} size="sm" />
@@ -2373,50 +2395,6 @@ function App() {
                 style={{ color: teamInfo?.color_secondary || "#e5e2e1" }}
               >
                 expand_more
-              </span>
-            </button>
-
-            {/* RoomHub button — unified: Coaches + Chat */}
-            <button
-              onClick={() => setRoomHubOpen((v) => !v)}
-              title="Sala e Chat"
-              className="relative flex items-center justify-center w-9 h-9 rounded-lg hover:bg-white/10 transition-colors"
-            >
-              <span
-                className="material-symbols-outlined text-[20px] leading-none"
-                style={{ color: teamInfo?.color_secondary || "#e5e2e1" }}
-              >
-                chat
-              </span>
-              {(unreadRoom + unreadGlobal > 0 || players.length > 0) && (
-                <span className="absolute -top-0.5 -right-0.5 min-w-4 h-4 rounded-full bg-emerald-500 text-white text-[9px] font-black leading-none flex items-center justify-center px-1">
-                  {unreadRoom + unreadGlobal > 9
-                    ? "9+"
-                    : unreadRoom + unreadGlobal || players.length}
-                </span>
-              )}
-            </button>
-
-            {/* SAIR (icon only) */}
-            <button
-              onClick={() => {
-                if (me?.roomCode) {
-                  socket.emit("leaveRoom");
-                  try {
-                    const s = JSON.parse(window.localStorage.getItem("cashballSession") || "{}");
-                    window.localStorage.setItem("cashballSession", JSON.stringify({ name: s.name, password: s.password, roomCode: "" }));
-                  } catch { /* ignorar */ }
-                }
-                resetGameState();
-                setMe(null);
-                setAuthPhase("mode");
-              }}
-              title="Voltar à escolha de sala"
-              className="flex items-center justify-center w-9 h-9 rounded-lg hover:bg-white/10 transition-colors"
-              style={{ color: teamInfo?.color_secondary || "#e5e2e1" }}
-            >
-              <span className="material-symbols-outlined text-[18px] leading-none">
-                logout
               </span>
             </button>
           </div>
