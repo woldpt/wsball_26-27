@@ -29,7 +29,6 @@ export function AuctionNotification({
   const [currentToast, setCurrentToast] = useState(null);
   const queueRef = useRef([]);
   const seenRef = useRef(new Set());
-  const timerRef = useRef(null);
   const showingRef = useRef(false);
 
   const showNext = () => {
@@ -38,16 +37,9 @@ export function AuctionNotification({
     const next = queueRef.current.shift();
     showingRef.current = true;
     setCurrentToast(next);
-    clearTimeout(timerRef.current);
-    timerRef.current = setTimeout(() => {
-      showingRef.current = false;
-      setCurrentToast(null);
-      setTimeout(showNext, 400);
-    }, 10000);
   };
 
   const dismiss = () => {
-    clearTimeout(timerRef.current);
     showingRef.current = false;
     setCurrentToast(null);
     setTimeout(showNext, 400);
@@ -56,7 +48,6 @@ export function AuctionNotification({
   // Detect new auctions and enqueue
   useEffect(() => {
     if (currentPage === "leiloes") {
-      clearTimeout(timerRef.current);
       showingRef.current = false;
       queueRef.current = [];
       return;
@@ -68,10 +59,6 @@ export function AuctionNotification({
     newOnes.forEach((a) => seenRef.current.add(a.playerId));
     queueRef.current.push(...newOnes);
     showNext();
-
-    return () => {
-      clearTimeout(timerRef.current);
-    };
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [activeAuctions, currentPage]);
 
@@ -165,6 +152,7 @@ export function AuctionNotification({
               background: `linear-gradient(90deg, ${accent}88, ${accent})`,
               animation: `auctionCountdown 10s linear forwards`,
             }}
+            onAnimationEnd={dismiss}
           />
         </div>
 
