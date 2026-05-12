@@ -285,29 +285,37 @@ export function ClubTab({
           {palmaresTeamId === me?.teamId &&
           palmares.trophies?.length > 0 ? (
             <div className="flex flex-wrap gap-3">
-              {palmares.trophies.map((trophy, idx) => (
-                <div
-                  key={idx}
-                  className="flex items-center gap-3 px-4 py-3 rounded-lg bg-tertiary/8 border border-tertiary/20"
-                >
-                  <span
-                    className="material-symbols-outlined text-tertiary text-xl"
-                    style={{
-                      fontVariationSettings: "'FILL' 1",
-                    }}
+              {palmares.trophies.map((trophy, idx) => {
+                const isTopScorer = trophy.achievement.includes("Melhor Marcador");
+                return (
+                  <div
+                    key={idx}
+                    className="flex items-center gap-3 px-4 py-3 rounded-lg bg-tertiary/8 border border-tertiary/20"
                   >
-                    emoji_events
-                  </span>
-                  <div>
-                    <p className="text-tertiary font-black text-sm">
-                      {trophy.achievement}
-                    </p>
-                    <p className="text-on-surface-variant text-xs font-bold">
-                      {trophy.season}
-                    </p>
+                    <span
+                      className="material-symbols-outlined text-tertiary text-xl"
+                      style={{
+                        fontVariationSettings: "'FILL' 1",
+                      }}
+                    >
+                      {isTopScorer ? "soccer" : "emoji_events"}
+                    </span>
+                    <div>
+                      <p className="text-tertiary font-black text-sm">
+                        {trophy.achievement}
+                      </p>
+                      <p className="text-on-surface-variant text-xs font-bold">
+                        {trophy.season}
+                      </p>
+                      {trophy.coach_name && trophy.is_human_coach && (
+                        <p className="text-on-surface-variant/60 text-[10px] mt-0.5">
+                          Treinador: {trophy.coach_name}
+                        </p>
+                      )}
+                    </div>
                   </div>
-                </div>
-              ))}
+                );
+              })}
             </div>
           ) : (
             <div className="flex-1 flex flex-col items-center justify-center border border-dashed border-outline-variant/20 rounded-lg bg-surface-container-low/50 p-8">

@@ -671,7 +671,7 @@ export function registerSessionSocketHandlers(
     try {
       const rows = await runAll(
         game.db,
-        `SELECT pa.season, pa.achievement, t.name as team_name
+        `SELECT pa.season, pa.achievement, pa.coach_name, pa.is_human_coach, t.name as team_name
          FROM palmares pa
          JOIN teams t ON t.id = pa.team_id
          WHERE pa.team_id = ?
@@ -680,7 +680,7 @@ export function registerSessionSocketHandlers(
       );
       const allChampions = await runAll(
         game.db,
-        `SELECT pa.season, pa.achievement, t.id as team_id, t.name as team_name, t.color_primary, t.color_secondary
+        `SELECT pa.season, pa.achievement, pa.coach_name, pa.is_human_coach, t.id as team_id, t.name as team_name, t.color_primary, t.color_secondary
          FROM palmares pa
          JOIN teams t ON t.id = pa.team_id
          ORDER BY pa.season DESC, pa.id DESC`,
