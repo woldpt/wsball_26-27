@@ -3657,11 +3657,13 @@ function App() {
                       {/* ── MULTIVIEW GRID ─────────────────────── */}
                       {!isCupMatch && (
                         <div className="overflow-x-auto mt-2">
-                          <div className="grid grid-cols-2 sm:grid-cols-2 xl:grid-cols-4 gap-2 sm:gap-4 min-w-[360px]">
-                            {[1, 2, 3, 4].map((div) => {
+                          <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 gap-2 sm:gap-4 min-w-[360px]">
+                            {(() => {
                               const myDiv = teams.find(
                                 (t) => t.id === me.teamId,
                               )?.division;
+                              const divs = [myDiv, ...[1,2,3,4].filter(d => d !== myDiv)];
+                              return divs.map((div) => {
                               const isMyDiv = myDiv === div;
                               const divMatches = matchResults.results
                                 .filter(
@@ -3859,7 +3861,9 @@ function App() {
                                   </div>
                                 </div>
                               );
-                            })}
+                            });
+                            })()
+                            }
                           </div>
                         </div>
                       )}
