@@ -501,6 +501,9 @@ export function TabIntervencao({
   redCardedHalftimeIds,
   injuredHalftimeIds,
   onResolveAction,
+  fixture,
+  teams,
+  myTeamId,
 }) {
   const shouldReduceMotion = false;
   const actionType = matchAction?.type || null;
@@ -524,6 +527,10 @@ export function TabIntervencao({
     matchAction?.sentOffPlayer ||
     matchAction?.dismissedPlayer ||
     null;
+
+  const isHome = myTeamId && fixture?.homeTeamId === myTeamId;
+  const oppTeamId = isHome ? fixture?.awayTeamId : fixture?.homeTeamId;
+  const oppInfo = teams?.find((t) => t.id === oppTeamId);
 
   const sortPlayers = (arr = []) =>
     [...arr].sort(
@@ -661,9 +668,19 @@ export function TabIntervencao({
       <div
         className={`shrink-0 px-3 py-2 border-b border-zinc-800 bg-gradient-to-r ${actionTheme}`}
       >
-        <p className="text-[11px] font-black uppercase tracking-[0.2em] text-zinc-100 text-center truncate">
-          {titleText}
-        </p>
+        <div className="flex items-center gap-2">
+          {oppInfo && (
+            <span
+              className="text-[10px] font-black uppercase tracking-widest shrink-0"
+              style={{ color: oppInfo?.color_primary || "#f59e0b" }}
+            >
+              {oppInfo?.name || "Adversário"}
+            </span>
+          )}
+          <p className="text-[11px] font-black uppercase tracking-[0.2em] text-zinc-100 text-center truncate flex-1">
+            {titleText}
+          </p>
+        </div>
         {isForcedSwap && injuryCountdown !== null && (
           <p className="text-center text-amber-300 font-black text-[10px] mt-1 tracking-wide animate-pulse">
             Auto-substituição em {injuryCountdown}s

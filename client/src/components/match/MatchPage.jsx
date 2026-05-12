@@ -180,6 +180,9 @@ export function MatchPage({
             redCardedHalftimeIds={redCardedHalftimeIds}
             injuredHalftimeIds={injuredHalftimeIds}
             onResolveAction={onResolveAction}
+            fixture={fixture}
+            teams={teams}
+            myTeamId={myTeamId}
           />
         )}
       </div>
