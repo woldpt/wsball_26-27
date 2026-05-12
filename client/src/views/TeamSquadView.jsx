@@ -553,7 +553,8 @@ export function TeamSquadView({
                             *
                           </span>
                         )}
-                      {(player.transfer_cooldown_until_matchweek || 0) >= currentMatchweek && (
+                      {(player.transfer_cooldown_until_matchweek || 0) > 0 &&
+                        (player.transfer_cooldown_until_matchweek || 0) >= currentMatchweek && (
                         <span
                           className="ml-1"
                           title="Em viagem — disponível na próxima jornada"

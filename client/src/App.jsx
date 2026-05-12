@@ -4638,7 +4638,7 @@ function App() {
                                           const isCooldown =
                                             !isSusp &&
                                             !isInj &&
-                                            cooldown >= matchweekCount;
+                                            cooldown > 0 && cooldown >= matchweekCount;
                                           if (isCooldown) {
                                             return (
                                               <span
@@ -4883,7 +4883,7 @@ function App() {
                                           const isCooldown =
                                             !isSusp &&
                                             !isInj &&
-                                            cooldown >= matchweekCount;
+                                            cooldown > 0 && cooldown >= matchweekCount;
                                           if (isCooldown) {
                                             return (
                                               <span
