@@ -129,9 +129,6 @@ export function RoomHub({
             style={{ background: "#111" }}
           >
             <div className="flex items-center gap-2">
-              <span className="text-sm font-black uppercase tracking-widest text-on-surface">
-                WSBALL
-              </span>
               {me.roomName && (
                 <span className="text-[10px] text-on-surface-variant font-semibold truncate max-w-[120px]">
                   · {me.roomName}
