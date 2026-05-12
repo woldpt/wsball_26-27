@@ -6,7 +6,7 @@ import {
   runAll,
   validatePositiveInt,
 } from "./coreHelpers";
-import { withJuniorGRs } from "./game/engine";
+import { withJuniorGRs, ensureFullBench } from "./game/engine";
 
 interface TransferHandlerDeps {
   io: any;
@@ -186,7 +186,11 @@ export function registerTransferSocketHandlers(
       );
       socket.emit(
         "mySquad",
-        withJuniorGRs(squad, playerState.teamId as number, game.matchweek || 1),
+        ensureFullBench(
+          withJuniorGRs(squad, playerState.teamId as number, game.matchweek || 1),
+          playerState.teamId as number,
+          game.matchweek || 1,
+        ),
       );
       socket.emit("systemMessage", `Contrataste ${player.name} por €${price}!`);
     } catch (err) {
@@ -638,8 +642,12 @@ export function registerTransferSocketHandlers(
                       (_e2, squad) =>
                         socket.emit(
                           "mySquad",
-                          withJuniorGRs(
-                            squad || [],
+                          ensureFullBench(
+                            withJuniorGRs(
+                              squad || [],
+                              playerState.teamId as number,
+                              game.matchweek || 1,
+                            ),
                             playerState.teamId as number,
                             game.matchweek || 1,
                           ),

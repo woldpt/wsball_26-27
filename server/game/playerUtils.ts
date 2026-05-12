@@ -109,6 +109,105 @@ export function withJuniorGRs(
   return [...squad, ...juniors];
 }
 
+/**
+ * Generates a deterministic ephemeral junior field player for a team.
+ * Position cycles through DEF / MED / ATA based on slotIndex.
+ * Uses negative IDs (different base from GR juniors) so all DB writes are harmless no-ops.
+ * The same (teamId, matchweek, slotIndex) always produces the same name and ID.
+ * ID scheme: -(teamId * 1000 + slotIndex + 1)
+ */
+export function generateJuniorFieldPlayer(
+  teamId: number,
+  matchweek: number,
+  slotIndex: number,
+  position: "DEF" | "MED" | "ATA",
+): PlayerRow {
+  const firstIdx =
+    Math.abs(teamId * 37 + matchweek * 13 + slotIndex * 7) %
+    JUNIOR_FIRST_NAMES.length;
+  const lastIdx =
+    Math.abs(teamId * 53 + matchweek * 17 + slotIndex * 11) %
+    JUNIOR_LAST_NAMES.length;
+  const juniorSkill =
+    1 +
+    Math.abs(
+      teamId * 37 + matchweek * 13 + slotIndex * 7 + firstIdx * 3 + lastIdx * 5,
+    ) %
+      5;
+  return {
+    id: -(teamId * 1000 + slotIndex + 1),
+    name: `${JUNIOR_FIRST_NAMES[firstIdx]} ${JUNIOR_LAST_NAMES[lastIdx]} (Junior)`,
+    position,
+    skill: juniorSkill,
+    aggressiveness: 3,
+    resistance: 3,
+    isJunior: true,
+    team_id: teamId,
+    age: 17,
+    form: 50,
+    nationality: "🇵🇹",
+    value: 0,
+    wage: 0,
+    goals: 0,
+    is_star: 0,
+    suspension_until_matchweek: 0,
+    injury_until_matchweek: 0,
+    games_played: 0,
+    yellow_cards: 0,
+    red_cards: 0,
+    career_injuries: 0,
+    career_reds: 0,
+    transfer_status: "none",
+    prev_skill: null,
+    signed_season: null,
+  };
+}
+
+/**
+ * Ensures the squad has enough available players to fill both the starting
+ * eleven (11) and a full bench (1 GR + 4 field = 5 substitutes).
+ *
+ * Minimum requirements:
+ *   - 2 GR  (1 starter + 1 bench)
+ *   - 14 field players (10 starters + 4 bench)
+ *
+ * Temporary junior players are generated for any missing slots.
+ * This function is designed to be called AFTER withJuniorGRs() so the
+ * starting-GR requirement is already satisfied.
+ * The original array is never mutated.
+ */
+export function ensureFullBench(
+  squad: PlayerRow[],
+  teamId: number,
+  matchweek: number,
+): PlayerRow[] {
+  const result = [...squad];
+
+  const availableGRCount = squad.filter(
+    (p) => p.position === "GR" && isPlayerAvailable(p, matchweek),
+  ).length;
+  const availableFieldCount = squad.filter(
+    (p) => p.position !== "GR" && isPlayerAvailable(p, matchweek),
+  ).length;
+
+  // Ensure at least 2 GRs (1 starter + 1 bench)
+  if (availableGRCount < 2) {
+    result.push(generateJuniorGR(teamId, matchweek, 1));
+  }
+
+  // Ensure at least 14 field players (10 starters + 4 bench)
+  if (availableFieldCount < 14) {
+    const needed = 14 - availableFieldCount;
+    const positions: Array<"DEF" | "MED" | "ATA"> = ["DEF", "MED", "ATA"];
+    for (let i = 0; i < needed; i++) {
+      const pos = positions[i % 3];
+      result.push(generateJuniorFieldPlayer(teamId, matchweek, 100 + i, pos));
+    }
+  }
+
+  return result;
+}
+
 export function pickBestPlayer(players: PlayerRow[] = []) {
   if (!players.length) return null;
   return [...players].sort((a, b) => b.skill - a.skill)[0];

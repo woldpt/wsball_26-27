@@ -2,13 +2,21 @@ import type { ActiveGame, Tactic } from "../types";
 import {
   generateJuniorGR,
   withJuniorGRs,
+  generateJuniorFieldPlayer,
+  ensureFullBench,
   pickBestPlayer,
   weightedPickScorer,
   isPlayerAvailable,
 } from "./playerUtils";
 
 // Re-export so external files can still import from "./game/engine"
-export { withJuniorGRs, generateJuniorGR, isPlayerAvailable } from "./playerUtils";
+export {
+  withJuniorGRs,
+  generateJuniorGR,
+  generateJuniorFieldPlayer,
+  ensureFullBench,
+  isPlayerAvailable,
+} from "./playerUtils";
 import {
   goalPhrase,
   penaltyGoalPhrase,
@@ -825,7 +833,11 @@ async function simulateMatchSegment(
             isPlayerAvailable(p, currentMatchweek),
           );
           resolve(
-            withJuniorGRs(available, fixture.homeTeamId, currentMatchweek),
+            ensureFullBench(
+              withJuniorGRs(available, fixture.homeTeamId, currentMatchweek),
+              fixture.homeTeamId,
+              currentMatchweek,
+            ),
           );
         },
       );
@@ -840,7 +852,11 @@ async function simulateMatchSegment(
             isPlayerAvailable(p, currentMatchweek),
           );
           resolve(
-            withJuniorGRs(available, fixture.awayTeamId, currentMatchweek),
+            ensureFullBench(
+              withJuniorGRs(available, fixture.awayTeamId, currentMatchweek),
+              fixture.awayTeamId,
+              currentMatchweek,
+            ),
           );
         },
       );
@@ -1677,10 +1693,13 @@ async function applyPostMatchQualityEvolution(
 
 module.exports = {
   withJuniorGRs,
+  generateJuniorGR,
+  generateJuniorFieldPlayer,
+  ensureFullBench,
+  isPlayerAvailable,
   simulateMatchSegment,
   getTeamSquad,
   generateFixturesForDivision,
-  isPlayerAvailable,
   applyPostMatchQualityEvolution,
   simulateExtraTime,
   simulatePenaltyShootout,

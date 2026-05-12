@@ -1,5 +1,5 @@
 import type { ActiveGame, PlayerSession } from "./types";
-import { withJuniorGRs } from "./game/engine";
+import { withJuniorGRs, ensureFullBench } from "./game/engine";
 import { getTacticFamiliarity, getAllTacticFamiliarity } from "./game/tacticFamiliarity";
 
 interface GameplayHandlerDeps {
@@ -118,7 +118,11 @@ export function registerGameplaySocketHandlers(
         const base = err ? [] : squad || [];
         socket.emit("teamSquadData", {
           teamId,
-          squad: withJuniorGRs(base, teamId, game.matchweek || 1),
+          squad: ensureFullBench(
+            withJuniorGRs(base, teamId, game.matchweek || 1),
+            teamId,
+            game.matchweek || 1,
+          ),
         });
       },
     );

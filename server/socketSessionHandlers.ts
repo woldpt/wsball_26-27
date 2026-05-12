@@ -2,7 +2,7 @@ import type { ActiveGame, GamePhase, PlayerSession } from "./types";
 import { getAllTeamForms } from "./coreHelpers";
 import { SPONSOR_REVENUE_BY_DIVISION } from "./gameConstants";
 import { getGlobalMessages } from "./db/globalDatabase";
-import { withJuniorGRs } from "./game/engine";
+import { withJuniorGRs, ensureFullBench } from "./game/engine";
 
 type AnyRow = Record<string, any>;
 
@@ -188,7 +188,11 @@ export function registerSessionSocketHandlers(
       (err: any, squad: any[]) =>
         socket.emit(
           "mySquad",
-          withJuniorGRs(squad || [], team.id, game.matchweek || 1),
+          ensureFullBench(
+            withJuniorGRs(squad || [], team.id, game.matchweek || 1),
+            team.id,
+            game.matchweek || 1,
+          ),
         ),
     );
     socket.emit("marketUpdate", game.globalMarket);

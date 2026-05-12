@@ -1,6 +1,6 @@
 // ── Match calculation utilities extracted from engine.ts ──────────────────────
 
-import { pickBestPlayer, withJuniorGRs } from "./playerUtils";
+import { pickBestPlayer, withJuniorGRs, ensureFullBench } from "./playerUtils";
 
 type PlayerRow = any;
 
@@ -106,8 +106,12 @@ export async function generateAITactic(
           return resolve({ formation: "4-4-2", style: "EQUILIBRADO", positions: {} });
         }
 
-        const selfRows = withJuniorGRs(
-          rows.filter((p) => p.team_id === teamId),
+        const selfRows = ensureFullBench(
+          withJuniorGRs(
+            rows.filter((p) => p.team_id === teamId),
+            teamId,
+            matchweek,
+          ),
           teamId,
           matchweek,
         );
