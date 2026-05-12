@@ -133,6 +133,76 @@ function getRoomName(roomCode: string): Promise<string> {
   });
 }
 
+/** Retrieve room name, team name, and season year for a saved room. */
+function getSaveInfo(
+  roomCode: string,
+  managerName: string | null,
+): Promise<{ roomName: string; teamName: string | null; year: number | null }> {
+  return new Promise((resolve) => {
+    const dbPath = path.join(resolveDbDir(), `game_${roomCode}.db`);
+    if (!fs.existsSync(dbPath)) {
+      resolve({ roomName: roomCode, teamName: null, year: null });
+      return;
+    }
+    const db = new sqlite3.Database(dbPath, sqlite3.OPEN_READONLY, (err: any) => {
+      if (err) {
+        resolve({ roomName: roomCode, teamName: null, year: null });
+        return;
+      }
+      // Get room name, season year, and team name in one pass
+      const rows: any[] = [];
+      const keys = ["roomName", "year"];
+      let pendingQueries = 0;
+
+      const onRow = (key: string) => (err: any, row: any) => {
+        if (!err && row) rows.push({ key, value: row.value });
+        pendingQueries--;
+        if (pendingQueries === 0) finish();
+      };
+
+      // Fetch roomName and year
+      for (const key of keys) {
+        pendingQueries++;
+        db.get(
+          `SELECT value FROM game_state WHERE key = '${key}'`,
+          onRow(key),
+        );
+      }
+
+      // Fetch team name for this manager
+      if (managerName) {
+        pendingQueries++;
+        db.get(
+          `SELECT t.name AS teamName FROM teams t JOIN managers m ON m.id = t.manager_id WHERE m.name = ? COLLATE NOCASE`,
+          [managerName],
+          (err: any, row: any) => {
+            if (!err && row) rows.push({ key: "teamName", value: row.teamName });
+            pendingQueries--;
+            if (pendingQueries === 0) finish();
+          },
+        );
+      } else {
+        pendingQueries++;
+        setImmediate(() => {
+          pendingQueries--;
+          if (pendingQueries === 0) finish();
+        });
+      }
+
+      function finish() {
+        db.close();
+        const result: Record<string, string | null> = { roomName: roomCode, teamName: null, year: null };
+        for (const r of rows) {
+          if (r.key === "roomName") result.roomName = r.value;
+          else if (r.key === "teamName") result.teamName = r.value;
+          else if (r.key === "year") result.year = Number(r.value);
+        }
+        resolve(result as { roomName: string; teamName: string | null; year: number | null });
+      }
+    });
+  });
+}
+
 function getRoomInfo(
   roomCode: string,
   managerName: string,
@@ -229,12 +299,17 @@ app.get("/saves", apiLimiter, async (req, res) => {
       roomCodes = mySaves.filter((r) => allSaves.includes(r));
     }
 
-    // Load room names for each room
+    // Load room info (name, team, year) for each room
     const saves = await Promise.all(
-      roomCodes.map(async (roomCode) => ({
-        code: roomCode,
-        name: await getRoomName(roomCode),
-      })),
+      roomCodes.map(async (roomCode) => {
+        const info = await getSaveInfo(roomCode, managerName as string | null);
+        return {
+          code: roomCode,
+          name: info.roomName,
+          teamName: info.teamName,
+          year: info.year,
+        };
+      }),
     );
 
     res.json(saves);

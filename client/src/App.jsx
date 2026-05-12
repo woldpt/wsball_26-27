@@ -1912,6 +1912,20 @@ function App() {
                                   <span className="text-[10px] text-on-surface-variant/60 font-mono">
                                     {save.code}
                                   </span>
+                                  {(save.teamName || save.year) && (
+                                    <div className="flex items-center gap-2 mt-0.5">
+                                      {save.teamName && (
+                                        <span className="text-[10px] text-on-surface-variant/50 truncate">
+                                          🏟️ {save.teamName}
+                                        </span>
+                                      )}
+                                      {save.year && (
+                                        <span className="text-[10px] text-on-surface-variant/50">
+                                          📅 {save.year}
+                                        </span>
+                                      )}
+                                    </div>
+                                  )}
                                 </div>
                                 <button
                                   onClick={(e) => {
