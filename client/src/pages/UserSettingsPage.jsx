@@ -9,7 +9,6 @@ export function UserSettingsPage({
   avatarSeed,
   onAvatarSeedChange,
   onBack,
-  onLogout,
   onLeaveRoom,
 }) {
   const [currentPassword, setCurrentPassword] = useState("");
@@ -343,13 +342,6 @@ export function UserSettingsPage({
           >
             <span className="material-symbols-outlined text-[18px]">logout</span>
             Sair da Sala
-          </button>
-          <button
-            onClick={onLogout}
-            className="w-full flex items-center justify-center gap-2 bg-red-500/10 border border-red-500/20 text-red-400 font-black text-xs uppercase tracking-widest rounded-xl px-5 py-3 hover:bg-red-500/20 transition-colors"
-          >
-            <span className="material-symbols-outlined text-[18px]">switch_account</span>
-            Trocar Conta
           </button>
           {deletingAccount !== "confirm" ? (
             <button
