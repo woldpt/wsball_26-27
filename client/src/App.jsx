@@ -346,6 +346,7 @@ function App() {
         setAuctionBid("");
         setMyAuctionBid(null);
         setAuctionResult(null);
+        setShowCupDrawPopup(false);
       });
     }
   }, [isPlayingMatch]);
@@ -973,16 +974,11 @@ function App() {
   // Auto-close draw popup when no human is in the cup at all (fully NPC round)
   useEffect(() => {
     if (!showCupDrawPopup || !cupDraw || cupDraw.humanInCup) return;
-    const totalTeams = (cupDraw.fixtures || []).length * 2;
-    if (cupDrawRevealIdx >= totalTeams) {
-      // Give enough time to read before auto-closing for NPC-only rounds
-      const timer = setTimeout(() => {
-        setShowCupDrawPopup(false);
-        socket.emit("cupDrawAcknowledged");
-      }, 8000);
-      return () => clearTimeout(timer);
-    }
-  }, [showCupDrawPopup, cupDraw, cupDrawRevealIdx]);
+    startTransition(() => {
+      setShowCupDrawPopup(false);
+      socket.emit("cupDrawAcknowledged");
+    });
+  }, [showCupDrawPopup, cupDraw]);
 
   // Penalty shootout progressive reveal: one kick every 3.5 s (for suspense)
   useEffect(() => {
@@ -5564,6 +5560,7 @@ function App() {
         me={me}
         players={players}
         setShowCupDrawPopup={setShowCupDrawPopup}
+        setCupDrawRevealIdx={setCupDrawRevealIdx}
       />
 
       <PenaltyShootoutPopup

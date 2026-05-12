@@ -226,6 +226,8 @@ export function useSocketListeners(handlers, refs) {
     });
     socket.on("cupPreMatch", (data) => {
       if (!inRoom()) return;
+      // Safety net: dismiss any lingering cup draw popup before the match starts
+      handlers.setShowCupDrawPopup(false);
       handlers.setMatchResults({ matchweek: data.season, results: [] });
       handlers.setShowHalftimePanel(true);
       handlers.setIsPlayingMatch(false);

@@ -455,6 +455,11 @@ export function createCupFlowHelpers(deps: CupFlowDeps) {
   // see their opponent and set tactics before clicking Ready.
 
   async function startCupRound(game: ActiveGame, round: number) {
+    // Only emit the draw animation when in lobby. During crash recovery
+    // (fixtures regenerated mid-match), silently generate fixtures without
+    // showing the draw popup to clients.
+    const isLobby = game.gamePhase === "lobby";
+
     const drawFixtures = await generateCupDraw(game, round);
 
     // Enrich fixtures with team info
@@ -492,6 +497,15 @@ export function createCupFlowHelpers(deps: CupFlowDeps) {
 
     // Skip draw animation for the final (round 5) — fixtures are set silently
     if (round === 5) return;
+
+    if (!isLobby) {
+      // Crash recovery during active match: mark as seen, skip the popup
+      const connectedPlayers = getPlayerList(game);
+      for (const player of connectedPlayers) {
+        game.cupDrawSeenBy.add(player.name);
+      }
+      return;
+    }
 
     // Reset draw-seen tracking for this new round
     game.cupDrawSeenBy = new Set();

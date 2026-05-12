@@ -1,7 +1,7 @@
 import { socket } from "../../socket.js";
 
 /**
- * @param {{ cupDraw: object|null, cupDrawRevealIdx: number, me: object, players: object[], showCupDrawPopup: boolean, setShowCupDrawPopup: function }} props
+ * @param {{ cupDraw: object|null, cupDrawRevealIdx: number, me: object, players: object[], showCupDrawPopup: boolean, setShowCupDrawPopup: function, setCupDrawRevealIdx: function }} props
  */
 export function CupDrawPopup({
   cupDraw,
@@ -10,8 +10,9 @@ export function CupDrawPopup({
   players = [],
   showCupDrawPopup,
   setShowCupDrawPopup,
+  setCupDrawRevealIdx,
 }) {
-  if (!showCupDrawPopup || !cupDraw) return null;
+  if (!showCupDrawPopup || !cupDraw || !cupDraw.humanInCup) return null;
 
   const totalPairs = (cupDraw.fixtures || []).length;
   const fullyRevealed = cupDrawRevealIdx >= totalPairs * 2;
@@ -30,6 +31,21 @@ export function CupDrawPopup({
           Sorteio — {cupDraw.roundName}
         </h1>
       </div>
+
+      {/* Saltar botão (skip reveal animation) */}
+      {cupDraw.humanInCup && !fullyRevealed && (
+        <div className="w-full max-w-3xl flex justify-end mb-2">
+          <button
+            onClick={() => {
+              const total = (cupDraw.fixtures || []).length * 2;
+              setCupDrawRevealIdx(total);
+            }}
+            className="rounded-sm bg-white/8 px-3 py-1.5 text-[10px] font-black uppercase tracking-widest text-zinc-400 hover:text-white hover:bg-white/15 transition-all cursor-pointer"
+          >
+            Saltar ⏭
+          </button>
+        </div>
+      )}
 
       {/* Fixtures — two columns on sm+ screens */}
       <div className="w-full max-w-3xl grid grid-cols-1 sm:grid-cols-2 gap-2">
