@@ -1140,7 +1140,7 @@ function PlayerAvatarInner({ seed, position, teamColor, size = "lg" }) {
     <div className="relative shrink-0">
       <svg
         viewBox="0 0 120 120"
-        className={`${SIZE_MAP[size] ?? SIZE_MAP.lg} rounded-full shadow-lg`}
+        className={`w-full h-full ${SIZE_MAP[size] ?? SIZE_MAP.lg} rounded-full shadow-lg`}
         style={{ backgroundColor: BACKDROP }}
         shapeRendering="geometricPrecision"
         strokeLinecap="round"
