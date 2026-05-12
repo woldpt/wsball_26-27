@@ -743,9 +743,22 @@ export function registerSessionSocketHandlers(
          ORDER BY cn.year ASC, cn.matchweek ASC`,
           [playerId],
         );
+
+        // Skill history — last 19 weeks (all rounds of current season)
+        const skillHistory = await runAll(
+          game.db,
+          `SELECT year, matchweek, skill
+           FROM players
+           WHERE id = ?
+           ORDER BY year ASC, matchweek ASC
+           LIMIT 19`,
+          [playerId],
+        );
+
         socket.emit("playerHistoryData", {
           player,
           transfers: transfers || [],
+          skillHistory: skillHistory || [],
         });
       } catch (err) {
         console.error(`[${game.roomCode}] requestPlayerHistory error:`, err);

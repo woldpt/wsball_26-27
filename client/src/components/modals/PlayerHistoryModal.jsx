@@ -2,6 +2,7 @@ import { formatCurrency } from "../../utils/formatters.js";
 import { AggBadge } from "../shared/AggBadge.jsx";
 import { PlayerAvatar } from "../shared/PlayerAvatar.jsx";
 import { aggLabel } from "../../utils/playerHelpers.js";
+import { SkillLineChart } from "./SkillLineChart.jsx";
 
 // Position config
 const POS_LABEL = { GR: "GR", DEF: "DEF", MED: "MED", ATA: "ATA" };
@@ -457,6 +458,15 @@ export function PlayerHistoryModal({
                     color={cInjuries > 0 ? "text-amber-400" : "text-on-surface"}
                   />
                 </div>
+              </div>
+
+              {/* Skill evolution chart */}
+              <div className="px-6 py-5">
+                <SkillLineChart
+                  skillHistory={playerHistoryModal.skillHistory || []}
+                  skill={skill}
+                  position={pos}
+                />
               </div>
             </div>
           </div>
