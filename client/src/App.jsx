@@ -312,15 +312,6 @@ function App() {
   const backendUrl =
     (typeof import.meta !== "undefined" && import.meta.env?.VITE_BACKEND_URL) ||
     "";
-  const appCommitSha =
-    (typeof import.meta !== "undefined" &&
-      import.meta.env?.VITE_APP_COMMIT_SHA) ||
-    "unknown";
-  const appCommitCount =
-    (typeof import.meta !== "undefined" &&
-      import.meta.env?.VITE_APP_COMMIT_COUNT) ||
-    "0";
-
   const [avatarSeed, setAvatarSeed] = useState("");
 
   // Fetch avatar seed from server when manager is known
@@ -2090,8 +2081,7 @@ function App() {
                 ⚽ CashBall 26/27
               </span>
               <span className="text-xs text-on-surface-variant/40">
-                v1.0a-TESTING · commit #{appCommitCount} ({appCommitSha}) © 2026
-                by Fábio Silva
+                v0.2a-TESTING © 2026 by Fábio Silva
               </span>
             </div>
           </footer>
