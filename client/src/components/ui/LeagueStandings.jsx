@@ -563,24 +563,7 @@ export function LeagueStandings({
         <div className="xl:col-span-3 flex flex-col gap-4">
           <GoldenBootSidebar topScorers={topScorers} myTeamId={myTeamId} />
 
-          {/* Form legend */}
-          <div className="bg-surface-container rounded-md p-4 space-y-2">
-            <h4 className="font-headline font-black text-[10px] uppercase tracking-widest text-on-surface-variant/60 mb-3">
-              Legenda — Forma
-            </h4>
-            {[
-              { color: "bg-emerald-500", label: "Vitória" },
-              { color: "bg-zinc-500", label: "Empate" },
-              { color: "bg-red-500", label: "Derrota" },
-            ].map(({ color, label }) => (
-              <div key={label} className="flex items-center gap-2">
-                <span className={`w-2 h-2 rounded-full ${color}`} />
-                <span className="text-[10px] text-on-surface-variant/60 font-bold">
-                  {label}
-                </span>
-              </div>
-            ))}
-          </div>
+
         </div>
       </div>
 

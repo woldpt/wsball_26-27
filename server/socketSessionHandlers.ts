@@ -555,7 +555,7 @@ export function registerSessionSocketHandlers(
               return;
             }
             game.db.run(
-              "INSERT INTO managers (name) VALUES (?)",
+              "INSERT INTO managers (name, is_human) VALUES (?, 1)",
               [trimmedName],
               function (err2: any) {
                 generateRandomTeam(
