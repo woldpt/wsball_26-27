@@ -17,6 +17,11 @@ export function UserSettingsPage({
   const [passwordMsg, setPasswordMsg] = useState(null);
   const [rooms, setRooms] = useState([]);
   const [roomsLoading, setRoomsLoading] = useState(true);
+  const [avatarSeed, setAvatarSeed] = useState(() => {
+    try {
+      return window.localStorage.getItem("cashballAvatarSeed") || "";
+    } catch { return ""; }
+  });
 
   useEffect(() => {
     if (!me?.name) return;
@@ -114,7 +119,22 @@ export function UserSettingsPage({
 
       {/* Profile */}
       <div className="bg-surface-container-low border border-outline-variant/20 rounded-xl p-6 flex flex-col sm:flex-row items-center gap-5">
-        <PlayerAvatar seed={me?.name || "?"} size="xl" />
+        <div className="relative group shrink-0">
+          <PlayerAvatar seed={`${me?.name || "?"}|${avatarSeed}`} size="xl" />
+          <button
+            onClick={() => {
+              const newSeed = Math.random().toString(36).slice(2, 10);
+              setAvatarSeed(newSeed);
+              try {
+                window.localStorage.setItem("cashballAvatarSeed", newSeed);
+              } catch { /* ignorar */ }
+            }}
+            title="Gerar novo avatar"
+            className="absolute -bottom-1 -right-1 w-8 h-8 rounded-full bg-surface-container-high border border-outline-variant/40 text-on-surface flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity shadow-lg hover:bg-surface-bright"
+          >
+            <span className="material-symbols-outlined text-[16px] leading-none">refresh</span>
+          </button>
+        </div>
         <div className="text-center sm:text-left">
           <h2 className="text-xl font-headline font-black tracking-tight">{me?.name}</h2>
           <p className="text-sm text-on-surface-variant font-bold mt-1">
