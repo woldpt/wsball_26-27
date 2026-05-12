@@ -5225,8 +5225,8 @@ function App() {
 
                           {/* ── COL 4: CAMPO + JOGAR ── */}
                           <div className="flex flex-col gap-3">
-                            {/* JOGAR button */}
-                            <div className="bg-surface-container rounded-lg p-4">
+                            {/* JOGAR button — desktop */}
+                            <div className="max-lg:hidden bg-surface-container rounded-lg p-4">
                               {(() => {
                                 const isReady = players.find(
                                   (p) => p.name === me.name,
@@ -5283,6 +5283,68 @@ function App() {
                                 );
                               })()}
                             </div>
+
+                            {/* ── Mobile FAB ── botão flutuante circular no canto inferior direito.
+                                 Só aparece quando a tática está bem definida (plantel completo). */}
+                            {(() => {
+                              const fabReady = players.find(
+                                (p) => p.name === me.name,
+                              )?.ready;
+                              const fabHalftime =
+                                showHalftimePanel && !isPlayingMatch;
+                              const fabCupSpec =
+                                nextMatchSummary?.isCup && !nextMatchOpponent;
+                              // Esconder se já está pronto (já clicou)
+                              if (fabReady) return null;
+                              // Só aparece com tática válida, halftime ou eliminado da taça
+                              if (
+                                !fabHalftime &&
+                                !fabCupSpec &&
+                                !isLineupComplete
+                              )
+                                return null;
+
+                              const fabIcon = fabHalftime
+                                ? "skip_next"
+                                : fabCupSpec
+                                  ? "arrow_forward"
+                                  : "play_arrow";
+                              const fabLabel = fabHalftime
+                                ? "2ª Parte"
+                                : fabCupSpec
+                                  ? "Ver Taça"
+                                  : "Jogar";
+
+                              return (
+                                <button
+                                  onClick={
+                                    fabHalftime
+                                      ? handleHalftimeReady
+                                      : handleReady
+                                  }
+                                  aria-label={fabLabel}
+                                  className="lg:hidden fixed bottom-28 right-4 z-50 w-14 h-14 rounded-full flex items-center justify-center transition-all active:scale-90 duration-200"
+                                  style={{
+                                    background:
+                                      "radial-gradient(circle at 35% 30%, rgba(255,255,255,0.25) 0%, transparent 70%), #10b981",
+                                    boxShadow:
+                                      "0 0 32px 8px rgba(16,185,129,0.50), 0 8px 20px rgba(0,0,0,0.45), inset 0 1px 0 rgba(255,255,255,0.25)",
+                                  }}
+                                >
+                                  {/* Anel de pulso exterior */}
+                                  <span className="absolute inset-0 rounded-full bg-primary/40 animate-ping" />
+                                  {/* Anel de pulso intermédio (offset) */}
+                                  <span
+                                    className="absolute inset-0 rounded-full bg-primary/20 animate-ping"
+                                    style={{ animationDelay: "0.3s" }}
+                                  />
+                                  <span className="material-symbols-outlined text-[28px] text-white drop-shadow-lg relative z-10 leading-none">
+                                    {fabIcon}
+                                  </span>
+                                </button>
+                              );
+                            })()}
+
                             {/* Campo mini */}
                             <div className="bg-surface-container rounded-lg overflow-hidden">
                               {/* 2D Pitch */}

@@ -293,11 +293,7 @@ export function UserSettingsPage({
                           {r.roomCode}
                         </p>
                       </div>
-                      {isActive && (
-                        <span className="text-[10px] font-black uppercase tracking-wider text-emerald-400 bg-emerald-500/10 px-2 py-0.5 rounded-full shrink-0">
-                          Sala Actual
-                        </span>
-                      )}
+
                     </div>
                     <div className="flex items-center gap-3 shrink-0">
                       {r.teamName && (
