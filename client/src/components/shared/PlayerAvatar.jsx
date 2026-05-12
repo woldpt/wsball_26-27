@@ -257,9 +257,9 @@ function mixHex(baseHex, targetHex, amount) {
  * Avatar procedural com estética Captain Tsubasa:
  * traço a tinta preto, queixo em V, cabelos pontiagudos esvoaçantes,
  * olhos verticais com pálpebras carregadas e sombreamento cell-shading.
- * @param {{ seed: number|string, position?: string, teamColor?: string, size?: "sm"|"md"|"lg"|"xl" }} props
+ * @param {{ seed: number|string, position?: string, teamColor?: string, size?: "sm"|"md"|"lg"|"xl"|string, className?: string }} props
  */
-function PlayerAvatarInner({ seed, position, teamColor, size = "lg" }) {
+function PlayerAvatarInner({ seed, position, teamColor, size = "lg", className = "" }) {
   const rng = mulberry32(xmur3(`${seed ?? 0}|${position ?? "X"}`)());
   const profile = POSITION_PROFILE[position] || POSITION_PROFILE.default;
 
@@ -1140,7 +1140,7 @@ function PlayerAvatarInner({ seed, position, teamColor, size = "lg" }) {
     <div className="relative shrink-0">
       <svg
         viewBox="0 0 120 120"
-        className={`${SIZE_MAP[size] ?? SIZE_MAP.lg} rounded-full shadow-lg`}
+        className={`${SIZE_MAP[size] ?? size} rounded-full shadow-lg ${className}`}
         style={{ backgroundColor: BACKDROP }}
         shapeRendering="geometricPrecision"
         strokeLinecap="round"

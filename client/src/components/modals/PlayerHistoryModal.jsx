@@ -180,8 +180,8 @@ export function PlayerHistoryModal({
             }}
           />
           <div className="relative flex items-start gap-2 sm:gap-4 px-3 sm:px-6 pt-3 sm:pt-6 pb-3 sm:pb-5">
-            <div className="shrink-0 w-10 h-10 sm:w-24 sm:h-24">
-              <PlayerAvatar seed={player.id} position={pos} teamColor={player.team_color_primary || player.color_primary || null} size="lg" />
+            <div className="shrink-0">
+              <PlayerAvatar seed={player.id} position={pos} teamColor={player.team_color_primary || player.color_primary || null} size="w-10 h-10 sm:w-24 sm:h-24" />
             </div>
             <div className="shrink-0 mt-0.5 sm:mt-1">
               <div
