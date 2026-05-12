@@ -5,6 +5,7 @@ import React, {
   useMemo,
   useCallback,
   useRef,
+  startTransition,
 } from "react";
 import { socket } from "./socket";
 import { COUNTRY_FLAGS } from "./countryFlags.js";
@@ -110,22 +111,6 @@ function App() {
   // Load session only AFTER cache version check — avoids stale session data
   // if server restarted and cache was cleared during the check window.
   const [savedSession, setSavedSession] = useState(null);
-  useEffect(() => {
-    if (!cacheReady) return;
-    const session = loadSavedSession();
-    setSavedSession(session);
-    if (session) {
-      setMe({
-        name: session.name,
-        password: session.password,
-        roomCode: session.roomCode,
-      });
-      setName(session.name);
-      setPassword(session.password);
-      setRoomCode(session.roomCode);
-      setJoining(true);
-    }
-  }, [cacheReady]);
 
   const [teams, setTeams] = useState([]);
   const [teamForms, setTeamForms] = useState({});
@@ -147,6 +132,25 @@ function App() {
   const [disconnected, setDisconnected] = useState(false);
   const [sessionDisplaced, setSessionDisplaced] = useState(false);
   const [joinError, setJoinError] = useState("");
+
+  useEffect(() => {
+    if (!cacheReady) return;
+    const session = loadSavedSession();
+    startTransition(() => setSavedSession(session));
+    if (session) {
+      startTransition(() => {
+        setMe({
+          name: session.name,
+          password: session.password,
+          roomCode: session.roomCode,
+        });
+        setName(session.name);
+        setPassword(session.password);
+        setRoomCode(session.roomCode);
+        setJoining(true);
+      });
+    }
+  }, [cacheReady]);
   const [toasts, setToasts] = useState([]);
   const [_lockedCoaches, setLockedCoaches] = useState([]);
   const [awaitingCoaches, setAwaitingCoaches] = useState([]);
@@ -245,7 +249,7 @@ function App() {
   const [injuryCountdown, setInjuryCountdown] = useState(null);
   const injuryCountdownRef = React.useRef(null);
   const [subsMade, setSubsMade] = useState(0);
-  const [, forceGoalFlashRender] = useState(0);
+  const [goalFlashRef, setGoalFlashRef] = useState({});
   const [substitutionPause, setSubstitutionPause] = useState(null);
   const [renderError, setRenderError] = useState(null);
   const [swapSource, setSwapSource] = useState(null);
@@ -254,7 +258,7 @@ function App() {
   const [confirmedSubs, setConfirmedSubs] = useState([]); // [{out: id, in: id}]
   const [openStatusPickerId, setOpenStatusPickerId] = useState(null);
   const [dragOverPlayerId, setDragOverPlayerId] = useState(null);
-  const dragPlayerIdRef = useRef(null);
+  const [dragPlayerId, setDragPlayerId] = useState(null);
   const dragPlayerStatusRef = useRef(null);
   const [penaltySuspense, setPenaltySuspense] = useState(null); // { playerName, result, team }
   // Match detail modal (non-blocking overlay during live match)
@@ -301,8 +305,6 @@ function App() {
   const marketPairsRef = React.useRef([]);
   const mySquadRef = React.useRef([]);
   const tacticRef = React.useRef({ positions: {} });
-  // goalFlashRef: { [key]: timestamp } – key = `${homeId}_${awayId}_home|away`
-  const goalFlashRef = React.useRef({});
   const _formationSelectRef = React.useRef(null);
 
   const backendUrl =
@@ -331,7 +333,7 @@ function App() {
       }, 400);
       return () => clearTimeout(timeout);
     } else if (joinMode === "saved-game" && !name) {
-      setAvailableSaves([]);
+      startTransition(() => setAvailableSaves([]));
     }
   }, [name, joinMode]); // eslint-disable-line react-hooks/exhaustive-deps
 
@@ -339,10 +341,12 @@ function App() {
   useEffect(() => {
     isPlayingMatchRef.current = isPlayingMatch;
     if (isPlayingMatch) {
-      setSelectedAuctionPlayer(null);
-      setAuctionBid("");
-      setMyAuctionBid(null);
-      setAuctionResult(null);
+      startTransition(() => {
+        setSelectedAuctionPlayer(null);
+        setAuctionBid("");
+        setMyAuctionBid(null);
+        setAuctionResult(null);
+      });
     }
   }, [isPlayingMatch]);
 
@@ -475,7 +479,7 @@ function App() {
       marketPairsRef,
       injuryCountdownRef,
       goalFlashRef,
-      forceGoalFlashRender,
+      setGoalFlashRef,
       joinTimerRef,
       players,
       chatOpenRef,
@@ -502,8 +506,10 @@ function App() {
   // Clear unread when RoomHub is open
   useEffect(() => {
     if (!roomHubOpen) return;
-    setUnreadRoom(0);
-    setUnreadGlobal(0);
+    startTransition(() => {
+      setUnreadRoom(0);
+      setUnreadGlobal(0);
+    });
   }, [roomHubOpen]);
 
   useEffect(() => {
@@ -583,7 +589,7 @@ function App() {
 
   useEffect(() => {
     if (activeTab !== "tactic" || !me?.teamId) return;
-    setNextMatchSummaryLoading(true);
+    startTransition(() => setNextMatchSummaryLoading(true));
     socket.emit("requestNextMatchSummary", { teamId: me.teamId });
   }, [activeTab, me?.teamId, matchweekCount]);
 
@@ -593,9 +599,11 @@ function App() {
       if (p && p.teamId) {
         // Clear timeout — join succeeded
         if (joinTimerRef.current) clearTimeout(joinTimerRef.current);
-        setMe((prev) => ({ ...prev, teamId: p.teamId }));
-        setJoining(false);
-        setJoinError("");
+        startTransition(() => {
+          setMe((prev) => ({ ...prev, teamId: p.teamId }));
+          setJoining(false);
+          setJoinError("");
+        });
       }
     }
   }, [players, me]);
@@ -646,7 +654,7 @@ function App() {
         }, 1000);
         return () => clearTimeout(timer);
       } else if (liveMinute === 45 && !isSecondHalfReplay && !showHalftimePanel) {
-        setIsPlayingMatch(false);
+        startTransition(() => setIsPlayingMatch(false));
       } else if (liveMinute >= 120 && isCupExtraTime) {
         // Extra time animation finished — notify server
         const timer = setTimeout(() => {
@@ -691,8 +699,10 @@ function App() {
       // Track goal flashes (all matches)
       events.forEach((e) => {
         if (["goal", "penalty_goal", "var_goal_pending"].includes(e.type)) {
-          const key = `${match.homeTeamId}_${match.awayTeamId}_${e.team}`;
-          goalFlashRef.current[key] = Date.now();
+          setGoalFlashRef((prev) => {
+            const key2 = `${match.homeTeamId}_${match.awayTeamId}_${e.team}`;
+            return { ...prev, [key2]: Date.now() };
+          });
           didFlashGoal = true;
         }
       });
@@ -714,7 +724,7 @@ function App() {
       }
     });
     if (didFlashGoal) {
-      forceGoalFlashRender((value) => value + 1);
+      // setGoalFlashRef já força re-render
     }
   }, [liveMinute, matchResults]); // eslint-disable-line react-hooks/exhaustive-deps
 
@@ -743,15 +753,17 @@ function App() {
     );
     if (Object.keys(autoPositions).length === 0) return;
 
-    setTactic((prev) => {
-      if (prev.positions && Object.keys(prev.positions).length > 0) return prev;
-      const next = {
-        ...prev,
-        formation: fallbackFormation,
-        positions: autoPositions,
-      };
-      socket.emit("setTactic", next);
-      return next;
+    startTransition(() => {
+      setTactic((prev) => {
+        if (prev.positions && Object.keys(prev.positions).length > 0) return prev;
+        const next = {
+          ...prev,
+          formation: fallbackFormation,
+          positions: autoPositions,
+        };
+        socket.emit("setTactic", next);
+        return next;
+      });
     });
   }, [mySquad, tactic.formation, tactic.positions, matchweekCount]);
 
@@ -985,15 +997,17 @@ function App() {
   useEffect(() => {
     if (cupPenaltyPopup !== null) return;
     if (!pendingCupRoundResults) return;
-    setPendingCupRoundResults(null);
-    setShowCupResults(false);
-    setActiveTab("cup");
-    setIsCupMatch(false);
-    setCupPreMatch(false);
-    setIsCupExtraTime(false);
-    setCupExtraTimeBadge(false);
-    setIsPlayingMatch(false);
-    setMatchResults(null);
+    startTransition(() => {
+      setPendingCupRoundResults(null);
+      setShowCupResults(false);
+      setActiveTab("cup");
+      setIsCupMatch(false);
+      setCupPreMatch(false);
+      setIsCupExtraTime(false);
+      setCupExtraTimeBadge(false);
+      setIsPlayingMatch(false);
+      setMatchResults(null);
+    });
   }, [cupPenaltyPopup, pendingCupRoundResults]);
 
   // Load own palmares when Clube or Classificações tab is opened
@@ -1015,7 +1029,9 @@ function App() {
   // Limpar leilões encerrados quando a jornada avança
   useEffect(() => {
     if (!matchweekCount) return;
-    setActiveAuctions((prev) => prev.filter((a) => !a.closed));
+    startTransition(() => {
+      setActiveAuctions((prev) => prev.filter((a) => !a.closed));
+    });
   }, [matchweekCount]);
 
   // Refresh calendar whenever the tab is opened or a matchweek advances
@@ -1282,7 +1298,7 @@ function App() {
         return { ...prev, positions: newPositions };
       });
       setDragOverPlayerId(null);
-      dragPlayerIdRef.current = null;
+      setDragPlayerId(null);
       dragPlayerStatusRef.current = null;
     },
     [mySquad, matchweekCount],
@@ -1310,7 +1326,7 @@ function App() {
       },
       onCancel: () => {},
     });
-  }, []);
+  }, [setGameDialog]);
 
   const listPlayerAuction = useCallback((player) => {
     const defaultPrice = Math.round((player.value || 0) * 0.8);
@@ -1331,7 +1347,7 @@ function App() {
       },
       onCancel: () => {},
     });
-  }, []);
+  }, [setGameDialog]);
 
   const listPlayerFixed = useCallback((player) => {
     const defaultPrice = Math.round((player.value || 0) * 1.1);
@@ -1352,7 +1368,7 @@ function App() {
       },
       onCancel: () => {},
     });
-  }, []);
+  }, [setGameDialog]);
 
   const removeFromTransferList = useCallback((player) => {
     setGameDialog({
@@ -1364,14 +1380,14 @@ function App() {
       onConfirm: () => socket.emit("removeFromTransferList", player.id),
       onCancel: () => {},
     });
-  }, []);
+  }, [setGameDialog]);
 
   // ── AUCTION BID ───────────────────────────────────────────────────────────
   const openAuctionBid = useCallback(() => {
     // Navigate to Leilões page; the player context is available there
     setActiveTab("leiloes");
     window.scrollTo(0, 0);
-  }, []);
+  }, [setActiveTab]);
 
   const filteredMarketPlayers = useMemo(() => {
     const marketTeamId = me?.teamId;
@@ -1417,22 +1433,31 @@ function App() {
 
   useEffect(() => {
     if (!isMatchInProgress) return;
-    setSelectedAuctionPlayer(null);
-    setAuctionBid("");
-    setMyAuctionBid(null);
-    setAuctionResult(null);
+    startTransition(() => {
+      setSelectedAuctionPlayer(null);
+      setAuctionBid("");
+      setMyAuctionBid(null);
+      setAuctionResult(null);
+    });
   }, [isMatchInProgress]);
 
   // Auto-collapse sidebar during Live; restore user preference when Live ends
   React.useEffect(() => {
     if (isMatchInProgress) {
       sidebarUserPrefRef.current = sidebarCollapsed;
-      setSidebarCollapsed(true);
+      startTransition(() => setSidebarCollapsed(true));
     } else {
-      setSidebarCollapsed(sidebarUserPrefRef.current);
+      startTransition(() => setSidebarCollapsed(sidebarUserPrefRef.current));
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [isMatchInProgress]);
+
+  const handleDragStart = (e) => {
+    const playerId = Number(e.currentTarget.dataset.playerId);
+    if (Number.isNaN(playerId)) return;
+    setDragPlayerId(playerId);
+    dragPlayerStatusRef.current = e.currentTarget.dataset.playerStatus;
+  };
 
   if (!me || !me.teamId) {
     if (me && !me.teamId) {
@@ -3343,11 +3368,11 @@ function App() {
                                   {/* Score */}
                                   {(() => {
                                     const myFlashHome =
-                                      goalFlashRef.current[
+                                      goalFlashRef[
                                         `${myMatch.homeTeamId}_${myMatch.awayTeamId}_home`
                                       ];
                                     const myFlashAway =
-                                      goalFlashRef.current[
+                                      goalFlashRef[
                                         `${myMatch.homeTeamId}_${myMatch.awayTeamId}_away`
                                       ];
                                     const nowTs = Date.now();
@@ -3700,11 +3725,11 @@ function App() {
                                           p.teamId === match.awayTeamId,
                                       );
                                       const flashHome =
-                                        goalFlashRef.current[
+                                        goalFlashRef[
                                           `${match.homeTeamId}_${match.awayTeamId}_home`
                                         ];
                                       const flashAway =
-                                        goalFlashRef.current[
+                                        goalFlashRef[
                                           `${match.homeTeamId}_${match.awayTeamId}_away`
                                         ];
                                       const now = Date.now();
@@ -3895,13 +3920,14 @@ function App() {
                                   p.teamId === match.awayTeamId,
                               );
                               const flashHome =
-                                goalFlashRef.current[
+                                goalFlashRef[
                                   `${match.homeTeamId}_${match.awayTeamId}_home`
                                 ];
                               const flashAway =
-                                goalFlashRef.current[
+                                goalFlashRef[
                                   `${match.homeTeamId}_${match.awayTeamId}_away`
                                 ];
+                              // eslint-disable-next-line react-hooks/purity
                               const now = Date.now();
                               const homeFlashing =
                                 flashHome && now - flashHome < 1500;
@@ -4560,11 +4586,9 @@ function App() {
                                   <div
                                     key={player.id}
                                     draggable={!player.isJunior}
-                                    onDragStart={() => {
-                                      if (player.isJunior) return;
-                                      dragPlayerIdRef.current = player.id;
-                                      dragPlayerStatusRef.current = "Titular";
-                                    }}
+                                    data-player-id={player.id}
+                                    data-player-status="Titular"
+                                    onDragStart={handleDragStart}
                                     onDragOver={(e) => {
                                       e.preventDefault();
                                       setDragOverPlayerId(player.id);
@@ -4575,23 +4599,23 @@ function App() {
                                     onDrop={(e) => {
                                       e.preventDefault();
                                       if (
-                                        dragPlayerIdRef.current &&
-                                        dragPlayerIdRef.current !== player.id
+                                        dragPlayerId &&
+                                        dragPlayerId !== player.id
                                       )
                                         handleSwapPlayerStatuses(
-                                          dragPlayerIdRef.current,
+                                          dragPlayerId,
                                           player.id,
                                         );
                                       else {
                                         setDragOverPlayerId(null);
-                                        dragPlayerIdRef.current = null;
+                                        setDragPlayerId(null);
                                       }
                                     }}
                                     onDragEnd={() => {
                                       setDragOverPlayerId(null);
-                                      dragPlayerIdRef.current = null;
+                                      setDragPlayerId(null);
                                     }}
-                                    className={`relative flex items-center gap-3 px-4 py-2.5 hover:bg-primary/5 transition-colors select-none ${player.isJunior ? "cursor-default" : "cursor-grab active:cursor-grabbing"} ${player.isUnavailable ? "opacity-50" : ""} ${dragOverPlayerId === player.id && dragPlayerIdRef.current !== player.id ? "bg-primary/10 ring-1 ring-primary/40" : ""}`}
+                                    className={`relative flex items-center gap-3 px-4 py-2.5 hover:bg-primary/5 transition-colors select-none ${player.isJunior ? "cursor-default" : "cursor-grab active:cursor-grabbing"} ${player.isUnavailable ? "opacity-50" : ""} ${dragOverPlayerId === player.id && dragPlayerId !== player.id ? "bg-primary/10 ring-1 ring-primary/40" : ""}`}
                                   >
                                     <span
                                       className={`shrink-0 px-1.5 py-0.5 bg-surface-bright rounded-sm text-[9px] font-black border-l-2 ${POSITION_BORDER_CLASS[player.position] || "border-zinc-500"} ${POSITION_TEXT_CLASS[player.position] || "text-zinc-300"}`}
@@ -4807,11 +4831,9 @@ function App() {
                                   <div
                                     key={player.id}
                                     draggable={!player.isJunior}
-                                    onDragStart={() => {
-                                      if (player.isJunior) return;
-                                      dragPlayerIdRef.current = player.id;
-                                      dragPlayerStatusRef.current = "Suplente";
-                                    }}
+                                    data-player-id={player.id}
+                                    data-player-status="Suplente"
+                                    onDragStart={handleDragStart}
                                     onDragOver={(e) => {
                                       e.preventDefault();
                                       setDragOverPlayerId(player.id);
@@ -4822,23 +4844,23 @@ function App() {
                                     onDrop={(e) => {
                                       e.preventDefault();
                                       if (
-                                        dragPlayerIdRef.current &&
-                                        dragPlayerIdRef.current !== player.id
+                                        dragPlayerId &&
+                                        dragPlayerId !== player.id
                                       )
                                         handleSwapPlayerStatuses(
-                                          dragPlayerIdRef.current,
+                                          dragPlayerId,
                                           player.id,
                                         );
                                       else {
                                         setDragOverPlayerId(null);
-                                        dragPlayerIdRef.current = null;
+                                        setDragPlayerId(null);
                                       }
                                     }}
                                     onDragEnd={() => {
                                       setDragOverPlayerId(null);
-                                      dragPlayerIdRef.current = null;
+                                      setDragPlayerId(null);
                                     }}
-                                    className={`relative flex items-center gap-3 px-4 py-2.5 hover:bg-primary/5 transition-colors select-none ${player.isJunior ? "cursor-default" : "cursor-grab active:cursor-grabbing"} ${player.isUnavailable ? "opacity-35" : ""} ${dragOverPlayerId === player.id && dragPlayerIdRef.current !== player.id ? "bg-amber-500/10 ring-1 ring-amber-500/40" : ""}`}
+                                    className={`relative flex items-center gap-3 px-4 py-2.5 hover:bg-primary/5 transition-colors select-none ${player.isJunior ? "cursor-default" : "cursor-grab active:cursor-grabbing"} ${player.isUnavailable ? "opacity-35" : ""} ${dragOverPlayerId === player.id && dragPlayerId !== player.id ? "bg-amber-500/10 ring-1 ring-amber-500/40" : ""}`}
                                   >
                                     <span
                                       className={`shrink-0 px-1.5 py-0.5 bg-surface-bright rounded-sm text-[9px] font-black border-l-2 ${POSITION_BORDER_CLASS[player.position] || "border-zinc-500"} ${POSITION_TEXT_CLASS[player.position] || "text-zinc-300"}`}
@@ -5039,11 +5061,9 @@ function App() {
                                     <div
                                       key={player.id}
                                       draggable
-                                      onDragStart={() => {
-                                        dragPlayerIdRef.current = player.id;
-                                        dragPlayerStatusRef.current =
-                                          "Excluído";
-                                      }}
+                                      data-player-id={player.id}
+                                      data-player-status="Excluído"
+                                      onDragStart={handleDragStart}
                                       onDragOver={(e) => {
                                         e.preventDefault();
                                         setDragOverPlayerId(player.id);
@@ -5054,23 +5074,23 @@ function App() {
                                       onDrop={(e) => {
                                         e.preventDefault();
                                         if (
-                                          dragPlayerIdRef.current &&
-                                          dragPlayerIdRef.current !== player.id
+                                          dragPlayerId &&
+                                          dragPlayerId !== player.id
                                         )
                                           handleSwapPlayerStatuses(
-                                            dragPlayerIdRef.current,
+                                            dragPlayerId,
                                             player.id,
                                           );
                                         else {
                                           setDragOverPlayerId(null);
-                                          dragPlayerIdRef.current = null;
+                                          setDragPlayerId(null);
                                         }
                                       }}
                                       onDragEnd={() => {
                                         setDragOverPlayerId(null);
-                                        dragPlayerIdRef.current = null;
+                                        setDragPlayerId(null);
                                       }}
-                                      className={`relative flex items-center gap-3 px-4 py-2 select-none transition-all cursor-grab active:cursor-grabbing ${dragOverPlayerId === player.id && dragPlayerIdRef.current !== player.id ? "opacity-100 bg-zinc-700/40 ring-1 ring-zinc-500/40" : player.isUnavailable ? "bg-red-950/50 hover:bg-red-900/40 opacity-80" : "opacity-40 hover:opacity-70"}`}
+                                      className={`relative flex items-center gap-3 px-4 py-2 select-none transition-all cursor-grab active:cursor-grabbing ${dragOverPlayerId === player.id && dragPlayerId !== player.id ? "opacity-100 bg-zinc-700/40 ring-1 ring-zinc-500/40" : player.isUnavailable ? "bg-red-950/50 hover:bg-red-900/40 opacity-80" : "opacity-40 hover:opacity-70"}`}
                                     >
                                       <span
                                         className={`shrink-0 w-5.5 text-center text-[10px] font-black ${

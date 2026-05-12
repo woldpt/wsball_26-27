@@ -1,4 +1,4 @@
-import { useState, useMemo, useEffect } from "react";
+import { useState, useMemo, useEffect, startTransition } from "react";
 
 const ROUND_NAMES = [
   "",
@@ -508,7 +508,7 @@ export function CupBracketPage({ bracketData, me, players, onRequestRefresh }) {
   const [selectedRound, setSelectedRound] = useState(null);
 
   useEffect(() => {
-    if (bracketData) setSelectedRound(activeRound);
+    if (bracketData) startTransition(() => setSelectedRound(activeRound));
   }, [bracketData, activeRound]);
 
   const currentRound = selectedRound ?? activeRound;

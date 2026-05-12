@@ -795,8 +795,10 @@ export function useSocketListeners(handlers, refs) {
               if (e.type === "penalty_goal") {
                 playGoalSound();
                 const flashKey = `${f.homeTeamId}_${f.awayTeamId}_${e.team}`;
-                refs.goalFlashRef.current[flashKey] = Date.now();
-                refs.forceGoalFlashRender((v) => v + 1);
+                refs.setGoalFlashRef((prev) => ({
+                  ...prev,
+                  [flashKey]: Date.now(),
+                }));
               }
               handlers.setMatchResults((prev) => {
                 if (!prev) return prev;
@@ -845,8 +847,10 @@ export function useSocketListeners(handlers, refs) {
             setTimeout(() => {
               if (e.type === "penalty_goal") {
                 const flashKey = `${f.homeTeamId}_${f.awayTeamId}_${e.team}`;
-                refs.goalFlashRef.current[flashKey] = Date.now();
-                refs.forceGoalFlashRender((v) => v + 1);
+                refs.setGoalFlashRef((prev) => ({
+                  ...prev,
+                  [flashKey]: Date.now(),
+                }));
               }
               handlers.setMatchResults((prev) => {
                 if (!prev) return prev;
