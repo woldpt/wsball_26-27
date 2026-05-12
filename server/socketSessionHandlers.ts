@@ -744,21 +744,28 @@ export function registerSessionSocketHandlers(
           [playerId],
         );
 
-        // Skill history — last 19 weeks (all rounds of current season)
-        const skillHistory = await runAll(
+        // Skill history — use prev_skill + current skill for trend data.
+        // Full 19-week history requires a player_skill_snapshots table (future).
+        const skillRow = await runGet(
           game.db,
-          `SELECT matchweek, skill
-           FROM players
-           WHERE id = ?
-           ORDER BY matchweek ASC
-           LIMIT 19`,
+          `SELECT prev_skill, skill, joined_matchweek FROM players WHERE id = ?`,
           [playerId],
         );
+        const currentMw = game.matchweek || game.calendarIndex || 0;
+        const skillHistory: Array<{ matchweek: number; skill: number }> = [];
+        if (skillRow) {
+          // Add prev_skill point if it exists (skill changed last week)
+          if (skillRow.prev_skill != null) {
+            skillHistory.push({ matchweek: Math.max(1, currentMw - 1), skill: skillRow.prev_skill });
+          }
+          // Always add current skill point
+          skillHistory.push({ matchweek: currentMw, skill: skillRow.skill });
+        }
 
         socket.emit("playerHistoryData", {
           player,
           transfers: transfers || [],
-          skillHistory: skillHistory || [],
+          skillHistory,
         });
       } catch (err) {
         console.error(`[${game.roomCode}] requestPlayerHistory error:`, err);

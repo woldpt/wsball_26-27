@@ -1,29 +1,50 @@
 import { POS_BAR } from "./positionConstants.js";
 
 /**
- * Gráfico de linhas mostrando a evolução da skill do jogador nas últimas 19 semanas.
+ * Gráfico de linhas mostrando a evolução da skill do jogador.
+ * O número de pontos no gráfico depende dos dados disponíveis.
  * @param {{ skillHistory: Array<{matchweek: number, skill: number}>, skill: number, position: string }} props
  */
 export function SkillLineChart({ skillHistory = [], skill = 0, position = "MED" }) {
-  const barColor = POS_BAR[position] || "#95d4b3";
+  const barColor = POS_BAR[position] || "#eab308";
   const maxSkill = 50;
 
-  // Ordenar histórico por matchweek
-  const sortedHistory = [...skillHistory].sort((a, b) => a.matchweek - b.matchweek);
+  // Ordenar e filtrar dados válidos
+  const cleanHistory = skillHistory
+    .filter((p) => p.skill != null)
+    .sort((a, b) => a.matchweek - b.matchweek);
 
-  // Encontrar o matchweek atual (último da temporada)
-  const currentMatchweek = sortedHistory.length > 0 ? sortedHistory[sortedHistory.length - 1].matchweek : 0;
-
-  // Calcular offset para alinhar o último ponto com o final do gráfico
-  const totalWeeks = 19;
-  const weeksOffset = Math.max(0, totalWeeks - sortedHistory.length);
-
-  // Dados para o gráfico
-  const chartData = [...sortedHistory];
-  // Adicionar pontos vazios para preencher até 19 semanas
-  for (let i = 0; i < weeksOffset; i++) {
-    chartData.push({ matchweek: 0, skill: null });
+  // Sem dados suficientes — mostrar estado mínimo
+  if (cleanHistory.length === 0) {
+    return (
+      <div className="px-6 py-5">
+        <p className="text-[10px] font-black uppercase tracking-widest text-primary mb-3">
+          Evolução da Skill
+        </p>
+        <div className="flex items-center gap-4">
+          <div className="flex-1">
+            <p className="text-xs text-on-surface-variant italic">
+              Sem dados históricos. A evolução será registada a partir desta época.
+            </p>
+          </div>
+          <div className="text-center min-w-[80px]">
+            <div className="text-2xl font-black font-headline" style={{ color: barColor }}>
+              {skill}
+            </div>
+            <div className="text-[9px] font-black uppercase tracking-widest text-on-surface-variant">
+              Skill Atual
+            </div>
+          </div>
+        </div>
+      </div>
+    );
   }
+
+  const pointCount = cleanHistory.length;
+  // Use actual data range for X axis; pad minimally to avoid edge clipping
+  const firstMW = cleanHistory[0].matchweek;
+  const lastMW = cleanHistory[pointCount - 1].matchweek;
+  const mwRange = Math.max(lastMW - firstMW, 1);
 
   // Calcular coordenadas
   const padding = 20;
@@ -32,44 +53,29 @@ export function SkillLineChart({ skillHistory = [], skill = 0, position = "MED" 
   const graphWidth = chartWidth - padding * 2;
   const graphHeight = chartHeight - padding * 2;
 
-  const getX = (index) => padding + (index / (totalWeeks - 1)) * graphWidth;
-  const getY = (skillValue) => {
-    if (skillValue === null) return padding + graphHeight;
-    return padding + graphHeight - (skillValue / maxSkill) * graphHeight;
-  };
+  const getX = (mw) => padding + ((mw - firstMW) / mwRange) * graphWidth;
+  const getY = (skillValue) => padding + graphHeight - (skillValue / maxSkill) * graphHeight;
 
   // Criar caminho SVG
   let pathD = "";
-  let points = [];
 
-  chartData.forEach((point, index) => {
-    const x = getX(index);
+  cleanHistory.forEach((point, i) => {
+    const x = getX(point.matchweek);
     const y = getY(point.skill);
-    points.push(`${x},${y}`);
-
-    if (index === 0) {
+    if (i === 0) {
       pathD = `M ${x} ${y}`;
     } else {
       pathD += ` L ${x} ${y}`;
     }
   });
 
-  // Adicionar pontos no gráfico
-  const dotStyle = {
-    fill: barColor,
-    stroke: "#000",
-    strokeWidth: 1,
-    r: 4,
-  };
-
-  // Encontrar o último ponto válido para destacar
-  const lastValidPoint = chartData.findLast((p) => p.skill !== null);
-  const isCurrentWeek = lastValidPoint && lastValidPoint.matchweek === currentMatchweek;
+  // Índice do último ponto (válido) para highlight
+  const lastIdx = pointCount - 1;
 
   return (
-    <div className="px-6 py-5 border-b border-outline-variant/10">
+    <div className="px-6 py-5">
       <p className="text-[10px] font-black uppercase tracking-widest text-primary mb-3">
-        Evolução da Skill (Últimas 19 Semanas)
+        Evolução da Skill
       </p>
 
       <div className="flex items-center gap-4">
@@ -82,35 +88,21 @@ export function SkillLineChart({ skillHistory = [], skill = 0, position = "MED" 
             className="overflow-visible"
           >
             {/* Grid lines */}
-            {[0, 12.5, 25, 37.5, 50].map((level) => (
+            {[0, 10, 20, 30, 40, 50].map((level) => (
               <line
                 key={level}
                 x1={padding}
                 y1={getY(level)}
                 x2={chartWidth - padding}
                 y2={getY(level)}
-                stroke="#444"
+                stroke="#333"
                 strokeWidth="0.5"
                 strokeDasharray="2,2"
               />
             ))}
 
-            {/* X-axis labels */}
-            {[0, 5, 10, 15, 20].map((label) => (
-              <text
-                key={label}
-                x={getX(label)}
-                y={chartHeight - 4}
-                textAnchor="middle"
-                fontSize="6"
-                fill="#888"
-              >
-                {label === 0 ? "S1" : label === 5 ? "S5" : label === 10 ? "S10" : label === 15 ? "S15" : "S19"}
-              </text>
-            ))}
-
             {/* Y-axis labels */}
-            {[0, 12.5, 25, 37.5, 50].map((level) => (
+            {[0, 10, 20, 30, 40, 50].map((level) => (
               <text
                 key={level}
                 x={padding - 6}
@@ -120,6 +112,20 @@ export function SkillLineChart({ skillHistory = [], skill = 0, position = "MED" 
                 fill="#888"
               >
                 {level}
+              </text>
+            ))}
+
+            {/* X-axis labels — show actual matchweek numbers */}
+            {cleanHistory.map((p, i) => (
+              <text
+                key={p.matchweek}
+                x={getX(p.matchweek)}
+                y={chartHeight - 4}
+                textAnchor="middle"
+                fontSize="6"
+                fill="#888"
+              >
+                J{p.matchweek}
               </text>
             ))}
 
@@ -136,25 +142,25 @@ export function SkillLineChart({ skillHistory = [], skill = 0, position = "MED" 
             )}
 
             {/* Points */}
-            {points.map((point, index) => {
-              const dataPoint = chartData[index];
-              const isLast = index === chartData.length - 1;
-              const isCurrent = isLast && isCurrentWeek;
+            {cleanHistory.map((point, i) => {
+              const isLast = i === lastIdx;
+              const cx = getX(point.matchweek);
+              const cy = getY(point.skill);
 
               return (
-                <g key={index}>
+                <g key={`${point.matchweek}-${i}`}>
                   <circle
-                    cx={parseFloat(point.split(",")[0])}
-                    cy={parseFloat(point.split(",")[1])}
-                    r={isCurrent ? 6 : 4}
+                    cx={cx}
+                    cy={cy}
+                    r={isLast ? 6 : 4}
                     fill={barColor}
-                    stroke={isCurrent ? "#000" : "#000"}
-                    strokeWidth={isCurrent ? 2 : 1}
+                    stroke="#000"
+                    strokeWidth={isLast ? 2 : 1}
                   />
-                  {isCurrent && (
+                  {isLast && (
                     <circle
-                      cx={parseFloat(point.split(",")[0])}
-                      cy={parseFloat(point.split(",")[1])}
+                      cx={cx}
+                      cy={cy}
                       r="12"
                       fill="none"
                       stroke={barColor}
@@ -192,8 +198,8 @@ export function SkillLineChart({ skillHistory = [], skill = 0, position = "MED" 
           <span>Qualidade</span>
         </div>
         <div className="flex items-center gap-1">
-          <span className="inline-block w-3 h-3 rounded-sm border border-current" />
-          <span>Semanas</span>
+          <span className="inline-block w-3 h-3 rounded-full border border-current" />
+          <span>Actual ({cleanHistory.length} ponto{cleanHistory.length !== 1 ? "s" : ""})</span>
         </div>
       </div>
     </div>

@@ -130,9 +130,10 @@ export function PlayerHistoryModal({
   const currentSeason = Math.ceil((matchweekCount + 1) / 14);
   const canAct = isMyPlayer && player.signed_season !== currentSeason;
   const matchInProgress = isPlayingMatch || showHalftimePanel;
+  // Server uses >= to prevent re-auction in same matchweek (auctionHelpers.ts:459)
   const alreadyAuctionedThisWeek =
     matchweekCount > 0 &&
-    (player.last_auctioned_matchweek || 0) > matchweekCount;
+    (player.last_auctioned_matchweek || 0) >= matchweekCount;
 
   // Market purchase — only when player belongs to *another* team and is listed
   const isListedInMarket =
@@ -457,13 +458,11 @@ export function PlayerHistoryModal({
               </div>
 
               {/* Skill evolution chart */}
-              <div className="px-6 py-5">
-                <SkillLineChart
-                  skillHistory={playerHistoryModal.skillHistory || []}
-                  skill={skill}
-                  position={pos}
-                />
-              </div>
+              <SkillLineChart
+                skillHistory={playerHistoryModal.skillHistory || []}
+                skill={skill}
+                position={pos}
+              />
             </div>
           </div>
 
