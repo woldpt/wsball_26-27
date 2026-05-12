@@ -179,8 +179,8 @@ export function PlayerHistoryModal({
               background: `radial-gradient(ellipse at top left, ${barColor}18 0%, transparent 70%)`,
             }}
           />
-          <div className="relative flex items-start gap-2 sm:gap-4 px-4 sm:px-6 pt-6 sm:pt-6 pb-8 sm:pb-5">
-            <div className="shrink-0 w-12 h-12 sm:w-24 sm:h-24">
+          <div className="relative flex items-start gap-2 sm:gap-4 px-3 sm:px-6 pt-3 sm:pt-6 pb-3 sm:pb-5">
+            <div className="shrink-0 w-10 h-10 sm:w-24 sm:h-24">
               <PlayerAvatar seed={player.id} position={pos} teamColor={player.team_color_primary || player.color_primary || null} size="lg" />
             </div>
             <div className="shrink-0 mt-0.5 sm:mt-1">
@@ -203,11 +203,11 @@ export function PlayerHistoryModal({
                 )}
                 {availBadge}
               </div>
-              <p className="text-on-surface-variant text-xs font-medium mt-1 tracking-wide">
+              <p className="text-on-surface-variant text-[10px] sm:text-xs font-medium mt-0.5 sm:mt-1 tracking-wide">
                 {POS_FULL[pos] || pos}
                 {player.nationality ? ` · ${player.nationality}` : ""}
               </p>
-              <div className="flex items-center gap-2 mt-1">
+              <div className="flex items-center gap-1 sm:gap-2 mt-0.5 sm:mt-1 flex-wrap">
                 <span className="text-on-surface-variant text-xs">Clube:</span>
                 <span className="font-bold text-tertiary text-xs">
                   {player.team_name || "Sem clube"}
@@ -220,17 +220,17 @@ export function PlayerHistoryModal({
                 )}
                 {player.resistance != null && (
                   <>
-                    <span className="text-outline-variant/40 text-xs">·</span>
-                    <span className="text-[12px] text-cyan-400/70 font-black">
+                    <span className="text-outline-variant/40 text-[10px] sm:text-xs">·</span>
+                    <span className="text-[10px] sm:text-[12px] text-cyan-400/70 font-black">
                       🛡️ {player.resistance}
                     </span>
                   </>
                 )}
                 {player.form != null && (
                   <>
-                    <span className="text-outline-variant/40 text-xs">·</span>
+                    <span className="text-outline-variant/40 text-[10px] sm:text-xs">·</span>
                     <span
-                      className={`text-[9px] font-black ${
+                      className={`text-[9px] sm:text-[9px] font-black ${
                         (player.form || 100) >= 115
                           ? "text-emerald-400"
                           : (player.form || 100) <= 85
