@@ -179,8 +179,10 @@ export function PlayerHistoryModal({
               background: `radial-gradient(ellipse at top left, ${barColor}18 0%, transparent 70%)`,
             }}
           />
-          <div className="relative flex items-start gap-3 sm:gap-4 px-4 sm:px-6 pt-4 sm:pt-6 pb-3 sm:pb-5">
-            <PlayerAvatar seed={player.id} position={pos} teamColor={player.team_color_primary || player.color_primary || null} size="lg" />
+          <div className="relative flex items-start gap-3 sm:gap-4 px-4 sm:px-6 pt-5 sm:pt-6 pb-6 sm:pb-5">
+            <div className="shrink-0 w-16 h-16 sm:w-24 sm:h-24">
+              <PlayerAvatar seed={player.id} position={pos} teamColor={player.team_color_primary || player.color_primary || null} size="lg" />
+            </div>
             <div className="shrink-0 mt-0.5 sm:mt-1">
               <div
                 className={`px-2 py-0.5 sm:px-2.5 sm:py-1 rounded-sm bg-surface-bright border-l-2 ${POS_BORDER[pos] || "border-zinc-500"} ${POS_TEXT[pos] || "text-zinc-300"} text-[10px] sm:text-xs font-black uppercase tracking-wider`}
