@@ -279,6 +279,98 @@ function deleteRoomAccess(roomCode) {
   });
 }
 
+/**
+ * Change a manager's password (requires current password verification).
+ *
+ * @param {string} name
+ * @param {string} currentPassword
+ * @param {string} newPassword
+ * @returns {Promise<{ok: boolean, error?: string}>}
+ */
+function changePassword(name, currentPassword, newPassword) {
+  const normalizedName = typeof name === "string" ? name.trim() : "";
+  const normalizedCurrent = typeof currentPassword === "string" ? currentPassword : "";
+  const normalizedNew = typeof newPassword === "string" ? newPassword : "";
+
+  if (!normalizedName || !normalizedCurrent || !normalizedNew) {
+    return Promise.resolve({ ok: false, error: "Credenciais inválidas." });
+  }
+  if (normalizedNew.length < 3) {
+    return Promise.resolve({ ok: false, error: "A nova palavra-passe deve ter pelo menos 3 caracteres." });
+  }
+
+  return new Promise((resolve) => {
+    db.get(
+      "SELECT id, password_hash FROM managers WHERE name = ? COLLATE NOCASE",
+      [normalizedName],
+      async (err, row) => {
+        if (err) {
+          console.error("[auth] DB error:", err.message);
+          return resolve({ ok: false, error: "Erro interno." });
+        }
+        if (!row) {
+          return resolve({ ok: false, error: "Conta não encontrada." });
+        }
+        const match = await bcrypt.compare(normalizedCurrent, row.password_hash);
+        if (!match) {
+          return resolve({ ok: false, error: "Palavra-passe actual incorrecta." });
+        }
+        const hash = await bcrypt.hash(normalizedNew, 10);
+        db.run(
+          "UPDATE managers SET password_hash = ? WHERE id = ?",
+          [hash, row.id],
+          (err2) => {
+            if (err2) {
+              console.error("[auth] Update error:", err2.message);
+              return resolve({ ok: false, error: "Erro ao alterar palavra-passe." });
+            }
+            resolve({ ok: true });
+          },
+        );
+      },
+    );
+  });
+}
+
+/**
+ * Return public info about a manager (name, list of room codes).
+ *
+ * @param {string} name
+ * @returns {Promise<{ok: boolean, error?: string, info?: {name: string, rooms: string[]}}>}
+ */
+function getManagerInfo(name) {
+  const normalizedName = typeof name === "string" ? name.trim() : "";
+  if (!normalizedName) {
+    return Promise.resolve({ ok: false, error: "Nome inválido." });
+  }
+
+  return new Promise((resolve) => {
+    db.get(
+      "SELECT id, name FROM managers WHERE name = ? COLLATE NOCASE",
+      [normalizedName],
+      async (err, row) => {
+        if (err) {
+          console.error("[auth] DB error:", err.message);
+          return resolve({ ok: false, error: "Erro interno." });
+        }
+        if (!row) {
+          return resolve({ ok: false, error: "Conta não encontrada." });
+        }
+
+        const rooms = await getManagerRooms(normalizedName);
+
+        resolve({
+          ok: true,
+          info: {
+            name: row.name,
+            rooms,
+          },
+        });
+      },
+    );
+  });
+}
+
 module.exports = {
   verifyOrCreateManager,
   verifyManager,
@@ -286,4 +378,6 @@ module.exports = {
   recordRoomAccess,
   deleteRoomAccess,
   getManagerRooms,
+  changePassword,
+  getManagerInfo,
 };

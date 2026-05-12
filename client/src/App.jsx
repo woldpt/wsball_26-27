@@ -11,6 +11,7 @@ import { socket } from "./socket";
 import { COUNTRY_FLAGS } from "./countryFlags.js";
 // ── Extracted components ───────────────────────────────────────────────────
 import { PlayerLink } from "./components/shared/PlayerLink.jsx";
+import { PlayerAvatar } from "./components/shared/PlayerAvatar.jsx";
 // eslint-disable-next-line no-unused-vars
 import { motion, AnimatePresence } from "framer-motion";
 import { WelcomeModal } from "./components/modals/WelcomeModal.jsx";
@@ -27,6 +28,7 @@ import { GameDialog } from "./components/shared/GameDialog.jsx";
 import { TransferProposalModal } from "./components/modals/TransferProposalModal.jsx";
 import { AuctionNotification } from "./components/ui/AuctionNotification.jsx";
 import { AuctionsPage } from "./pages/AuctionsPage.jsx";
+import { UserSettingsPage } from "./pages/UserSettingsPage.jsx";
 import { NewsTicker } from "./components/ui/NewsTicker.jsx";
 import { RoomHub } from "./components/chat/RoomHub.jsx";
 // ── Utils & Constants ──────────────────────────────────────────────────────
@@ -2341,23 +2343,38 @@ function App() {
             </div>
           )}
 
-          {/* Right: unified widget — sala + chat + sair */}
+          {/* Right: user menu + chat + sair */}
           <div className="flex items-center gap-1">
-            {/* Manager identity (lg only) */}
-            <div className="hidden lg:flex flex-col items-end mr-2">
+            {/* User button — opens settings page */}
+            <button
+              onClick={() => {
+                setActiveTab("user_settings");
+                window.scrollTo(0, 0);
+              }}
+              className="flex items-center gap-2 hover:bg-white/10 transition-colors rounded-lg px-2 py-1"
+            >
+              <PlayerAvatar seed={me.name} size="sm" />
+              <div className="hidden lg:flex flex-col items-start">
+                <span
+                  className="text-sm font-bold leading-tight"
+                  style={{ color: teamInfo?.color_secondary || "#e5e2e1" }}
+                >
+                  {me.name}
+                </span>
+                <span
+                  className="text-xs leading-tight opacity-70"
+                  style={{ color: teamInfo?.color_secondary || "#e5e2e1" }}
+                >
+                  {teamInfo?.name}
+                </span>
+              </div>
               <span
-                className="text-sm font-bold leading-tight"
+                className="material-symbols-outlined text-[16px] leading-none opacity-60"
                 style={{ color: teamInfo?.color_secondary || "#e5e2e1" }}
               >
-                {me.name}
+                expand_more
               </span>
-              <span
-                className="text-xs leading-tight opacity-70"
-                style={{ color: teamInfo?.color_secondary || "#e5e2e1" }}
-              >
-                {teamInfo?.name}
-              </span>
-            </div>
+            </button>
 
             {/* RoomHub button — unified: Coaches + Chat */}
             <button
@@ -2380,14 +2397,11 @@ function App() {
               )}
             </button>
 
-            {/* SAIR */}
+            {/* SAIR (icon only) */}
             <button
               onClick={() => {
-                // Notificar o servidor para saída limpa da sala
                 if (me?.roomCode) {
                   socket.emit("leaveRoom");
-                  // Limpar roomCode do localStorage imediatamente para evitar
-                  // auto-rejoin para esta sala numa próxima sessão
                   try {
                     const s = JSON.parse(window.localStorage.getItem("cashballSession") || "{}");
                     window.localStorage.setItem("cashballSession", JSON.stringify({ name: s.name, password: s.password, roomCode: "" }));
@@ -2398,13 +2412,12 @@ function App() {
                 setAuthPhase("mode");
               }}
               title="Voltar à escolha de sala"
-              className="flex items-center gap-1.5 hover:bg-white/10 transition-colors rounded-lg px-2 py-2 text-xs font-black uppercase tracking-widest"
+              className="flex items-center justify-center w-9 h-9 rounded-lg hover:bg-white/10 transition-colors"
               style={{ color: teamInfo?.color_secondary || "#e5e2e1" }}
             >
               <span className="material-symbols-outlined text-[18px] leading-none">
                 logout
               </span>
-              <span className="hidden md:block">Sair</span>
             </button>
           </div>
         </div>
@@ -5518,6 +5531,29 @@ function App() {
                       teamInfo={teamInfo}
                       matchweekCount={matchweekCount}
                       socket={socket}
+                    />
+                  )}
+
+                  {activeTab === "user_settings" && (
+                    <UserSettingsPage
+                      me={me}
+                      teamInfo={teamInfo}
+                      palmares={palmares}
+                      backendUrl={backendUrl}
+                      onBack={() => setActiveTab("club")}
+                      onLogout={handleLogout}
+                      onLeaveRoom={() => {
+                        if (me?.roomCode) {
+                          socket.emit("leaveRoom");
+                          try {
+                            const s = JSON.parse(window.localStorage.getItem("cashballSession") || "{}");
+                            window.localStorage.setItem("cashballSession", JSON.stringify({ name: s.name, password: s.password, roomCode: "" }));
+                          } catch {/* ignorar */}
+                        }
+                        resetGameState();
+                        setMe(null);
+                        setAuthPhase("mode");
+                      }}
                     />
                   )}
                 </motion.div>

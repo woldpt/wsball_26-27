@@ -43,6 +43,8 @@ const {
   recordRoomAccess,
   getManagerRooms,
   deleteRoomAccess,
+  changePassword,
+  getManagerInfo,
 } = require("./auth");
 const {
   getSeasonEndMatchweek,
@@ -280,6 +282,48 @@ app.post("/auth/register", apiLimiter, async (req, res) => {
   } catch (error) {
     console.error("[/auth/register] Error:", error.message);
     return res.status(500).json({ error: "Erro interno de autenticação." });
+  }
+});
+
+app.get("/auth/manager-info", async (req, res) => {
+  try {
+    const name =
+      typeof req.query?.name === "string" ? req.query.name.trim() : "";
+    if (!name)
+      return res.status(400).json({ error: "Nome de treinador inválido." });
+    const result = await getManagerInfo(name);
+    if (!result.ok)
+      return res.status(404).json({ error: result.error });
+    return res.json(result.info);
+  } catch (error) {
+    console.error("[/auth/manager-info] Error:", error.message);
+    return res.status(500).json({ error: "Erro interno." });
+  }
+});
+
+app.post("/auth/change-password", apiLimiter, async (req, res) => {
+  try {
+    const name =
+      typeof req.body?.name === "string" ? req.body.name.trim() : "";
+    const currentPassword =
+      typeof req.body?.currentPassword === "string"
+        ? req.body.currentPassword
+        : "";
+    const newPassword =
+      typeof req.body?.newPassword === "string" ? req.body.newPassword : "";
+    if (!name || !currentPassword || !newPassword)
+      return res.status(400).json({ error: "Todos os campos são obrigatórios." });
+    if (newPassword.length < 3)
+      return res
+        .status(400)
+        .json({ error: "A nova palavra-passe deve ter pelo menos 3 caracteres." });
+    const result = await changePassword(name, currentPassword, newPassword);
+    if (!result.ok)
+      return res.status(400).json({ error: result.error });
+    return res.json({ ok: true });
+  } catch (error) {
+    console.error("[/auth/change-password] Error:", error.message);
+    return res.status(500).json({ error: "Erro interno." });
   }
 });
 
