@@ -125,7 +125,10 @@ docker compose down         # parar containers
     ├── game/
     │   ├── engine.ts            # motor de simulação (simulateMatchSegment, ET, penalties, etc.)
     │   ├── commentary.ts        # 14 funções de narração em português (*Phrase)
-    │   ├── playerUtils.ts       # Junior GRs + seleção de jogadores (withJuniorGRs, etc.)
+    │   ├── playerUtils.ts       # Juniores temporários (GR + campo) + seleção de jogadores
+    │   │                       #   generateJuniorGR / generateJuniorFieldPlayer
+    │   │                       #   withJuniorGRs (garante 1 GR p/ onze inicial)
+    │   │                       #   ensureFullBench (garante 2 GR + 14 campo p/ banco cheio)
     │   └── matchCalculations.ts # cálculos de probabilidade (getGoalTimeMultiplier, etc.)
     ├── socket*Handlers.ts       # handlers Socket.io por domínio:
     │   ├── socketGameplayHandlers.ts
@@ -275,7 +278,7 @@ Após despedimento, a equipa fica disponível via `acceptJobOffer` / `declineJob
 
 ## Convenções de Backend
 
-- **`game/engine.ts`** exporta via `module.exports = {}` (CommonJS) para compatibilidade com o `require()` em `index.ts`; os ficheiros auxiliares do mesmo directório (`commentary.ts`, `playerUtils.ts`, `matchCalculations.ts`) usam ES module exports (`export function`). `engine.ts` re-exporta com `export { ... } from "./playerUtils"` para que os importadores externos possam usar `import { withJuniorGRs } from "./game/engine"`.
+- **`game/engine.ts`** exporta via `module.exports = {}` (CommonJS) para compatibilidade com o `require()` em `index.ts`; os ficheiros auxiliares do mesmo directório (`commentary.ts`, `playerUtils.ts`, `matchCalculations.ts`) usam ES module exports (`export function`). `engine.ts` re-exporta com `export { ... } from "./playerUtils"` para que os importadores externos possam usar `import { withJuniorGRs, ensureFullBench, generateJuniorFieldPlayer } from "./game/engine"`. **Novas funções adicionadas ao `module.exports` também** (`ensureFullBench`, `generateJuniorFieldPlayer`).
 - **Narração** — todas as frases geradas durante a simulação estão em `game/commentary.ts`; não duplicar frases noutros ficheiros.
 - **Factory pattern para helpers** — `createXxxHelpers(deps)` retorna um objecto com funções; `deps` inclui tipicamente `{ io, db, game }`. Exemplo: `createAuctionHelpers(deps)`, `createCupFlowHelpers(deps)`. Nunca instanciar helpers directamente; sempre passar dependências via factory. As dependências de `createWeeklyFlowHelpers` incluem: `generateFixturesForDivision`, `simulateMatchSegment`, `applyTrainingBonuses`, `startCupRound`, `finalizeCupRound`, `applySeasonEnd`, `listPlayerOnMarket`, `finalizeAuction`, `processContractExpiries`, `processCoachEvents`.
 - **Registo de handlers Socket.io** — `registerXxxSocketHandlers(socket, deps)` regista todos os eventos de um domínio num único ponto; chamado dentro do `io.on("connection")` em `index.ts`. Manter eventos de domínios separados em ficheiros distintos.

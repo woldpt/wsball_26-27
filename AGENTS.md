@@ -70,6 +70,22 @@
 - Division 5 (Distritais): internal AI-only pool, hidden from players.
 - Cache versioning: `/api/cache-version` mismatch triggers client storage wipe + reload.
 
+## Junior Bench System (Banco de Suplentes)
+- The bench must always have at least **1 GR + 4 field players** (5 substitutes total).
+- `server/game/playerUtils.ts`:
+  - `generateJuniorGR(teamId, matchweek, slotIndex)` — temporary junior GK.
+  - `generateJuniorFieldPlayer(teamId, matchweek, slotIndex, position)` — temporary junior DEF/MED/ATA (cycled evenly).
+  - `withJuniorGRs(squad, teamId, matchweek)` — ensures at least **1 available GR** for the starting XI.
+  - `ensureFullBench(squad, teamId, matchweek)` — ensures at least **2 GR + 14 field players** so 11 starters + 5 subs are always possible. Must be called **after** `withJuniorGRs`.
+- Junior players have **negative IDs** (DB writes are harmless no-ops) and `isJunior: true`.
+- The client renders junior players with a 🎓 badge and blocks status changes via `handleSetPlayerStatus`.
+- `ensureFullBench` is applied in:
+  - `socketSessionHandlers.ts` — `mySquad` emission
+  - `socketGameplayHandlers.ts` — `teamSquadData` emission
+  - `socketTransferHandlers.ts` — `mySquad` after transfers
+  - `game/engine.ts` — `_homeFullRoster` / `_awayFullRoster` (match simulation)
+  - `game/matchCalculations.ts` — `generateAITactic()` (AI bench)
+
 ## Architecture Pointers
 - `server/index.ts`: Express + Socket.io entry.
 - `server/gameManager.ts`: room and state lifecycle (`activeGames`).

@@ -102,6 +102,7 @@ Sem sessões, tokens ou cookies para jogadores. Autenticação por **nome + pass
 - Taça com empate → **30 segundos** de tempo extra → **penalties** se necessário
 - Resultado calculado **in loco** minuto a minuto, nunca pré-calculado
 - Forças recalculadas após substituições e expulsões
+- **Juniores temporários:** se um plantel não tiver jogadores suficientes para o banco de suplentes (1 GR + 4 campo), são gerados automaticamente juniores efémeros (IDs negativos, sem persistência na BD) para garantir que o banco fica sempre completo. Ver `playerUtils.ts` → `ensureFullBench()`.
 
 ### Formações
 
