@@ -72,7 +72,6 @@ function StatBlock({ icon, label, value }) {
  */
 function AuctionCard({ auction, me, teams, teamInfo, matchweekCount, socket }) {
   const [flipped, setFlipped] = useState(false);
-  const [bidInput, setBidInput] = useState("");
   const [bidError, setBidError] = useState("");
   const [bidSuccess, setBidSuccess] = useState(false);
 
@@ -94,9 +93,7 @@ function AuctionCard({ auction, me, teams, teamInfo, matchweekCount, socket }) {
     ? auction.currentHighBid + 50000
     : auction.startingPrice;
 
-  useEffect(() => {
-    setBidInput(String(minBid));
-  }, [minBid]);
+  const [bidInput, setBidInput] = useState(() => String(minBid));
 
   const handleBid = useCallback(() => {
     const amount = Number(bidInput);
@@ -109,9 +106,15 @@ function AuctionCard({ auction, me, teams, teamInfo, matchweekCount, socket }) {
       return;
     }
     setBidError("");
-    socket.emit("placeAuctionBid", { playerId: auction.playerId, bidAmount: amount });
-    setBidSuccess(true);
-    setTimeout(() => setBidSuccess(false), 3000);
+    socket.emit("placeAuctionBid", { playerId: auction.playerId, bidAmount: amount }, (res) => {
+      if (res?.ok) {
+        setBidSuccess(true);
+        setTimeout(() => setBidSuccess(false), 3000);
+      } else {
+        setBidError(res?.error || "Erro ao processar o lance.");
+        setTimeout(() => setBidError(""), 3000);
+      }
+    });
   }, [bidInput, minBid, auction.playerId, teamInfo, socket]);
 
   return (
@@ -270,7 +273,7 @@ function AuctionCard({ auction, me, teams, teamInfo, matchweekCount, socket }) {
                   .sort((a, b) => b.amount - a.amount)
                   .map((bid, i) => {
                     const isLeader = bid.teamId === auction.auction_high_bid_team_id;
-                    const teamName = teams.find(t => t.id == bid.teamId)?.name || `Equipa ${bid.teamId}`;
+                    const teamName = teams.find(t => String(t.id) === String(bid.teamId))?.name || `Equipa ${bid.teamId}`;
                     const timeAgo = bid.timestamp ? getTimeAgo(bid.timestamp) : "";
                     return (
                       <div

@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from "react";
+import { useState, useEffect } from "react";
 import { socket } from "../../socket";
 
 const TRAINING_FOCUS_STORAGE_KEY = "cashball_training_focus";
@@ -73,6 +73,7 @@ export function TrainingPage({ me, matchweek }) {
   });
   const [loading, setLoading] = useState(false);
   const [saved, setSaved] = useState(false);
+  const [error, setError] = useState("");
 
   // Persist selected training to localStorage
   useEffect(() => {
@@ -120,6 +121,7 @@ export function TrainingPage({ me, matchweek }) {
   const handleSetTraining = (trainingKey) => {
     if (!me?.teamId) return;
     setLoading(true);
+    setError("");
 
     let cleared = false;
     const clearLoading = () => {
@@ -136,6 +138,8 @@ export function TrainingPage({ me, matchweek }) {
       if (ok) {
         setSelectedTraining(trainingKey);
         setSavedTraining(trainingKey);
+      } else {
+        setError("Erro ao guardar foco de treino.");
       }
       clearLoading();
     });
@@ -168,6 +172,13 @@ export function TrainingPage({ me, matchweek }) {
           <h2 className="text-lg font-bold text-white mb-3">
             Foco de Treino - Jornada {matchweek}
           </h2>
+
+          {error && (
+            <div className="flex items-center gap-2 px-3 py-2 rounded-lg bg-red-900/30 border border-red-800/40 text-red-400 text-xs font-semibold mb-3">
+              <span className="material-symbols-outlined text-sm">error</span>
+              {error}
+            </div>
+          )}
 
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
             {TRAINING_OPTIONS.map(
@@ -314,10 +325,9 @@ export function TrainingPage({ me, matchweek }) {
                             {record.new_value}
                           </span>
                           <span className="text-green-500/70 text-xs ml-1 w-14 text-right">
-                            +{record.delta}
                             {record.new_value === record.old_value
-                              ? " prog"
-                              : ""}
+                              ? `+${record.delta} prog`
+                              : `+${record.new_value - record.old_value}`}
                           </span>
                         </div>
                       </div>

@@ -42,7 +42,6 @@ export function AuctionNotification({
     timerRef.current = setTimeout(() => {
       showingRef.current = false;
       setCurrentToast(null);
-      // Show next in queue after brief pause
       setTimeout(showNext, 400);
     }, 8000);
   };
@@ -57,12 +56,9 @@ export function AuctionNotification({
   // Detect new auctions and enqueue
   useEffect(() => {
     if (currentPage === "leiloes") {
-      // Clear everything when on auctions page
       clearTimeout(timerRef.current);
       showingRef.current = false;
       queueRef.current = [];
-      // Use functional update to avoid stale closure warning
-      setCurrentToast((prev) => (prev !== null ? null : prev));
       return;
     }
     const newOnes = activeAuctions.filter(
@@ -72,6 +68,10 @@ export function AuctionNotification({
     newOnes.forEach((a) => seenRef.current.add(a.playerId));
     queueRef.current.push(...newOnes);
     showNext();
+
+    return () => {
+      clearTimeout(timerRef.current);
+    };
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [activeAuctions, currentPage]);
 

@@ -16,8 +16,6 @@ const QUICK_MESSAGES = ["👍", "🖕", "Vamos!", "Boa sorte", "⚽", "😂"];
  *   teams: Array,
  *   roomCreator: string,
  *   matchweekCount: number,
- *   unreadRoom: number,
- *   unreadGlobal: number,
  *   chatInput: string,
  *   setChatInput: function,
  *   chatMessagesRef: object,
@@ -58,9 +56,11 @@ export function RoomHub({
 
   useEffect(() => {
     const onSystemMessage = (data) => {
+      const text = typeof data === "string" ? data : data.text;
+      if (!text) return;
       setSystemMessages((prev) => [
         ...prev,
-        { id: Date.now() + Math.random(), text: data.text, timestamp: Date.now() },
+        { id: Date.now() + Math.random(), text, timestamp: Date.now() },
       ]);
     };
 
@@ -91,14 +91,6 @@ export function RoomHub({
   };
 
   const formatChatTime = (ts) => {
-    const d = new Date(ts);
-    return d.toLocaleTimeString("pt-PT", {
-      hour: "2-digit",
-      minute: "2-digit",
-    });
-  };
-
-  const formatSystemTime = (ts) => {
     const d = new Date(ts);
     return d.toLocaleTimeString("pt-PT", {
       hour: "2-digit",
@@ -148,7 +140,7 @@ export function RoomHub({
               className="text-on-surface-variant hover:text-on-surface transition-colors"
             >
               <span className="material-symbols-outlined text-[18px] leading-none">
-                {roomHubOpen ? "close" : "expand_more"}
+                close
               </span>
             </button>
           </div>
@@ -204,7 +196,7 @@ export function RoomHub({
                 })),
             ].map((coach, i) => {
               const coachTeam = coach.teamId
-                ? teams.find((t) => t.id == coach.teamId)
+                ? teams.find((t) => String(t.id) === String(coach.teamId))
                 : null;
               const status = getCoachStatus(coach);
               return (
@@ -352,15 +344,15 @@ export function RoomHub({
             className="flex-1 overflow-y-auto px-3 py-3 space-y-2"
             style={{ scrollBehavior: "smooth" }}
           >
-            {systemMessages.map((sm) => (
+            {chatSubTab === "room" && systemMessages.map((sm) => (
               <div
                 key={sm.id}
                 className="text-center text-[10px] italic text-on-surface-variant/50 py-1"
               >
-                {sm.text} — <span className="text-[9px]">{formatSystemTime(sm.timestamp)}</span>
+                {sm.text} — <span className="text-[9px]">{formatChatTime(sm.timestamp)}</span>
               </div>
             ))}
-            {activeMessages.length === 0 && systemMessages.length === 0 ? (
+            {activeMessages.length === 0 && (chatSubTab !== "room" || systemMessages.length === 0) ? (
               <p className="text-center text-on-surface-variant text-xs italic mt-8">
                 {chatSubTab === "room"
                   ? "Nenhuma mensagem nesta sala ainda."
