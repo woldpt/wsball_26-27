@@ -257,14 +257,8 @@ function SquadRow({ player, matchweekCount, onOpenPlayerHistory }) {
         </span>
       </div>
 
-      {/* Ordenado + Valor */}
-      <div
-        className={`shrink-0 self-stretch flex items-center px-3 border-l ${
-          isListed
-            ? "border-emerald-500/30 bg-gradient-to-r from-emerald-900/40 via-emerald-700/20 to-emerald-900/40"
-            : "border-outline-variant/20 bg-surface/40"
-        }`}
-      >
+      {/* Ordenado + Valor (omitido em mobile) */}
+      <div className="hidden md:flex shrink-0 self-stretch flex items-center px-3 border-l">
         <div className="relative flex flex-col items-end justify-center gap-0.5 min-w-22">
           <div className="flex items-baseline gap-1">
             <span className="font-headline font-black text-sm tabular-nums text-on-surface">
