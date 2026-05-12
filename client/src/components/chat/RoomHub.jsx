@@ -109,7 +109,7 @@ export function RoomHub({
   return (
     <div
       ref={roomHubRef}
-      className="fixed top-14 right-4 z-50 flex flex-col items-end gap-2"
+      className="fixed top-14 right-4 z-[100] flex flex-col items-end gap-2"
     >
       {roomHubOpen && (
         <div
