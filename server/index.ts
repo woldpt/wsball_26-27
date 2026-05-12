@@ -47,6 +47,7 @@ const {
   getManagerInfo,
   getAvatarSeed,
   setAvatarSeed,
+  updateManagerProfile,
   deleteManager,
 } = require("./auth");
 const {
@@ -425,6 +426,30 @@ app.post("/auth/delete-account", async (req, res) => {
     return res.json({ ok: true });
   } catch (error) {
     console.error("[/auth/delete-account] Error:", error.message);
+    return res.status(500).json({ error: "Erro interno." });
+  }
+});
+
+app.post("/auth/update-profile", async (req, res) => {
+  try {
+    const name =
+      typeof req.body?.name === "string" ? req.body.name.trim() : "";
+    const email =
+      typeof req.body?.email === "string" ? req.body.email.trim() : "";
+    const birthYear =
+      req.body?.birthYear != null ? parseInt(req.body.birthYear, 10) : null;
+    if (!name)
+      return res.status(400).json({ error: "Nome de treinador inválido." });
+    const result = await updateManagerProfile(
+      name,
+      email,
+      birthYear && !isNaN(birthYear) ? birthYear : null,
+    );
+    if (!result.ok)
+      return res.status(500).json({ error: result.error });
+    return res.json({ ok: true });
+  } catch (error) {
+    console.error("[/auth/update-profile] Error:", error.message);
     return res.status(500).json({ error: "Erro interno." });
   }
 });

@@ -81,6 +81,16 @@ db.serialize(() => {
       // Column already exists — ignore
     }
   });
+  db.run(`ALTER TABLE managers ADD COLUMN email TEXT DEFAULT ''`, (err) => {
+    if (err) {
+      // Column already exists — ignore
+    }
+  });
+  db.run(`ALTER TABLE managers ADD COLUMN birth_year INTEGER DEFAULT NULL`, (err) => {
+    if (err) {
+      // Column already exists — ignore
+    }
+  });
 });
 
 /**
@@ -352,7 +362,7 @@ function getManagerInfo(name) {
 
   return new Promise((resolve) => {
     db.get(
-      "SELECT id, name FROM managers WHERE name = ? COLLATE NOCASE",
+      "SELECT id, name, email, birth_year FROM managers WHERE name = ? COLLATE NOCASE",
       [normalizedName],
       async (err, row) => {
         if (err) {
@@ -369,6 +379,8 @@ function getManagerInfo(name) {
           ok: true,
           info: {
             name: row.name,
+            email: row.email || "",
+            birthYear: row.birth_year || null,
             rooms,
           },
         });
@@ -426,6 +438,35 @@ function setAvatarSeed(name, seed) {
 }
 
 /**
+ * Update a manager's profile (email, birth year).
+ *
+ * @param {string} name
+ * @param {string} email
+ * @param {number|null} birthYear
+ * @returns {Promise<{ok: boolean, error?: string}>}
+ */
+function updateManagerProfile(name, email, birthYear) {
+  const normalizedName = typeof name === "string" ? name.trim() : "";
+  if (!normalizedName) {
+    return Promise.resolve({ ok: false, error: "Nome inválido." });
+  }
+
+  return new Promise((resolve) => {
+    db.run(
+      "UPDATE managers SET email = ?, birth_year = ? WHERE name = ? COLLATE NOCASE",
+      [email || "", birthYear || null, normalizedName],
+      (err) => {
+        if (err) {
+          console.error("[auth] updateManagerProfile error:", err.message);
+          return resolve({ ok: false, error: "Erro ao actualizar perfil." });
+        }
+        resolve({ ok: true });
+      },
+    );
+  });
+}
+
+/**
  * Delete a manager account and all associated room access records.
  *
  * @param {string} name
@@ -469,5 +510,6 @@ module.exports = {
   getManagerInfo,
   getAvatarSeed,
   setAvatarSeed,
+  updateManagerProfile,
   deleteManager,
 };

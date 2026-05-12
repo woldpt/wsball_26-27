@@ -19,6 +19,10 @@ export function UserSettingsPage({
   const [rooms, setRooms] = useState([]);
   const [roomsLoading, setRoomsLoading] = useState(true);
   const [deletingAccount, setDeletingAccount] = useState(false);
+  const [email, setEmail] = useState("");
+  const [birthYear, setBirthYear] = useState("");
+  const [profileSaving, setProfileSaving] = useState(false);
+  const [profileMsg, setProfileMsg] = useState(null);
 
   useEffect(() => {
     if (!me?.name) return;
@@ -26,10 +30,38 @@ export function UserSettingsPage({
       .then((r) => r.json())
       .then((data) => {
         if (Array.isArray(data?.rooms)) setRooms(data.rooms);
+        if (data?.email !== undefined) setEmail(data.email);
+        if (data?.birthYear) setBirthYear(String(data.birthYear));
       })
       .catch(() => { /* ignorar */ })
       .finally(() => setRoomsLoading(false));
   }, [me?.name, backendUrl]);
+
+  const handleSaveProfile = async () => {
+    setProfileMsg(null);
+    setProfileSaving(true);
+    try {
+      const res = await fetch(`${backendUrl}/auth/update-profile`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          name: me.name,
+          email,
+          birthYear: birthYear ? parseInt(birthYear, 10) : null,
+        }),
+      });
+      const data = await res.json();
+      if (data.ok) {
+        setProfileMsg({ type: "success", text: "Perfil actualizado!" });
+      } else {
+        setProfileMsg({ type: "error", text: data.error || "Erro ao guardar." });
+      }
+    } catch {
+      setProfileMsg({ type: "error", text: "Erro de ligação." });
+    } finally {
+      setProfileSaving(false);
+    }
+  };
 
   const handleChangePassword = async (e) => {
     e.preventDefault();
@@ -162,6 +194,39 @@ export function UserSettingsPage({
           <p className="text-xs text-on-surface-variant/60 font-medium mt-0.5">
             Sala: {me?.roomName || me?.roomCode || "—"}
           </p>
+          <div className="flex flex-col sm:flex-row gap-2 mt-3">
+            <input
+              type="email"
+              value={email}
+              onChange={(e) => setEmail(e.target.value)}
+              placeholder="Email (opcional)"
+              className="flex-1 bg-surface border border-outline-variant/30 rounded-lg px-3 py-2 text-sm font-medium text-on-surface placeholder:text-on-surface-variant/40 focus:outline-none focus:border-primary/60 transition-colors"
+            />
+            <select
+              value={birthYear}
+              onChange={(e) => setBirthYear(e.target.value)}
+              className="bg-surface border border-outline-variant/30 rounded-lg px-3 py-2 text-sm font-medium text-on-surface focus:outline-none focus:border-primary/60 transition-colors"
+            >
+              <option value="">Ano nascimento</option>
+              {Array.from({ length: 71 }, (_, i) => 1940 + i).reverse().map((y) => (
+                <option key={y} value={y}>{y}</option>
+              ))}
+            </select>
+          </div>
+          <div className="flex items-center gap-2 mt-2">
+            <button
+              onClick={handleSaveProfile}
+              disabled={profileSaving}
+              className="text-xs font-black uppercase tracking-widest bg-primary/10 text-primary px-4 py-1.5 rounded-lg hover:bg-primary/20 transition-colors disabled:opacity-50"
+            >
+              {profileSaving ? "A guardar..." : "Guardar Perfil"}
+            </button>
+            {profileMsg && (
+              <span className={`text-[10px] font-bold ${profileMsg.type === "success" ? "text-emerald-400" : "text-red-400"}`}>
+                {profileMsg.text}
+              </span>
+            )}
+          </div>
         </div>
       </div>
 
