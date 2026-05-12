@@ -3,6 +3,7 @@ import { AggBadge } from "../shared/AggBadge.jsx";
 import { PlayerAvatar } from "../shared/PlayerAvatar.jsx";
 import { aggLabel } from "../../utils/playerHelpers.js";
 import { SkillLineChart } from "./SkillLineChart.jsx";
+import { POS_BAR } from "./positionConstants.js";
 
 // Position config
 const POS_LABEL = { GR: "GR", DEF: "DEF", MED: "MED", ATA: "ATA" };
@@ -24,12 +25,7 @@ const POS_TEXT = {
   MED: "text-emerald-400",
   ATA: "text-rose-400",
 };
-const POS_BAR = {
-  GR: "#eab308",
-  DEF: "#3b82f6",
-  MED: "#10b981",
-  ATA: "#f43f5e",
-};
+
 
 function SkillBar({ label, value, maxValue = 50, color }) {
   const pct = Math.min(100, Math.round((value / maxValue) * 100));

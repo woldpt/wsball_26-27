@@ -1,4 +1,4 @@
-import { POS_BAR } from "./PlayerHistoryModal.jsx";
+import { POS_BAR } from "./positionConstants.js";
 
 /**
  * Gráfico de linhas mostrando a evolução da skill do jogador nas últimas 19 semanas.
