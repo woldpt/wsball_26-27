@@ -23,7 +23,7 @@ export function UserSettingsPage({
     fetch(`${backendUrl}/auth/manager-info?name=${encodeURIComponent(me.name)}`)
       .then((r) => r.json())
       .then((data) => {
-        if (data?.rooms) setRooms(data.rooms);
+        if (Array.isArray(data?.rooms)) setRooms(data.rooms);
       })
       .catch(() => { /* ignorar */ })
       .finally(() => setRoomsLoading(false));
@@ -210,35 +210,47 @@ export function UserSettingsPage({
           ) : rooms.length === 0 ? (
             <p className="text-sm text-on-surface-variant/60 font-medium">Nenhuma sala encontrada.</p>
           ) : (
-            rooms.map((code) => {
-              const isActive = code === me?.roomCode;
+            rooms.map((r) => {
+              const isActive = r.roomCode === me?.roomCode;
               return (
                 <div
-                  key={code}
+                  key={r.roomCode}
                   className="flex items-center justify-between py-2.5 px-3 rounded-lg bg-surface/50 border border-outline-variant/10"
                 >
-                  <div className="flex items-center gap-3">
-                    <span className="material-symbols-outlined text-[18px] text-on-surface-variant">
+                  <div className="flex items-center gap-3 min-w-0">
+                    <span className="material-symbols-outlined text-[18px] text-on-surface-variant shrink-0">
                       meeting_room
                     </span>
-                    <span className="text-sm font-bold">{code}</span>
+                    <div className="min-w-0">
+                      <p className="text-sm font-bold truncate">{r.roomName}</p>
+                      <p className="text-xs text-on-surface-variant/50 font-medium truncate">
+                        {r.roomCode}
+                      </p>
+                    </div>
                     {isActive && (
-                      <span className="text-[10px] font-black uppercase tracking-wider text-emerald-400 bg-emerald-500/10 px-2 py-0.5 rounded-full">
+                      <span className="text-[10px] font-black uppercase tracking-wider text-emerald-400 bg-emerald-500/10 px-2 py-0.5 rounded-full shrink-0">
                         Sala Actual
                       </span>
                     )}
                   </div>
-                  <button
-                    onClick={() => handleSwitchRoom(code)}
-                    disabled={isActive}
-                    className={`text-xs font-black uppercase tracking-widest px-3 py-1.5 rounded-lg transition-colors ${
-                      isActive
-                        ? "text-on-surface-variant/30 bg-surface-container cursor-not-allowed"
-                        : "text-primary bg-primary/10 hover:bg-primary/20"
-                    }`}
-                  >
-                    {isActive ? "Actual" : "Entrar"}
-                  </button>
+                  <div className="flex items-center gap-3 shrink-0">
+                    {r.teamName && (
+                      <span className="text-xs font-bold text-on-surface-variant/80 hidden sm:block">
+                        {r.teamName}
+                      </span>
+                    )}
+                    <button
+                      onClick={() => handleSwitchRoom(r.roomCode)}
+                      disabled={isActive}
+                      className={`text-xs font-black uppercase tracking-widest px-3 py-1.5 rounded-lg transition-colors ${
+                        isActive
+                          ? "text-on-surface-variant/30 bg-surface-container cursor-not-allowed"
+                          : "text-primary bg-primary/10 hover:bg-primary/20"
+                      }`}
+                    >
+                      {isActive ? "Actual" : "Entrar"}
+                    </button>
+                  </div>
                 </div>
               );
             })

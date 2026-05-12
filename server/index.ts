@@ -129,6 +129,43 @@ function getRoomName(roomCode: string): Promise<string> {
   });
 }
 
+function getRoomInfo(
+  roomCode: string,
+  managerName: string,
+): Promise<{ roomCode: string; roomName: string; teamName: string | null }> {
+  return new Promise((resolve) => {
+    const dbPath = path.join(resolveDbDir(), `game_${roomCode}.db`);
+    const db = new sqlite3.Database(dbPath, (err: any) => {
+      if (err) {
+        resolve({ roomCode, roomName: roomCode, teamName: null });
+        return;
+      }
+      // Get room name + team name for this manager
+      db.get(
+        "SELECT value FROM game_state WHERE key = 'roomName'",
+        (_err1: any, row1: any) => {
+          const roomName = row1?.value || roomCode;
+          db.get(
+            `SELECT t.name AS teamName
+             FROM teams t
+             JOIN managers m ON m.id = t.manager_id
+             WHERE m.name = ? COLLATE NOCASE`,
+            [managerName],
+            (_err2: any, row2: any) => {
+              db.close();
+              resolve({
+                roomCode,
+                roomName,
+                teamName: row2?.teamName || null,
+              });
+            },
+          );
+        },
+      );
+    });
+  });
+}
+
 const ALLOWED_ORIGINS = (process.env.CORS_ORIGINS || "http://localhost:5173")
   .split(",")
   .map((s) => s.trim())
@@ -294,7 +331,14 @@ app.get("/auth/manager-info", async (req, res) => {
     const result = await getManagerInfo(name);
     if (!result.ok)
       return res.status(404).json({ error: result.error });
-    return res.json(result.info);
+
+    const rooms: any[] = [];
+    for (const code of result.info.rooms) {
+      const info = await getRoomInfo(code, name);
+      rooms.push(info);
+    }
+
+    return res.json({ name: result.info.name, rooms });
   } catch (error) {
     console.error("[/auth/manager-info] Error:", error.message);
     return res.status(500).json({ error: "Erro interno." });
