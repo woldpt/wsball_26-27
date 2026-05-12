@@ -181,19 +181,19 @@ export function PlayerHistoryModal({
               background: `radial-gradient(ellipse at top left, ${barColor}18 0%, transparent 70%)`,
             }}
           />
-          <div className="relative flex items-start gap-4 px-6 pt-6 pb-5">
-            <PlayerAvatar seed={player.id} position={pos} teamColor={player.team_color_primary || player.color_primary || null} size="xl" />
-            <div className="shrink-0 mt-1">
+          <div className="relative flex items-start gap-3 sm:gap-4 px-4 sm:px-6 pt-4 sm:pt-6 pb-3 sm:pb-5">
+            <PlayerAvatar seed={player.id} position={pos} teamColor={player.team_color_primary || player.color_primary || null} size="lg" />
+            <div className="shrink-0 mt-0.5 sm:mt-1">
               <div
-                className={`px-2.5 py-1 rounded-sm bg-surface-bright border-l-2 ${POS_BORDER[pos] || "border-zinc-500"} ${POS_TEXT[pos] || "text-zinc-300"} text-xs font-black uppercase tracking-wider`}
+                className={`px-2 py-0.5 sm:px-2.5 sm:py-1 rounded-sm bg-surface-bright border-l-2 ${POS_BORDER[pos] || "border-zinc-500"} ${POS_TEXT[pos] || "text-zinc-300"} text-[10px] sm:text-xs font-black uppercase tracking-wider`}
               >
                 {POS_LABEL[pos] || pos}
               </div>
             </div>
 
             <div className="flex-1 min-w-0">
-              <div className="flex items-center gap-2 flex-wrap">
-                <h2 className="font-black font-headline text-2xl tracking-tight text-on-surface uppercase leading-none">
+              <div className="flex items-center gap-1.5 sm:gap-2 flex-wrap">
+                <h2 className="font-black font-headline text-lg sm:text-2xl tracking-tight text-on-surface uppercase leading-none">
                   {player.name}
                 </h2>
                 {isStar && (
