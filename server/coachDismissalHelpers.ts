@@ -138,10 +138,10 @@ export function createCoachDismissalHelpers(deps: CoachDismissalDeps) {
       );
     }
 
-    io.to(game.roomCode).emit(
-      "systemMessage",
-      `${coachName} desceu para a ${targetDiv}ª divisão e assumiu o comando de ${team.name}.`,
-    );
+    io.to(game.roomCode).emit("systemMessage", {
+      text: `${coachName} desceu para a ${targetDiv}ª divisão e assumiu o comando de ${team.name}.`,
+      broadcast: true,
+    });
 
     game.db.all("SELECT * FROM teams", (err: any, allTeamsData: any[]) => {
       if (!err) io.to(game.roomCode).emit("teamsData", allTeamsData);
@@ -193,11 +193,10 @@ export function createCoachDismissalHelpers(deps: CoachDismissalDeps) {
     }
 
     // Broadcast to room
-    const msg =
-      reason === "budget"
-        ? `${coachName} foi despedido de ${teamName} por insolvência financeira.`
-        : `${coachName} foi despedido de ${teamName} após má série de resultados.`;
-    io.to(game.roomCode).emit("systemMessage", msg);
+    io.to(game.roomCode).emit("systemMessage", {
+      text: `${coachName} foi despedido de ${teamName}${reason === "budget" ? " por insolvência financeira." : " após má série de resultados."}`,
+      broadcast: true,
+    });
 
     await autoAssignDismissedCoach(game, coachName);
   }
@@ -215,10 +214,10 @@ export function createCoachDismissalHelpers(deps: CoachDismissalDeps) {
       { description: "Despedimento após má série de resultados" },
       io,
     );
-    io.to(game.roomCode).emit(
-      "systemMessage",
-      `${team.name} despediu o seu treinador.`,
-    );
+    io.to(game.roomCode).emit("systemMessage", {
+      text: `${team.name} despediu o seu treinador.`,
+      broadcast: true,
+    });
   }
 
   async function offerJobToCoach(
@@ -381,10 +380,10 @@ export function createCoachDismissalHelpers(deps: CoachDismissalDeps) {
       );
     }
 
-    io.to(game.roomCode).emit(
-      "systemMessage",
-      `${coachName} foi atribuído a ${team.name}.`,
-    );
+    io.to(game.roomCode).emit("systemMessage", {
+      text: `${coachName} foi atribuído a ${team.name}.`,
+      broadcast: true,
+    });
 
     game.db.all("SELECT * FROM teams", (err: any, allTeamsData: any[]) => {
       if (!err) io.to(game.roomCode).emit("teamsData", allTeamsData);
@@ -593,10 +592,10 @@ export function createCoachDismissalHelpers(deps: CoachDismissalDeps) {
       );
     }
 
-    io.to(game.roomCode).emit(
-      "systemMessage",
-      `${coachName} aceitou o convite de ${team.name}.`,
-    );
+    io.to(game.roomCode).emit("systemMessage", {
+      text: `${coachName} aceitou o convite de ${team.name}.`,
+      broadcast: true,
+    });
 
     // Broadcast updated teams
     game.db.all("SELECT * FROM teams", (err: any, teams: any[]) => {

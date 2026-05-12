@@ -56,7 +56,10 @@ export function RoomHub({
 
   useEffect(() => {
     const onSystemMessage = (data) => {
-      const text = typeof data === "string" ? data : data.text;
+      // Only show broadcast system messages (sent to the whole room)
+      if (typeof data === "string") return;
+      if (!data.broadcast) return;
+      const text = data.text;
       if (!text) return;
       setSystemMessages((prev) => [
         ...prev,

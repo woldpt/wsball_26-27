@@ -265,7 +265,7 @@ export function TabLineup({ fixture, liveMinute, teams }) {
     );
 
   return (
-    <div className="flex divide-x divide-zinc-800 flex-1 overflow-hidden min-h-0">
+    <div className="flex divide-x divide-zinc-800 flex-1 overflow-hidden min-h-0 w-full">
       {[
         { info: hInfo, lineup: homeLineup },
         { info: aInfo, lineup: awayLineup },

@@ -532,7 +532,10 @@ export function useSocketListeners(handlers, refs) {
         socket.emit("requestFinanceData", { teamId: currentMe.teamId });
       }
     });
-    socket.on("systemMessage", (msg) => handlers.addToast(msg));
+    socket.on("systemMessage", (msg) => {
+      const text = typeof msg === "string" ? msg : msg.text;
+      if (text) handlers.addToast(text);
+    });
     socket.on(
       "renewContractCounterOffer",
       ({ playerId, playerName, demandedWage }) => {

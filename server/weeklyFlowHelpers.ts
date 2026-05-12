@@ -1003,10 +1003,10 @@ export function createWeeklyFlowHelpers(deps: WeeklyFlowDeps) {
               p.ready = false;
             });
             emitPresence(game);
-            io.to(game.roomCode).emit(
-              "systemMessage",
-              "⚠ Erro ao gerar jogos. Tenta novamente.",
-            );
+            io.to(game.roomCode).emit("systemMessage", {
+              text: "⚠ Erro ao gerar jogos. Tenta novamente.",
+              broadcast: true,
+            });
             return;
           }
 

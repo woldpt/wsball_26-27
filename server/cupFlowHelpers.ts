@@ -126,10 +126,10 @@ export function createCupFlowHelpers(deps: CupFlowDeps) {
           resolve,
         );
       });
-      io.to(game.roomCode).emit(
-        "systemMessage",
-        `🏆 ${iLigaWinner.name} é o Campeão Nacional de ${year}! (+2.000.000€)`,
-      );
+      io.to(game.roomCode).emit("systemMessage", {
+        text: `🏆 ${iLigaWinner.name} é o Campeão Nacional de ${year}! (+2.000.000€)`,
+        broadcast: true,
+      });
     }
 
     for (const div of [2, 3, 4]) {
@@ -151,10 +151,10 @@ export function createCupFlowHelpers(deps: CupFlowDeps) {
           );
         });
         const prizeFormatted = new Intl.NumberFormat("pt-PT").format(prize);
-        io.to(game.roomCode).emit(
-          "systemMessage",
-          `🥇 ${winner.name} é Campeão ${DIVISION_NAMES[div]} de ${year}! (+${prizeFormatted}€)`,
-        );
+        io.to(game.roomCode).emit("systemMessage", {
+          text: `🥇 ${winner.name} é Campeão ${DIVISION_NAMES[div]} de ${year}! (+${prizeFormatted}€)`,
+          broadcast: true,
+        });
       }
     }
 
@@ -171,10 +171,10 @@ export function createCupFlowHelpers(deps: CupFlowDeps) {
         });
       }
     }
-    io.to(game.roomCode).emit(
-      "systemMessage",
-      "📺 Receitas de patrocinadores distribuídas.",
-    );
+    io.to(game.roomCode).emit("systemMessage", {
+      text: "📺 Receitas de patrocinadores distribuídas.",
+      broadcast: true,
+    });
 
     // Best scorer prize
     const topScorer = await runGet(
@@ -194,10 +194,10 @@ export function createCupFlowHelpers(deps: CupFlowDeps) {
           resolve,
         );
       });
-      io.to(game.roomCode).emit(
-        "systemMessage",
-        `⚽ ${topScorer.name} (${topScorer.team_name}) é o Melhor Marcador com ${topScorer.goals} golos! (+500.000€ para ${topScorer.team_name})`,
-      );
+      io.to(game.roomCode).emit("systemMessage", {
+        text: `⚽ ${topScorer.name} (${topScorer.team_name}) é o Melhor Marcador com ${topScorer.goals} golos! (+500.000€ para ${topScorer.team_name})`,
+        broadcast: true,
+      });
     }
 
     // Clear financial club news (revenues and expenses list)
@@ -967,10 +967,10 @@ export function createCupFlowHelpers(deps: CupFlowDeps) {
         const updatedTeams = await runAll(game.db, "SELECT * FROM teams");
         io.to(game.roomCode).emit("teamsData", updatedTeams);
         if (winnerTeam) {
-          io.to(game.roomCode).emit(
-            "systemMessage",
-            `🏆 ${winnerTeam.name} venceu a Taça de Portugal de ${game.year}! (+500 000 €) no Estádio do Jamor`,
-          );
+          io.to(game.roomCode).emit("systemMessage", {
+            text: `🏆 ${winnerTeam.name} venceu a Taça de Portugal de ${game.year}! (+500 000 €) no Estádio do Jamor`,
+            broadcast: true,
+          });
         }
       }
     }
