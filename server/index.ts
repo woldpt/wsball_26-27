@@ -135,7 +135,11 @@ function getRoomInfo(
 ): Promise<{ roomCode: string; roomName: string; teamName: string | null }> {
   return new Promise((resolve) => {
     const dbPath = path.join(resolveDbDir(), `game_${roomCode}.db`);
-    const db = new sqlite3.Database(dbPath, (err: any) => {
+    if (!fs.existsSync(dbPath)) {
+      resolve({ roomCode, roomName: roomCode, teamName: null });
+      return;
+    }
+    const db = new sqlite3.Database(dbPath, sqlite3.OPEN_READONLY, (err: any) => {
       if (err) {
         resolve({ roomCode, roomName: roomCode, teamName: null });
         return;
@@ -334,7 +338,10 @@ app.get("/auth/manager-info", async (req, res) => {
 
     const rooms: any[] = [];
     for (const code of result.info.rooms) {
+      const dbPath = path.join(resolveDbDir(), `game_${code}.db`);
+      if (!fs.existsSync(dbPath)) continue;
       const info = await getRoomInfo(code, name);
+      if (!info.teamName) continue;
       rooms.push(info);
     }
 
