@@ -17,6 +17,35 @@ const bcrypt = require("bcryptjs");
 const path = require("path");
 const fs = require("fs");
 
+// ── Cache de sessão em memória ──────────────────────────────────────────────────
+// Evita re-executar bcrypt (72-141ms) em cada reconexão do socket.
+// Guarda credenciais verificadas durante AUTH_CACHE_TTL (10 min).
+// Seguro para um jogo: a memória do servidor não é acessível aos utilizadores.
+const authCache = new Map(); // name_lower → { password, expiry }
+const AUTH_CACHE_TTL = 10 * 60 * 1000; // 10 minutos
+
+function authCacheGet(name, password) {
+  const key = name.toLowerCase();
+  const cached = authCache.get(key);
+  if (cached && cached.expiry > Date.now() && cached.password === password) {
+    // Renovar TTL a cada uso
+    cached.expiry = Date.now() + AUTH_CACHE_TTL;
+    return true;
+  }
+  return false;
+}
+
+function authCacheSet(name, password) {
+  authCache.set(name.toLowerCase(), {
+    password,
+    expiry: Date.now() + AUTH_CACHE_TTL,
+  });
+}
+
+function authCacheInvalidate(name) {
+  authCache.delete(name.toLowerCase());
+}
+
 function resolveAccountsDbPath() {
   const candidates = [
     path.join(__dirname, "db"),
@@ -108,6 +137,11 @@ function verifyOrCreateManager(name, password) {
     return Promise.resolve({ ok: false, error: "Credenciais inválidas." });
   }
 
+  // Verificar cache antes de correr bcrypt (~72-141ms poupados em reconexões)
+  if (authCacheGet(normalizedName, normalizedPassword)) {
+    return Promise.resolve({ ok: true });
+  }
+
   return new Promise((resolve) => {
     db.get(
       "SELECT id, password_hash FROM managers WHERE name = ? COLLATE NOCASE",
@@ -125,8 +159,10 @@ function verifyOrCreateManager(name, password) {
             row.password_hash,
           );
           if (!match) {
+            authCacheInvalidate(normalizedName);
             return resolve({ ok: false, error: "Palavra-passe incorrecta." });
           }
+          authCacheSet(normalizedName, normalizedPassword);
           return resolve({ ok: true });
         } else {
           // New account — create with hashed password
@@ -142,6 +178,7 @@ function verifyOrCreateManager(name, password) {
               console.log(
                 `[auth] New coach account created: "${normalizedName}"`,
               );
+              authCacheSet(normalizedName, normalizedPassword);
               resolve({ ok: true });
             },
           );
@@ -166,6 +203,11 @@ function verifyManager(name, password) {
     return Promise.resolve({ ok: false, error: "Credenciais inválidas." });
   }
 
+  // Cache hit: evitar bcrypt em re-logins recentes
+  if (authCacheGet(normalizedName, normalizedPassword)) {
+    return Promise.resolve({ ok: true });
+  }
+
   return new Promise((resolve) => {
     db.get(
       "SELECT id, password_hash FROM managers WHERE name = ? COLLATE NOCASE",
@@ -185,9 +227,11 @@ function verifyManager(name, password) {
           row.password_hash,
         );
         if (!match) {
+          authCacheInvalidate(normalizedName);
           return resolve({ ok: false, error: "Palavra-passe incorrecta." });
         }
 
+        authCacheSet(normalizedName, normalizedPassword);
         return resolve({ ok: true });
       },
     );

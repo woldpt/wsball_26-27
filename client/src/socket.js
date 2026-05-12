@@ -4,8 +4,8 @@ export const socket = io(import.meta.env.VITE_BACKEND_URL || undefined, {
   transports: ['websocket', 'polling'],
   reconnection: true,
   reconnectionAttempts: Infinity,
-  reconnectionDelay: 1000,
-  reconnectionDelayMax: 5000,
+  reconnectionDelay: 300,
+  reconnectionDelayMax: 3000,
   timeout: 20000,
 });
 

@@ -281,6 +281,8 @@ function getGame(roomCode: string, onReady?: OnReady): ActiveGame | null {
   }
 
   const db = new sqlite.Database(dbPath);
+  // Aumentar cache de páginas SQLite para 8 MB — reduz I/O repetido em DB frias.
+  db.run("PRAGMA cache_size=-8000");
   db.run("PRAGMA foreign_keys = ON", (err: Error | null) => {
     if (err)
       console.error(
@@ -302,6 +304,7 @@ function getGame(roomCode: string, onReady?: OnReady): ActiveGame | null {
     "CREATE INDEX IF NOT EXISTS idx_club_news_team_id ON club_news(team_id)",
     "CREATE INDEX IF NOT EXISTS idx_club_news_player_id ON club_news(player_id)",
     "CREATE INDEX IF NOT EXISTS idx_club_news_created_at ON club_news(created_at)",
+    "CREATE INDEX IF NOT EXISTS idx_players_transfer_status ON players(transfer_status)",
   ];
   db.serialize(() => {
     for (const sql of indexStatements) {
@@ -660,56 +663,49 @@ function getGame(roomCode: string, onReady?: OnReady): ActiveGame | null {
               // Set currentEvent from calendarIndex
               game.currentEvent = SEASON_CALENDAR[game.calendarIndex] ?? null;
 
-              // Load market
-              db.all(
-                "SELECT p.*, COALESCE(t.name, 'Sem clube') as team_name FROM players p LEFT JOIN teams t ON p.team_id = t.id WHERE p.team_id IS NOT NULL AND p.transfer_status != 'none' ORDER BY RANDOM() LIMIT 40",
-                (err7, rows) => {
-                  if (!err7 && rows) game.globalMarket = rows;
-                  // ── Restaurar leilões pausados ────────────────────────────
-                  // Se existem leilões pausados guardados, restauramos o estado
-                  // em memória (sem timer). Os restantes leilões órfãos (open)
-                  // são limpos da BD.
-                  let pausedPlayerIds: number[] = [];
-                  if (st["pausedAuctions"]) {
-                    try {
-                      const parsedPaused = JSON.parse(st["pausedAuctions"]);
-                      if (Array.isArray(parsedPaused) && parsedPaused.length > 0) {
-                        for (const a of parsedPaused) {
-                          if (!a.playerId) continue;
-                          game.auctions[String(a.playerId)] = {
-                            playerId: a.playerId,
-                            sellerTeamId: a.sellerTeamId ?? null,
-                            startingPrice: a.startingPrice ?? 0,
-                            status: "paused",
-                            bids: (a.bids && !Array.isArray(a.bids)) ? a.bids : {},
-                            timer: null,
-                            endsAt: null,
-                          };
-                          pausedPlayerIds.push(Number(a.playerId));
-                        }
-                        console.log(
-                          `[gameManager] ${parsedPaused.length} leilão(ões) pausado(s) restaurado(s) (room ${roomCode})`,
-                        );
-                      }
-                    } catch (_) {}
+              // ── Restaurar leilões pausados (puro JS, sem query extra) ───────────
+              let pausedPlayerIds: number[] = [];
+              if (st["pausedAuctions"]) {
+                try {
+                  const parsedPaused = JSON.parse(st["pausedAuctions"]);
+                  if (Array.isArray(parsedPaused) && parsedPaused.length > 0) {
+                    for (const a of parsedPaused) {
+                      if (!a.playerId) continue;
+                      game.auctions[String(a.playerId)] = {
+                        playerId: a.playerId,
+                        sellerTeamId: a.sellerTeamId ?? null,
+                        startingPrice: a.startingPrice ?? 0,
+                        status: "paused",
+                        bids: (a.bids && !Array.isArray(a.bids)) ? a.bids : {},
+                        timer: null,
+                        endsAt: null,
+                      };
+                      pausedPlayerIds.push(Number(a.playerId));
+                    }
+                    console.log(
+                      `[gameManager] ${parsedPaused.length} leilão(ões) pausado(s) restaurado(s) (room ${roomCode})`,
+                    );
                   }
-                  // Limpar leilões abertos órfãos (não pausados)
-                  const placeholders = pausedPlayerIds.length > 0
-                    ? `AND id NOT IN (${pausedPlayerIds.map(() => "?").join(",")})`
-                    : "";
-                  db.run(
-                    `UPDATE players SET transfer_status = 'none', transfer_price = 0 WHERE transfer_status = 'auction' ${placeholders}`,
-                    pausedPlayerIds,
-                    () => {
-                      db.all(
-                        "SELECT p.*, COALESCE(t.name, 'Sem clube') as team_name FROM players p LEFT JOIN teams t ON p.team_id = t.id WHERE p.team_id IS NOT NULL AND p.transfer_status != 'none' ORDER BY RANDOM() LIMIT 40",
-                        (err8, cleanedRows) => {
-                          if (!err8 && cleanedRows)
-                            game.globalMarket = cleanedRows;
-                          game.initialized = true;
-                          if (onReady) onReady(game);
-                        },
-                      );
+                } catch (_) {}
+              }
+
+              // ── Limpar leilões órfãos + carregar mercado numa única query ─────────
+              // ORDER BY RANDOM() foi removido: causava varredura total da tabela (~430ms
+              // com DB fria). A ordem aleatória é feita pelo refreshMarket em runtime.
+              const placeholders = pausedPlayerIds.length > 0
+                ? `AND id NOT IN (${pausedPlayerIds.map(() => "?").join(",")})`
+                : "";
+              db.run(
+                `UPDATE players SET transfer_status = 'none', transfer_price = 0 WHERE transfer_status = 'auction' ${placeholders}`,
+                pausedPlayerIds,
+                () => {
+                  db.all(
+                    "SELECT p.*, COALESCE(t.name, 'Sem clube') as team_name FROM players p LEFT JOIN teams t ON p.team_id = t.id WHERE p.team_id IS NOT NULL AND p.transfer_status != 'none'",
+                    (err8, cleanedRows) => {
+                      if (!err8 && cleanedRows)
+                        game.globalMarket = cleanedRows;
+                      game.initialized = true;
+                      if (onReady) onReady(game);
                     },
                   );
                 },
