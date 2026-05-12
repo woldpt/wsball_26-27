@@ -45,6 +45,8 @@ const {
   deleteRoomAccess,
   changePassword,
   getManagerInfo,
+  getAvatarSeed,
+  setAvatarSeed,
 } = require("./auth");
 const {
   getSeasonEndMatchweek,
@@ -374,6 +376,38 @@ app.post("/auth/change-password", apiLimiter, async (req, res) => {
     return res.json({ ok: true });
   } catch (error) {
     console.error("[/auth/change-password] Error:", error.message);
+    return res.status(500).json({ error: "Erro interno." });
+  }
+});
+
+app.get("/auth/avatar-seed", async (req, res) => {
+  try {
+    const name =
+      typeof req.query?.name === "string" ? req.query.name.trim() : "";
+    if (!name)
+      return res.status(400).json({ error: "Nome de treinador inválido." });
+    const seed = await getAvatarSeed(name);
+    return res.json({ seed });
+  } catch (error) {
+    console.error("[/auth/avatar-seed] Error:", error.message);
+    return res.status(500).json({ error: "Erro interno." });
+  }
+});
+
+app.post("/auth/avatar-seed", async (req, res) => {
+  try {
+    const name =
+      typeof req.body?.name === "string" ? req.body.name.trim() : "";
+    const seed =
+      typeof req.body?.seed === "string" ? req.body.seed.trim() : "";
+    if (!name)
+      return res.status(400).json({ error: "Nome de treinador inválido." });
+    const result = await setAvatarSeed(name, seed);
+    if (!result.ok)
+      return res.status(500).json({ error: "Erro ao guardar." });
+    return res.json({ ok: true });
+  } catch (error) {
+    console.error("[/auth/avatar-seed] Error:", error.message);
     return res.status(500).json({ error: "Erro interno." });
   }
 });

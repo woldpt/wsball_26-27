@@ -17,11 +17,8 @@ export function UserSettingsPage({
   const [passwordMsg, setPasswordMsg] = useState(null);
   const [rooms, setRooms] = useState([]);
   const [roomsLoading, setRoomsLoading] = useState(true);
-  const [avatarSeed, setAvatarSeed] = useState(() => {
-    try {
-      return window.localStorage.getItem("cashballAvatarSeed") || "";
-    } catch { return ""; }
-  });
+  const [avatarSeed, setAvatarSeed] = useState("");
+  const [avatarSeedLoaded, setAvatarSeedLoaded] = useState(false);
 
   useEffect(() => {
     if (!me?.name) return;
@@ -33,6 +30,17 @@ export function UserSettingsPage({
       .catch(() => { /* ignorar */ })
       .finally(() => setRoomsLoading(false));
   }, [me?.name, backendUrl]);
+
+  useEffect(() => {
+    if (!me?.name || avatarSeedLoaded) return;
+    fetch(`${backendUrl}/auth/avatar-seed?name=${encodeURIComponent(me.name)}`)
+      .then((r) => r.json())
+      .then((data) => {
+        if (data?.seed) setAvatarSeed(data.seed);
+      })
+      .catch(() => { /* ignorar */ })
+      .finally(() => setAvatarSeedLoaded(true));
+  }, [me?.name, backendUrl, avatarSeedLoaded]);
 
   const handleChangePassword = async (e) => {
     e.preventDefault();
@@ -125,9 +133,11 @@ export function UserSettingsPage({
             onClick={() => {
               const newSeed = Math.random().toString(36).slice(2, 10);
               setAvatarSeed(newSeed);
-              try {
-                window.localStorage.setItem("cashballAvatarSeed", newSeed);
-              } catch { /* ignorar */ }
+              fetch(`${backendUrl}/auth/avatar-seed`, {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({ name: me.name, seed: newSeed }),
+              }).catch(() => { /* ignorar */ });
             }}
             title="Gerar novo avatar"
             className="absolute -bottom-1 -right-1 w-8 h-8 rounded-full bg-surface-container-high border border-outline-variant/40 text-on-surface flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity shadow-lg hover:bg-surface-bright"

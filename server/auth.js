@@ -75,6 +75,12 @@ db.serialize(() => {
       PRIMARY KEY (room_code, manager_name)
     )
   `);
+  // Migration: add avatar_seed column (safe to re-run)
+  db.run(`ALTER TABLE managers ADD COLUMN avatar_seed TEXT DEFAULT ''`, (err) => {
+    if (err) {
+      // Column already exists — ignore
+    }
+  });
 });
 
 /**
@@ -371,6 +377,54 @@ function getManagerInfo(name) {
   });
 }
 
+/**
+ * Get the avatar seed for a manager.
+ *
+ * @param {string} name
+ * @returns {Promise<string>}
+ */
+function getAvatarSeed(name) {
+  const normalizedName = typeof name === "string" ? name.trim() : "";
+  if (!normalizedName) return Promise.resolve("");
+
+  return new Promise((resolve) => {
+    db.get(
+      "SELECT avatar_seed FROM managers WHERE name = ? COLLATE NOCASE",
+      [normalizedName],
+      (err, row) => {
+        if (err || !row) return resolve("");
+        resolve(row.avatar_seed || "");
+      },
+    );
+  });
+}
+
+/**
+ * Set the avatar seed for a manager.
+ *
+ * @param {string} name
+ * @param {string} seed
+ * @returns {Promise<{ok: boolean}>}
+ */
+function setAvatarSeed(name, seed) {
+  const normalizedName = typeof name === "string" ? name.trim() : "";
+  if (!normalizedName) return Promise.resolve({ ok: false });
+
+  return new Promise((resolve) => {
+    db.run(
+      "UPDATE managers SET avatar_seed = ? WHERE name = ? COLLATE NOCASE",
+      [seed, normalizedName],
+      (err) => {
+        if (err) {
+          console.error("[auth] setAvatarSeed error:", err.message);
+          return resolve({ ok: false });
+        }
+        resolve({ ok: true });
+      },
+    );
+  });
+}
+
 module.exports = {
   verifyOrCreateManager,
   verifyManager,
@@ -380,4 +434,6 @@ module.exports = {
   getManagerRooms,
   changePassword,
   getManagerInfo,
+  getAvatarSeed,
+  setAvatarSeed,
 };
