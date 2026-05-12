@@ -415,14 +415,38 @@ export function PlayersTab({
             </div>
           ) : (
             <div className="flex flex-col gap-1.5">
-              {annotatedSquad.map((player) => (
-                <SquadRow
-                  key={player.id}
-                  player={player}
-                  matchweekCount={matchweekCount}
-                  onOpenPlayerHistory={onOpenPlayerHistory}
-                />
-              ))}
+              {(["GR", "DEF", "MED", "ATA"]).map((pos) => {
+                const group = annotatedSquad.filter((p) => p.position === pos);
+                if (!group.length) return null;
+                const posLabel =
+                  pos === "GR"
+                    ? "Guarda-redes"
+                    : pos === "DEF"
+                      ? "Defesas"
+                      : pos === "MED"
+                        ? "Médios"
+                        : "Avançados";
+                return (
+                  <div key={pos}>
+                    <div className="flex items-center gap-2 px-1 py-2 mt-1 first:mt-0">
+                      <span className="text-[10px] font-black uppercase tracking-widest text-on-surface-variant/50">
+                        {posLabel}
+                      </span>
+                      <span className="text-[9px] text-on-surface-variant/30 font-bold">
+                        {group.length}
+                      </span>
+                    </div>
+                    {group.map((player) => (
+                      <SquadRow
+                        key={player.id}
+                        player={player}
+                        matchweekCount={matchweekCount}
+                        onOpenPlayerHistory={onOpenPlayerHistory}
+                      />
+                    ))}
+                  </div>
+                );
+              })}
             </div>
           )}
         </div>
