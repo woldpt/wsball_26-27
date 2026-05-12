@@ -13,7 +13,7 @@ const DEFAULT_ACCENT = "#d97706";
 /**
  * Toast simples que aparece quando um novo leilão é iniciado.
  * Não aparece se o coach já estiver na página Leilões.
- * Desaparece automaticamente ao fim de 8s ou ao clicar em "Ver Leilão".
+ * Desaparece automaticamente ao fim de 10s ou ao clicar em "Ver Leilão".
  *
  * @param {{
  *   activeAuctions: Array,
@@ -43,7 +43,7 @@ export function AuctionNotification({
       showingRef.current = false;
       setCurrentToast(null);
       setTimeout(showNext, 400);
-    }, 8000);
+    }, 10000);
   };
 
   const dismiss = () => {
@@ -142,7 +142,7 @@ export function AuctionNotification({
         </div>
 
         {/* CTA */}
-        <div className="px-4 pb-4">
+        <div className="px-4 pb-3">
           <button
             type="button"
             onClick={() => {
@@ -155,6 +155,25 @@ export function AuctionNotification({
             Ver Leilão
           </button>
         </div>
+
+        {/* Countdown bar */}
+        <div className="h-1.5 w-full bg-white/5">
+          <div
+            key={currentToast.playerId}
+            className="h-full rounded-r-full"
+            style={{
+              background: `linear-gradient(90deg, ${accent}88, ${accent})`,
+              animation: `auctionCountdown 10s linear forwards`,
+            }}
+          />
+        </div>
+
+        <style>{`
+          @keyframes auctionCountdown {
+            from { width: 100%; }
+            to   { width: 0%; }
+          }
+        `}</style>
       </div>
     </div>
   );

@@ -2369,14 +2369,20 @@ function App() {
               )}
             </button>
 
-            {/* User button — opens settings page */}
+            {/* User button — opens settings page; disabled during live match */}
             <button
               onClick={() => {
+                if (isPlayingMatch) return;
                 setActiveTab("user_settings");
                 window.scrollTo(0, 0);
               }}
-              title="Definições do Utilizador"
-              className="flex items-center gap-2 hover:bg-white/10 transition-colors rounded-lg px-2 py-1"
+              disabled={isPlayingMatch}
+              title={isPlayingMatch ? "Definições bloqueadas durante o jogo" : "Definições do Utilizador"}
+              className={`flex items-center gap-2 transition-colors rounded-lg px-2 py-1 ${
+                isPlayingMatch
+                  ? "opacity-40 cursor-not-allowed"
+                  : "hover:bg-white/10"
+              }`}
             >
               <PlayerAvatar seed={`${me.name}|${avatarSeed}`} size="sm" />
               <div className="hidden lg:flex flex-col items-start">
