@@ -1,6 +1,6 @@
 import type { ActiveGame, PlayerSession } from "./types";
 import { logClubNews } from "./coreHelpers";
-import { withJuniorGRs } from "./game/engine";
+import { withJuniorGRs, ensureFullBench } from "./game/engine";
 
 interface AuctionDeps {
   io: any;
@@ -134,7 +134,11 @@ export function createAuctionHelpers(deps: AuctionDeps) {
         if (!err)
           io.to(player.socketId as string).emit(
             "mySquad",
-            withJuniorGRs(squad || [], teamId, game.matchweek || 1),
+            ensureFullBench(
+              withJuniorGRs(squad || [], teamId, game.matchweek || 1),
+              teamId,
+              game.matchweek || 1,
+            ),
           );
       },
     );

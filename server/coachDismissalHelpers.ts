@@ -1,6 +1,6 @@
 import type { ActiveGame } from "./types";
 import { getAllTeamForms, logClubNews } from "./coreHelpers";
-import { withJuniorGRs } from "./game/engine";
+import { withJuniorGRs, ensureFullBench } from "./game/engine";
 
 type Db = any;
 type AnyRow = Record<string, any>;
@@ -131,7 +131,11 @@ export function createCoachDismissalHelpers(deps: CoachDismissalDeps) {
           if (!err && player.socketId) {
             io.to(player.socketId as string).emit(
               "mySquad",
-              withJuniorGRs(squad || [], team.id, game.matchweek || 1),
+              ensureFullBench(
+                withJuniorGRs(squad || [], team.id, game.matchweek || 1),
+                team.id,
+                game.matchweek || 1,
+              ),
             );
           }
         },
@@ -373,7 +377,11 @@ export function createCoachDismissalHelpers(deps: CoachDismissalDeps) {
           if (!err && player.socketId) {
             io.to(player.socketId as string).emit(
               "mySquad",
-              withJuniorGRs(squad || [], team.id, game.matchweek || 1),
+              ensureFullBench(
+                withJuniorGRs(squad || [], team.id, game.matchweek || 1),
+                team.id,
+                game.matchweek || 1,
+              ),
             );
           }
         },
@@ -585,7 +593,11 @@ export function createCoachDismissalHelpers(deps: CoachDismissalDeps) {
           if (!err && player.socketId) {
             io.to(player.socketId as string).emit(
               "mySquad",
-              withJuniorGRs(squad || [], toTeamId, game.matchweek || 1),
+              ensureFullBench(
+                withJuniorGRs(squad || [], toTeamId, game.matchweek || 1),
+                toTeamId,
+                game.matchweek || 1,
+              ),
             );
           }
         },

@@ -8,7 +8,7 @@ import {
   clearPhaseTimer,
   makePhaseToken,
 } from "./matchFlowHelpers";
-import { withJuniorGRs, generateIntroEvents } from "./game/engine";
+import { withJuniorGRs, ensureFullBench, generateIntroEvents } from "./game/engine";
 import { generateAITactic } from "./game/matchCalculations";
 
 interface WeeklyFlowDeps {
@@ -767,7 +767,11 @@ export function createWeeklyFlowHelpers(deps: WeeklyFlowDeps) {
                             const squad = byTeam.get(player.teamId as number) || [];
                             io.to(player.socketId as string).emit(
                               "mySquad",
-                              withJuniorGRs(squad, player.teamId as number, game.matchweek || 1),
+                              ensureFullBench(
+                                withJuniorGRs(squad, player.teamId as number, game.matchweek || 1),
+                                player.teamId as number,
+                                game.matchweek || 1,
+                              ),
                             );
                           });
                           emitPresence(game);

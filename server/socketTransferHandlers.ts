@@ -94,6 +94,11 @@ export function registerTransferSocketHandlers(
       );
       if (!team) return;
 
+      const sellerTeamId =
+        player.team_id && player.team_id !== playerState.teamId
+          ? player.team_id
+          : null;
+
       const listedPrice =
         player.transfer_status && player.transfer_status !== "none"
           ? player.transfer_price || Math.round(player.value * 0.8)
@@ -192,6 +197,9 @@ export function registerTransferSocketHandlers(
           game.matchweek || 1,
         ),
       );
+      if (sellerTeamId) {
+        emitSquadForPlayer(game, sellerTeamId);
+      }
       socket.emit("systemMessage", `Contrataste ${player.name} por €${price}!`);
     } catch (err) {
       console.error("[buyPlayer] Error:", err);
