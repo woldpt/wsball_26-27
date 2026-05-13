@@ -64,6 +64,7 @@ export function GameDialog({ dialog, onClose }) {
           }}
         >
           <motion.div
+            tabIndex={0}
             className="w-full max-w-sm rounded-lg border border-zinc-700/40 bg-zinc-900 shadow-2xl overflow-hidden"
             initial={{ scale: 0.92, y: 16 }}
             animate={{ scale: 1, y: 0 }}
