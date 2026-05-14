@@ -495,10 +495,15 @@ function updateManagerProfile(name, email, birthYear) {
     return Promise.resolve({ ok: false, error: "Nome inválido." });
   }
 
+  // Treat empty strings as null so they don't overwrite existing data.
+  const safeEmail = (typeof email === "string" && email.trim() !== "") ? email.trim() : null;
+  const safeBirthYear =
+    birthYear != null && !Number.isNaN(birthYear) ? parseInt(birthYear, 10) : null;
+
   return new Promise((resolve) => {
     db.run(
       "UPDATE managers SET email = ?, birth_year = ? WHERE name = ? COLLATE NOCASE",
-      [email || "", birthYear || null, normalizedName],
+      [safeEmail, safeBirthYear, normalizedName],
       (err) => {
         if (err) {
           console.error("[auth] updateManagerProfile error:", err.message);
