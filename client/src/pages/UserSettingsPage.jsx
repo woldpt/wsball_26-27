@@ -41,14 +41,13 @@ export function UserSettingsPage({
     setProfileMsg(null);
     setProfileSaving(true);
     try {
+      const body = { name: me.name };
+      if (email?.trim()) body.email = email.trim();
+      if (birthYear) body.birthYear = parseInt(birthYear, 10);
       const res = await fetch(`${backendUrl}/auth/update-profile`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          name: me.name,
-          email,
-          birthYear: birthYear ? parseInt(birthYear, 10) : null,
-        }),
+        body: JSON.stringify(body),
       });
       const data = await res.json();
       if (data.ok) {

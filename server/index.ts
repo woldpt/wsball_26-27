@@ -509,17 +509,16 @@ app.post("/auth/update-profile", async (req, res) => {
   try {
     const name =
       typeof req.body?.name === "string" ? req.body.name.trim() : "";
+    // Only include fields that are actually provided (not undefined)
     const email =
-      typeof req.body?.email === "string" ? req.body.email.trim() : "";
+      typeof req.body?.email === "string" ? req.body.email.trim() : undefined;
     const birthYear =
-      req.body?.birthYear != null ? parseInt(req.body.birthYear, 10) : null;
+      req.body?.birthYear != null && typeof req.body.birthYear === "number"
+        ? parseInt(req.body.birthYear, 10)
+        : undefined;
     if (!name)
       return res.status(400).json({ error: "Nome de treinador inválido." });
-    const result = await updateManagerProfile(
-      name,
-      email,
-      birthYear && !isNaN(birthYear) ? birthYear : null,
-    );
+    const result = await updateManagerProfile(name, email, birthYear);
     if (!result.ok)
       return res.status(500).json({ error: result.error });
     return res.json({ ok: true });

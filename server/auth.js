@@ -483,10 +483,11 @@ function setAvatarSeed(name, seed) {
 
 /**
  * Update a manager's profile (email, birth year).
+ * Only fields that are provided (non-undefined) are updated.
  *
  * @param {string} name
- * @param {string} email
- * @param {number|null} birthYear
+ * @param {string|undefined} email
+ * @param {number|undefined} birthYear
  * @returns {Promise<{ok: boolean, error?: string}>}
  */
 function updateManagerProfile(name, email, birthYear) {
@@ -495,15 +496,32 @@ function updateManagerProfile(name, email, birthYear) {
     return Promise.resolve({ ok: false, error: "Nome inválido." });
   }
 
-  // Treat empty strings as null so they don't overwrite existing data.
-  const safeEmail = (typeof email === "string" && email.trim() !== "") ? email.trim() : null;
-  const safeBirthYear =
-    birthYear != null && !Number.isNaN(birthYear) ? parseInt(birthYear, 10) : null;
+  const updates = [];
+  const params = [];
+
+  if (email !== undefined) {
+    const safeEmail = (typeof email === "string" && email.trim() !== "") ? email.trim() : null;
+    updates.push("email = ?");
+    params.push(safeEmail);
+  }
+  if (birthYear !== undefined) {
+    const safeBirthYear =
+      birthYear != null && !Number.isNaN(birthYear) ? parseInt(birthYear, 10) : null;
+    updates.push("birth_year = ?");
+    params.push(safeBirthYear);
+  }
+
+  // Nothing to update
+  if (updates.length === 0) {
+    return Promise.resolve({ ok: true });
+  }
+
+  params.push(normalizedName);
 
   return new Promise((resolve) => {
     db.run(
-      "UPDATE managers SET email = ?, birth_year = ? WHERE name = ? COLLATE NOCASE",
-      [safeEmail, safeBirthYear, normalizedName],
+      `UPDATE managers SET ${updates.join(", ")} WHERE name = ? COLLATE NOCASE`,
+      params,
       (err) => {
         if (err) {
           console.error("[auth] updateManagerProfile error:", err.message);
