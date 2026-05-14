@@ -424,7 +424,7 @@ app.get("/auth/manager-info", async (req, res) => {
       rooms.push(info);
     }
 
-    return res.json({ name: result.info.name, rooms });
+    return res.json({ name: result.info.name, email: result.info.email || "", birthYear: result.info.birthYear, rooms });
   } catch (error) {
     console.error("[/auth/manager-info] Error:", error.message);
     return res.status(500).json({ error: "Erro interno." });
