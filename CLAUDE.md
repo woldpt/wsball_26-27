@@ -13,6 +13,23 @@ This file serves as the primary technical reference for the CashBall 26/27 codeb
 | **Database**       | SQLite 3            | Local file-based (`server/db/base.db`). No PostgreSQL-specific types. |
 | **Infrastructure** | Docker Compose      | Containerized environment.                                            |
 
+### Frontend JSDoc Standards
+
+To maintain type safety without TypeScript, all components and non-trivial functions must use JSDoc:
+
+- **Components:**
+  ```javascript
+  /**
+   * @param {Object} props
+   * @param {string} props.name - Description
+   * @returns {JSX.Element}
+   */
+  function MyComponent({ name }) { ... }
+  ```
+- **Async Functions:** Always specify the return type as a Promise: `/** @returns {Promise<User>} */`.
+- **Complexity:** Use `@param {Array<{id: number, name: string}>} players` for complex object arrays.
+- **Validation:** Run `npm run check:types` before committing.
+
 ---
 
 ## 🏗️ Architecture & Core Logic

@@ -35,6 +35,29 @@
   - A fonte da verdade é `game.calendarIndex`. Nunca use `matchweek` para lógica de progresso.
   - Não tente persistir `game.lockedCoaches` na base de dados.
 
+## 🔍 Auditing & Validation
+
+**Sempre que alterar a lógica de jogo ou comunicações, execute estas auditorias:**
+
+### 1. Game State Audit (`npm run audit:gamestate <ROOM_CODE>`)
+
+Verifica a integridade da base de dados de uma sala:
+
+- **Budgets:** Detecta orçamentos inconsistentes vs. salários.
+- **Squad Composition:** Verifica se cada equipa tem o número mínimo de jogadores por posição.
+- **Duplicate Players:** Identifica jogadores em equipas duplicadas (erro crítico).
+- **Match Phases:** Valida se o estado da fase de jogo é válido.
+
+### 2. Socket.io Contract Audit (`npm run audit:socketio`)
+
+Valida se os eventos de comunicação respeitam os contratos:
+
+- **Orphaned Emissions:** Eventos emitidos mas nunca escutados.
+- **Orphaned Handlers:** Listeners para eventos que nunca são emitidos.
+- **Duplicate Handlers:** Múltiplos listeners para o mesmo evento (conflito).
+
+---
+
 ## 🛠️ COMPLEX LOGIC PATTERNS
 
 **Siga estes padrões para garantir a integridade do sistema:**
