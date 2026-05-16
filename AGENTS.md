@@ -1,109 +1,65 @@
-# CashBall 26/27 — Agent Instructions (Compact)
+# AGENTS.md — Operational Manual & Regression Prevention
 
-## Quick Commands
-| Action | Command |
-|---|---|
-| Backend dev | `cd server && npm run dev` |
-| Backend typecheck | `cd server && npm run typecheck` |
-| Backend build/start | `cd server && npm run build && npm run start` |
-| Backend seed | `cd server && npm run seed` |
-| Frontend dev | `cd client && npm run dev` |
-| Frontend lint | `cd client && npm run lint` |
-| Frontend JSDoc check | `cd client && npm run check:types` |
-| Socket audit | `cd server && npm run audit:socketio` |
-| Game-state audit | `cd server && npm run audit:gamestate <ROOM_CODE>` |
-| Full stack | `docker compose up --build` |
+> **Nota:** Este ficheiro é o manual de operações rápidas. Ele complementa o `CLAUDE.md` (Arquitetura) e o `README.md` (Produto).
 
-## Non-Negotiables
-- Frontend is **JavaScript only** (no TypeScript in `client/`). Use JSDoc hints.
-- Backend is TypeScript; SQLite is the DB (avoid PostgreSQL-specific SQL types).
-- UI/messages/comments in **Portuguese (PT)**.
-- Narration phrases only in `server/game/commentary.ts` (never duplicate elsewhere).
-- Socket listeners live in `client/src/hooks/useSocketListeners.js`; any new `handlers.setXxx` must exist in `handlers` passed from `client/src/App.jsx`.
+## ⚡ Quick Commands
 
-## Current Market UX (latest)
-- Market tab uses `TransferHub`, not `MarketTab`:
-  - `client/src/App.jsx`
-  - `client/src/components/ui/TransferHub.jsx`
-- **TransferHub filters out auctions** (`p.transfer_status !== "auction"` in `visible` useMemo). Leilões só aparecem em `AuctionsPage.jsx`.
-- Layout: cards in desktop grid, single column in mobile.
-- Cards support flip interaction and open `PlayerHistoryModal` via `requestPlayerHistory`.
-- Cards use `PlayerAvatar` and show essential stats/actions.
-- Visual tuning applied:
-  - thicker card outlines (`border-2` / `ring-2`)
-  - subtle team-color tint fill (from player/team primary color fallback chain)
-  - hover scale: `1.04` on MarketCard and AuctionCard (not `1.02`).
+| Contexto                 | Comando                                            |
+| :----------------------- | :------------------------------------------------- |
+| **Backend Dev**          | `cd server && npm run dev`                         |
+| **Backend Typecheck**    | `cd server && npm run typecheck`                   |
+| **Backend Build/Start**  | `cd server && npm run build && npm run start`      |
+| **Backend Seed**         | `cd server && npm run seed`                        |
+| **Frontend Dev**         | `cd client && npm run dev`                         |
+| **Frontend Lint**        | `cd client && npm run lint`                        |
+| **Frontend JSDoc Check** | `cd client && npm run check:types`                 |
+| **Socket Audit**         | `cd server && npm run audit:socketio`              |
+| **Game-State Audit**     | `cd server && npm run audit:gamestate <ROOM_CODE>` |
+| **Full Stack**           | `docker compose up --build`                        |
 
-## Auction System (Leilões)
-- Full auction system: pauses, resumes, NPC bidding, flip cards, mobile notifications.
-- `client/src/pages/AuctionsPage.jsx` — flip cards with `PlayerAvatar` (`seed={auction.playerId}`).
-- `client/src/components/ui/AuctionNotification.jsx` — mobile: `left-3 right-3 bottom-4`; desktop: `sm:left-auto sm:right-4 sm:w-80`.
-- Server: `server/auctionHelpers.ts` — `startAuction`, `placeAuctionBid`, `scheduleNpcAuctionBids`.
-- `scheduleNpcAuctionBids` called on every bid so NPCs can react; guard `bids[npcTeam.id] != null` prevents duplicates.
-- SQL query fix: removed `p.` prefix from `playerRows[0]` columns (was `null` without JOIN).
+## ⚠️ REGRESSION PREVENTION (Crucial)
 
-## Squad Row Click → PlayerHistoryModal
-- `client/src/views/PlayersTab.jsx` — `SquadRow` now receives `onOpenPlayerHistory` prop.
-- `SquadRow` div has `onClick={() => onOpenPlayerHistory && onOpenPlayerHistory(player)}` + `cursor-pointer`.
-- `PlayersTab` receives `onOpenPlayerHistory` from `App.jsx` and passes to each `SquadRow`.
-- Socket flow: `socket.emit("requestPlayerHistory", { playerId })` → `playerHistoryData` → `setPlayerHistoryModal(data)`.
+**NÃO cometer estes erros que já foram corrigidos em sessões anteriores:**
 
-## PlayerAvatar Procedural Fixes
-- `client/src/components/shared/PlayerAvatar.jsx` — removed `clipPath` with colliding IDs (multiple inline SVGs).
-- Pure geometric corrections on paths; `renderBackHair` limited to crown zone (`face.top + 18`).
-- Side meches added to `classic`, `sidepart`, `long` styles; drawn behind ears (face drawn after covers center).
+- **Mercado/Transferências:**
+  - Use sempre `TransferHub.jsx`. **NUNCA** use `MarketTab.jsx`.
+  - Garanta que leilões são filtrados em `TransferHub` (`p.transfer_status !== "auction"`).
+- **Leilões (Auctions):**
+  - Verifique sempre o guard `bids[npcTeam.id] != null` para evitar lances duplicados de NPCs.
+  - Não use o prefixo `p.` em queries de `playerRows[0]` (evita `null` sem JOIN).
+- **Histórico de Jogadores:**
+  - A abertura do modal deve seguir o fluxo: `SquadRow (prop onOpenPlayerHistory)` $\rightarrow$ `socket.emit("requestPlayerHistory")`.
+- **Visual/Avatar:**
+  - **PROIBIDO** usar `clipPath` em `PlayerAvatar.jsx`. Use apenas caminhos geométricos puros.
+- **Estado do Jogo:**
+  - A fonte da verdade é `game.calendarIndex`. Nunca use `matchweek` para lógica de progresso.
+  - Não tente persistir `game.lockedCoaches` na base de dados.
 
-## Game/State Core
-- Source of season truth: `game.calendarIndex` (not `game.matchweek`).
-- Phase machine: `lobby -> match_first_half -> match_halftime -> match_second_half -> [match_et_gate -> match_extra_time] -> match_finalizing -> lobby`.
-- Transitional phases reset to `lobby` after server restart.
-- `activeGames` in memory is primary runtime state; DB sync is selective.
-- `game.lockedCoaches` is never persisted.
-- Sync gates: `phaseToken` + `phaseAcks`.
-- Segment double-run guard: `segmentRunning[roomCode]`.
+## 🛠️ COMPLEX LOGIC PATTERNS
 
-## Important Mechanics
-- Craques: only MED/ATA (`is_star = 1`), never GR/DEF.
-- Squad limits: min 11, max 24; halftime substitutions max 3.
-- Loans: max 5 active, 2.5% weekly interest.
-- Stadium: up to 120,000 seats.
-- Division 5 (Distritais): internal AI-only pool, hidden from players.
-- Cache versioning: `/api/cache-version` mismatch triggers client storage wipe + reload.
+**Siga estes padrões para garantir a integridade do sistema:**
 
-## Junior Bench System (Banco de Suplentes)
-- The bench must always have at least **1 GR + 4 field players** (5 substitutes total).
-- `server/game/playerUtils.ts`:
-  - `generateJuniorGR(teamId, matchweek, slotIndex)` — temporary junior GK.
-  - `generateJuniorFieldPlayer(teamId, matchweek, slotIndex, position)` — temporary junior DEF/MED/ATA (cycled evenly).
-  - `withJuniorGRs(squad, teamId, matchweek)` — ensures at least **1 available GR** for the starting XI.
-  - `ensureFullBench(squad, teamId, matchweek)` — ensures at least **2 GR + 14 field players** so 11 starters + 5 subs are always possible. Must be called **after** `withJuniorGRs`.
-- Junior players have **negative IDs** (DB writes are harmless no-ops) and `isJunior: true`.
-- The client renders junior players with a 🎓 badge and blocks status changes via `handleSetPlayerStatus`.
-- `ensureFullBench` is applied in:
-  - `socketSessionHandlers.ts` — `mySquad` emission
-  - `socketGameplayHandlers.ts` — `teamSquadData` emission
-  - `socketTransferHandlers.ts` — `mySquad` after transfers
-  - `game/engine.ts` — `_homeFullRoster` / `_awayFullRoster` (match simulation)
-  - `game/matchCalculations.ts` — `generateAITactic()` (AI bench)
+### 1. Sistema de Juniores (Banco de Suplentes)
 
-## Architecture Pointers
-- `server/index.ts`: Express + Socket.io entry.
-- `server/gameManager.ts`: room and state lifecycle (`activeGames`).
-- `server/game/engine.ts`: simulation core (mixed module style for compatibility).
-- `server/socket*Handlers.ts`: Socket domains registration.
-- `server/*Helpers.ts`: domain helpers via factory pattern (`createXxxHelpers(deps)`).
-- `client/src/App.jsx`: root state orchestration.
-- `client/src/hooks/useSocketListeners.js`: centralized socket listeners.
+Para garantir que uma equipa tem sempre jogadores disponíveis, siga esta ordem de execução obrigatória:
 
-## UI/Design Guidelines
-- Keep existing dark visual language and position accents:
-  - GR `#eab308`, DEF `#3b82f6`, MED `#10b981`, ATA `#f43f5e`
-- Keep sidebar overlay offsets compatible with `sidebarCollapsed` (`lg:left-14` / `lg:left-64`).
-- Icons: Material Symbols Outlined.
+1. `withJuniorGRs(squad, teamId, matchweek)` (Garante 1 GR para o 11 inicial).
+2. `ensureFullBench(squad, teamId, matchweek)` (Garante o resto do banco: 2 GR + 14 campo).
+   _Atenção: Os IDs de juniores são negativos._
 
-## Commit & Push Workflow
-- After completing all corrections in a session, commit and push to remote.
-- Use a concise, descriptive message focused on the "why" rather than the "what".
+### 2. Backend Helpers (Factory Pattern)
 
-## If Unsure
-- Do not invent mechanics; ask before changing game rules.
+Nunca instancie helpers diretamente. Use sempre:
+`const helpers = createXxxHelpers({ io, db, game });`
+
+## 🎨 DESIGN & STITCH WORKFLOW
+
+**Para novas interfaces, não adivinhe o design. Use o Stitch AI MCP:**
+
+1. **Prototipar:** No projeto Stitch (`projects/2994088005927103850`).
+2. **Extrair:** Forneça o ID da tela ao Claude.
+3. **Implementar:** Claude usa `stitch_get_screen` $\rightarrow$ React/Tailwind.
+
+## 🚀 Commit Workflow
+
+- Mensagens de commit devem focar no **"porquê"** (ex: `fix: prevent duplicate NPC bids in auctions`) e não apenas no "o quê".
